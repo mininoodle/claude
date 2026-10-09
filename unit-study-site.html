@@ -126,6 +126,16 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .units{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 6px 6px}
 .ulabel{font-size:.76rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 .units .seg button{display:flex;align-items:center;gap:.45em}
+.units .uclear{margin-left:auto}
+/* confirm dialog and short status message */
+dialog.confirm{border-radius:24px;padding:22px;max-width:min(31rem,calc(100vw - 32px));color:var(--ink);background:var(--fig);border:1px solid var(--hair);box-shadow:0 24px 60px var(--shadow)}
+dialog.confirm[open]{animation:rise .3s var(--ease)}
+dialog.confirm::backdrop{background:rgba(28,26,27,.38);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+dialog.confirm h3{margin-top:0}
+dialog.confirm .row{justify-content:flex-end;margin:1em 0 0}
+.btn.danger{background:var(--bad);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 14px color-mix(in srgb,var(--bad) 30%,transparent)}
+[data-mode="dark"] .btn.danger{color:#1c1a1b}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;max-width:calc(100vw - 32px);padding:.6em 1.1em;border-radius:999px;background:var(--ink);color:var(--bg);font-size:.9rem;font-weight:600;box-shadow:0 10px 28px var(--shadow);animation:rise .3s var(--ease)}
 .lhead{padding:10px 6px 18px;display:flex;align-items:center;justify-content:space-between;gap:28px}
 .lhead>div:first-child{min-width:0}
 .emblem{flex:none;display:grid;justify-items:center;gap:7px;color:var(--at)}
@@ -502,6 +512,7 @@ const Store=(()=>{
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
     sr:id=>g('s',id),srSet:(id,o)=>p('s',id,o),srAll:()=>Object.keys(D.s).filter(k=>!D.s[k].x).map(k=>[k,D.s[k]]),
     w:k=>{const e=g('w',k);return e?e.v:null;},wSet:(k,v)=>p('w',k,{v}),
+    clear(f){let n=0;const t=Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&f(m,k)){D[m][k]={x:1,t};n++;}});if(n){touch();emit();}return n;},
     pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect};
 })();
 /* spaced repetition: a missed question comes back after 1, 3 and 7 days */
@@ -706,9 +717,8 @@ function reviewUI(g,sk,le){
       <div class="legend"><span><i style="background:var(--a1)"></i>correct</span><span><i style="background:color-mix(in srgb,var(--a1) 34%,transparent)"></i>answered</span></div></div></div>
       <div class="bars" style="margin-top:1.2em">${LS.map((x,k)=>`<div class="barrow"><span>${icon(x.l.ic||LIC[x.l.t]||sk,15)}${x.l.t}</span><div class="bar2"><i class="b1" data-w="${100*st[k].a/st[k].n}"></i><i class="b2" data-w="${100*st[k].c/st[k].n}"></i></div><b>${st[k].c} / ${st[k].n}</b><button type="button" class="btn sm ghost" data-go="${x.i}">Open</button></div>`).join('')}</div>`);
     host.append(c1);setRing(c1,N?Cn/N:0,'correct');grow(c1);$$('[data-go]',c1).forEach(b=>b.onclick=()=>showLesson(+b.dataset.go));
-    const cr=el('div',{class:'row'}),cb=el('button',{type:'button',class:'btn sm ghost'},'Clear the saved answers of this section');let armed=0;
-    cb.onclick=()=>{if(!armed){armed=1;cb.textContent='Select again to confirm';setTimeout(()=>{armed=0;cb.textContent='Clear the saved answers of this section';},4000);return;}
-      LS.forEach(({l,i})=>l.qz.forEach((_,j)=>{const id=sk+'_'+i+'_'+j;Store.del(id);if(Store.sr(id))Store.srSet(id,{x:1});}));Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))QUIZ[k]();});chipProgress();home();};cr.append(cb);c1.append(cr);
+    const cr=el('div',{class:'row'}),cb=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear the saved answers of this section');
+    cb.onclick=()=>askClear(sk);cr.append(cb);c1.append(cr);
     const sr=srs(),dq=sr.filter(([,e])=>e.d<=now).map(([k])=>item(k)).filter(Boolean),wt=sr.filter(([,e])=>e.d>now).map(([,e])=>e.d);
     const cs=el('section',{class:'card glass half'},`<h3>Spaced repetition</h3><p>A question that you miss comes back after 1 day, then after 3 days, then after 7 days. When you answer it correctly each time, it leaves this list.</p>
       <div class="stats"><div class="stat"><span>Due now</span><b>${dq.length}</b></div><div class="stat"><span>Scheduled for later</span><b>${wt.length}</b></div>${wt.length?`<div class="stat"><span>Next date</span><b>${new Date(Math.min(...wt)).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</b></div>`:''}</div>
@@ -831,9 +841,28 @@ function showTab(i,first){
   if(!S.units.length){emptySubject(S);return;}
   host.append(el('span',{class:'ulabel'},S.name+(S.units.length>1?' units':' unit')));
   const us=seg(host,S.units.map(u=>icon(u,15)+SUBJ[u].name),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
+  const cb=el('button',{type:'button',class:'btn sm ghost uclear'},icon('reset',14)+'Clear answers');cb.onclick=()=>askClear(curS);host.append(cb);
   const j=Math.max(0,S.units.indexOf(curU[S.k]));curU[S.k]=S.units[j];if(j)us.set(j);
   showUnit(S.units[j],first);
 }
+/* clear answers: everything saved for one section (unit), then rebuild its lessons so the try-its start fresh */
+const unitKey=sk=>(m,k)=>m==='r'?k===sk:m==='w'?k.startsWith('hs_'+sk+'-')||k.startsWith('ord_'+sk+'-')||(sk==='eq'&&k.startsWith('ice_')):k.startsWith(sk+'_');
+function clearUnit(sk){
+  Store.clear(unitKey(sk));
+  Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
+  $$('.lesson').forEach(L=>{if(L.id.startsWith(sk+'-'))L.remove();});
+  for(let i=CANV.length-1;i>=0;i--)if(!CANV[i].c.isConnected){IO.unobserve(CANV[i].c);CANV.splice(i,1);}
+  tipHide();if(curS===sk)showLesson(curL[sk]);else chipProgress();
+}
+function toast(msg){$$('.toast').forEach(t=>t.remove());const t=el('div',{class:'toast',role:'status'},msg);document.body.append(t);setTimeout(()=>t.remove(),3200);}
+function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeElement;
+  const d=el('dialog',{class:'confirm','aria-labelledby':'cf-h'},`<h3 id="cf-h">Clear your answers in ${S.name}?</h3><p>This clears all of your saved work in this section:</p>
+    <ul><li>your answers to the lesson questions</li><li>the try-it activities: diagram tests, drag-the-labels results and ordering tasks${sk==='eq'?', and the ICE tables':''}</li><li>the questions that are due for spaced repetition</li><li>your practice test and exam results</li></ul>
+    <p class="hint">You cannot undo this. The other sections do not change.</p><div class="row"><button type="button" class="btn ghost" data-x>Cancel</button><button type="button" class="btn danger" data-ok>${icon('reset',15)}Clear answers</button></div>`);
+  document.body.append(d);const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus();};
+  $('[data-x]',d).onclick=close;d.addEventListener('cancel',e=>{e.preventDefault();close();});d.addEventListener('click',e=>{if(e.target===d)close();});
+  $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
+  d.showModal();$('[data-x]',d).focus();}
 /* a subject with no units yet: an empty page, no lesson chips */
 function emptySubject(S){
   curS=S.k;document.body.dataset.s=S.k;chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
