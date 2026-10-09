@@ -71,8 +71,8 @@ body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#736f72}
 [data-mode="dark"] body[data-s="ns"]{--a1:#6a6468;--a2:#9a8f97;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="sn"]{--a1:#676366;--a2:#736f72;--a3:#c3baba}
-body[data-s="math"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
-[data-mode="dark"] body[data-s="math"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
+body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
+[data-mode="dark"] body[data-s="math"],[data-mode="dark"] body[data-s="home"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
 
 /* one gradient layer, moved with transform only */
 .bg{position:fixed;inset:-16%;z-index:-1;pointer-events:none;will-change:transform;
@@ -127,6 +127,61 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .ulabel{font-size:.76rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 .units .seg button{display:flex;align-items:center;gap:.45em}
 .units .uclear{margin-left:auto}
+/* mastery levels */
+.lvl{display:inline-flex;align-items:center;gap:.6em;margin:.8em 0 0;padding:.32em .85em .32em .5em;border-radius:999px;background:var(--glass2);border:1px solid var(--hair);font-size:.84rem;color:var(--ink2);max-width:100%;box-shadow:inset 0 1px 0 var(--hi)}
+.lvl b{color:var(--at)}
+.lvs{display:inline-flex;gap:3px;flex:none}.lvs i{width:16px;height:6px;border-radius:3px;background:color-mix(in srgb,var(--a1) 18%,transparent);transition:background .4s}.lvs i.on{background:var(--a1)}
+.lvs.big i{width:auto;flex:1;height:8px;border-radius:4px}.lvs.big{display:flex;margin:.3em 0 .2em}
+.lvn{display:flex;justify-content:space-between;font-size:.74rem;color:var(--ink2);margin-bottom:.4em}
+.pr.m{background:none;width:13px;height:13px;vertical-align:-2px}
+.chips button[aria-selected="true"] .pr.m{color:#fff}
+.lvnum{font:700 1.9rem/1 ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at)}
+/* rounds: daily challenge, mastery practice, boss round */
+.score.low{color:var(--bad)}
+.lockd{display:flex;gap:14px;align-items:center}
+.bic{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--fig2);color:var(--ink2);border:1px solid var(--hair)}
+.bossmk{display:inline-grid;color:var(--at);margin-left:.1em}
+.seg button.tdue::after{content:"";position:absolute;top:7px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--a1);box-shadow:0 0 0 2px var(--fig)}
+/* weekly goal */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:.7em 0;max-width:22rem}
+.wd{display:grid;justify-items:center;gap:4px;font-size:.74rem;color:var(--ink2)}
+.wd i{width:30px;height:30px;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;background:var(--glass2)}
+.wd.on i{background:var(--a1);border-color:var(--a1);color:#fff}
+.wd.now i{box-shadow:0 0 0 3px color-mix(in srgb,var(--a1) 30%,transparent)}
+/* experience table, next steps */
+.xpt td{padding:.32em .5em;font-size:.88rem}.xpt td:last-child{text-align:right}
+.barrow.nx{grid-template-columns:minmax(0,1fr) auto auto}
+/* progress map */
+.pmap{display:grid;gap:16px}
+.pm-h{display:flex;align-items:center;gap:.5em;font-weight:650;font-size:.95rem;margin-bottom:6px;flex-wrap:wrap}.pm-h .hint{font-weight:400;font-size:.82rem}
+.pm-path{display:flex;align-items:center;flex-wrap:wrap;row-gap:10px}
+.pm-n{appearance:none;flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0;color:var(--ink2);background:var(--glass2);border:2px solid var(--hair);transition:transform .2s var(--spring),background .3s,border-color .3s}
+.pm-n:hover{transform:scale(1.08)}.pm-n:active{transform:scale(.94)}
+.pm-n[data-lv="1"]{border-color:color-mix(in srgb,var(--a1) 50%,transparent);color:var(--at);background:conic-gradient(color-mix(in srgb,var(--a1) 32%,transparent) calc(var(--p,0)*1turn),var(--glass2) 0)}
+.pm-n[data-lv="2"]{border-color:var(--a1);color:var(--at);background:color-mix(in srgb,var(--a1) 22%,var(--glass2))}
+.pm-n[data-lv="3"]{border-color:var(--a1);background:var(--a1);color:#fff}
+.pm-n.boss{border-style:dashed}.pm-n.boss.won{border-style:solid;border-color:var(--a1);background:var(--a1);color:#fff}
+.pm-l{flex:1 0 10px;max-width:30px;height:3px;border-radius:2px;background:var(--hair)}.pm-l.on{background:var(--a1)}
+/* badges */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:8px}
+.badge{display:flex;gap:11px;align-items:flex-start;padding:.65em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);box-shadow:inset 0 1px 0 var(--hi)}
+.badge b{display:block;font-size:.9rem}.badge span{display:block;font-size:.78rem;color:var(--ink2)}
+.badge.got .bic{background:var(--a1);border-color:var(--a1);color:#fff}
+.badge:not(.got){opacity:.7}.badge .bdate{color:var(--at);font-weight:600;margin-top:.2em}
+/* speed rounds */
+.speed{margin-top:.8em;padding-top:.7em;border-top:1px solid var(--hair)}
+.speed .qh b{font-size:.95rem}
+.sp-term{font-size:1.25rem;font-weight:650;margin:.3em 0 .4em}
+.hs-side .speed .ops{grid-template-columns:1fr}
+.speed .op:disabled{cursor:default}
+/* answer combo */
+.combo{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;gap:.45em;padding:.5em 1em;border-radius:999px;font:700 .95rem ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at);pointer-events:none;opacity:0;transform:translateY(12px) scale(.9);transition:opacity .3s,transform .4s var(--spring)}
+.combo.on{opacity:1;transform:none}
+.combo.pop{animation:cpop .6s var(--spring)}
+.combo.pop::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid var(--a1);pointer-events:none;animation:cring .75s ease-out forwards}
+@keyframes cpop{35%{transform:scale(1.3)}}
+@keyframes cring{from{opacity:.85;transform:scale(1)}to{opacity:0;transform:scale(1.9,2.4)}}
+@media(prefers-reduced-motion:reduce){.combo.pop::after{display:none}}
 /* confirm dialog and short status message */
 dialog.confirm{border-radius:24px;padding:22px;max-width:min(31rem,calc(100vw - 32px));color:var(--ink);background:var(--fig);border:1px solid var(--hair);box-shadow:0 24px 60px var(--shadow)}
 dialog.confirm[open]{animation:rise .3s var(--ease)}
@@ -486,13 +541,13 @@ function bearing(x,y){
 
 /* ---------- saved answers: this browser first, then the account store if the viewer grants it ---------- */
 const Store=(()=>{
-  const KEY='unit-study-site.v2',MAPS=['a','r','s','w'];let D={a:{},r:{},s:{},w:{},pos:null};
+  const KEY='unit-study-site.v2',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},pos:null};
   try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&typeof o==='object'){MAPS.forEach(m=>{D[m]=o[m]||{};});D.pos=o.pos||null;}}}catch(e){}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,mode='device',lastPull=0;
   const emit=()=>subs.forEach(f=>{try{f();}catch(e){}});
   const local=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
   async function push(){if(!ref||busy||!dirty)return;busy=true;dirty=false;
-    try{await ref.set(JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w})));}
+    try{await ref.set(JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w,h:D.h,g:D.g})));}
     catch(e){const c=e&&e.code;if(c==='unavailable'||c==='resource_exhausted')dirty=true;else{ref=null;mode='device';emit();}}
     busy=false;if(dirty&&ref){clearTimeout(timer);timer=setTimeout(push,4000);}}
   const later=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(push,ms);};
@@ -512,6 +567,7 @@ const Store=(()=>{
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
     sr:id=>g('s',id),srSet:(id,o)=>p('s',id,o),srAll:()=>Object.keys(D.s).filter(k=>!D.s[k].x).map(k=>[k,D.s[k]]),
     w:k=>{const e=g('w',k);return e?e.v:null;},wSet:(k,v)=>p('w',k,{v}),
+    x:(m,k)=>g(m,k),xs:(m,k,e)=>p(m,k,e),xk:m=>Object.keys(D[m]).filter(k=>!D[m][k].x),
     clear(f){let n=0;const t=Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&f(m,k)){D[m][k]={x:1,t};n++;}});if(n){touch();emit();}return n;},
     pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect};
 })();
@@ -519,7 +575,7 @@ const Store=(()=>{
 const SRI=[1,3,7],DAY=864e5;
 function srMark(id,ok){if(!id)return;const e=Store.sr(id),now=Date.now();
   if(!ok){Store.srSet(id,{b:0,d:now+SRI[0]*DAY});return;}
-  if(e&&now>=e.d){const b=e.b+1;if(b>=SRI.length)Store.srSet(id,{x:1});else Store.srSet(id,{b,d:now+SRI[b]*DAY});}}
+  if(e&&now>=e.d){const b=e.b+1;if(b>=SRI.length){Store.srSet(id,{x:1});Store.xs('g','srOut',{n:gN('srOut')+1});}else Store.srSet(id,{b,d:now+SRI[b]*DAY});}}
 
 /* ---------- controls ---------- */
 function ctl(host,defs,on){
@@ -611,8 +667,8 @@ function quiz(host,items,title,base){
   const c=el('section',{class:'card glass quiz'});host.append(c);
   const render=()=>{c.innerHTML=`<div class="qh"><h3>${title||'Check your understanding'}</h3><span class="score" aria-live="polite"></span></div>`;const sc=$('.score',c);
     const upd=b=>{sc.textContent=items.filter((_,i)=>{const e=Store.get(base+'_'+i);return e&&e.ok;}).length+' / '+items.length;if(b)fx(sc,'bump');};
-    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',Store.get(id),e=>{const p=Store.get(id);if(p&&p.s)e={v:e.v,ok:0,s:1};Store.set(id,e);srMark(id,e.ok&&!e.s);upd(true);chipProgress();},false));});
-    const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{items.forEach((_,i)=>Store.del(base+'_'+i));render();chipProgress();};r.append(b);c.append(r);upd();};
+    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',Store.get(id),e=>{const p=Store.get(id);if(p&&p.s)e={v:e.v,ok:0,s:1};Store.set(id,e);srMark(id,e.ok&&!e.s);upd(true);const bp=base.split('_');onAnswer(id,!!(e.ok&&!e.s),{sk:bp[0],L:+bp[1]});},false));});
+    const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{items.forEach((_,i)=>Store.del(base+'_'+i));Store.clear((m,k)=>m==='h'&&k.startsWith(base+'_'));render();afterChange();};r.append(b);c.append(r);upd();};
   render();QUIZ[base]=render;return c;
 }
 /* clickable diagram: explore, test and drag-the-labels modes */
@@ -646,7 +702,7 @@ function hotspot(host,svg,parts,opt={}){
     drop=(chip,pid)=>{if(!chip||chip.disabled)return;const p=byId[chip.dataset.id];
       if(pid===p.id){chip.disabled=true;chip.classList.remove('on');chip.classList.add('placed');$$(`[data-p="${pid}"]`,fig).forEach(e=>e.classList.add('got'));say(pid);left--;sel=null;fb.hidden=false;fb.className='fb ok';
         fb.innerHTML=left?`<b>${p.n}:</b> correct.`:`<b>All labels are in position.</b> Mistakes: ${miss}. <button type="button" class="btn sm">Start again</button>`;
-        if(!left){const bb=best();if(bb.d==null||miss<bb.d)Store.wSet(key,Object.assign({},bb,{d:miss}));$('button',fb).onclick=labels;}}
+        if(!left){const bb=best();if(bb.d==null||miss<bb.d)Store.wSet(key,Object.assign({},bb,{d:miss}));$('button',fb).onclick=labels;markStudy();checkBadges();}}
       else{miss++;fx(chip,'shake');fb.hidden=false;fb.className='fb bad';fb.innerHTML=`That part is not the ${p.n.toLowerCase()}. Try again.`;}};
     shuffle(parts).forEach(p=>{const c=el('button',{type:'button',class:'chip drag','data-id':p.id},p.n);pool.append(c);let g=null,sx=0,sy=0,moved=false;
       c.onclick=()=>{if(moved||c.disabled)return;sel=sel===c?null:c;$$('.chip',pool).forEach(x=>x.classList.toggle('on',x===sel));};
@@ -655,7 +711,9 @@ function hotspot(host,svg,parts,opt={}){
         if(g){g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';}});
       const end=e=>{if(g){g.remove();g=null;const t=document.elementFromPoint(e.clientX,e.clientY),pt=t&&t.closest&&t.closest('[data-p]');if(pt&&fig.contains(pt))drop(c,pt.dataset.p);setTimeout(()=>{moved=false;},0);}};
       c.addEventListener('pointerup',end);c.addEventListener('pointercancel',()=>{if(g){g.remove();g=null;}moved=false;});});}
-  seg(mh,['Explore','Test me','Drag labels'],i=>{mode=i;clearGot();fig.classList.toggle('explore',i===0);i===1?start():i===2?labels():explore(null);});
+  function race(){mark(null);clearGot();say(null);info.innerHTML='';speed(info,'hs',{title:'Speed round',intro:'Name each highlighted part as fast as you can.',
+    items:()=>shuffle(parts).map(p=>{const o=shuffle([p,...shuffle(parts.filter(x=>x.id!==p.id)).slice(0,3)]);return {q:'<p class="hint" style="margin:.2em 0">What is the highlighted part?</p>',o:o.map(x=>x.n),a:o.indexOf(p),p:p.id};}),on:x=>mark(x?x.p:null)});}
+  seg(mh,['Explore','Test me','Drag labels','Speed round'],i=>{mode=i;clearGot();fig.classList.toggle('explore',i===0);i===1?start():i===2?labels():i===3?race():explore(null);});
   fig.addEventListener('click',e=>{const t=e.target.closest('[data-p]');if(!t)return;if(mode===0)explore(t.dataset.p);else if(mode===2&&sel&&drop)drop(sel,t.dataset.p);});
   explore(null);
 }
@@ -731,7 +789,7 @@ function reviewUI(g,sk,le){
     const c3=el('section',{class:'card glass'},`<h3>Timed unit exam</h3><p>${nMC} multiple-choice questions${nNR?', '+nNR+' numeric-response questions':''}${wrs.length?' and 1 written-response question with a marking guide':''}. There is no feedback until you submit the exam.${nNR?' You record each numeric answer in four boxes, as on a unit exam.':''}</p>
       ${rv&&rv.ex?`<div class="stats"><div class="stat"><span>Last exam</span><b>${rv.ex.c} / ${rv.ex.n}</b></div><div class="stat"><span>Best exam</span><b>${rv.exb.c} / ${rv.exb.n}</b></div></div>`:''}
       <div class="row"><span>Time limit:</span><span data-tm></span></div><div class="row"><button type="button" class="btn">Start the exam</button></div>`);
-    host.append(c3);let mins=30;seg($('[data-tm]',c3),['20 min','30 min','45 min'],i=>{mins=[20,30,45][i];}).set(1);$('.row .btn',c3).onclick=()=>exStart(mins);
+    host.append(c3);bossCard(host,sk);let mins=30;seg($('[data-tm]',c3),['20 min','30 min','45 min'],i=>{mins=[20,30,45][i];}).set(1);$('.row .btn',c3).onclick=()=>exStart(mins);
   }
   function start(mode,n,fixed){let list=fixed;
     if(!list){const gn=mode==='mix'&&gens?Math.round(n*.3):0;list=balanced(n-gn,x=>{if(mode!=='weak')return true;const e=Store.get(x.id);return !(e&&e.ok);});
@@ -740,7 +798,7 @@ function reviewUI(g,sk,le){
   function ask(){view='test';host.innerHTML='';const x=T.list[T.i],tot=T.list.length,right=()=>T.res.filter(r=>r.ok).length;
     const c=el('section',{class:'card glass rv-q'},`<div class="qh"><h3>Question ${T.i+1} of ${tot}</h3><span class="score">${right()} correct</span></div><div class="bar2" style="margin:.2em 0 1em"><i class="b2" style="width:${100*T.i/tot}%"></i></div><p class="hint">Lesson: ${S.lessons[x.L].t}${x.gen?' (new numbers)':''}</p>`);
     const nav=el('div',{class:'row'}),nx=el('button',{type:'button',class:'btn',disabled:''},T.i+1<tot?'Next question':'See the results'),end=el('button',{type:'button',class:'btn ghost'},'End the test now');
-    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
+    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.id||null,!!e.ok,{sk,L:x.L});nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
     nx.onclick=()=>{T.i++;T.i<tot?ask():results();};end.onclick=()=>results();nav.append(nx,end);c.append(nav);host.append(c);}
   /* ----- timed exam ----- */
   function exStart(mins){const items=balanced(nMC,x=>!!x.it.o).map(x=>Object.assign(x,{kind:'mc',ord:shuffle(x.it.o.map((_,j)=>j))}));
@@ -775,11 +833,13 @@ function reviewUI(g,sk,le){
     fin.onclick=()=>exDone({got:$$('.tile.on',box).length,max:x.marks.length,q:x.q});r.append(fin);c.append(r);host.append(c);window.scrollTo({top:0,behavior:RM?'auto':'smooth'});}
   function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j];if(x.kind==='mc')res.push({x,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a]});
       else if(x.kind==='nr'){const v=nrVal(x.nr,a),n=x.it.n;res.push({x,ok:isFinite(v)&&Math.abs(v-n)<=Math.max(Math.max(x.it.tol??.02,.02)*Math.abs(n),x.it.abs||1e-12)?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:'')});}});
+    res.forEach(r=>{if(r.x.L>=0)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1});});
     T={res};const used=E.used;E=null;results({wr,used});}
   function results(o){o=o||{};const exam=o.used!=null,R=T.res,wr=o.wr,n=R.length+(wr?wr.max:0),c=R.filter(r=>r.ok).length+(wr?wr.got:0);if(!n){home();return;}view='res';host.innerHTML='';
     const by={};R.forEach(r=>{const b=by[r.x.L]||(by[r.x.L]=[0,0]);b[1]++;if(r.ok)b[0]++;if(r.x.id)srMark(r.x.id,!!r.ok);});
     const prev=Store.rev(sk)||{},f=c/n,better=(pb)=>!pb||f>pb.c/pb.n||(f===pb.c/pb.n&&n>pb.n)?{c,n}:pb,pl=exam?prev.ex:prev.last,best=better(exam?prev.exb:prev.best);
-    Store.setRev(sk,Object.assign({},prev,exam?{ex:{c,n},exb:best}:{last:{c,n},best,k:(prev.k||0)+1}));
+    const ef=prev.exf;if(exam&&ef&&o.used<ef.ms&&f>=ef.f)award('examPB');
+    Store.setRev(sk,Object.assign({},prev,exam?{ex:{c,n},exb:best,exf:f>=.6&&(!ef||(o.used<ef.ms&&f>=ef.f))?{ms:o.used,f}:ef}:{last:{c,n},best,k:(prev.k||0)+1}));
     const vd=f>=.85?['You are prepared for this section.','Take a mixed test from time to time to keep this level.']:f>=.6?['You know most of this section.','Study the lessons with the lowest results below. Then take the test again.']:['Study this section again.','Start with the lessons that have the lowest results below. Read the notes, use the interactive tools and do the lesson questions.'];
     const rows=Object.keys(by).map(L=>({L:+L,c:by[L][0],n:by[L][1]})).sort((a,b)=>a.c/a.n-b.c/b.n||a.L-b.L),miss=R.filter(r=>!r.ok);
     const c1=el('section',{class:'card glass'},`<h3>${exam?'Exam results':'Results'}: ${S.name}</h3><div class="rv-top">${ringHTML()}<div><p style="font-size:1.25rem;font-weight:650;margin:0">${vd[0]}</p><p>${vd[1]}</p>
@@ -808,18 +868,21 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" placeholder="Typ
 /* ---------- app shell ---------- */
 const SUBJ={},ORDER=['mom','eq','ns','sn'],curL={mom:0,eq:0,ns:0,sn:0};let curS='mom',chipBtns=[],tabSeg=null;
 /* the top tabs are subjects. Each unit (mom, eq, ns, sn) keeps its own lessons and saved answers. */
-const SUBJECTS=[{k:'phy',name:'Physics',units:['mom']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:[]}];
+const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:[]}];
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
-function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;let a=0,c=0;le.qz.forEach((_,j)=>{const e=Store.get(curS+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});r.style.setProperty('--p',a/le.qz.length);chipBtns[i].title=a+' of '+le.qz.length+' questions answered';
-    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',c/le.qz.length);$('small',em).textContent=c+' / '+le.qz.length+' correct';}});}
+function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
+    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon('check',13):'';chipBtns[i].dataset.lv=v.lv;
+    chipBtns[i].title=LVN[v.lv]+'. '+v.ok1+' of '+v.n+' questions are correct'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two different days':'')+'.';
+    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=LVN[v.lv]+' · '+v.ok1+' / '+v.n;}
+    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+LVN[v.lv]+'</b> · '+lvHint(v)+'</span>';});}
 function showLesson(i,o={}){
   const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i];
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
   const id=curS+'-'+i;let L=document.getElementById(id);
   if(!L){L=el('article',{class:'lesson',id,role:'tabpanel'});
-    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
-    $('#main').append(L);const g=$('.grid',L);le.build(g,le);$$('figure.cf',g).forEach(figFit);if(le.qz)quiz(g,le.qz,le.qt,curS+'_'+i);
+    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<p class="lvl" data-lvl></p>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
+    $('#main').append(L);const g=$('.grid',L);le.build(g,le);$$('figure.cf',g).forEach(figFit);if(le.qz){quiz(g,le.qz,le.qt,curS+'_'+i);masteryCard(g,curS,i);challengeCard(g,curS,i);}
     $$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));
     const pg=$('.pager',L);[[i-1,'Previous: '],[i+1,'Next: ']].forEach(([j,t])=>{if(j<0||j>=S.lessons.length){pg.append(el('span'));return;}const b=el('button',{type:'button',class:'btn ghost'},j<i?icon('left',15)+t+S.lessons[j].t:t+S.lessons[j].t+icon('right',15,'r'));b.onclick=()=>showLesson(j);pg.append(b);});
   }else le._refresh&&le._refresh();
@@ -837,28 +900,30 @@ function showUnit(k,first){
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
 function showTab(i,first){
-  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';
+  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';if(S.home){showHome();return;}
   if(!S.units.length){emptySubject(S);return;}
   host.append(el('span',{class:'ulabel'},S.name+(S.units.length>1?' units':' unit')));
-  const us=seg(host,S.units.map(u=>icon(u,15)+SUBJ[u].name),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
+  const us=seg(host,S.units.map(unitLabel),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
   const cb=el('button',{type:'button',class:'btn sm ghost uclear'},icon('reset',14)+'Clear answers');cb.onclick=()=>askClear(curS);host.append(cb);
   const j=Math.max(0,S.units.indexOf(curU[S.k]));curU[S.k]=S.units[j];if(j)us.set(j);
   showUnit(S.units[j],first);
 }
 /* clear answers: everything saved for one section (unit), then rebuild its lessons so the try-its start fresh */
-const unitKey=sk=>(m,k)=>m==='r'?k===sk:m==='w'?k.startsWith('hs_'+sk+'-')||k.startsWith('ord_'+sk+'-')||(sk==='eq'&&k.startsWith('ice_')):k.startsWith(sk+'_');
+const unitKey=sk=>(m,k)=>m==='r'?k===sk:m==='w'?k.startsWith('hs_'+sk+'-')||k.startsWith('ord_'+sk+'-')||k.startsWith('spd_'+sk+'-')||(sk==='eq'&&k.startsWith('ice_')):
+  m==='g'?k==='boss_'+sk||k.startsWith('ch_'+sk+'_')||k.startsWith('cnt_'+sk+'_'):k.startsWith(sk+'_');
 function clearUnit(sk){
   Store.clear(unitKey(sk));
   Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
   $$('.lesson').forEach(L=>{if(L.id.startsWith(sk+'-'))L.remove();});
   for(let i=CANV.length-1;i>=0;i--)if(!CANV[i].c.isConnected){IO.unobserve(CANV[i].c);CANV.splice(i,1);}
-  tipHide();if(curS===sk)showLesson(curL[sk]);else chipProgress();
+  tipHide();unitMarks();if(curS===sk)showLesson(curL[sk]);else afterChange();
 }
-function toast(msg){$$('.toast').forEach(t=>t.remove());const t=el('div',{class:'toast',role:'status'},msg);document.body.append(t);setTimeout(()=>t.remove(),3200);}
+const TQ=[];let tBusy=0;function toast(m){TQ.push(m);if(!tBusy)nextToast();}
+function nextToast(){const m=TQ.shift();if(m==null){tBusy=0;return;}tBusy=1;const t=el('div',{class:'toast',role:'status'},m);document.body.append(t);setTimeout(()=>{t.remove();nextToast();},2700);}
 function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeElement;
   const d=el('dialog',{class:'confirm','aria-labelledby':'cf-h'},`<h3 id="cf-h">Clear your answers in ${S.name}?</h3><p>This clears all of your saved work in this section:</p>
-    <ul><li>your answers to the lesson questions</li><li>the try-it activities: diagram tests, drag-the-labels results and ordering tasks${sk==='eq'?', and the ICE tables':''}</li><li>the questions that are due for spaced repetition</li><li>your practice test and exam results</li></ul>
-    <p class="hint">You cannot undo this. The other sections do not change.</p><div class="row"><button type="button" class="btn ghost" data-x>Cancel</button><button type="button" class="btn danger" data-ok>${icon('reset',15)}Clear answers</button></div>`);
+    <ul><li>your answers to the lesson questions, and the mastery level of each lesson</li><li>the try-it activities: diagram tests, drag-the-labels results and ordering tasks${sk==='eq'?', and the ICE tables':''}</li><li>the questions that are due for spaced repetition</li><li>your practice test and exam results, the boss round, the challenge problems and the speed-round best times</li></ul>
+    <p class="hint">You cannot undo this. The other sections do not change. Your badges, daily challenges and weekly goal stay.</p><div class="row"><button type="button" class="btn ghost" data-x>Cancel</button><button type="button" class="btn danger" data-ok>${icon('reset',15)}Clear answers</button></div>`);
   document.body.append(d);const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus();};
   $('[data-x]',d).onclick=close;d.addEventListener('cancel',e=>{e.preventDefault();close();});d.addEventListener('click',e=>{if(e.target===d)close();});
   $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
@@ -888,13 +953,13 @@ function boot(){
   if(p&&p.u)SUBJECTS.forEach(s=>{if(s.units.includes(p.u[s.k]))curU[s.k]=p.u[s.k];});
   const t0=Math.max(0,SUBJECTS.findIndex(s=>p&&(s.k===p.s||s.units.includes(p.s))));
   if(p&&SUBJ[p.s])curU[SUBJECTS[t0].k]=p.s;
-  tabSeg=seg($('#tabs'),SUBJECTS.map(s=>`${icon(s.k,17)}<span class="lg">${s.name}</span><span class="sm">${s.short||s.name}</span>`),i=>showTab(i),'main');
+  tabSeg=seg($('#tabs'),SUBJECTS.map(s=>`${icon(s.k,17)}<span class="lg">${s.name}</span><span class="sm">${s.short||s.name}</span>`),i=>showTab(i),'main');homeDot();
   if(t0)tabSeg.set(t0);
   arrowKeys($('#chips'),()=>chipBtns,()=>curL[curS]);
   showTab(t0,true);
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
-  Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();});
+  Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();refreshLive();homeDot();unitMarks();});
   Store.connect();
 }
 
@@ -1119,6 +1184,13 @@ const ICON={
   bio:'<path d="M7 2.5c0 5 10 4.5 10 9.5s-10 4.5-10 9.5M17 2.5c0 5-10 4.5-10 9.5s10 4.5 10 9.5M8.6 6.2h6.8M8.6 17.8h6.8"/>',
   chem:'<path d="M9 3h6M10.3 3v6.2l-5.6 9.4A1.6 1.6 0 0 0 6.1 21h11.8a1.6 1.6 0 0 0 1.4-2.4l-5.6-9.4V3"/><path d="M7.2 15h9.6"/>',
   math:'<path d="M17.5 4.5h-11l6.2 7.5-6.2 7.5h11"/>',
+  home:'<path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  crown:'<path d="M3.5 8 7.5 12.5 12 5.5l4.5 7 4-4.5L19 18.5H5Z"/>',
+  medal:'<circle cx="12" cy="14.5" r="5.5"/><path d="M8.6 10 6 3.5h4l2 4 2-4h4L15.4 10"/>',
+  bolt:'<path d="M13.2 2.5 5 13.5h6.2L10.6 21.5 19 10.5h-6.4Z"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  star:'<path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.6l6.1-.8Z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
   moon:'<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"/>',
   up:'<path d="m6 14.5 6-6 6 6"/>',down:'<path d="m6 9.5 6 6 6-6"/>',left:'<path d="m14.5 6-6 6 6 6"/>',right:'<path d="m9.5 6 6 6-6 6"/>',
@@ -1962,6 +2034,7 @@ SUBJ.mom={name:'Momentum',short:'Momentum',lessons:[
   const box=el('div',{class:'tiles'});c.append(box);
   const ts=Q.map(([n])=>{const b=el('button',{type:'button',class:'tile'},`${n}<small>?</small>`);b.dataset.v='';b.onclick=()=>{b.dataset.v=b.dataset.v==='S'?'V':'S';b.children[0].textContent=b.dataset.v==='S'?'Scalar':'Vector';b.classList.remove('ok','bad');};box.append(b);return b;});
   const msg=el('span',{class:'hint'});btnRow(c,[['Check',()=>{let n=0;ts.forEach((b,i)=>{const ok=b.dataset.v===Q[i][1];if(ok)n++;b.classList.toggle('ok',ok);b.classList.toggle('bad',!ok);});msg.textContent=n+' of 12 are correct.';}],['Clear',()=>{ts.forEach(b=>{b.dataset.v='';b.children[0].textContent='?';b.classList.remove('ok','bad');});msg.textContent='';},'ghost']]).append(msg);
+  speed(c,'sv',{title:'Scalar or vector',intro:'Sort all 12 quantities as fast as you can.',items:()=>shuffle(Q.slice()).map(([n,v])=>({q:`<p class="sp-term">${n}</p>`,o:['Scalar','Vector'],a:v==='S'?0:1}))});
 },qz:[
     {q:'Which change gives the largest protection in a cushioned impact?',o:['Minimum force, maximum time, constant impulse','Maximum force, minimum time, constant impulse','Minimum force, minimum time, minimum impulse','Constant force, maximum time, maximum impulse'],a:0,w:'The impulse is fixed by the change in momentum. A cushion increases the time, thus the force decreases.'},
     {q:'A net force starts at 20 N and decreases at a constant rate to 0 N at 4.0 s. Calculate the impulse.',n:40,u:'N·s',w:'Area of the triangle: ½(4.0)(20) = 40 N·s.'},
@@ -2235,6 +2308,8 @@ EQL.push({t:'Acids and bases',h:'Brønsted-Lowry acids and bases',d:'An acid don
       const a=sp[ans.indexOf('A')],cb=sp[ans.indexOf('CB')],b2=sp[ans.indexOf('B')],ca=sp[ans.indexOf('CA')];fb.innerHTML=n===4?`Correct. The pairs are ${C(a)} / ${C(cb)} and ${C(ca)} / ${C(b2)}.`:`${n} of 4 are correct. The acid loses one proton and becomes its conjugate base.`;};
     $('[data-a=n]',stage).onclick=()=>{ri=(ri+1)%RX.length;loadR();};}
   loadR();
+  speed(d,'cp',{title:'Conjugate pairs',intro:'For each reaction, select the acid, then its conjugate base.',items:()=>shuffle(RX.slice()).flatMap(([sp,ans])=>{const eq=`<p class="sp-term">${C(sp[0])} + ${C(sp[1])} ⇌ ${C(sp[2])} + ${C(sp[3])}</p>`,ai=ans.indexOf('A');
+    return [{q:eq+'<p class="hint" style="margin:0">Select the acid (the proton donor).</p>',o:sp.map(C),a:ai},{q:eq+`<p class="hint" style="margin:0">Select the conjugate base of ${C(sp[ai])}.</p>`,o:sp.map(C),a:ans.indexOf('CB')}];})});
 },qz:[
     {q:C('What is the conjugate base of H2SO3(aq)?'),o:[C('HSO3^-(aq)'),C('SO3^2-(aq)'),C('OH^-(aq)'),C('H2O(l)')],a:0,w:'Remove one proton from the acid to get its conjugate base.'},
     {q:C('What is the conjugate base of N2H5^+(aq)?'),o:[C('HOH(l)'),C('OH^-(aq)'),C('N2H4(aq)'),C('N2H6^2+(aq)')],a:2,w:'N₂H₅⁺ loses one proton and becomes N₂H₄.'},
@@ -3295,6 +3370,244 @@ function collide2D(host){
   K=ctl(c,[{k:'m1',l:'Mass of A',min:.5,max:5,step:.5,v:1.5,dp:1,u:'kg'},{k:'v1',l:'Speed of A',min:1,max:10,step:.5,v:6,dp:1,u:'m/s'},{k:'m2',l:'Mass of B',min:.5,max:5,step:.5,v:1.5,dp:1,u:'kg'},{k:'b',l:'Offset of A',min:-.9,max:.9,step:.05,v:.5,f:x=>x===0?'Head-on':(Math.abs(x)*100).toFixed(0)+'% '+(x>0?'north':'south')},{k:'e',l:'Elasticity',min:0,max:1,step:.05,v:1,dp:2}],upd);
   btnRow(c,[['Run the collision',()=>{cancelAnimationFrame(raf);const t0=performance.now(),st=n=>{T=(n-t0)/1000;cv.draw();if(T<2.6&&cv.vis())raf=requestAnimationFrame(st);};raf=requestAnimationFrame(st);}],['Reset',upd,'ghost'],['Head-on',()=>K.set({b:0}),'ghost'],['Equal masses, elastic: 90° apart',()=>K.set({m1:1.5,m2:1.5,b:.6,e:1}),'ghost']]);upd();
 }
+/* ===================== learning game: mastery, daily challenge, combo, boss round, weekly goal, badges, speed rounds, challenges, map, level ===================== */
+const LVN=['Not started','Learning','Practised','Mastered'];
+const p2=n=>String(n).padStart(2,'0'),dayOf=t=>{const d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());},today=()=>dayOf(Date.now());
+const fmtT=ms=>{const t=Math.max(0,Math.ceil(ms/1000));return Math.floor(t/60)+':'+p2(t%60);};
+const fmtS=ms=>{const t=Math.max(0,ms)/1000;return Math.floor(t/60)+':'+(t%60).toFixed(1).padStart(4,'0');};
+const fmtDay=d=>{const [y,m,da]=d.split('-').map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});};
+const gN=k=>(Store.x('g',k)||{}).n||0,gv=k=>(Store.x('g',k)||{}).v,gset=(k,v)=>Store.xs('g',k,{v});
+const qItem=id=>{if(!id)return null;const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],it=le&&le.qz&&le.qz[+j];return it?{it,id,sk,L:+L}:null;};
+const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
+const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
+const UORDER=SUBJECTS.flatMap(s=>s.units);
+const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}});}
+
+/* ----- mastery: the days on which each question was answered correctly ----- */
+function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t)s.add(dayOf(a.t));return s;}
+function lessonLevel(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
+  le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(d.size>=2)ok2++;});
+  const n=le.qz.length;return {n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+/* questions that still need a correct answer today to move toward Mastered */
+function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id);return d.size<2&&!d.has(td);});}
+const allLessons=()=>UORDER.flatMap(unitLessons);
+function unitLessons(sk){return SUBJ[sk].lessons.map((le,L)=>le.qz?Object.assign({sk,L},lessonLevel(sk,L)):null).filter(Boolean);}
+const lvSteps=(lv,big)=>`<span class="lvs${big?' big':''}" aria-hidden="true">${[1,2,3].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</span>`;
+const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions are correct`,`${v.ok2} of ${v.n} are correct on two different days`,`the challenge problem is unlocked`][v.lv];
+
+/* ----- every answer goes through here ----- */
+function onAnswer(id,ok,o={}){
+  const td=today(),has=o.sk&&SUBJ[o.sk]&&o.L!=null&&o.L>=0,before=has?lessonLevel(o.sk,o.L):null;
+  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice();if(ok&&!d.includes(td))d.push(td);Store.xs('h',id,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1)});}
+  if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
+  markStudy();if(!o.nocombo)comboStep(ok);
+  if(before){const a=lessonLevel(o.sk,o.L),t=SUBJ[o.sk].lessons[o.L].t;
+    if(a.lv===3&&before.lv<3)toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');
+    else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again on another day to master it.');}
+  afterChange();}
+function afterChange(){chipProgress();refreshLive();checkBadges();homeDot();}
+
+/* ----- weekly goal: 4 study days in each week (Monday to Sunday) ----- */
+function weekStart(d){d=new Date(d);d.setHours(0,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return d;}
+function weekCount(ws){const days=new Set(gv('days')||[]);let n=0;for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);if(days.has(dayOf(d.getTime())))n++;}return n;}
+function weeksInRow(){const ws=weekStart(new Date());let k=0;if(weekCount(ws)<4)ws.setDate(ws.getDate()-7);while(k<300&&weekCount(ws)>=4){k++;ws.setDate(ws.getDate()-7);}return k;}
+function totalWeeksMet(){const m={};(gv('days')||[]).forEach(d=>{const [y,mo,da]=d.split('-').map(Number),k=dayOf(weekStart(new Date(y,mo-1,da)).getTime());m[k]=(m[k]||0)+1;});return Object.values(m).filter(n=>n>=4).length;}
+function markStudy(){const td=today(),d=gv('days')||[];if(d.includes(td))return;gset('days',d.concat(td).slice(-400));
+  if(weekCount(weekStart(new Date()))===4)toast(icon('cal',15)+' Weekly goal met: you studied on 4 days this week.');}
+
+/* ----- answer combo: correct answers in a row ----- */
+let combo=0,comboEl=null;
+function comboStep(ok){if(!comboEl){comboEl=el('div',{class:'combo glass','aria-live':'polite'});document.body.append(comboEl);}
+  if(!ok){combo=0;comboEl.classList.remove('on','pop');return;}
+  combo++;if(combo>gN('comboBest'))Store.xs('g','comboBest',{n:combo});if(combo<2)return;
+  comboEl.innerHTML=`${icon('bolt',16)}<span>${combo} in a row</span>`;comboEl.classList.add('on');
+  if(combo===3||combo===5||combo===10||(combo>10&&combo%5===0)){comboEl.classList.remove('pop');void comboEl.offsetWidth;comboEl.classList.add('pop');}}
+
+/* ----- one question at a time, with optional time limit. Used by the daily challenge, mastery practice and the boss round. ----- */
+function runRound(box,o){let i=0,over=false,tm=0;const res=[],t0=Date.now(),n=o.items.length,off=o.offset||0,tot=o.total||n;
+  if(!n){o.done(res,0,false);return;}
+  const fin=to=>{if(over)return;over=true;clearInterval(tm);o.done(res,Date.now()-t0,to);};
+  if(o.limit)tm=setInterval(()=>{if(!box.isConnected){clearInterval(tm);over=true;return;}const left=o.limit-(Date.now()-t0),t=$('[data-t]',box);if(t){t.textContent=fmtT(left)+' left';t.classList.toggle('low',left<30000);}if(left<=0)fin(true);},250);
+  function ask(){const x=o.items[i];
+    box.innerHTML=`<div class="qh"><b>${o.title||'Question'} ${off+i+1} of ${tot}</b>${o.limit?`<span class="score" data-t>${fmtT(o.limit-(Date.now()-t0))} left</span>`:`<span class="score" data-c>${res.filter(r=>r.ok).length} correct</span>`}</div>
+      <div class="bar2" style="margin:.4em 0 .7em"><i class="b2" style="width:${100*(off+i)/tot}%"></i></div><p class="hint" style="margin:0">${SUBJ[x.sk].name} · ${SUBJ[x.sk].lessons[x.L].t}</p>`;
+    const nx=el('button',{type:'button',class:'btn',disabled:''},i+1<n?'Next question':'Finish');
+    box.append(qEl(x.it,'',null,e=>{if(over)return;res.push({x,ok:e.ok?1:0});onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L});srMark(x.id,!!e.ok);o.step&&o.step(res);
+      nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=res.filter(r=>r.ok).length+' correct';},true));
+    const row=el('div',{class:'row'});row.append(nx);box.append(row);nx.onclick=()=>{if(over)return;i++;i<n?ask():fin(false);};}
+  ask();}
+
+/* ----- lesson page: mastery card and challenge problem ----- */
+function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
+  function view(){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const v=lessonLevel(sk,L),need=masteryNeeds(sk,L);
+    const msg=['Answer the questions above to start this lesson.',
+      `Answer every question correctly once to reach <b>Practised</b>. ${v.ok1} of ${v.n} are correct now.`,
+      `Answer each question correctly again on a different day to reach <b>Mastered</b>. ${v.ok2} of ${v.n} are correct on two days.`,
+      'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
+    c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${LVN[v.lv]}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
+      (v.lv>=1&&v.lv<3?(need.length?`<div class="row"><button type="button" class="btn">${icon('target',15)}Practise for mastery (${need.length} ${need.length===1?'question':'questions'})</button></div><p class="hint">A question that you answer wrong goes into spaced repetition and comes back after 1 day.</p>`
+        :`<p class="hint">${icon('cal',14)} Come back tomorrow. A question counts for mastery only when you answer it correctly on a second, different day.</p>`):'');
+    const b=$('.row .btn',c);if(b)b.onclick=run;}
+  function run(){busy=1;const items=shuffle(masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML='<h3>Practise for mastery</h3>';const box=el('div');c.append(box);
+    runRound(box,{items,title:'Question',done:res=>{busy=0;const n=res.filter(r=>r.ok).length;view();c.append(el('p',{class:'fb '+(n===res.length?'ok':'info')},`${n} of ${res.length} correct in this round.`));}});}
+  LIVE.add(view);view();}
+function challengeCard(g,sk,L){const it=CH[sk]&&CH[sk][L];if(!it)return;const key='ch_'+sk+'_'+L,c=card(g,'','');let shown=-1;
+  function view(){if(!c.isConnected){LIVE.delete(view);return;}const sv=Store.x('g',key),open=lessonLevel(sk,L).lv===3||!!sv?1:0;if(open===shown)return;shown=open;
+    if(!open){c.innerHTML=`<div class="lockd"><span class="bic">${icon('lock',19)}</span><div><h3 style="margin:0">Challenge problem</h3><p class="hint" style="margin:.2em 0 0">Master this lesson to unlock a harder problem.</p></div></div>`;return;}
+    c.innerHTML=`<div class="qh"><h3>${icon('star',18)} Challenge problem</h3><span class="score">${sv&&sv.ok?'Solved':'Unlocked'}</span></div><p class="hint">A harder problem that uses more than one idea from this lesson.</p>`;
+    c.append(qEl(it,'',sv&&sv.a||null,e=>{const p=Store.x('g',key)||{},ok=!!(e.ok&&!e.s);Store.xs('g',key,{a:{v:e.v,ok:e.ok,s:e.s},ok:p.ok||(ok?1:0)});
+      if(ok&&!p.ok){$('.score',c).textContent='Solved';toast(icon('star',15)+' Challenge solved.');}onAnswer(null,ok,{sk,L});},false));}
+  LIVE.add(view);view();}
+
+/* ----- boss round: the questions that you missed most, against the clock ----- */
+const BOSS_N=6,BOSS_WIN=5,BOSS_MS=180000,bossWon=sk=>{const b=Store.x('g','boss_'+sk);return !!(b&&b.won);};
+function bossItems(sk){const all=[];SUBJ[sk].lessons.forEach((le,L)=>{if(le.qz)le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,h=Store.x('h',id),a=Store.get(id);
+  all.push({id,s:(h&&h.m||0)*3+(a&&!a.ok?2:0)+(okDays(id).size?0:1)+Math.random()});});});return all.sort((a,b)=>b.s-a.s).slice(0,BOSS_N).map(x=>qItem(x.id));}
+function bossCard(host,sk){const c=el('section',{class:'card glass'}),S=SUBJ[sk];host.append(c);
+  function view(msg){const ls=unitLessons(sk),st=ls.filter(x=>x.lv>=1).length,open=st===ls.length,b=Store.x('g','boss_'+sk);
+    c.innerHTML=`<div class="qh"><h3>${icon('crown',18)} Boss round</h3>${b&&b.won?'<span class="score">Beaten</span>':''}</div><p>${BOSS_N} of the questions that you missed most in this unit. You have ${BOSS_MS/60000} minutes. Answer at least ${BOSS_WIN} correctly to beat it. Then the unit tab gets a crown.</p>`+(msg||'')+
+      (b&&b.best?`<div class="stats"><div class="stat"><span>Best result</span><b>${b.best.c} / ${BOSS_N}</b></div><div class="stat"><span>Time</span><b>${fmtT(b.best.ms)}</b></div></div>`:'')+
+      (open?`<div class="row"><button type="button" class="btn">${b&&b.won?'Play the boss round again':'Start the boss round'}</button></div>`:`<p class="hint">${icon('lock',14)} Start every lesson of this unit to unlock the boss round. ${st} of ${ls.length} lessons are started.</p>`);
+    const bt=$('.row .btn',c);if(bt)bt.onclick=run;}
+  function run(){const items=bossItems(sk);c.innerHTML=`<h3>${icon('crown',18)} Boss round</h3>`;const box=el('div');c.append(box);window.scrollTo({top:c.getBoundingClientRect().top+scrollY-140,behavior:RM?'auto':'smooth'});
+    runRound(box,{items,title:'Boss question',limit:BOSS_MS,done:(res,ms,to)=>{const n=res.filter(r=>r.ok).length,win=!to&&n>=BOSS_WIN,prev=Store.x('g','boss_'+sk)||{};
+      const best=!prev.best||n>prev.best.c||(n===prev.best.c&&ms<prev.best.ms)?{c:n,ms}:prev.best;Store.xs('g','boss_'+sk,{won:prev.won||(win?today():0),best});
+      if(win){toast(icon('crown',15)+' Boss beaten. '+S.name+' has a crown on its tab.');unitMarks();}afterChange();
+      view(`<p class="fb ${win?'ok':'bad'}">${win?`<b>You beat the boss round:</b> ${n} of ${items.length} correct in ${fmtT(ms)}.`:(to?'<b>The time is up.</b> ':`<b>${n} of ${items.length} correct.</b> You need ${BOSS_WIN}. `)+'The questions that you missed are now in spaced repetition. Try again when you are ready.'}</p>`);}});}
+  view();}
+const unitLabel=u=>icon(u,15)+SUBJ[u].name+(bossWon(u)?`<span class="bossmk" title="Boss round beaten">${icon('crown',14)}</span>`:'');
+function unitMarks(){const S=SUBJECTS.find(s=>s.units.includes(curS));if(!S)return;$$('#units [role=tab]').forEach((b,i)=>{if(S.units[i])b.innerHTML=unitLabel(S.units[i]);});}
+
+/* ----- speed rounds: race your own best time ----- */
+function speed(host,name,o){const box=el('div',{class:'speed'});host.append(box);const key='spd_'+((host.closest('.lesson')||{}).id||'x')+'_'+name;let raf=0;
+  const best=()=>{const v=Store.w(key);return v&&v.s;};
+  function idle(msg){cancelAnimationFrame(raf);const b=best();box.innerHTML=`<div class="row"><button type="button" class="btn sm">${icon('bolt',14)}Speed round</button><span class="hint">${msg?msg+' ':''}${b?'Your best time: <b>'+fmtS(b)+'</b>.':o.intro||'Race your own best time.'}</span></div>`;$('button',box).onclick=go;}
+  function go(){const its=o.items();let i=0,miss=0;const t0=performance.now();
+    const tick=()=>{if(!box.isConnected)return;const t=$('[data-clock]',box);if(t)t.textContent=fmtS(performance.now()-t0);raf=requestAnimationFrame(tick);};
+    const show=()=>{const x=its[i];box.innerHTML=`<div class="qh"><b>${o.title}: ${i+1} of ${its.length}</b><span class="score" data-clock>${fmtS(performance.now()-t0)}</span></div>${x.q}<div class="ops">${x.o.map((t,j)=>`<button type="button" class="op" data-j="${j}">${t}</button>`).join('')}</div><div class="row"><button type="button" class="btn sm ghost" data-stop>Stop</button></div>`;
+      $$('.op',box).forEach(b=>b.onclick=()=>{if(+b.dataset.j===x.a){i++;i<its.length?show():done();}else{miss++;b.classList.add('bad');b.disabled=true;fx(b,'shake');}});$('[data-stop]',box).onclick=()=>{o.on&&o.on(null);idle('Stopped.');};o.on&&o.on(x);};
+    const done=()=>{cancelAnimationFrame(raf);o.on&&o.on(null);const ms=Math.round(performance.now()-t0),b=best(),nb=!b||ms<b;if(nb)Store.wSet(key,{s:ms});if(b&&ms<b)award('speed');markStudy();afterChange();
+      idle(`Time: <b>${fmtS(ms)}</b> with ${miss} ${miss===1?'mistake':'mistakes'}.${nb?(b?' This is a new best time.':''):''}`);};
+    show();tick();}
+  idle();}
+
+/* ----- badges: each one stands for something that you learned or practised ----- */
+const hsPerfect=(sk,t)=>{const v=Store.w('hs_'+sk+'-'+LX(sk,t));return !!v&&v.d===0;};
+const chCount=()=>Store.xk('g').filter(k=>k.startsWith('ch_')&&Store.x('g',k).ok).length;
+const BADGES=[
+  {id:'master1',ic:'check',n:'First mastery',d:'Master a lesson: answer all of its questions correctly on two different days.',test:()=>allLessons().some(x=>x.lv===3)},
+  {id:'prac5',ic:'target',n:'Five lessons practised',d:'Answer every question of 5 lessons correctly.',test:()=>allLessons().filter(x=>x.lv>=2).length>=5},
+  {id:'unitM',ic:'star',n:'Unit mastered',d:'Master every lesson of one unit.',test:()=>UORDER.some(sk=>unitLessons(sk).every(x=>x.lv===3))},
+  {id:'comp10',ic:'comp',n:'Component method',d:'Solve 10 problems in “2-D: components” with the component method.',test:()=>gN('cnt_mom_'+LX('mom','2-D: components'))>=10},
+  {id:'neuron0',ic:'ns',n:'Neuron map',d:'Place all parts of the neuron in “Drag labels” with no mistakes.',test:()=>hsPerfect('ns','The neuron')},
+  {id:'brain0',ic:'ns',n:'Brain map',d:'Place all regions of the brain with no mistakes.',test:()=>hsPerfect('ns','Brain and CNS')},
+  {id:'eye0',ic:'sn',n:'Eye map',d:'Place all parts of the eye with no mistakes.',test:()=>hsPerfect('sn','The eye')},
+  {id:'ear0',ic:'sn',n:'Ear map',d:'Place all parts of the ear with no mistakes.',test:()=>hsPerfect('sn','The ear')},
+  {id:'combo10',ic:'bolt',n:'Ten in a row',d:'Answer 10 questions correctly in a row.',test:()=>gN('comboBest')>=10},
+  {id:'stuck',ic:'reset',n:'It stuck',d:'Answer a missed question correctly after 1, 3 and 7 days, so it leaves spaced repetition.',test:()=>gN('srOut')>=1},
+  {id:'chall',ic:'star',n:'Challenge solved',d:'Solve a challenge problem.',test:()=>chCount()>=1},
+  {id:'boss',ic:'crown',n:'Boss beaten',d:'Beat the boss round of a unit.',test:()=>UORDER.some(bossWon)},
+  {id:'examPB',ic:'exam',n:'Faster exam',d:'Beat your best unit exam time with the same or a better score.',test:()=>false},
+  {id:'speed',ic:'bolt',n:'New best time',d:'Beat your own best time in a speed round.',test:()=>false},
+  {id:'daily5',ic:'cal',n:'Daily habit',d:'Finish 5 daily challenges.',test:()=>gN('dailyN')>=5},
+  {id:'week',ic:'cal',n:'Weekly goal',d:'Study on 4 days in one week.',test:()=>totalWeeksMet()>=1}];
+function award(id){const got=Object.assign({},gv('badges')||{});if(got[id])return;got[id]=today();gset('badges',got);const b=BADGES.find(x=>x.id===id);if(b)toast(icon('medal',15)+' Badge earned: '+b.n);}
+function checkBadges(){const got=gv('badges')||{};BADGES.forEach(b=>{if(!got[b.id]){let ok=false;try{ok=b.test();}catch(e){}if(ok)award(b.id);}});}
+
+/* ----- experience points: most of them come from mastery ----- */
+function xpState(){const all=allLessons(),np=all.filter(x=>x.lv>=2).length,nm=all.filter(x=>x.lv===3).length,nc=chCount(),nb=UORDER.filter(bossWon).length,nd=gN('dailyN'),nw=totalWeeksMet();
+  const rows=[['Lessons practised',np+' × 20',np*20],['Lessons mastered',nm+' × 30',nm*30],['Challenge problems solved',nc+' × 25',nc*25],['Boss rounds beaten',nb+' × 50',nb*50],['Daily challenges done',nd+' × 10',nd*10],['Weeks with the goal met',nw+' × 15',nw*15]];
+  return {rows,xp:rows.reduce((s,r)=>s+r[2],0)};}
+const lvFor=xp=>{let n=1;while(xp>=50*n*(n+1))n++;return n;};
+
+/* ----- daily challenge: 5 questions from due questions, mastery checks and weak lessons ----- */
+function pickDaily(){const now=Date.now(),td=today(),pick=[],seen=new Set(),add=id=>{if(pick.length<5&&!seen.has(id)&&qItem(id)){seen.add(id);pick.push(id);}};
+  shuffle(Store.srAll().filter(([,e])=>e.d<=now).map(([k])=>k)).slice(0,3).forEach(add);
+  const m2=[],weak=[];allLessons().forEach(x=>{if(!x.lv)return;SUBJ[x.sk].lessons[x.L].qz.forEach((_,j)=>{const id=x.sk+'_'+x.L+'_'+j,d=okDays(id);if(d.size===1&&!d.has(td))m2.push(id);});weak.push(x);});
+  shuffle(m2).slice(0,2).forEach(add);
+  const ids=x=>SUBJ[x.sk].lessons[x.L].qz.map((_,j)=>x.sk+'_'+x.L+'_'+j);
+  weak.sort((a,b)=>a.ok1/a.n-b.ok1/b.n).forEach(x=>shuffle(ids(x).filter(id=>!okDays(id).size)).slice(0,2).forEach(add));
+  shuffle(weak.flatMap(ids)).forEach(add);if(pick.length<5)shuffle(allLessons().flatMap(ids)).forEach(add);
+  return shuffle(pick);}
+let HOME_BUSY=0;
+function dailyCard(g){const c=card(g,'','','w7'),st=()=>{const d=Store.x('g','daily');return d&&d.day===today()?d:null;};
+  function view(){const d=st();
+    if(d&&d.res.length>=d.ids.length){const n=d.res.filter(Boolean).length;c.innerHTML=`<h3>${icon('cal',18)} Daily challenge</h3><div class="rv-top">${ringHTML()}<div><p style="font-size:1.3rem;font-weight:700;margin:0">Done for today</p><p>${n} of ${d.ids.length} correct. A new set of 5 questions is ready tomorrow.</p><p class="hint">Daily challenges done: ${gN('dailyN')}.</p></div></div>`;setRing(c,n/d.ids.length,'correct');return;}
+    const k=d?d.res.length:0;c.innerHTML=`<h3>${icon('cal',18)} Daily challenge</h3><p>${k?`You answered ${k} of 5. Continue where you stopped.`:'Five mixed questions from your due questions, your mastery checks and your weak lessons. It takes about 3 minutes, and then you are done for today.'}</p><div class="row"><button type="button" class="btn">${k?'Continue':'Start the daily challenge'}</button><span class="hint">${5-k} ${5-k===1?'question':'questions'}</span></div>`;
+    $('.btn',c).onclick=run;}
+  function run(){let d=st();if(!d){d={day:today(),ids:pickDaily(),res:[]};Store.xs('g','daily',d);}
+    const items=d.ids.slice(d.res.length).map(qItem).filter(Boolean);HOME_BUSY=1;c.innerHTML=`<h3>${icon('cal',18)} Daily challenge</h3>`;const box=el('div');c.append(box);
+    runRound(box,{items,offset:d.res.length,total:d.ids.length,step:res=>{const dd=st()||d;Store.xs('g','daily',{day:dd.day,ids:dd.ids,res:dd.res.concat(res[res.length-1].ok)});},
+      done:()=>{HOME_BUSY=0;const dd=st();if(dd&&dd.res.length>=dd.ids.length&&!dd.fin){Store.xs('g','daily',Object.assign({},dd,{fin:1}));Store.xs('g','dailyN',{n:gN('dailyN')+1});toast(icon('cal',15)+' Daily challenge done. See you tomorrow.');}afterChange();view();}});}
+  view();}
+function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily');if(b)b.classList.toggle('tdue',!(d&&d.day===today()&&d.fin));}
+
+/* ----- the Today page ----- */
+function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+  $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
+  if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY)homeRender(L);});}
+  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+function homeRender(L){HOME_BUSY=0;const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
+  L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv}</small></div></header><div class="grid"></div>`;
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);badgeCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));}
+function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
+  const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
+    <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');}
+function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const next=all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv).slice(0,3);
+  const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two different days.</p>`+
+    (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${LVN[x.lv]}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
+  $$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,L]=b.dataset.go.split('_');goLesson(sk,+L);});}
+function levelCard(g,xs,lv,lo,hi){const c=card(g,'Level '+lv,`<div class="bar2" style="height:12px"><i class="b2" data-w="${100*(xs.xp-lo)/(hi-lo)}"></i></div><p><b>${xs.xp} XP</b> · ${hi-xs.xp} XP to level ${lv+1}</p>
+  <table class="xpt">${xs.rows.map(r=>`<tr><td>${r[0]}</td><td class="hint">${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('')}</table><p class="hint">Most XP comes from mastery, so your level shows what you know.</p>`,'half');grow(c);}
+function mapCard(g){const c=card(g,'Progress map','<p class="hint">Each circle is a lesson. It fills in as you go from Learning to Practised to Mastered. The crown at the end is the boss round. Select a circle to open it.</p><div class="pmap"></div>'),pm=$('.pmap',c);
+  UORDER.forEach(sk=>{const ls=unitLessons(sk),rv=SUBJ[sk].lessons.findIndex(l=>l.rv),row=el('div',{class:'pm-u'},`<div class="pm-h">${icon(sk,16)}${SUBJ[sk].name}<span class="hint">${ls.filter(x=>x.lv===3).length} of ${ls.length} mastered</span></div><div class="pm-path"></div>`),p=$('.pm-path',row);
+    ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+LVN[x.lv];
+      const n=el('button',{type:'button',class:'pm-n','data-lv':x.lv,style:'--p:'+(x.ok1/x.n),'aria-label':t,title:t},icon(x.lv===3?'check':lessonIcon(sk,x.L),16));n.onclick=()=>goLesson(sk,x.L);p.append(n);});
+    p.append(el('i',{class:'pm-l'+(ls.every(x=>x.lv>=2)?' on':'')}));const b=bossWon(sk),bn=el('button',{type:'button',class:'pm-n boss'+(b?' won':''),'aria-label':'Boss round: '+(b?'beaten':'not beaten yet'),title:'Boss round'},icon('crown',17));
+    bn.onclick=()=>goLesson(sk,rv);p.append(bn);pm.append(row);});}
+function badgeCard(g){const got=gv('badges')||{},n=BADGES.filter(b=>got[b.id]).length;
+  card(g,`Badges <span class="hint" style="font-weight:500">${n} of ${BADGES.length}</span>`,`<div class="badges">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bic">${icon(got[b.id]?b.ic:'lock',18)}</span><div><b>${b.n}</b><span>${b.d}</span>${got[b.id]?`<span class="bdate">Earned ${fmtDay(got[b.id])}</span>`:''}</div></div>`).join('')}</div>`);}
+function goLesson(sk,L){const ti=SUBJECTS.findIndex(s=>s.units.includes(sk));curU[SUBJECTS[ti].k]=sk;curL[sk]=L;tabSeg.set(ti);showTab(ti);}
+
+/* ----- challenge problems: one for each lesson, unlocked by mastery ----- */
+const CH={
+mom:[
+  {q:'A 7.26 kg shot put moves at 2.50 m/s. A 0.160 kg hockey puck has the same momentum. Calculate the speed of the puck in km/h.',n:408,u:'km/h',tol:.02,w:'p = (7.26)(2.50) = 18.15 kg·m/s. v = p / m = 18.15 / 0.160 = 113.4 m/s. 113.4 m/s × 3.6 = 408 km/h.'},
+  {q:'A 0.145 kg baseball arrives at 38.0 m/s. It leaves the bat at 46.0 m/s in the opposite direction. The contact time is 1.20 ms. Calculate the magnitude of the average force of the bat on the ball.',n:10150,u:'N',tol:.02,w:'Take the direction away from the bat as positive. Δp = (0.145)(46.0) − (0.145)(−38.0) = 12.18 kg·m/s. F = Δp / Δt = 12.18 / 0.00120 = 1.02 × 10⁴ N.'},
+  {q:'A 60.0 kg skater holds a 5.00 kg ball and stands at rest on ice. She throws the ball forward at 12.0 m/s. Then she catches a second 5.00 kg ball that moves toward her (backward) at 8.00 m/s. Calculate her final speed.',n:1.54,u:'m/s',tol:.02,w:'Throw: 0 = (60.0)v + (5.00)(12.0), thus v = −1.00 m/s. Catch: (60.0)(−1.00) + (5.00)(−8.00) = (65.0)v′, thus v′ = −1.54 m/s. Her speed is 1.54 m/s backward.'},
+  {q:'A 2.0 kg puck moves East at 3.0 m/s. It gets an impulse of 8.0 N·s North. Calculate the direction of its final momentum, in degrees North of East.',n:53.1,u:'°',tol:.01,w:'p before = 6.0 kg·m/s [E]. Add the impulse tip to tail: p after = 6.0 [E] + 8.0 [N]. θ = tan⁻¹(8.0 / 6.0) = 53.1° N of E. The magnitude is 10.0 kg·m/s.'},
+  {q:'A 3.0 kg object at rest explodes into three pieces. A 1.2 kg piece moves East at 10 m/s. A 1.0 kg piece moves North at 8.0 m/s. Calculate the speed of the third piece.',n:18.0,u:'m/s',tol:.02,w:'The total momentum stays zero. Third piece: m = 0.80 kg, p<sub>x</sub> = −12 kg·m/s, p<sub>y</sub> = −8.0 kg·m/s. p = √(12² + 8.0²) = 14.4 kg·m/s. v = 14.4 / 0.80 = 18.0 m/s, toward the South-West.'},
+  {q:'A 12.0 g bullet hits a 2.50 kg wooden block that hangs on strings, and stays in the block. The block swings up 9.50 cm. Calculate the speed of the bullet before the collision.',n:286,u:'m/s',tol:.02,w:'Step 2 first (energy after the collision): v = √(2gh) = √(2 × 9.81 × 0.0950) = 1.365 m/s. Step 1 (momentum in the collision): (0.0120)v<sub>b</sub> = (2.512)(1.365), thus v<sub>b</sub> = 286 m/s. You cannot use energy for the collision, because it is inelastic.'},
+  {q:'A 0.250 kg cart moves at 2.00 m/s and hits a 0.500 kg cart at rest. The collision is elastic and head-on. Calculate the speed of the 0.250 kg cart after the collision (it moves back).',n:0.667,u:'m/s',tol:.02,w:'Use momentum and kinetic energy together. For an elastic head-on collision with a target at rest: v₁′ = (m₁ − m₂)/(m₁ + m₂) × v₁ = (−0.250 / 0.750)(2.00) = −0.667 m/s. The other cart moves at 1.33 m/s. Check: E<sub>k</sub> = 0.500 J before and after.'}],
+eq:[
+  {q:C('A closed flask contains N2O4(g) <=> 2NO2(g) at equilibrium. You add a small amount of N2O4 that contains the isotope nitrogen-15. After a long time, where is the nitrogen-15?'),o:[C('In both N2O4 and NO2, because the forward and reverse reactions continue at equilibrium'),C('Only in N2O4, because the reactions stop at equilibrium'),C('Only in NO2, because the new N2O4 reacts completely'),'Nowhere, because isotopes do not take part in reactions'],a:0,w:'Equilibrium is dynamic. The forward and reverse reactions continue at equal rates, thus the labelled atoms move into both substances.'},
+  {q:C('For H2(g) + I2(g) <=> 2HI(g), K<sub>c</sub> = 50.0. A flask contains [H2] = 0.100 mol/L, [I2] = 0.100 mol/L and [HI] = 0.500 mol/L. Which statement is correct?'),o:['Q = 25.0, thus the system shifts to the right and makes more HI','Q = 25.0, thus the system shifts to the left','Q = 50.0, thus the system is at equilibrium','Q = 0.0400, thus the system shifts to the left'],a:0,w:C('Q = [HI]^2 / ([H2][I2]) = 0.250 / 0.0100 = 25.0. Q < K, thus the forward reaction is faster until Q = K.')},
+  {q:C('For H2(g) + I2(g) <=> 2HI(g), K<sub>c</sub> = 50.0. You put 1.00 mol of H2 and 1.00 mol of I2 in a 2.00 L flask. Calculate [HI] at equilibrium.'),n:0.780,u:'mol/L',tol:.02,w:'I: 0.500, 0.500, 0. C: −x, −x, +2x. E: 0.500 − x, 0.500 − x, 2x. (2x)² / (0.500 − x)² = 50.0. Take the square root: 2x / (0.500 − x) = 7.07, thus x = 0.390 and [HI] = 2x = 0.780 mol/L.'},
+  {q:C('N2(g) + 3H2(g) <=> 2NH3(g), ΔH = −92 kJ. Which change increases both the rate and the yield of NH3?'),o:['Decrease the volume (increase the pressure)','Increase the temperature','Add a catalyst','Remove some N2'],a:0,w:'A smaller volume increases the collision rate and shifts the equilibrium to the side with fewer moles of gas (4 → 2). A higher temperature increases the rate but shifts this exothermic reaction to the left. A catalyst does not change the yield.'},
+  {q:'Which substance is amphiprotic and is also the conjugate base of a weak acid?',o:[C('HCO3^-'),C('Cl^-'),C('NH4^+'),C('CO3^2-')],a:0,w:C('HCO3^- can donate a proton (to make CO3^2-) or accept one (to make H2CO3). H2CO3 is a weak acid. Cl^- is the conjugate base of a strong acid. NH4^+ is only an acid here, and CO3^2- is only a base.')},
+  {q:C('HSO4^- + HPO4^2- <=> SO4^2- + H2PO4^-. K<sub>a</sub>(HSO4^-) = 1.0 × 10^-2 and K<sub>a</sub>(H2PO4^-) = 6.2 × 10^-8. Calculate K for this reaction.'),n:1.6e5,tol:.04,w:C('K = K<sub>a</sub>(acid on the left) / K<sub>a</sub>(conjugate acid on the right) = 1.0 × 10^-2 / 6.2 × 10^-8 = 1.6 × 10^5. K > 1, thus the products are favoured: the stronger acid reacts with the stronger base.')},
+  {q:C('Calculate the pH of 0.150 mol/L NH3(aq). K<sub>b</sub> = 1.8 × 10^-5.'),n:11.22,abs:.02,tol:0,w:C('[OH^-] = √(K<sub>b</sub> × c) = √(1.8 × 10^-5 × 0.150) = 1.64 × 10^-3 mol/L. pOH = 2.78. pH = 14.00 − 2.78 = 11.22. The approximation is valid, because 1.64 × 10^-3 is less than 5% of 0.150.')},
+  {q:'A solution is yellow in methyl orange, yellow in bromothymol blue and colourless in phenolphthalein. What is the pH range of the solution?',o:['Between 4.4 and 6.0','Between 3.2 and 4.4','Between 6.0 and 7.6','Between 8.2 and 10.0'],a:0,w:'Methyl orange is yellow above pH 4.4. Bromothymol blue is yellow below pH 6.0. Phenolphthalein is colourless below 8.2, which agrees. Thus 4.4 < pH < 6.0.'},
+  {q:C('A 25.0 mL sample of H3PO4(aq) is titrated with 0.100 mol/L NaOH(aq). The second equivalence point is at 37.6 mL. Calculate the concentration of the H3PO4.'),n:0.0752,u:'mol/L',tol:.02,w:C('n(OH^-) = 0.100 × 0.0376 = 3.76 × 10^-3 mol. At the second equivalence point each H3PO4 has lost 2 protons, thus n(H3PO4) = 3.76 × 10^-3 / 2 = 1.88 × 10^-3 mol. c = 1.88 × 10^-3 / 0.0250 = 0.0752 mol/L. The first equivalence point is at 18.8 mL.')}],
+ns:[
+  {q:'A person cannot move a leg but can still feel touch on it. Which part of the nervous system is most likely damaged?',o:['The motor (efferent) neurons of the somatic system','The sensory (afferent) neurons from the leg','The sympathetic nerves','The sensory receptors in the skin'],a:0,w:'Touch arrives, thus the sensory path works. The commands to the skeletal muscles do not arrive, thus the somatic motor path is damaged.'},
+  {q:'Two axons have the same diameter. Axon A has myelin and axon B does not. Why does axon A conduct an impulse faster?',o:['The impulse jumps from one node of Ranvier to the next','Axon A has more sodium ions','The myelin makes the impulse stronger','Axon A has no refractory period'],a:0,w:'Myelin insulates the axon. Ion exchange occurs only at the nodes of Ranvier, thus the impulse jumps between them (saltatory conduction).'},
+  {q:'A doctor taps a patient\'s knee. The leg kicks, but the patient does not feel the tap. Where is the most likely break?',o:['In the pathway in the spinal cord that carries the signal up to the brain','In the sensory neuron from the knee','In the motor neuron to the thigh muscle','In the thigh muscle'],a:0,w:'The kick shows that the whole reflex arc works: receptor, sensory neuron, spinal cord, motor neuron and muscle. Only the signal to the brain is missing.'},
+  {q:'A drug blocks only the voltage-gated K⁺ channels of a neuron. How does this change the action potential?',o:['Depolarization occurs, but repolarization is much slower','No depolarization occurs','The resting potential becomes −90 mV','The action potential becomes faster'],a:0,w:'Na⁺ channels still open, thus depolarization occurs. Repolarization needs K⁺ to diffuse out through the K⁺ channels, thus it is much slower and the action potential lasts longer.'},
+  {q:'A myelinated sensory neuron and a myelinated motor neuron conduct at 120 m/s. The path from the toe to the spinal cord is 1.10 m, and the path back is also 1.10 m. The impulse crosses 2 synapses, and each takes 0.50 ms. Calculate the total reflex time.',n:19.3,u:'ms',tol:.02,w:'Time in the axons = 2.20 m / 120 m/s = 0.0183 s = 18.3 ms. Synapses = 2 × 0.50 = 1.0 ms. Total = 19.3 ms.'},
+  {q:'An insecticide blocks cholinesterase. What happens at a synapse between a motor neuron and a muscle?',o:['Acetylcholine stays in the cleft, thus the muscle stays stimulated','No acetylcholine is released, thus the muscle relaxes','Calcium cannot enter the axon terminal','The muscle cannot depolarize'],a:0,w:'Cholinesterase breaks down acetylcholine. Without it, acetylcholine continues to bind to the receptors, thus the muscle contracts again and again (spasms).'},
+  {q:'After a stroke, a person speaks normally but has problems with balance and with fine, coordinated movements. Which region is most likely damaged?',o:['Cerebellum','Medulla oblongata','Occipital lobe','Hypothalamus'],a:0,w:'The cerebellum coordinates muscle movements and balance.'},
+  {q:'A person is frightened. Which list is correct for the sympathetic response?',o:['Pupils dilate, heart rate increases, digestion slows, the adrenal medulla releases epinephrine','Pupils constrict, heart rate decreases, digestion speeds up','Pupils dilate, heart rate decreases, digestion speeds up','Pupils constrict, heart rate increases, the bladder contracts'],a:0,w:'The sympathetic system prepares the body for “fight or flight”. Digestion slows, and epinephrine from the adrenal medulla extends the response.'}],
+sn:[
+  {q:'You put one hand in hot water and one hand in cold water. After a minute, you put both hands in lukewarm water. The hand from the hot water feels cold. Why?',o:['The receptors adapted, and the brain compares the new stimulus with the old one','The lukewarm water has two temperatures','The cold receptors are damaged by the hot water','The impulses from the two hands are the same'],a:0,w:'Sensory adaptation: the receptors in each hand adjusted to their first water. The brain reads the change, not the absolute temperature.'},
+  {q:'A disease damages only the cones in the fovea. Which problem is most likely?',o:['Poor detailed central vision and poor colour vision in bright light','Night blindness in the whole visual field','No peripheral vision','A larger blind spot'],a:0,w:'The fovea has the most cones. Cones give detail and colour in bright light. Rods, in the rest of the retina, still work in dim light.'},
+  {q:'Why do you not notice your blind spot when you look at the world with both eyes open?',o:['The blind spot of each eye is in a different part of the visual field, and the brain fills in the gap','The optic disc has a small number of rods','The lens moves the image away from the blind spot','The blind spot is only in the left eye'],a:0,w:'The other eye sees the missing area. With one eye, the brain fills in the gap with the surrounding pattern.'},
+  {q:'A person\'s eyeball is too short. Where does the image form, and which lens corrects it?',o:['Behind the retina; a converging (convex) lens','In front of the retina; a diverging (concave) lens','Behind the retina; a diverging (concave) lens','In front of the retina; a converging (convex) lens'],a:0,w:'This is hyperopia (farsightedness). A converging lens bends the light more, thus the image moves forward onto the retina.'},
+  {q:'During the descent of a plane, a person\'s Eustachian tube stays blocked. Why does the ear hurt and the hearing decrease?',o:['The air pressure in the middle ear is less than outside, thus the tympanic membrane bulges in and cannot vibrate freely','The cochlea fills with air','The semicircular canals stop working','The ossicles break'],a:0,w:'The Eustachian tube makes the pressure in the middle ear equal to the pressure outside. When it is blocked, the pressure difference pushes on the eardrum.'}]};
+/* a challenge belongs to the lessons that have questions, in order */
+Object.keys(CH).forEach(sk=>{const a=CH[sk],m={};let k=0;SUBJ[sk].lessons.forEach((le,L)=>{if(le.qz&&!le.rv&&a[k])m[L]=a[k++];});CH[sk]=m;});
+
 boot();
 
 </script>
