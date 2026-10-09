@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Unit study site: Momentum, Equilibrium, Nervous system, Senses</title>
+<title>Study site: Physics, Biology, Chemistry, Math</title>
 <style>
 @property --a1{syntax:'<color>';inherits:true;initial-value:#736f72}
 @property --a2{syntax:'<color>';inherits:true;initial-value:#c3baba}
@@ -71,6 +71,8 @@ body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#736f72}
 [data-mode="dark"] body[data-s="ns"]{--a1:#6a6468;--a2:#9a8f97;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="sn"]{--a1:#676366;--a2:#736f72;--a3:#c3baba}
+body[data-s="math"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
+[data-mode="dark"] body[data-s="math"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
 
 /* one gradient layer, moved with transform only */
 .bg{position:fixed;inset:-16%;z-index:-1;pointer-events:none;will-change:transform;
@@ -120,6 +122,10 @@ body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
 .pr{display:inline-block;width:11px;height:11px;border-radius:50%;margin-left:.5em;vertical-align:-1px;background:conic-gradient(currentColor calc(var(--p,0)*1turn),color-mix(in srgb,currentColor 20%,transparent) 0);transition:--p .5s}
 
 main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;overflow-x:clip}
+/* unit switcher: the units of the selected subject */
+.units{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 6px 6px}
+.ulabel{font-size:.76rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.units .seg button{display:flex;align-items:center;gap:.45em}
 .lhead{padding:10px 6px 18px;display:flex;align-items:center;justify-content:space-between;gap:28px}
 .lhead>div:first-child{min-width:0}
 .emblem{flex:none;display:grid;justify-items:center;gap:7px;color:var(--at)}
@@ -443,7 +449,7 @@ p.legend>span{white-space:nowrap}
   <nav class="chips glass" id="chips" aria-label="Lessons"></nav>
 </header>
 <div id="sen" style="position:absolute;top:0;height:60px;width:1px"></div>
-<main id="main"></main>
+<main id="main"><div class="units" id="units" hidden></div></main>
 <script>
 'use strict';
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -791,7 +797,11 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" placeholder="Typ
 
 /* ---------- app shell ---------- */
 const SUBJ={},ORDER=['mom','eq','ns','sn'],curL={mom:0,eq:0,ns:0,sn:0};let curS='mom',chipBtns=[],tabSeg=null;
-function chipProgress(){const S=SUBJ[curS];S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;let a=0,c=0;le.qz.forEach((_,j)=>{const e=Store.get(curS+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});r.style.setProperty('--p',a/le.qz.length);chipBtns[i].title=a+' of '+le.qz.length+' questions answered';
+/* the top tabs are subjects. Each unit (mom, eq, ns, sn) keeps its own lessons and saved answers. */
+const SUBJECTS=[{k:'phy',name:'Physics',units:['mom']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:[]}];
+const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
+const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
+function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;let a=0,c=0;le.qz.forEach((_,j)=>{const e=Store.get(curS+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});r.style.setProperty('--p',a/le.qz.length);chipBtns[i].title=a+' of '+le.qz.length+' questions answered';
     const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',c/le.qz.length);$('small',em).textContent=c+' / '+le.qz.length+' correct';}});}
 function showLesson(i,o={}){
   const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i];
@@ -806,14 +816,35 @@ function showLesson(i,o={}){
   L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   const cb=chipBtns[i],nav=$('#chips');if(cb)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:o.first||RM?'auto':'smooth'});
-  if(!o.first)window.scrollTo({top:0});Store.setPos({s:curS,l:Object.assign({},curL)});if(chipBtns.length===S.lessons.length)chipProgress();
+  if(!o.first)window.scrollTo({top:0});savePos();if(chipBtns.length===S.lessons.length)chipProgress();
 }
-function showSubject(k,first){
+function showUnit(k,first){
+  $('#units').hidden=false;$('#chips').hidden=false;
   const run=()=>{curS=k;document.body.dataset.s=k;_col=null;const nav=$('#chips');nav.innerHTML='';
     chipBtns=SUBJ[k].lessons.map((le,i)=>{const b=el('button',{type:'button',role:'tab'},icon(le.ic||LIC[le.t]||k,14)+le.t+(le.qz?'<i class="pr"></i>':''));b.onclick=()=>showLesson(i);nav.append(b);return b;});
     showLesson(curL[k],{first});chipProgress();};
   run();
   setTimeout(()=>{_col=null;redrawAll();},960);
+}
+function showTab(i,first){
+  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';
+  if(!S.units.length){emptySubject(S);return;}
+  host.append(el('span',{class:'ulabel'},S.name+(S.units.length>1?' units':' unit')));
+  const us=seg(host,S.units.map(u=>icon(u,15)+SUBJ[u].name),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
+  const j=Math.max(0,S.units.indexOf(curU[S.k]));curU[S.k]=S.units[j];if(j)us.set(j);
+  showUnit(S.units[j],first);
+}
+/* a subject with no units yet: an empty page, no lesson chips */
+function emptySubject(S){
+  curS=S.k;document.body.dataset.s=S.k;chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+  $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
+  const id=S.k+'-empty';let L=document.getElementById(id);
+  if(!L){const n=S.name.toLowerCase();
+    L=el('article',{class:'lesson',id,role:'tabpanel'},`<header class="lhead"><div><h1>${S.name}</h1><p class="lede">There are no ${n} units yet.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(S.k,36)}</div></div><small></small></div></header><div class="grid"></div>`);
+    card($('.grid',L),'Units will show here',`<p>When you add a ${n} unit, its lessons, questions, formulas and review show in this tab.</p><p class="hint">To study now, select Physics, Biology or Chemistry at the top of the page.</p>`);
+    $('#main').append(L);}
+  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
+  window.scrollTo({top:0});savePos();
 }
 function boot(){
   document.documentElement.lang='en';
@@ -825,11 +856,13 @@ function boot(){
   const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();setTimeout(()=>{_col=null;redrawAll();},960);};
   let m0='light';try{m0=localStorage.getItem('unit-study-site.mode')||'light';}catch(e){}setMode(m0);mb.onclick=()=>setMode(document.documentElement.dataset.mode==='dark'?'light':'dark',true);
   const p=Store.pos();if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
-  const s0=p&&SUBJ[p.s]?p.s:'mom';
-  tabSeg=seg($('#tabs'),ORDER.map(k=>`${icon(k,17)}<span class="lg">${SUBJ[k].name}</span><span class="sm">${SUBJ[k].short}</span>`),i=>showSubject(ORDER[i]),'main');
-  if(s0!=='mom')tabSeg.set(ORDER.indexOf(s0));
+  if(p&&p.u)SUBJECTS.forEach(s=>{if(s.units.includes(p.u[s.k]))curU[s.k]=p.u[s.k];});
+  const t0=Math.max(0,SUBJECTS.findIndex(s=>p&&(s.k===p.s||s.units.includes(p.s))));
+  if(p&&SUBJ[p.s])curU[SUBJECTS[t0].k]=p.s;
+  tabSeg=seg($('#tabs'),SUBJECTS.map(s=>`${icon(s.k,17)}<span class="lg">${s.name}</span><span class="sm">${s.short||s.name}</span>`),i=>showTab(i),'main');
+  if(t0)tabSeg.set(t0);
   arrowKeys($('#chips'),()=>chipBtns,()=>curL[curS]);
-  showSubject(s0,true);
+  showTab(t0,true);
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
   Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();});
@@ -1053,6 +1086,10 @@ const ICON={
   eq:'<path d="M4 9h15.5l-4-4.2"/><path d="M20 15H4.5l4 4.2"/>',
   ns:'<circle cx="8.2" cy="12" r="3.1"/><path d="M5.9 9.9 3.6 6.8M5.1 12H2M5.9 14.1l-2.3 3.1M9.2 9l1-3.4M11.3 12h7.2M18.5 12l3-2.6M18.5 12l3 2.6"/>',
   sn:'<path d="M2.2 12s3.6-6.3 9.8-6.3S21.8 12 21.8 12s-3.6 6.3-9.8 6.3S2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="2.9"/>',
+  phy:'<circle cx="12" cy="12" r="1.5"/><ellipse cx="12" cy="12" rx="9.5" ry="3.7"/><ellipse cx="12" cy="12" rx="9.5" ry="3.7" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="3.7" transform="rotate(120 12 12)"/>',
+  bio:'<path d="M7 2.5c0 5 10 4.5 10 9.5s-10 4.5-10 9.5M17 2.5c0 5-10 4.5-10 9.5s10 4.5 10 9.5M8.6 6.2h6.8M8.6 17.8h6.8"/>',
+  chem:'<path d="M9 3h6M10.3 3v6.2l-5.6 9.4A1.6 1.6 0 0 0 6.1 21h11.8a1.6 1.6 0 0 0 1.4-2.4l-5.6-9.4V3"/><path d="M7.2 15h9.6"/>',
+  math:'<path d="M17.5 4.5h-11l6.2 7.5-6.2 7.5h11"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
   moon:'<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"/>',
   up:'<path d="m6 14.5 6-6 6 6"/>',down:'<path d="m6 9.5 6 6 6-6"/>',left:'<path d="m14.5 6-6 6 6 6"/>',right:'<path d="m9.5 6 6 6-6 6"/>',
