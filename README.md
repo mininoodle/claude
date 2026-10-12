@@ -14,6 +14,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Chemistry | Equilibrium |
 | Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
+| Test | Build a test from any subjects and units, with optional confidence ratings and a revision section |
 
 ## Features
 

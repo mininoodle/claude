@@ -75,6 +75,8 @@ body[data-s="ff"]{--a1:#716b70;--a2:#b2b2b2;--a3:#9a8f97}
 [data-mode="dark"] body[data-s="ff"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
 body[data-s="lim"]{--a1:#6d676b;--a2:#c3baba;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="lim"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
+body[data-s="test"]{--a1:#6a6468;--a2:#b2b2b2;--a3:#9a8f97}
+[data-mode="dark"] body[data-s="test"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
 body[data-s="pr"]{--a1:#6f6a6d;--a2:#c3baba;--a3:#9a8f97}
 [data-mode="dark"] body[data-s="pr"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
 body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
@@ -189,6 +191,16 @@ blockquote.lq cite{display:block;margin-top:.45em;font:600 .8rem -apple-system,B
 .pkw.ok{background:var(--okb);box-shadow:inset 0 -2px 0 var(--ok)}.pkw.bad{background:var(--badb);box-shadow:inset 0 -2px 0 var(--bad)}.pkw.miss{box-shadow:inset 0 -2px 0 var(--ok)}
 .tiles.wide{grid-template-columns:1fr}
 .lim{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .2em 0 .05em;font-style:normal}.lim sub{font-size:.62em;line-height:1;white-space:nowrap}
+/* custom test */
+.ttree{display:grid;gap:10px}.tsub{padding:.5em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair)}
+.tsl{display:flex;align-items:center;gap:.5em;padding:.3em 0;cursor:pointer}.tsl input{width:18px;height:18px;accent-color:var(--a1);margin:0}.tul{padding-left:1.7em}
+.tsw{display:flex;align-items:flex-start;gap:12px;cursor:pointer;margin:.8em 0}.tsw input{position:absolute;opacity:0;width:0;height:0}
+.tsk{flex:none;width:44px;height:26px;border-radius:13px;background:color-mix(in srgb,var(--ink2) 30%,transparent);position:relative;transition:background .25s;margin-top:2px}.tsk::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .25s var(--spring)}
+.tsw input:checked+.tsk{background:var(--a1)}.tsw input:checked+.tsk::after{transform:translateX(18px)}.tsw input:focus-visible+.tsk{outline:3px solid var(--at);outline-offset:2px}
+.tsw small{display:block;color:var(--ink2);font-size:.86rem}
+.confrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:.8em 0 .2em}
+.q.needc .ops,.q.needc .num{opacity:.4;pointer-events:none}
+.q.needc::before{content:"Choose how sure you are before you answer.";display:block;font-size:.84rem;color:var(--at);font-weight:600;margin-bottom:.4em}
 /* answer combo */
 .combo{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;gap:.45em;padding:.5em 1em;border-radius:999px;font:700 .95rem ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at);pointer-events:none;opacity:0;transform:translateY(12px) scale(.9);transition:opacity .3s,transform .4s var(--spring)}
 .combo.on{opacity:1;transform:none}
@@ -883,7 +895,7 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" placeholder="Typ
 /* ---------- app shell ---------- */
 const SUBJ={},ORDER=['mom','ff','eq','ns','sn','lim','pr'],curL={mom:0,ff:0,eq:0,ns:0,sn:0,lim:0,pr:0};let curS='mom',chipBtns=[],tabSeg=null;
 /* the top tabs are subjects. Each unit (mom, eq, ns, sn) keeps its own lessons and saved answers. */
-const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom','ff']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:['lim']},{k:'la',name:'Language Arts',short:'LA',units:['pr']}];
+const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom','ff']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:['lim']},{k:'la',name:'Language Arts',short:'LA',units:['pr']},{k:'test',name:'Test',units:[],test:1}];
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
 function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
@@ -915,7 +927,7 @@ function showUnit(k,first){
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
 function showTab(i,first){
-  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';if(S.home){showHome();return;}
+  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';if(S.home){showHome();return;}if(S.test){showTest();return;}
   if(!S.units.length){emptySubject(S);return;}
   host.append(el('span',{class:'ulabel'},S.name+(S.units.length>1?' units':' unit')));
   const us=seg(host,S.units.map(unitLabel),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
@@ -1223,6 +1235,7 @@ const ICON={
   lvel:'<path d="M3 20c8 0 12-6 14-16"/><path d="M13 7l6-3 1 6"/>',
   lseq:'<circle cx="4" cy="18" r="1.5"/><circle cx="9" cy="11" r="1.5"/><circle cx="14" cy="8" r="1.5"/><circle cx="19" cy="7" r="1.5"/><path d="M2 5.5h20" stroke-dasharray="2 2.5"/>',
   lser:'<path d="M17 5H7l5 7-5 7h10"/>',
+  test:'<path d="M9 3h6v3H9z"/><path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 5 21h14a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 18 5h-1"/><path d="m8 13 2.5 2.5L16 10"/>',
   la:'<path d="M4 20l4.5-1.2L19.3 8a2.1 2.1 0 0 0-3-3L5.5 15.8Z"/><path d="M14.5 6.5l3 3"/>',
   pr:'<path d="M4 6h16M4 10h16M4 14h10M4 18h13"/>',
   dic:'<path d="M4 5.5h16v10H9.5L5 19.5v-4H4Z"/><path d="M8 9.5h8M8 12.5h5"/>',
@@ -4137,9 +4150,12 @@ function runRound(box,o){let i=0,over=false,tm=0;const res=[],t0=Date.now(),n=o.
   function ask(){const x=o.items[i];
     box.innerHTML=`<div class="qh"><b>${o.title||'Question'} ${off+i+1} of ${tot}</b>${o.limit?`<span class="score" data-t>${fmtT(o.limit-(Date.now()-t0))} left</span>`:`<span class="score" data-c>${res.filter(r=>r.ok).length} correct</span>`}</div>
       <div class="bar2" style="margin:.4em 0 .7em"><i class="b2" style="width:${100*(off+i)/tot}%"></i></div><p class="hint" style="margin:0">${SUBJ[x.sk].name} · ${SUBJ[x.sk].lessons[x.L].t}</p>`;
-    const nx=el('button',{type:'button',class:'btn',disabled:''},i+1<n?'Next question':'Finish');
-    box.append(qEl(x.it,'',null,e=>{if(over)return;res.push({x,ok:e.ok?1:0});onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L});srMark(x.id,!!e.ok);o.step&&o.step(res);
-      nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=res.filter(r=>r.ok).length+' correct';},true));
+    const nx=el('button',{type:'button',class:'btn',disabled:''},i+1<n?'Next question':'Finish');let conf=null;
+    if(o.conf){const cr=el('div',{class:'confrow'},`<span class="hint">How sure are you?</span>`+CONF.map(([k,nm,d])=>`<button type="button" class="chip" data-c="${k}" title="${d}">${nm}</button>`).join(''));box.append(cr);
+      $$('.chip',cr).forEach(b=>b.onclick=()=>{conf=b.dataset.c;$$('.chip',cr).forEach(x=>x.classList.toggle('on',x===b));q.classList.remove('needc');});}
+    const q=qEl(x.it,'',null,e=>{if(over)return;res.push({x,ok:e.ok?1:0,conf,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L});srMark(x.id,!!e.ok);o.step&&o.step(res);
+      nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=res.filter(r=>r.ok).length+' correct';},true);
+    if(o.conf)q.classList.add('needc');box.append(q);
     const row=el('div',{class:'row'});row.append(nx);box.append(row);nx.onclick=()=>{if(over)return;i++;i<n?ask():fin(false);};}
   ask();}
 
@@ -4316,6 +4332,78 @@ sn:[
   {q:'During the descent of a plane, a person\'s Eustachian tube stays blocked. Why does the ear hurt and the hearing decrease?',o:['The air pressure in the middle ear is less than outside, thus the tympanic membrane bulges in and cannot vibrate freely','The cochlea fills with air','The semicircular canals stop working','The ossicles break'],a:0,w:'The Eustachian tube makes the pressure in the middle ear equal to the pressure outside. When it is blocked, the pressure difference pushes on the eardrum.'}]};
 /* a challenge belongs to the lessons that have questions, in order */
 Object.keys(CH).forEach(sk=>{const a=CH[sk],m={};let k=0;SUBJ[sk].lessons.forEach((le,L)=>{if(le.qz&&!le.rv&&a[k])m[L]=a[k++];});CH[sk]=m;});
+
+/* ===================== custom test: choose subjects, units, length and confidence rating ===================== */
+const CONF=[['sure','Sure',"I know this"],['unsure','Unsure',"I think so"],['guess','Guess',"I am guessing"]];
+const CONFN={sure:'Sure',unsure:'Unsure',guess:'Guess'};
+let TEST=null,TBUSY=0;
+const testSetup=()=>Object.assign({units:{},n:20,conf:true},gv('tset')||{});
+function testUnits(){return SUBJECTS.filter(s=>s.units.length).map(s=>({s,units:s.units.filter(u=>SUBJ[u])}));}
+function testPool(units){const pool=[];units.forEach(sk=>{SUBJ[sk].lessons.forEach((le,L)=>{if(le.qz&&!le.rv)le.qz.forEach((it,j)=>pool.push({it,sk,L,id:sk+'_'+L+'_'+j}));});});return pool;}
+/* an even mix: take one question from each lesson in turn */
+function testPick(units,n){const groups=shuffle(units.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>le.qz&&!le.rv?shuffle(le.qz.map((it,j)=>({it,sk,L,id:sk+'_'+L+'_'+j}))):null).filter(Boolean))),out=[];let k=0;
+  while(out.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)out.push(a.pop());}return shuffle(out);}
+
+function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+  $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#test-0');
+  if(!L){L=el('article',{class:'lesson',id:'test-0',role:'tabpanel'});$('#main').append(L);testSetupPage(L);}
+  else if(!TBUSY)testSetupPage(L);
+  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+function testHead(L,title,lede){L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;return $('.grid',L);}
+
+function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence on each answer.'),st=testSetup();
+  const c=card(g,'1. Choose what to test','<p class="hint">Select a subject to include all of its units, or select single units.</p>','w7');
+  const tree=el('div',{class:'ttree'});c.append(tree);
+  const units=testUnits();if(!Object.keys(st.units).length)units.forEach(({units:us})=>us.forEach(u=>st.units[u]=1));
+  units.forEach(({s,units:us})=>{const row=el('div',{class:'tsub'}),all=el('label',{class:'tsl'},`<input type="checkbox"> <b>${icon(s.k,15)} ${s.name}</b>`),ul=el('div',{class:'tul'});row.append(all,ul);tree.append(row);
+    const boxes=us.map(u=>{const lb=el('label',{class:'tsl'},`<input type="checkbox" ${st.units[u]?'checked':''}> ${icon(u,14)} ${SUBJ[u].name} <span class="hint">${testPool([u]).length} questions</span>`);ul.append(lb);return [u,$('input',lb)];});
+    const sync=()=>{const n=boxes.filter(([,b])=>b.checked).length;const a=$('input',all);a.checked=n===boxes.length;a.indeterminate=n>0&&n<boxes.length;};
+    $('input',all).onchange=e=>{boxes.forEach(([u,b])=>{b.checked=e.target.checked;st.units[u]=b.checked?1:0;});sync();upd();};
+    boxes.forEach(([u,b])=>b.onchange=()=>{st.units[u]=b.checked?1:0;sync();upd();});sync();});
+  const c2=card(g,'2. Length and confidence','','w5');
+  const lenRow=el('div',{class:'ctl'}),len=ctl(lenRow,[{k:'n',l:'Questions',min:5,max:60,step:5,v:clamp(st.n,5,60)}],v=>{st.n=v.n;upd();});c2.append(lenRow);
+  const sw=el('label',{class:'tsw'},`<input type="checkbox" ${st.conf?'checked':''}><span class="tsk"></span><span><b>Rate my confidence</b><small>Before each answer, say whether you are sure, unsure or guessing. After the test, a revision section sorts your answers by confidence.</small></span></label>`);c2.append(sw);
+  $('input',sw).onchange=e=>{st.conf=e.target.checked;upd();};
+  const sum=el('p',{class:'note'}),row=el('div',{class:'row'}),go=el('button',{type:'button',class:'btn'},icon('play',15)+'Start the test');row.append(go);c2.append(sum,row);
+  const upd=()=>{gset('tset',st);const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]),pool=testPool(sel).length,n=Math.min(st.n,pool);
+    sum.innerHTML=sel.length?`<b>${n} questions</b> from ${sel.length} ${sel.length===1?'unit':'units'} (${pool} available)${st.conf?', with confidence ratings':''}.`:'Select at least one unit.';go.disabled=!sel.length||!n;};
+  go.onclick=()=>{const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]);testRun(L,testPick(sel,st.n),st.conf);};upd();
+  const last=gv('tlast');if(last){const r=card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
+}
+
+function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Rate your confidence, then answer.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  runRound(box,{items,title:'Question',conf,done:res=>testResults(L,res,conf)});stopBtn(c,L);}
+function stopBtn(c,L){const r=el('div',{class:'row',style:'justify-content:flex-end'}),b=el('button',{type:'button',class:'btn sm ghost'},'Stop this test');let armed=0;
+  b.onclick=()=>{if(!armed){armed=1;b.textContent='Select again to stop. Your answers so far are saved.';setTimeout(()=>{armed=0;b.textContent='Stop this test';},4000);return;}testSetupPage(L);};r.append(b);c.append(r);}
+
+/* ----- results and revision ----- */
+const CKEY=r=>r.ok?(r.conf==='sure'?'ok-sure':'ok-doubt'):(r.conf==='sure'?'bad-sure':r.conf==='guess'?'bad-guess':'bad-unsure');
+const CGROUP={'bad-sure':['Sure, but wrong','Study these first. You believed a wrong idea, thus the correct answer must replace it.','bad'],'bad-unsure':['Unsure and wrong','You felt the gap. Read the explanation, then try the question again.','bad'],'bad-guess':['Guessed and wrong','New material for you. Read the lesson before you try again.','bad'],'ok-doubt':['Right, but unsure or guessing','Correct, but not yet secure. One more look makes it stick.','info'],'ok-sure':['Sure and right','Secure knowledge. Nothing to revise here.','ok']};
+function testResults(L,res,conf){TBUSY=0;const n=res.length,c=res.filter(r=>r.ok).length,f=n?c/n:0,by={};
+  res.forEach(r=>{const b=by[r.x.sk]||(by[r.x.sk]=[0,0]);b[1]++;if(r.ok)b[0]++;});
+  const sw=res.filter(r=>CKEY(r)==='bad-sure').length;gset('tlast',{day:today(),c,n,u:Object.keys(by).length,conf:!!conf,sw});markStudy();afterChange();
+  const g=testHead(L,'Test results',n?`${c} of ${n} correct.`:'No questions were answered.');
+  const c1=card(g,'Score',`<div class="rv-top">${ringHTML()}<div><p style="font-size:1.25rem;font-weight:650;margin:0">${f>=.85?'Strong result.':f>=.6?'A good base. Revise the questions below.':'Revise the questions below, then test again.'}</p>
+    <div class="bars" style="margin-top:.8em">${Object.keys(by).map(sk=>`<div class="barrow"><span>${icon(sk,15)}${SUBJ[sk].name}</span><div class="bar2"><i class="b2" data-w="${100*by[sk][0]/by[sk][1]}"></i></div><b>${by[sk][0]} / ${by[sk][1]}</b><span></span></div>`).join('')}</div></div></div>`);
+  setRing(c1,f,c+' of '+n);grow(c1);
+  if(conf){const cnt={};res.forEach(r=>{cnt[r.conf]=cnt[r.conf]||[0,0];cnt[r.conf][1]++;if(r.ok)cnt[r.conf][0]++;});
+    const cc=card(g,'Confidence check',`<p class="hint">How well your confidence matched your results.</p><div class="stats">${CONF.map(([k,nme])=>cnt[k]?`<div class="stat"><span>${nme}</span><b>${cnt[k][0]} / ${cnt[k][1]} correct</b></div>`:'').join('')}</div>`+
+      (sw?`<p class="note"><b>${sw} ${sw===1?'answer was':'answers were'} “sure” but wrong.</b> These matter most: a confident wrong answer is a misconception, not a gap.</p>`:'<p class="note">No confident wrong answers. Your judgement of what you know is accurate.</p>'));
+    const order=['bad-sure','bad-unsure','bad-guess','ok-doubt','ok-sure'],groups=order.map(k=>[k,res.filter(r=>CKEY(r)===k)]).filter(([,a])=>a.length);
+    const rev=card(g,'Revise by confidence','<p class="hint">Grouped in the order to study them. Wrong answers are already in spaced repetition.</p>');
+    groups.forEach(([k,a])=>{const [t,d,cls]=CGROUP[k];rev.insertAdjacentHTML('beforeend',`<h4>${t} <span class="hint">(${a.length})</span></h4><p class="fb ${cls}" style="margin:.2em 0 .5em">${d}</p>`+(k==='ok-sure'?'':a.map(r=>missHTML(r)).join('')));});
+    const todo=res.filter(r=>CKEY(r)!=='ok-sure');
+    if(todo.length){const rr=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn'},icon('target',15)+`Revise now (${todo.length} ${todo.length===1?'question':'questions'})`);b.onclick=()=>testRevise(L,todo.map(r=>r.x),conf);rr.append(b);rev.append(rr);}}
+  else{const miss=res.filter(r=>!r.ok);const rev=card(g,miss.length?'Questions to study again':'No incorrect answers',miss.length?'<p class="hint">These questions are now in spaced repetition.</p>'+miss.map(missHTML).join(''):'');
+    if(miss.length){const rr=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn'},icon('target',15)+`Try the missed questions again (${miss.length})`);b.onclick=()=>testRevise(L,miss.map(r=>r.x),false);rr.append(b);rev.append(rr);}}
+  const nx=card(g,'',''),row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],['Same test again (new order)',()=>testRun(L,shuffle(res.map(r=>r.x)),conf),'ghost']].forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});nx.append(row);
+  window.scrollTo({top:0,behavior:RM?'auto':'smooth'});}
+function missHTML(r){const it=r.x.it;return `<div class="miss"><p class="hint" style="margin:0">${SUBJ[r.x.sk].name} · ${SUBJ[r.x.sk].lessons[r.x.L].t}${r.conf?' · you said: '+CONFN[r.conf]:''}</p><p>${it.q}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">Your answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p><p class="hint">${it.w||''}</p></div>`;}
+/* ask the revision questions again, in priority order */
+function testRevise(L,items,conf){TBUSY=1;const g=testHead(L,'Revision round',`${items.length} questions from your test, hardest group first. Feedback shows after each answer.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  stopBtn(c,L);runRound(box,{items,title:'Revision',conf,done:res=>{const c2=res.filter(r=>r.ok).length;TBUSY=0;const g2=testHead(L,'Revision done',`${c2} of ${res.length} correct in the revision round.`);
+    const still=res.filter(r=>!r.ok||(conf&&r.conf!=='sure'));const cc=card(g2,still.length?'Still to revise':'All secure',still.length?'<p class="hint">These questions were wrong, or you were not sure. They stay in your spaced repetition.</p>'+still.map(missHTML).join(''):'<p>You answered every revision question correctly and with confidence.</p>');
+    const row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],still.length?['Revise these again',()=>testRevise(L,still.map(r=>r.x),conf),'ghost']:null].filter(Boolean).forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});cc.append(row);window.scrollTo({top:0});}});}
 
 boot();
 
