@@ -12,7 +12,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Physics | Momentum, Forces and fields |
 | Biology | Nervous system, Senses |
 | Chemistry | Equilibrium |
-| Math | No units yet |
+| Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
 
 ## Features

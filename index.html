@@ -73,6 +73,8 @@ body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
 [data-mode="dark"] body[data-s="sn"]{--a1:#676366;--a2:#736f72;--a3:#c3baba}
 body[data-s="ff"]{--a1:#716b70;--a2:#b2b2b2;--a3:#9a8f97}
 [data-mode="dark"] body[data-s="ff"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
+body[data-s="lim"]{--a1:#6d676b;--a2:#c3baba;--a3:#b2b2b2}
+[data-mode="dark"] body[data-s="lim"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
 body[data-s="pr"]{--a1:#6f6a6d;--a2:#c3baba;--a3:#9a8f97}
 [data-mode="dark"] body[data-s="pr"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
 body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
@@ -186,6 +188,7 @@ blockquote.lq cite{display:block;margin-top:.45em;font:600 .8rem -apple-system,B
 .pkw:hover{background:var(--hov)}.pkw.on{background:color-mix(in srgb,var(--a1) 26%,transparent)}
 .pkw.ok{background:var(--okb);box-shadow:inset 0 -2px 0 var(--ok)}.pkw.bad{background:var(--badb);box-shadow:inset 0 -2px 0 var(--bad)}.pkw.miss{box-shadow:inset 0 -2px 0 var(--ok)}
 .tiles.wide{grid-template-columns:1fr}
+.lim{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .2em 0 .05em;font-style:normal}.lim sub{font-size:.62em;line-height:1;white-space:nowrap}
 /* answer combo */
 .combo{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;gap:.45em;padding:.5em 1em;border-radius:999px;font:700 .95rem ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at);pointer-events:none;opacity:0;transform:translateY(12px) scale(.9);transition:opacity .3s,transform .4s var(--spring)}
 .combo.on{opacity:1;transform:none}
@@ -629,7 +632,7 @@ function legendRow(host,items){const d=el('p',{class:'legend'},items.map(([c2,t]
 const fx=(e,cls)=>{e.classList.remove(cls);void e.offsetWidth;e.classList.add(cls);};
 
 /* ---------- questions ---------- */
-function parseNum(s){s=String(s).trim().replace(/\s/g,'').replace(/−/g,'-').replace(/[×x\*]10\^?/i,'e').replace(/,/g,'');return parseFloat(s);}
+function parseNum(s){s=String(s).trim().replace(/\s/g,'').replace(/−/g,'-').replace(/[×x\*]10\^?/i,'e').replace(/,/g,'');const f=s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);if(f)return +f[1]/+f[2];return parseFloat(s);}
 const ansText=it=>it.o?it.o[it.a]:(it.ans||sig(it.n))+' '+(it.u||'');
 const sentences=w=>{const p=String(w||'').split('. ');return p.map((x,i)=>i<p.length-1?x+'.':x).filter(Boolean);};
 /* find a common mistake in a numeric answer */
@@ -878,9 +881,9 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" placeholder="Typ
   inp.addEventListener('input',draw);draw();}
 
 /* ---------- app shell ---------- */
-const SUBJ={},ORDER=['mom','ff','eq','ns','sn','pr'],curL={mom:0,ff:0,eq:0,ns:0,sn:0,pr:0};let curS='mom',chipBtns=[],tabSeg=null;
+const SUBJ={},ORDER=['mom','ff','eq','ns','sn','lim','pr'],curL={mom:0,ff:0,eq:0,ns:0,sn:0,lim:0,pr:0};let curS='mom',chipBtns=[],tabSeg=null;
 /* the top tabs are subjects. Each unit (mom, eq, ns, sn) keeps its own lessons and saved answers. */
-const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom','ff']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:[]},{k:'la',name:'Language Arts',short:'LA',units:['pr']}];
+const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom','ff']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:['lim']},{k:'la',name:'Language Arts',short:'LA',units:['pr']}];
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
 function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
@@ -1212,6 +1215,14 @@ const ICON={
   mag:'<path d="M6 4v8a6 6 0 0 0 12 0V4"/><path d="M6 4h3.5v8a2.5 2.5 0 0 0 5 0V4H18"/><path d="M6 7.5h3.5M14.5 7.5H18"/>',
   mforce:'<path d="M5 19a8.5 8.5 0 1 1 14 0"/><path d="m16.5 17 2.5 2-.2-3.2"/><path d="M9.5 9.5l2 2M14.5 9.5l-2 2"/>',
   induct:'<path d="M3 12h2c0-3 2.5-3 2.5 0s2.5 3 2.5 0 2.5-3 2.5 0 2.5 3 2.5 0 2.5-3 2.5 0h2"/><path d="M3 6h6M3 18h6"/>',
+  lim:'<path d="M3 19c4 0 5-12 9-12s5 12 9 12"/><path d="M12 3v2M12 9v2M12 15v2M12 21v1"/>',
+  lslope:'<path d="M3 20 21 6"/><path d="M8 16h6v-5"/>',
+  llim:'<path d="M3 17c5 0 6-10 9-10s4 10 9 10"/><circle cx="12" cy="7" r="2"/>',
+  lstep:'<path d="M3 18h6M9 12h6M15 6h6"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="12" r="1.4"/>',
+  ltan:'<path d="M3 19c6-1 9-7 10-14"/><path d="M5 9l14 8"/><circle cx="11.5" cy="12.4" r="1.6"/>',
+  lvel:'<path d="M3 20c8 0 12-6 14-16"/><path d="M13 7l6-3 1 6"/>',
+  lseq:'<circle cx="4" cy="18" r="1.5"/><circle cx="9" cy="11" r="1.5"/><circle cx="14" cy="8" r="1.5"/><circle cx="19" cy="7" r="1.5"/><path d="M2 5.5h20" stroke-dasharray="2 2.5"/>',
+  lser:'<path d="M17 5H7l5 7-5 7h10"/>',
   la:'<path d="M4 20l4.5-1.2L19.3 8a2.1 2.1 0 0 0-3-3L5.5 15.8Z"/><path d="M14.5 6.5l3 3"/>',
   pr:'<path d="M4 6h16M4 10h16M4 14h10M4 18h13"/>',
   dic:'<path d="M4 5.5h16v10H9.5L5 19.5v-4H4Z"/><path d="M8 9.5h8M8 12.5h5"/>',
@@ -3841,6 +3852,230 @@ WRQ.ff=[
   {q:'An alpha particle is accelerated from rest to 4.70 × 10⁵ m/s and then enters a perpendicular 350 mT magnetic field. Find the accelerating voltage and the radius of its path. Then state two changes that would make the radius smaller.',marks:['Uses qΔV = ½mv² correctly','Finds ΔV ≈ 2.3 × 10³ V','Uses qvB = mv²/r correctly','Finds r ≈ 2.8 cm','Gives two valid changes: a stronger field, a smaller speed (lower voltage), a smaller mass or a larger charge'],
     model:'<p>ΔV = mv²/(2q) = (6.65 × 10⁻²⁷)(4.70 × 10⁵)²/(2 × 3.20 × 10⁻¹⁹) = 2.30 × 10³ V. r = mv/(qB) = (6.65 × 10⁻²⁷)(4.70 × 10⁵)/((3.20 × 10⁻¹⁹)(0.350)) = 2.79 × 10⁻² m = 2.79 cm. A stronger magnetic field or a lower accelerating voltage (lower speed) makes the radius smaller.</p>'}];
 
+/* ===================== Math: limits and rates of change (calculus, chapter 1) ===================== */
+const LIM=s=>`<span class="lim">lim<sub>${s}</sub></span>`,FR=(a,b)=>`<span class="frac"><span>${a}</span><span>${b}</span></span>`;
+const fmtn=v=>!isFinite(v)?'undefined':Math.abs(v)>=1e5||(Math.abs(v)<1e-4&&v!==0)?sig(v,4):String(+v.toFixed(6)).replace('-','−');
+/* an open (excluded) point on a graph */
+function odot(ctx,P,x,y,c){ctx.fillStyle=P.K.fig;ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(P.X(x),P.Y(y),4.5,0,7);ctx.fill();ctx.stroke();}
+/* sample a function for drawing; breaks the line where the value jumps off the chart */
+function samp(f,x0,x1,n=240,ylim=1e6){const pts=[],out=[];for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,y=f(x);if(!isFinite(y)||Math.abs(y)>ylim){if(pts.length)out.push(pts.splice(0));continue;}pts.push([x,y]);}if(pts.length)out.push(pts);return out;}
+const HS=[2,1,.5,.1,.01,.001];
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+
+const LML=[
+/* ---------------- 0: linear functions and the tangent problem ---------------- */
+{t:'Slopes and tangents',ic:'lslope',h:'Linear functions and the tangent problem',d:'The slope of a line is its rate of change. The slope of a tangent to a curve is the limit of the slopes of secant lines.',build(g){
+  card(g,'Slope is a rate of change',`<p>A <b>linear function</b> has the form <i>f</i>(<i>x</i>) = <i>mx</i> + <i>b</i>. Its graph is a line with slope <i>m</i> and <i>y</i>-intercept <i>b</i>.</p>
+    <div class="fx"><i>m</i> = ${FR('Δ<i>y</i>','Δ<i>x</i>')} = ${FR('<i>y</i><sub>2</sub> − <i>y</i><sub>1</sub>','<i>x</i><sub>2</sub> − <i>x</i><sub>1</sub>')}</div>
+    <ul><li>The slope is the <b>rate of change of <i>y</i> with respect to <i>x</i></b>: if <i>x</i> changes by Δ<i>x</i>, then <i>y</i> changes by Δ<i>y</i> = <i>m</i>Δ<i>x</i>.</li><li>Positive slope: the line rises to the right. Negative slope: it falls. Zero: horizontal. A vertical line has no slope.</li><li>Point-slope form: <i>y</i> − <i>y</i><sub>1</sub> = <i>m</i>(<i>x</i> − <i>x</i><sub>1</sub>).</li></ul>`,'w7');
+  card(g,'The tangent problem',`<p>For a circle, a tangent touches the curve once. For other curves this idea does not work: a tangent can cross the curve somewhere else.</p>
+    <p>A better idea: take the point <i>P</i> and a nearby point <i>Q</i> on the curve. The line <i>PQ</i> is a <b>secant line</b>. As <i>Q</i> moves toward <i>P</i>, the secant slopes approach a number <i>m</i>. The <b>tangent</b> is the line through <i>P</i> with this slope:</p>
+    <div class="fx"><i>m</i> = ${LIM('<i>Q</i>→<i>P</i>')} <i>m</i><sub><i>PQ</i></sub></div><p class="hint">To find tangents, we must be able to find limits. That is the work of the next lessons.</p>`,'w5');
+  const c=card(g,'Secant lines approach the tangent','<p>Choose a curve and a point <i>P</i>. Make <i>h</i> smaller: <i>Q</i> moves toward <i>P</i>, and the secant slope approaches the tangent slope (dashed).</p>');
+  const F=[['y = x²',x=>x*x,[-1,4],[-2,14]],['y = x³ − x',x=>x**3-x,[-1,3.2],[-3,26]],['y = 1/x',x=>1/x,[0,4],[-.5,4]],['y = √x',x=>x>=0?Math.sqrt(x):NaN,[0,5],[-.5,2.6]]];
+  let fi=0,side=1,K;const R=stats(c,['Q','Secant slope m<sub>PQ</sub>','Tangent slope (limit)']);const sh=el('div');c.insertBefore(sh,c.children[2]);
+  const cv=canvas(c,300,(ctx,w,h)=>{if(!K)return;const [,f,xr,yr]=F[fi],a=K.v.a,hh=HS[K.v.k]*side,P=plot(ctx,w,h,{x0:xr[0],x1:xr[1],y0:yr[0],y1:yr[1],xt:5,yt:4,xd:1,yd:1,xl:'x',yl:'y'}),k=P.K;
+    P.clip(()=>{samp(f,xr[0],xr[1]).forEach(s=>P.line(s,k.s1,{w:2.4}));const ya=f(a),xq=a+hh,yq=f(xq),d=1e-6,mt=(f(a+d)-f(a-d))/(2*d);
+      P.line([[xr[0],ya+mt*(xr[0]-a)],[xr[1],ya+mt*(xr[1]-a)]],k.mute,{w:1.6,dash:[6,5]});
+      if(isFinite(yq)){const m=(yq-ya)/hh;P.line([[xr[0],ya+m*(xr[0]-a)],[xr[1],ya+m*(xr[1]-a)]],k.s2,{w:2});P.dot(xq,yq,k.s2);}P.dot(a,ya,k.s4);});});
+  const upd=()=>{if(!K)return;const f=F[fi][1],a=K.v.a,hh=HS[K.v.k]*side,xq=a+hh,yq=f(xq),d=1e-6,mt=(f(a+d)-f(a-d))/(2*d);
+    R(0,isFinite(yq)?`(${fmtn(xq)}, ${fmtn(yq)})`:'outside the domain');R(1,isFinite(yq)?fmtn((yq-f(a))/hh):'—');R(2,fmtn(+mt.toFixed(5)));cv.draw();};
+  const s2=el('div',{style:'margin-top:6px'});seg(sh,F.map(x=>x[0]),i=>{fi=i;upd();});sh.append(s2);seg(s2,['Q to the right','Q to the left'],i=>{side=i?-1:1;upd();});
+  K=ctl(c,[{k:'a',l:'P: x =',min:.5,max:2.5,step:.5,v:1,dp:1},{k:'k',l:'h',min:0,max:5,step:1,v:0,f:i=>String(HS[i])}],upd);upd();
+  card(g,'Worked examples',ex('Find the linear function through (−2, 3) and (4, 15).','<p><i>m</i> = (15 − 3)/(4 − (−2)) = 12/6 = 2. Then <i>y</i> − 3 = 2(<i>x</i> + 2), thus <b><i>f</i>(<i>x</i>) = 2<i>x</i> + 7</b>.</p>')+
+    ex('y = 5 + 3x. How does y change if x increases by 4?','<p>Δ<i>y</i> = <i>m</i>Δ<i>x</i> = 3 × 4 = <b>12</b>: <i>y</i> increases by 12.</p>')+
+    ex('Estimate the slope of the tangent to y = x² at P(3, 9).','<p><i>m</i><sub><i>PQ</i></sub> = (<i>x</i>² − 9)/(<i>x</i> − 3) = <i>x</i> + 3 for <i>x</i> ≠ 3. For <i>x</i> = 3.1, 3.01, 3.001 the slopes are 6.1, 6.01, 6.001. They approach <b>6</b>. Tangent: <i>y</i> − 9 = 6(<i>x</i> − 3), thus <i>y</i> = 6<i>x</i> − 9.</p>'));
+},qz:[
+  {q:'What is the slope of the line y = 7 − 2x?',n:-2,abs:.001,w:'In the form y = mx + b, m = −2.'},
+  {q:'What is the slope of the line through (−2, 3) and (4, 15)?',n:2,abs:.001,w:'m = (15 − 3)/(4 + 2) = 2.'},
+  {q:'Which equation is the line through (−2, 3) and (4, 15)?',o:['y = 2x + 7','y = 2x − 1','y = 3x + 9','y = −2x − 1'],a:0,w:'y − 3 = 2(x + 2), thus y = 2x + 7.'},
+  {q:'For y = 5 + 3x, by how much does y change when x increases by 4?',n:12,abs:.001,w:'Δy = mΔx = (3)(4) = 12.'},
+  {q:'What is the slope of the secant line to y = x² between x = 1 and x = 1.1?',n:2.1,abs:.001,w:'(1.21 − 1)/(1.1 − 1) = 0.21/0.1 = 2.1.'},
+  {q:'The slopes of secant lines to y = x² through P(3, 9) are 6.1, 6.01 and 6.001. What is the slope of the tangent at P?',n:6,abs:.001,w:'The secant slopes approach 6.'},
+  {q:'A car moves at a constant speed. Its distance is d = 80t, with d in km and t in hours. What does the slope 80 mean?',o:['The speed: 80 km/h','The distance after 1 minute','The starting distance','The time for 80 km'],a:0,w:'The slope of a distance-time graph is the rate of change of distance: the speed.'},
+  {q:'How is the slope of the tangent at a point P defined?',o:['The limit of the slopes of secant lines PQ as Q approaches P','The slope of any line that touches the curve once','The slope between P and the origin','The average of two secant slopes'],a:0,w:'m = lim (Q → P) m_PQ.'}]},
+/* ---------------- 1: the limit of a function ---------------- */
+{t:'Limits',ic:'llim',h:'The limit of a function',d:'The limit of f(x) as x approaches a is the value that f(x) gets close to when x is close to a, but not equal to a.',build(g){
+  card(g,'What a limit means',`<div class="fx">${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) = <i>L</i></div><p>means: we can make <i>f</i>(<i>x</i>) as close to <i>L</i> as we like by taking <i>x</i> close enough to <i>a</i>, but <b>not equal to <i>a</i></b>.</p>
+    <p class="note">The value <i>f</i>(<i>a</i>) does not matter for the limit. <i>f</i>(<i>a</i>) can be different from <i>L</i>, or not defined at all.</p>
+    <h4>Properties of limits</h4><p>If the limits of <i>f</i> and <i>g</i> exist, the limit of a sum, difference, constant multiple, product, quotient (denominator limit not 0), power and root is the sum, difference, … of the limits.</p>
+    <p>Thus for a polynomial <i>P</i>: ${LIM('<i>x</i>→<i>a</i>')} <i>P</i>(<i>x</i>) = <i>P</i>(<i>a</i>). For a rational function <i>P</i>/<i>Q</i>, the same is true if <i>Q</i>(<i>a</i>) ≠ 0. Such functions are <b>continuous</b> at <i>a</i>.</p>`,'w7');
+  card(g,'When substitution gives 0/0',`<p>0/0 has no meaning. Change the expression into one that is equal to it for <i>x</i> ≠ <i>a</i>, then substitute:</p>
+    <ul><li><b>Factor and cancel:</b> ${FR('<i>x</i>² − 9','<i>x</i> − 3')} = <i>x</i> + 3 for <i>x</i> ≠ 3.</li><li><b>Expand and simplify:</b> ${FR('(3 + <i>h</i>)² − 9','<i>h</i>')} = 6 + <i>h</i> for <i>h</i> ≠ 0.</li><li><b>Rationalize:</b> multiply by the conjugate, for example √(<i>x</i> + 4) + 2.</li><li><b>Common denominator</b> for fractions inside fractions.</li></ul>
+    <p class="hint">If the values grow without bound, or approach different numbers from the two sides, the limit <b>does not exist</b>. Example: 1/<i>x</i> as <i>x</i> → 0.</p>`,'w5');
+  const c=card(g,'Explore a limit with a table and a graph','<p>Each function is not defined at <i>x</i> = <i>a</i>. Watch the values as <i>x</i> approaches <i>a</i> from both sides.</p>');
+  const F=[['(x² − 9)/(x − 3), a = 3',x=>(x*x-9)/(x-3),3,6,[0,6],[0,10]],['(x³ − 8)/(x − 2), a = 2',x=>(x**3-8)/(x-2),2,12,[0,4],[0,30]],['(√(x + 4) − 2)/x, a = 0',x=>(Math.sqrt(x+4)-2)/x,0,.25,[-3,4],[0,.6]],['(1/x − 1)/(x − 1), a = 1',x=>(1/x-1)/(x-1),1,-1,[.3,3],[-4,0]],['1/x², a = 0',x=>1/(x*x),0,null,[-2,2],[0,20]]];
+  let fi=0;const tb=el('div',{class:'scroll'}),sh=el('div');c.append(sh);
+  const cv=canvas(c,260,(ctx,w,h)=>{const [,f,a,Lm,xr,yr]=F[fi],P=plot(ctx,w,h,{x0:xr[0],x1:xr[1],y0:yr[0],y1:yr[1],xt:4,yt:4,xd:1,yd:yr[1]<1?2:0,xl:'x',yl:'y'}),k=P.K;
+    P.clip(()=>{samp(x=>Math.abs(x-a)<1e-9?NaN:f(x),xr[0],xr[1],400,yr[1]*3).forEach(s=>P.line(s,k.s1,{w:2.4}));if(Lm!=null)odot(ctx,P,a,Lm,k.s1);});});
+  c.append(tb);
+  const show=i=>{fi=i;const [,f,a,Lm]=F[i],hs=[.1,.01,.001,.0001];tb.innerHTML=`<table><tr><th><i>x</i> &lt; ${a}</th><th><i>f</i>(<i>x</i>)</th><th><i>x</i> &gt; ${a}</th><th><i>f</i>(<i>x</i>)</th></tr>${hs.map(d=>`<tr><td>${fmtn(a-d)}</td><td>${fmtn(f(a-d))}</td><td>${fmtn(a+d)}</td><td>${fmtn(f(a+d))}</td></tr>`).join('')}</table><p class="note">${Lm==null?'The values grow without bound, thus the limit <b>does not exist</b>.':`The values approach <b>${fmtn(Lm)}</b>, thus the limit is ${fmtn(Lm)}, although <i>f</i>(${a}) is not defined (open circle).`}</p>`;cv.draw();};
+  seg(sh,F.map(x=>x[0].split(',')[0]),show);show(0);
+  card(g,'Worked examples',ex('lim (x→3) (x² − 9)/(x − 3)','<p>Substitution gives 0/0. Factor: (<i>x</i> − 3)(<i>x</i> + 3)/(<i>x</i> − 3) = <i>x</i> + 3 for <i>x</i> ≠ 3. The limit is 3 + 3 = <b>6</b>.</p>')+
+    ex('lim (h→0) ((3 + h)² − 9)/h','<p>Expand: (9 + 6<i>h</i> + <i>h</i>² − 9)/<i>h</i> = 6 + <i>h</i> for <i>h</i> ≠ 0. The limit is <b>6</b>.</p>')+
+    ex('lim (x→0) (√(x + 4) − 2)/x','<p>Multiply the top and the bottom by √(<i>x</i> + 4) + 2: the top becomes (<i>x</i> + 4) − 4 = <i>x</i>. Cancel <i>x</i>: 1/(√(<i>x</i> + 4) + 2) → 1/(2 + 2) = <b>1/4</b>.</p>')+
+    ex('lim (x→1) (1/x − 1)/(x − 1)','<p>Common denominator: 1/<i>x</i> − 1 = (1 − <i>x</i>)/<i>x</i>. Thus the expression is (1 − <i>x</i>)/(<i>x</i>(<i>x</i> − 1)) = −1/<i>x</i> → <b>−1</b>.</p>'));
+  const sp=card(g,'Which method?','<p>A speed round: choose the first step for each limit.</p>');
+  const MO=['Substitute directly','Factor and cancel','Expand and simplify','Rationalize','Does not exist'],MQ=[['lim (x→2) (x² + 3x − 1)',0],['lim (x→4) (x² − 16)/(x − 4)',1],['lim (h→0) ((1 + h)² − 1)/h',2],['lim (x→0) (√(x + 9) − 3)/x',3],['lim (x→0) 1/x',4],['lim (x→1) (x³ − 1)/(x − 1)',1],['lim (x→5) √(x + 4)',0],['lim (h→0) ((2 + h)³ − 8)/h',2]];
+  speed(sp,'meth',{title:'Which method',intro:'Choose the method for 8 limits.',items:()=>shuffle(MQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:MO,a}))});
+},qz:[
+  {q:'Evaluate lim (x→2) (x³ − 3x + 1).',n:3,abs:.001,w:'A polynomial is continuous: substitute. 8 − 6 + 1 = 3.'},
+  {q:'Evaluate lim (x→3) (x² − 9)/(x − 3).',n:6,abs:.001,w:'Factor: x + 3 → 6.'},
+  {q:'Evaluate lim (x→−1) (x² + 3x + 2)/(x + 1).',n:1,abs:.001,w:'(x + 1)(x + 2)/(x + 1) = x + 2 → 1.'},
+  {q:'Evaluate lim (h→0) ((3 + h)² − 9)/h.',n:6,abs:.001,w:'(6h + h²)/h = 6 + h → 6.'},
+  {q:'Evaluate lim (x→0) (√(x + 4) − 2)/x. You can type a fraction, for example 1/4.',n:.25,abs:.001,w:'Rationalize: 1/(√(x + 4) + 2) → 1/4.'},
+  {q:'Evaluate lim (x→2) (x³ − 8)/(x − 2).',n:12,abs:.001,w:'Difference of cubes: (x − 2)(x² + 2x + 4)/(x − 2) → 4 + 4 + 4 = 12.'},
+  {q:'What is lim (x→0) 1/x²?',o:['It does not exist (the values grow without bound)','0','1','It is equal to 1/0'],a:0,w:'1/x² becomes larger than any number near 0.'},
+  {q:'Which statement about lim (x→a) f(x) is true?',o:['It can exist even if f(a) is not defined','It is always equal to f(a)','It exists only if f(a) is defined','It depends only on the value f(a)'],a:0,w:'The limit uses values near a, never at a.'}]},
+/* ---------------- 2: one-sided limits and continuity ---------------- */
+{t:'One-sided limits',ic:'lstep',h:'One-sided limits and continuity',d:'A function can approach different values from the left and from the right. The two-sided limit exists only when they are equal.',build(g){
+  card(g,'Left and right',`<div class="fx">${LIM('<i>x</i>→<i>a</i><sup>−</sup>')} <i>f</i>(<i>x</i>) = <i>L</i> &nbsp; (from the left, <i>x</i> &lt; <i>a</i>) &nbsp;&nbsp; ${LIM('<i>x</i>→<i>a</i><sup>+</sup>')} <i>f</i>(<i>x</i>) = <i>L</i> &nbsp; (from the right, <i>x</i> &gt; <i>a</i>)</div>
+    <p class="note">${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) = <i>L</i> only if <b>both</b> one-sided limits are equal to <i>L</i>. If they are different, the limit does not exist.</p>
+    <ul><li>Use one-sided limits for <b>piecewise functions</b> (different formulas on different intervals), for |<i>x</i>|, and at the end of a domain, for example ${LIM('<i>x</i>→0<sup>+</sup>')} √<i>x</i> = 0.</li><li>|<i>x</i>|/<i>x</i> is 1 for <i>x</i> &gt; 0 and −1 for <i>x</i> &lt; 0, thus ${LIM('<i>x</i>→0')} |<i>x</i>|/<i>x</i> does not exist.</li></ul>`,'w7');
+  card(g,'Continuity',`<p><i>f</i> is <b>continuous at <i>a</i></b> if ${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) = <i>f</i>(<i>a</i>). This needs three things:</p><ol><li><i>f</i>(<i>a</i>) is defined;</li><li>${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) exists;</li><li>the two are equal.</li></ol>
+    <p>A continuous graph has no holes or breaks: you can draw it without lifting your pencil.</p><table><tr><td><b>Removable</b></td><td>The limit exists, but <i>f</i>(<i>a</i>) is missing or different (a hole).</td></tr><tr><td><b>Jump</b></td><td>The one-sided limits are different (step functions).</td></tr><tr><td><b>Infinite</b></td><td>The values grow without bound (a vertical asymptote).</td></tr></table>`,'w5');
+  const c=card(g,'Discontinuity explorer','<p>Choose a function. A filled dot is a point on the graph; an open dot is not.</p>');const sh=el('div'),R=stats(c,['Left limit','Right limit','f(a)','Verdict']);c.insertBefore(sh,c.children[2]);
+  const F=[{n:'Jump',d:'f(x) = x² for x &lt; 1, 2x + 1 for x ≥ 1. a = 1',a:1,p:[[x=>x*x,-1.5,1,0,0],[x=>2*x+1,1,3,1,0]],L:1,Rr:3,fa:3,v:'Jump discontinuity: the one-sided limits are different.',xr:[-1.5,3],yr:[-1,7]},
+    {n:'Removable',d:'f(x) = (x² − 4)/(x − 2) for x ≠ 2, and f(2) = 1. a = 2',a:2,p:[[x=>x+2,-1,2,0,0],[x=>x+2,2,4,0,0]],pt:[2,1],L:4,Rr:4,fa:1,v:'Removable discontinuity: the limit is 4, but f(2) = 1.',xr:[-1,4],yr:[-1,7]},
+    {n:'Continuous',d:'f(x) = x + 1 for x &lt; 2, 5 − x for x ≥ 2. a = 2',a:2,p:[[x=>x+1,-1,2,0,0],[x=>5-x,2,5,1,0]],L:3,Rr:3,fa:3,v:'Continuous: both one-sided limits and f(2) are equal to 3.',xr:[-1,5],yr:[-1,5]},
+    {n:'Infinite',d:'f(x) = 1/(x − 1)². a = 1',a:1,p:[[x=>1/(x-1)**2,-1,1,0,0],[x=>1/(x-1)**2,1,3,0,0]],L:Infinity,Rr:Infinity,fa:NaN,v:'Infinite discontinuity: the values grow without bound. f(1) is not defined.',xr:[-1,3],yr:[-1,10]},
+    {n:'Step',d:'Parking: $3 for the first hour or part, then $2 for each extra hour or part. a = 2',a:2,p:[[x=>3,0,1,0,1],[x=>5,1,2,0,1],[x=>7,2,3,0,1],[x=>9,3,4,0,1]],L:5,Rr:7,fa:5,v:'Jump discontinuity at every whole hour.',xr:[0,4],yr:[0,10]}];
+  let fi=0;const dsc=el('p',{class:'hint'});c.insertBefore(dsc,c.children[3]);
+  const cv=canvas(c,260,(ctx,w,h)=>{const o=F[fi],P=plot(ctx,w,h,{x0:o.xr[0],x1:o.xr[1],y0:o.yr[0],y1:o.yr[1],xt:5,yt:5,xd:1,yd:0,xl:'x',yl:'y'}),k=P.K;
+    P.clip(()=>{o.p.forEach(([f,x0,x1,ci0,ci1])=>{samp(x=>Math.abs(x-o.a)<1e-6&&o.n==='Infinite'?NaN:f(x),x0,x1,300,o.yr[1]*4).forEach(s=>P.line(s,k.s1,{w:2.4}));
+      if(o.n!=='Infinite'){if(x0>o.xr[0]){const y=f(x0);ci0?P.dot(x0,y,k.s1,4):odot(ctx,P,x0,y,k.s1);}if(x1<o.xr[1]){const y=f(x1);ci1?P.dot(x1,y,k.s1,4):odot(ctx,P,x1,y,k.s1);}}});
+      if(o.pt)P.dot(o.pt[0],o.pt[1],k.s2,4);});});
+  const show=i=>{fi=i;const o=F[i],t=v=>v===Infinity?'∞ (no limit)':fmtn(v);dsc.innerHTML=o.d;R(0,t(o.L));R(1,t(o.Rr));R(2,isNaN(o.fa)?'not defined':fmtn(o.fa));R(3,o.v);cv.draw();};seg(sh,F.map(x=>x.n),show);show(0);
+  card(g,'Worked examples',ex('g(x) = x² for x < 1 and 2x + 1 for x ≥ 1. Find the limits at 1.',`<p>Left: ${LIM('<i>x</i>→1<sup>−</sup>')} <i>x</i>² = 1. Right: ${LIM('<i>x</i>→1<sup>+</sup>')} (2<i>x</i> + 1) = 3. They are different, thus ${LIM('<i>x</i>→1')} <i>g</i>(<i>x</i>) <b>does not exist</b>.</p>`)+
+    ex('For which c is f continuous? f(x) = cx + 1 for x < 3, x² − c for x ≥ 3.','<p>Both pieces must meet at <i>x</i> = 3: 3<i>c</i> + 1 = 9 − <i>c</i>, thus 4<i>c</i> = 8 and <b><i>c</i> = 2</b>.</p>'));
+},qz:[
+  {q:'g(x) = x² for x < 1 and 2x + 1 for x ≥ 1. What is lim (x→1⁻) g(x)?',n:1,abs:.001,w:'From the left use x²: 1² = 1.'},
+  {q:'For the same g, what is lim (x→1⁺) g(x)?',n:3,abs:.001,w:'From the right use 2x + 1: 3.'},
+  {q:'For the same g, what is lim (x→1) g(x)?',o:['It does not exist','1','3','2'],a:0,w:'The one-sided limits (1 and 3) are different.'},
+  {q:'What is lim (x→0⁻) |x|/x?',n:-1,abs:.001,w:'For x < 0, |x| = −x, thus |x|/x = −1.'},
+  {q:'What is lim (x→4⁺) √(x − 4)?',n:0,abs:.001,w:'√(x − 4) → √0 = 0 from the right. From the left it is not defined.'},
+  {q:'f(x) = cx + 1 for x < 3 and x² − c for x ≥ 3. For which value of c is f continuous everywhere?',n:2,abs:.001,w:'3c + 1 = 9 − c, thus c = 2.'},
+  {q:'f(x) = (x² − 1)/(x − 1) is not defined at x = 1. What kind of discontinuity is this?',o:['Removable (a hole): the limit is 2','Jump','Infinite','It is continuous at 1'],a:0,w:'For x ≠ 1, f(x) = x + 1, thus the limit exists, but f(1) does not.'},
+  {q:'Which list gives the three conditions for f to be continuous at a?',o:['f(a) is defined, lim (x→a) f(x) exists, and they are equal','f is a polynomial, a > 0, and f(a) ≠ 0','The left limit exists, f(a) = 0, and f is increasing','f(a) is defined and the graph is a line'],a:0,w:'All three must be true.'}]},
+/* ---------------- 3: using limits to find tangents ---------------- */
+{t:'Tangents',ic:'ltan',h:'Using limits to find tangents',d:'The slope of the tangent to y = f(x) at x = a is the limit of the difference quotient.',build(g){
+  card(g,'The slope of a tangent',`<div class="fx"><i>m</i> = ${LIM('<i>x</i>→<i>a</i>')} ${FR('<i>f</i>(<i>x</i>) − <i>f</i>(<i>a</i>)','<i>x</i> − <i>a</i>')} = ${LIM('<i>h</i>→0')} ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')}</div>
+    <ol><li>Write the difference quotient.</li><li>Simplify it until you can cancel <i>h</i> (or <i>x</i> − <i>a</i>).</li><li>Take the limit.</li><li>Use point-slope form: <i>y</i> − <i>f</i>(<i>a</i>) = <i>m</i>(<i>x</i> − <i>a</i>).</li></ol>
+    <p class="hint">For a parabola, a horizontal tangent (slope 0) is at the vertex. Parallel lines have equal slopes; perpendicular lines have slopes whose product is −1.</p>`,'w7');
+  card(g,'Two worked examples',ex('Tangent to y = 2x² − x at (1, 1)','<p><i>f</i>(1 + <i>h</i>) − <i>f</i>(1) = 2(1 + <i>h</i>)² − (1 + <i>h</i>) − 1 = 3<i>h</i> + 2<i>h</i>². Divide by <i>h</i>: 3 + 2<i>h</i> → <b>3</b>. Tangent: <i>y</i> − 1 = 3(<i>x</i> − 1), thus <b><i>y</i> = 3<i>x</i> − 2</b>.</p>')+
+    ex('Slope of y = 1/x at x = 2','<p>(1/(2 + <i>h</i>) − 1/2)/<i>h</i> = (2 − (2 + <i>h</i>))/(2(2 + <i>h</i>)<i>h</i>) = −1/(2(2 + <i>h</i>)) → <b>−1/4</b>.</p>')+
+    ex('Slope of y = √x at x = 9','<p>(√(9 + <i>h</i>) − 3)/<i>h</i>. Rationalize: 1/(√(9 + <i>h</i>) + 3) → <b>1/6</b>.</p>'),'w5');
+  const c=card(g,'Tangent finder','<p>Choose a parabola <i>y</i> = <i>px</i>² + <i>qx</i> + <i>r</i> and a point. The table shows the difference quotient as <i>h</i> shrinks.</p>');let K;
+  const R=stats(c,['Point','Slope m','Tangent line']),tb=el('div',{class:'scroll'});
+  const cv=canvas(c,300,(ctx,w,h)=>{if(!K)return;const {p,q,r,a}=K.v,f=x=>p*x*x+q*x+r,m=2*p*a+q,P=plot(ctx,w,h,{x0:-5,x1:5,y0:-10,y1:10,xt:10,yt:4,xd:0,yd:0,xl:'x',yl:'y'}),k=P.K;
+    P.clip(()=>{P.line(samp(f,-5,5)[0]||[],k.s1,{w:2.4});P.line([[-5,f(a)+m*(-5-a)],[5,f(a)+m*(5-a)]],k.s2,{w:2});P.dot(a,f(a),k.s4);});});
+  c.append(tb);
+  K=ctl(c,[{k:'p',l:'p',min:-2,max:2,step:.5,v:1,dp:1},{k:'q',l:'q',min:-4,max:4,step:1,v:-2},{k:'r',l:'r',min:-5,max:5,step:1,v:-3},{k:'a',l:'Point: x = a',min:-3,max:3,step:.5,v:2,dp:1}],v=>{const f=x=>v.p*x*x+v.q*x+v.r,m=2*v.p*v.a+v.q,b=f(v.a)-m*v.a;
+    R(0,`(${fmtn(v.a)}, ${fmtn(f(v.a))})`);R(1,fmtn(m));R(2,'y = '+(m?fmtn(m)+'x':'')+(b||!m?(b<0?' − ':(m?' + ':''))+fmtn(Math.abs(b)):''));
+    tb.innerHTML='<table><tr><th>h</th><th>[f(a + h) − f(a)] / h</th></tr>'+[1,.1,.01,.001].map(hh=>`<tr><td>${hh}</td><td>${fmtn((f(v.a+hh)-f(v.a))/hh)}</td></tr>`).join('')+'</table>';cv.draw();});K.set({});
+},qz:[
+  {q:'What is the slope of the tangent to y = x² + 3x at x = 1?',n:5,abs:.001,w:'[(1 + h)² + 3(1 + h) − 4]/h = 5 + h → 5.'},
+  {q:'Which line is tangent to y = 2x² − x at (1, 1)?',o:['y = 3x − 2','y = 4x − 3','y = 3x + 1','y = x'],a:0,w:'The slope is 3. y − 1 = 3(x − 1).'},
+  {q:'What is the slope of the tangent to y = 1/x at x = 2?',n:-.25,abs:.001,w:'−1/(2(2 + h)) → −1/4.'},
+  {q:'What is the slope of the tangent to y = √x at x = 9?',n:1/6,abs:.001,w:'1/(√(9 + h) + 3) → 1/6.'},
+  {q:'What is the slope of the tangent to y = x³ at x = −1?',n:3,abs:.001,w:'[(−1 + h)³ + 1]/h = 3 − 3h + h² → 3.'},
+  {q:'At which x is the tangent to y = x² − 4x horizontal?',n:2,abs:.001,w:'The slope at x = a is 2a − 4. It is 0 when a = 2 (the vertex).'},
+  {q:'At which x is the tangent to y = x² parallel to the line y = 6x + 1?',n:3,abs:.001,w:'The slope at a is 2a. 2a = 6, thus a = 3: the point (3, 9).'},
+  {q:'Which expression gives the slope of the tangent to y = f(x) at x = a?',o:['lim (h→0) [f(a + h) − f(a)] / h','[f(a + h) − f(a)] / h with h = 0','f(a) / a','lim (h→0) f(a + h)'],a:0,w:'Setting h = 0 directly gives 0/0; you must take the limit.'}]},
+/* ---------------- 4: velocity and rates of change ---------------- */
+{t:'Rates of change',ic:'lvel',h:'Velocity and other rates of change',d:'Average velocity is the slope of a secant line. Instantaneous velocity is the slope of the tangent: a limit.',build(g){
+  card(g,'Average and instantaneous velocity',`<p>An object moves along a line. Its position at time <i>t</i> is <i>s</i> = <i>f</i>(<i>t</i>) (the <b>position function</b>).</p>
+    <div class="fx">average velocity = ${FR('Δ<i>s</i>','Δ<i>t</i>')} = ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')} &nbsp;&nbsp; <i>v</i>(<i>a</i>) = ${LIM('<i>h</i>→0')} ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')}</div>
+    <p>On a position-time graph, the average velocity is the slope of a <b>secant</b>, and the instantaneous velocity is the slope of the <b>tangent</b>.</p>
+    <h4>Other rates of change</h4><p>For any <i>y</i> = <i>f</i>(<i>x</i>): the average rate of change on [<i>x</i><sub>1</sub>, <i>x</i><sub>2</sub>] is Δ<i>y</i>/Δ<i>x</i>, and the instantaneous rate of change is the limit as Δ<i>x</i> → 0. Examples: the rate of change of cost per item (marginal cost), of area with respect to radius, of a population with time.</p>`,'w7');
+  card(g,'Worked example: a falling ball',`<p>A ball falls <i>s</i> = 4.9<i>t</i>² metres in <i>t</i> seconds. Its velocity at <i>t</i> = 3:</p><p>Average on [3, 3 + <i>h</i>]: (4.9(3 + <i>h</i>)² − 4.9(9))/<i>h</i> = (29.4<i>h</i> + 4.9<i>h</i>²)/<i>h</i> = 29.4 + 4.9<i>h</i>.</p><p>As <i>h</i> → 0: <b><i>v</i>(3) = 29.4 m/s</b>.</p>
+    <p class="hint">In general, for <i>s</i> = 4.9<i>t</i>², <i>v</i>(<i>a</i>) = 9.8<i>a</i>.</p>`,'w5');
+  const c=card(g,'Average velocity approaches instantaneous velocity','<p>A ball falls with <i>s</i> = 4.9<i>t</i>². Shrink the time interval [<i>t</i>, <i>t</i> + <i>h</i>].</p>');let K;const R=stats(c,['Interval','Average velocity','Instantaneous velocity']);
+  const cv=canvas(c,280,(ctx,w,h)=>{if(!K)return;const f=t=>4.9*t*t,a=K.v.t,hh=HS[K.v.k],P=plot(ctx,w,h,{x0:0,x1:6,y0:0,y1:180,xt:6,yt:6,xd:0,yd:0,xl:'Time t (s)',yl:'Distance fallen s (m)'}),k=P.K,m=(f(a+hh)-f(a))/hh,v=9.8*a;
+    P.clip(()=>{P.line(samp(f,0,6)[0],k.s1,{w:2.4});P.line([[0,f(a)-v*a],[6,f(a)+v*(6-a)]],k.mute,{w:1.6,dash:[6,5]});P.line([[0,f(a)-m*a],[6,f(a)+m*(6-a)]],k.s2,{w:2});P.dot(a+hh,f(a+hh),k.s2);P.dot(a,f(a),k.s4);});});
+  K=ctl(c,[{k:'t',l:'Time t',min:.5,max:4,step:.5,v:3,dp:1,u:'s'},{k:'k',l:'h',min:0,max:5,step:1,v:0,f:i=>String(HS[i]),u:'s'}],v=>{const hh=HS[v.k],f=t=>4.9*t*t;R(0,`[${v.t}, ${fmtn(v.t+hh)}]`);R(1,fmtn((f(v.t+hh)-f(v.t))/hh)+' m/s');R(2,fmtn(9.8*v.t)+' m/s');cv.draw();});K.set({});
+},qz:[
+  {q:'A ball falls s = 4.9t² metres. What is its average velocity from t = 2 s to t = 3 s?',n:24.5,u:'m/s',w:'(4.9(9) − 4.9(4))/1 = 24.5 m/s.'},
+  {q:'For s = 4.9t², what is the instantaneous velocity at t = 2 s?',n:19.6,u:'m/s',w:'(4.9(2 + h)² − 19.6)/h = 19.6 + 4.9h → 19.6 m/s.'},
+  {q:'A particle has position s = t² + 3t (metres, seconds). What is its velocity at t = 2 s?',n:7,u:'m/s',w:'[(2 + h)² + 3(2 + h) − 10]/h = 7 + h → 7 m/s.'},
+  {q:'A ball thrown upward has height s = 40t − 5t². What is its velocity at t = 1 s?',n:30,u:'m/s',w:'[40(1 + h) − 5(1 + h)² − 35]/h = 30 − 5h → 30 m/s.'},
+  {q:'For the same ball, s = 40t − 5t², at what time is its velocity zero (the top of its path)?',n:4,u:'s',w:'v(a) = 40 − 10a = 0, thus a = 4 s.'},
+  {q:'What is the instantaneous rate of change of the area of a circle, A = πr², with respect to r when r = 5?',n:31.42,w:'[π(5 + h)² − 25π]/h = 10π + πh → 10π ≈ 31.4.'},
+  {q:'What is the average rate of change of f(x) = x³ from x = 1 to x = 3?',n:13,abs:.001,w:'(27 − 1)/(3 − 1) = 13.'},
+  {q:'On a position-time graph, what is the instantaneous velocity at a point?',o:['The slope of the tangent at that point','The slope of a secant line','The area under the graph','The height of the graph'],a:0,w:'Velocity is the limit of average velocities, which are secant slopes.'}]},
+/* ---------------- 5: infinite sequences ---------------- */
+{t:'Sequences',ic:'lseq',h:'Infinite sequences',d:'A sequence is an ordered list of numbers. Its limit is the number that the terms approach as n becomes very large.',build(g){
+  card(g,'Sequences and their limits',`<p>A <b>sequence</b> <i>t</i><sub>1</sub>, <i>t</i><sub>2</sub>, <i>t</i><sub>3</sub>, … is a function of the positive integers <i>n</i>. It can be given by a formula, for example <i>t<sub>n</sub></i> = <i>n</i>/(<i>n</i> + 1), or <b>recursively</b>, from earlier terms (Fibonacci: <i>f<sub>n</sub></i> = <i>f</i><sub><i>n</i>−1</sub> + <i>f</i><sub><i>n</i>−2</sub>).</p>
+    <div class="fx">${LIM('<i>n</i>→∞')} <i>t<sub>n</sub></i> = <i>L</i></div><p>means the terms are as close to <i>L</i> as we like for all large enough <i>n</i>. If no such <i>L</i> exists, the sequence has no limit (it <b>diverges</b>).</p>
+    <h4>Useful facts</h4><ul><li>${LIM('<i>n</i>→∞')} 1/<i>n<sup>r</sup></i> = 0 for <i>r</i> &gt; 0.</li><li>If |<i>r</i>| &lt; 1, ${LIM('<i>n</i>→∞')} <i>r<sup>n</sup></i> = 0. (−1)<sup><i>n</i></sup> has no limit.</li><li>For a rational expression, divide the top and the bottom by the highest power of <i>n</i> in the denominator.</li></ul>`,'w7');
+  card(g,'Worked examples',ex('lim (n→∞) (3n² − n)/(n² + 5)','<p>Divide by <i>n</i>²: (3 − 1/<i>n</i>)/(1 + 5/<i>n</i>²) → (3 − 0)/(1 + 0) = <b>3</b>.</p>')+
+    ex('lim (n→∞) (5n + 2)/(n² + 1)','<p>Divide by <i>n</i>²: (5/<i>n</i> + 2/<i>n</i>²)/(1 + 1/<i>n</i>²) → 0/1 = <b>0</b>.</p>')+
+    ex('A recursive sequence: t₁ = 2, tₙ = 3tₙ₋₁ − 1','<p><i>t</i><sub>2</sub> = 5, <i>t</i><sub>3</sub> = 14, <i>t</i><sub>4</sub> = <b>41</b>. The terms grow without bound: no limit.</p>'),'w5');
+  const c=card(g,'Sequence plotter','<p>The first 30 terms. The dashed line is the limit, if there is one.</p>');const sh=el('div'),R=stats(c,['First terms','t₃₀','Limit']);c.insertBefore(sh,c.children[2]);
+  const S=[['n/(n + 1)',n=>n/(n+1),1],['1/n',n=>1/n,0],['(−1)ⁿ',n=>(-1)**n,null],['(1/2)ⁿ',n=>.5**n,0],['(2n² + 1)/(n² + n)',n=>(2*n*n+1)/(n*n+n),2],['(−1)ⁿ/n',n=>(-1)**n/n,0],['(1.1)ⁿ',n=>1.1**n,null]];
+  let si=0;const cv=canvas(c,260,(ctx,w,h)=>{const [,f,L]=S[si],v=Array.from({length:30},(_,i)=>f(i+1)),lo=Math.min(0,...v),hi=Math.max(1,...v),P=plot(ctx,w,h,{x0:0,x1:31,y0:Math.floor(lo),y1:Math.ceil(hi*1.05*10)/10,xt:6,yt:4,xd:0,yd:1,xl:'n',yl:'tₙ'}),k=P.K;
+    P.clip(()=>{if(L!=null)P.line([[0,L],[31,L]],k.mute,{w:1.6,dash:[6,5]});v.forEach((y,i)=>P.dot(i+1,y,k.s1,3.2));});});
+  const show=i=>{si=i;const [,f,L]=S[i];R(0,[1,2,3,4,5].map(n=>fmtn(+f(n).toFixed(4))).join(', ')+', …');R(1,fmtn(+f(30).toFixed(6)));R(2,L==null?'None (diverges)':String(L));cv.draw();};seg(sh,S.map(x=>x[0]),show);show(0);
+},qz:[
+  {q:'For tₙ = (2n + 1)/(n + 3), what is t₄? Give a decimal or a fraction.',n:9/7,abs:.001,w:'t₄ = 9/7 ≈ 1.29.'},
+  {q:'What is lim (n→∞) (2n + 1)/(n + 3)?',n:2,abs:.001,w:'Divide by n: (2 + 1/n)/(1 + 3/n) → 2.'},
+  {q:'What is lim (n→∞) (3n² − n)/(n² + 5)?',n:3,abs:.001,w:'Divide by n²: 3/1 = 3.'},
+  {q:'What is lim (n→∞) (5n + 2)/(n² + 1)?',n:0,abs:.001,w:'The denominator grows faster: the limit is 0.'},
+  {q:'What is lim (n→∞) (−1)ⁿ?',o:['It does not exist','0','1','−1'],a:0,w:'The terms alternate between −1 and 1.'},
+  {q:'Which sequence converges to 0?',o:['(2/3)ⁿ','(3/2)ⁿ','(−1)ⁿ','n/(n + 1)'],a:0,w:'If |r| < 1, rⁿ → 0.'},
+  {q:'t₁ = 2 and tₙ = 3tₙ₋₁ − 1. What is t₄?',n:41,abs:.001,w:'t₂ = 5, t₃ = 14, t₄ = 41.'},
+  {q:'What is lim (n→∞) 1/√n?',n:0,abs:.001,w:'1/n^r → 0 for r > 0; here r = 1/2.'}]},
+/* ---------------- 6: infinite series ---------------- */
+{t:'Series',ic:'lser',h:'Infinite series',d:'The sum of an infinite series is the limit of its partial sums. A geometric series with |r| < 1 has the sum a/(1 − r).',build(g){
+  card(g,'Partial sums and convergence',`<p>For a series <i>t</i><sub>1</sub> + <i>t</i><sub>2</sub> + <i>t</i><sub>3</sub> + …, the <b>partial sums</b> are <i>S</i><sub>1</sub> = <i>t</i><sub>1</sub>, <i>S</i><sub>2</sub> = <i>t</i><sub>1</sub> + <i>t</i><sub>2</sub>, …, <i>S<sub>n</sub></i> = <i>t</i><sub>1</sub> + … + <i>t<sub>n</sub></i>.</p>
+    <p>If ${LIM('<i>n</i>→∞')} <i>S<sub>n</sub></i> = <i>S</i>, the series <b>converges</b> and its sum is <i>S</i>. Otherwise it <b>diverges</b>. Examples: 1 + 1 + 1 + … diverges; 1 − 1 + 1 − 1 + … diverges (the partial sums are 1, 0, 1, 0, …).</p>
+    <h4>The geometric series</h4><div class="fx"><i>a</i> + <i>ar</i> + <i>ar</i>² + … = ${FR('<i>a</i>','1 − <i>r</i>')} &nbsp; if |<i>r</i>| &lt; 1</div><p>If |<i>r</i>| ≥ 1, the geometric series diverges. (Reason: <i>S<sub>n</sub></i> = <i>a</i>(1 − <i>r<sup>n</sup></i>)/(1 − <i>r</i>), and <i>r<sup>n</sup></i> → 0 only when |<i>r</i>| &lt; 1.)</p>
+    <p class="hint">Zeno’s paradox: ½ + ¼ + ⅛ + … = (½)/(1 − ½) = 1. You do reach the wall.</p>`,'w7');
+  const rd=card(g,'Repeating decimals','<p>0.<span style="text-decoration:overline">27</span> = 27/100 + 27/10 000 + … is geometric with <i>a</i> = 27/100 and <i>r</i> = 1/100, thus it equals (27/100)/(99/100) = 27/99 = 3/11. Type a repeating block:</p>','w5');
+  rd.insertAdjacentHTML('beforeend','<div class="row"><span>0.</span><input type="text" inputmode="numeric" maxlength="6" value="27" aria-label="Repeating digits" style="width:6rem"><span>repeating</span></div><p class="note" data-o></p>');
+  const ri=$('input',rd),ro=$('[data-o]',rd),conv=()=>{const d=ri.value.replace(/\D/g,'');if(!d){ro.textContent='Type one to six digits.';return;}const num=+d,den=+'9'.repeat(d.length),g2=gcd(num,den);ro.innerHTML=`0.<span style="text-decoration:overline">${d}</span> = ${num}/${den}${g2>1?` = <b>${num/g2}/${den/g2}</b>`:''}${num===den?' = 1':''}`;};ri.oninput=conv;conv();
+  const c=card(g,'Geometric series explorer','<p>Change the first term <i>a</i> and the ratio <i>r</i>. The dots are the partial sums <i>S<sub>n</sub></i>.</p>');let K;const R=stats(c,['Series','S₁₀','Sum']);
+  const cv=canvas(c,270,(ctx,w,h)=>{if(!K)return;const {a,r}=K.v,S=[];let s=0;for(let n=0;n<25;n++){s+=a*r**n;S.push(s);}const lo=Math.max(-60,Math.min(0,...S)),hi=Math.min(60,Math.max(1,...S)),P=plot(ctx,w,h,{x0:0,x1:26,y0:Math.floor(lo),y1:Math.ceil(hi*1.1),xt:5,yt:4,xd:0,yd:0,xl:'n',yl:'Sₙ'}),k=P.K;
+    P.clip(()=>{if(Math.abs(r)<1)P.line([[0,a/(1-r)],[26,a/(1-r)]],k.mute,{w:1.6,dash:[6,5]});S.forEach((y,i)=>P.dot(i+1,y,k.s1,3.2));});});
+  K=ctl(c,[{k:'a',l:'First term a',min:1,max:10,step:1,v:8},{k:'r',l:'Ratio r',min:-1.2,max:1.2,step:.05,v:.5,dp:2}],v=>{const {a,r}=v,s10=r===1?10*a:a*(1-r**10)/(1-r);R(0,`${a} + ${fmtn(+(a*r).toFixed(4))} + ${fmtn(+(a*r*r).toFixed(4))} + …`);R(1,fmtn(+s10.toFixed(4)));R(2,Math.abs(r)<1?`${a}/(1 − ${fmtn(r)}) = <b>${fmtn(+(a/(1-r)).toFixed(4))}</b>`:'Diverges (|r| ≥ 1)');cv.draw();});K.set({});
+  const sp=card(g,'Converges or diverges?','<p>A speed round.</p>');
+  const CQ=[['1 + 1/3 + 1/9 + 1/27 + …',0],['2 + 4 + 8 + 16 + …',1],['1 − 1 + 1 − 1 + …',1],['5 − 2.5 + 1.25 − …',0],['0.9 + 0.09 + 0.009 + …',0],['1 + 1.1 + 1.21 + 1.331 + …',1],['3 + 3 + 3 + …',1],['4 − 1 + 1/4 − 1/16 + …',0]];
+  speed(sp,'conv',{title:'Converges or diverges',intro:'Decide for 8 series.',items:()=>shuffle(CQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Converges','Diverges'],a}))});
+},qz:[
+  {q:'Find the sum: 8 + 4 + 2 + 1 + …',n:16,abs:.001,w:'a = 8, r = 1/2: 8/(1 − 1/2) = 16.'},
+  {q:'Find the sum: 9 − 3 + 1 − 1/3 + …',n:6.75,abs:.001,w:'a = 9, r = −1/3: 9/(4/3) = 27/4 = 6.75.'},
+  {q:'Write 0.272727… as a fraction in lowest terms. Type it as a/b or as a decimal.',n:3/11,abs:.0005,w:'27/99 = 3/11.'},
+  {q:'Find the partial sum S₅ of 1/2 + 1/4 + 1/8 + …',n:.96875,abs:.0001,w:'31/32 = 0.96875.'},
+  {q:'Find the sum of 5 + 5(0.2) + 5(0.2)² + …',n:6.25,abs:.001,w:'5/(1 − 0.2) = 6.25.'},
+  {q:'Does 3 + 15/4 + 75/16 + … converge?',o:['No: r = 5/4, thus |r| ≥ 1','Yes: the sum is 12','Yes: the sum is −12','Yes: the terms are positive'],a:0,w:'A geometric series with |r| ≥ 1 diverges.'},
+  {q:'Why does 1 − 1 + 1 − 1 + … diverge?',o:['Its partial sums alternate 1, 0, 1, 0, … and have no limit','Its terms are not all positive','Its sum is 0','Its sum is 1/2'],a:0,w:'A series converges only if its partial sums have a limit.'},
+  {q:'What is the sum of a geometric series with first term a and ratio r, where |r| < 1?',o:['a/(1 − r)','a/(1 + r)','a(1 − r)','a·r/(1 − r)'],a:0,w:'S = lim Sₙ = a(1 − 0)/(1 − r).'}]}];
+SUBJ.lim={name:'Limits and rates of change',short:'Limits',lessons:LML};
+
+const CH_LIM=[
+  {q:'Find the tangent line to y = x³ at x = 2 with the limit definition. What is the y-intercept of the tangent line?',n:-16,abs:.001,w:'[(2 + h)³ − 8]/h = 12 + 6h + h² → 12. The point is (2, 8): y − 8 = 12(x − 2), thus y = 12x − 16.'},
+  {q:'Evaluate lim (x→0) [√(1 + x) − √(1 − x)] / x.',n:1,abs:.001,w:'Multiply by √(1 + x) + √(1 − x): the top becomes 2x. The result is 2/(√(1 + x) + √(1 − x)) → 2/2 = 1.'},
+  {q:'f(x) = kx² for x ≤ 2 and 3x + k for x > 2. For which k is f continuous at 2?',n:2,abs:.001,w:'The left limit and f(2) are 4k; the right limit is 6 + k. 4k = 6 + k, thus k = 2.'},
+  {q:'Two lines through the point (1, −3) are tangent to y = x². What is the larger of their two slopes?',n:6,abs:.001,w:'The tangent at x = a is y = 2ax − a². It passes through (1, −3) if −3 = 2a − a², thus a² − 2a − 3 = 0, a = 3 or a = −1. The slopes are 6 and −2.'},
+  {q:'A stone is thrown up with height h = 30t − 4.9t² (metres). What is its speed when it hits the ground?',n:30,u:'m/s',w:'h = 0 when t = 30/4.9 ≈ 6.12 s. v(a) = 30 − 9.8a = 30 − 60 = −30, thus the speed is 30 m/s (downward).'},
+  {q:'Evaluate lim (n→∞) (√(n² + n) − n).',n:.5,abs:.001,w:'Multiply by (√(n² + n) + n)/(√(n² + n) + n): n/(√(n² + n) + n). Divide by n: 1/(√(1 + 1/n) + 1) → 1/2.'},
+  {q:'A ball is dropped from 10 m. After each bounce it rises to 3/5 of the height of the fall before. What is the total vertical distance that it travels?',n:40,u:'m',w:'Down 10 m, then up and down 6 + 3.6 + … each: 10 + 2 × 6/(1 − 0.6) = 10 + 30 = 40 m.'}];
+
+GEN.lim=[
+  ()=>{const a=RN(1,9,1),s=RN(-5,5,1)||1;return {L:1,q:`Evaluate lim (x→${a}) (x² − ${a*a})/(x − ${a}).`,n:2*a,abs:.001,w:`Factor: (x − ${a})(x + ${a})/(x − ${a}) = x + ${a} → ${2*a}.`};},
+  ()=>{const p=RN(1,4,1),q=RN(-6,6,1)||5,a=RN(-3,3,1),m=2*p*a+q;return {L:3,q:`Find the slope of the tangent to y = ${p===1?'':p}x² ${q<0?'−':'+'} ${Math.abs(q)}x at x = ${a}.`,n:m,abs:.001,w:`[f(${a} + h) − f(${a})]/h = ${2*p*a+q} + ${p}h → ${m}.`};},
+  ()=>{const a=RN(2,20,1),d=[2,3,4,5][Math.floor(Math.random()*4)],sg=Math.random()<.5?1:-1,r=sg/d,S=a/(1-r);return {L:6,q:`Find the sum of the geometric series with first term ${a} and common ratio ${sg<0?'−':''}1/${d}.`,n:S,abs:.001,w:`S = a/(1 − r) = ${a}/(1 ${sg<0?'+':'−'} 1/${d}) = ${fmtn(+S.toFixed(4))}.`};},
+  ()=>{const a=RN(1,6,1),c=RN(1,5,1);return {L:4,q:`A particle has position s = t² + ${c}t (metres, seconds). Find its velocity at t = ${a} s.`,n:2*a+c,u:'m/s',w:`[(${a} + h)² + ${c}(${a} + h) − (${a*a+c*a})]/h = ${2*a+c} + h → ${2*a+c} m/s.`};},
+  ()=>{const p=RN(1,9,1),q=RN(1,9,1);return {L:5,q:`Find lim (n→∞) (${p}n² + 3)/(${q}n² − n).`,n:p/q,abs:.001,w:`Divide by n²: ${p}/${q}${gcd(p,q)>1?' = '+(p/gcd(p,q))+'/'+(q/gcd(p,q)):''} ≈ ${fmtn(+(p/q).toFixed(4))}.`};}];
+
+REF.lim={f:[['Slope','<i>m</i> = Δ<i>y</i>/Δ<i>x</i> = (<i>y</i><sub>2</sub> − <i>y</i><sub>1</sub>)/(<i>x</i><sub>2</sub> − <i>x</i><sub>1</sub>)'],['Point-slope form','<i>y</i> − <i>y</i><sub>1</sub> = <i>m</i>(<i>x</i> − <i>x</i><sub>1</sub>)'],['Continuity at a','lim<sub><i>x</i>→<i>a</i></sub> <i>f</i>(<i>x</i>) = <i>f</i>(<i>a</i>)'],['Slope of a tangent','<i>m</i> = lim<sub><i>h</i>→0</sub> [<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)]/<i>h</i>'],['Instantaneous velocity','<i>v</i>(<i>a</i>) = lim<sub><i>h</i>→0</sub> [<i>s</i>(<i>a</i> + <i>h</i>) − <i>s</i>(<i>a</i>)]/<i>h</i>'],['Powers of n','lim<sub><i>n</i>→∞</sub> 1/<i>n<sup>r</sup></i> = 0 (<i>r</i> &gt; 0)'],['Powers of r','lim<sub><i>n</i>→∞</sub> <i>r<sup>n</sup></i> = 0 if |<i>r</i>| &lt; 1'],['Finite geometric sum','<i>S<sub>n</sub></i> = <i>a</i>(1 − <i>r<sup>n</sup></i>)/(1 − <i>r</i>)'],['Infinite geometric series','<i>S</i> = <i>a</i>/(1 − <i>r</i>), |<i>r</i>| &lt; 1'],['Difference of cubes','<i>a</i>³ − <i>b</i>³ = (<i>a</i> − <i>b</i>)(<i>a</i>² + <i>ab</i> + <i>b</i>²)']],
+ t:[['Linear function','A function f(x) = mx + b; its graph is a line.'],['Rate of change','How fast one quantity changes with respect to another; for a line, the slope.'],['Secant line','A line through two points of a curve.'],['Tangent line','The line through P whose slope is the limit of the slopes of secant lines PQ as Q approaches P.'],['Limit','lim (x→a) f(x) = L: f(x) is as close to L as we like when x is close enough to a, with x ≠ a.'],['One-sided limit','The limit from the left (x < a) or from the right (x > a).'],['Continuous','f is continuous at a if f(a) is defined and equal to lim (x→a) f(x).'],['Removable discontinuity','A hole: the limit exists but f(a) is missing or different.'],['Jump discontinuity','The left and right limits are different.'],['Infinite discontinuity','The values grow without bound near a (vertical asymptote).'],['Piecewise function','A function with different formulas on different intervals.'],['Step function','A piecewise constant function, for example a parking or postage cost.'],['Difference quotient','[f(a + h) − f(a)]/h: the slope of a secant line.'],['Position function','s = f(t): the position of a moving object at time t.'],['Average velocity','Δs/Δt over a time interval: the slope of a secant on the s-t graph.'],['Instantaneous velocity','The limit of average velocities: the slope of the tangent.'],['Sequence','An ordered list t₁, t₂, t₃, …'],['Recursive sequence','A sequence in which each term is found from earlier terms.'],['Convergent sequence','A sequence that has a limit as n → ∞.'],['Series','The sum of the terms of a sequence.'],['Partial sum','Sₙ = t₁ + t₂ + … + tₙ.'],['Convergent series','A series whose partial sums have a limit (its sum).'],['Geometric series','a + ar + ar² + …; it converges to a/(1 − r) when |r| < 1.']]};
+WRQ.lim=[
+  {q:'Use the definition of the slope of a tangent (a limit) to find the equation of the tangent to y = x² − 2x at the point where x = 3. Show each step.',marks:['Finds the point (3, 3)','Writes the difference quotient [f(3 + h) − f(3)]/h correctly','Simplifies it to 4 + h (cancels h)','Takes the limit: m = 4','Writes the tangent: y = 4x − 9 (or y − 3 = 4(x − 3))'],
+    model:'<p>f(3) = 9 − 6 = 3. [f(3 + h) − f(3)]/h = [(3 + h)² − 2(3 + h) − 3]/h = (9 + 6h + h² − 6 − 2h − 3)/h = (4h + h²)/h = 4 + h. As h → 0, m = 4. Tangent: y − 3 = 4(x − 3), thus y = 4x − 9.</p>'},
+  {q:'Explain, with an example, how lim (x→a) f(x) can exist although f(a) is not defined. Then explain what this means for continuity.',marks:['States that a limit depends only on values of f near a, not at a','Gives a correct example, such as (x² − 9)/(x − 3) at a = 3','Shows that the limit of the example exists (6) by simplifying','States that f(a) is not defined, thus f is not continuous at a','Names this a removable discontinuity (a hole)'],
+    model:'<p>The definition of a limit uses x close to a but x ≠ a. For f(x) = (x² − 9)/(x − 3), f(3) is 0/0 and is not defined. But for x ≠ 3, f(x) = x + 3, thus lim (x→3) f(x) = 6. Because f(3) is not defined, f is not continuous at 3: the graph is the line y = x + 3 with a hole at (3, 6), a removable discontinuity.</p>'}];
+
 /* ===================== learning game: mastery, daily challenge, combo, boss round, weekly goal, badges, speed rounds, challenges, map, level ===================== */
 const LVN=['Not started','Learning','Practised','Mastered'];
 const p2=n=>String(n).padStart(2,'0'),dayOf=t=>{const d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());},today=()=>dayOf(Date.now());
@@ -4044,6 +4279,7 @@ function goLesson(sk,L){const ti=SUBJECTS.findIndex(s=>s.units.includes(sk));cur
 /* ----- challenge problems: one for each lesson, unlocked by mastery ----- */
 const CH={
 pr:CH_PR,
+lim:CH_LIM,
 ff:CH_FF,
 mom:[
   {q:'A 7.26 kg shot put moves at 2.50 m/s. A 0.160 kg hockey puck has the same momentum. Calculate the speed of the puck in km/h.',n:408,u:'km/h',tol:.02,w:'p = (7.26)(2.50) = 18.15 kg·m/s. v = p / m = 18.15 / 0.160 = 113.4 m/s. 113.4 m/s × 3.6 = 408 km/h.'},
