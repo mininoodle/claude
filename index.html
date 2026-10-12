@@ -199,8 +199,10 @@ blockquote.lq cite{display:block;margin-top:.45em;font:600 .8rem -apple-system,B
 .tsw input:checked+.tsk{background:var(--a1)}.tsw input:checked+.tsk::after{transform:translateX(18px)}.tsw input:focus-visible+.tsk{outline:3px solid var(--at);outline-offset:2px}
 .tsw small{display:block;color:var(--ink2);font-size:.86rem}
 .confrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:.8em 0 .2em}
-.q.needc .ops,.q.needc .num{opacity:.4;pointer-events:none}
-.q.needc::before{content:"Choose how sure you are before you answer.";display:block;font-size:.84rem;color:var(--at);font-weight:600;margin-bottom:.4em}
+.q.prec .fb,.q.prec .hints{display:none}
+.q.prec .op.ok,.q.prec .op.bad{background:var(--glass2);border-color:var(--hair)}
+.q.prec .pop,.q.prec .shake,.q.prec .op.pop,.q.prec .op.shake{animation:none}
+.q.prec .num input.ok,.q.prec .num input.bad{border-color:var(--hair);background:var(--well)}
 /* answer combo */
 .combo{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;gap:.45em;padding:.5em 1em;border-radius:999px;font:700 .95rem ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at);pointer-events:none;opacity:0;transform:translateY(12px) scale(.9);transition:opacity .3s,transform .4s var(--spring)}
 .combo.on{opacity:1;transform:none}
@@ -4150,12 +4152,13 @@ function runRound(box,o){let i=0,over=false,tm=0;const res=[],t0=Date.now(),n=o.
   function ask(){const x=o.items[i];
     box.innerHTML=`<div class="qh"><b>${o.title||'Question'} ${off+i+1} of ${tot}</b>${o.limit?`<span class="score" data-t>${fmtT(o.limit-(Date.now()-t0))} left</span>`:`<span class="score" data-c>${res.filter(r=>r.ok).length} correct</span>`}</div>
       <div class="bar2" style="margin:.4em 0 .7em"><i class="b2" style="width:${100*(off+i)/tot}%"></i></div><p class="hint" style="margin:0">${SUBJ[x.sk].name} · ${SUBJ[x.sk].lessons[x.L].t}</p>`;
-    const nx=el('button',{type:'button',class:'btn',disabled:''},i+1<n?'Next question':'Finish');let conf=null;
-    if(o.conf){const cr=el('div',{class:'confrow'},`<span class="hint">How sure are you?</span>`+CONF.map(([k,nm,d])=>`<button type="button" class="chip" data-c="${k}" title="${d}">${nm}</button>`).join(''));box.append(cr);
-      $$('.chip',cr).forEach(b=>b.onclick=()=>{conf=b.dataset.c;$$('.chip',cr).forEach(x=>x.classList.toggle('on',x===b));q.classList.remove('needc');});}
-    const q=qEl(x.it,'',null,e=>{if(over)return;res.push({x,ok:e.ok?1:0,conf,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L});srMark(x.id,!!e.ok);o.step&&o.step(res);
+    const nx=el('button',{type:'button',class:'btn',disabled:''},i+1<n?'Next question':'Finish');
+    /* with confidence on, the result stays hidden until the answer is rated */
+    const cr=o.conf?el('div',{class:'confrow',hidden:''},`<span class="hint">Before you see the result: how sure were you?</span>`+CONF.map(([k,nm,d])=>`<button type="button" class="chip" data-c="${k}" title="${d}">${nm}</button>`).join('')):null;
+    const q=qEl(x.it,'',null,e=>{if(over)return;res.push({x,ok:e.ok?1:0,conf:null,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L});srMark(x.id,!!e.ok);o.step&&o.step(res);
+      if(cr){q.classList.add('prec');cr.hidden=false;$$('.chip',cr).forEach(b=>b.onclick=()=>{res[res.length-1].conf=b.dataset.c;$$('.chip',cr).forEach(x=>x.classList.toggle('on',x===b));q.classList.remove('prec');cr.hidden=true;nx.disabled=false;nx.focus();});return;}
       nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=res.filter(r=>r.ok).length+' correct';},true);
-    if(o.conf)q.classList.add('needc');box.append(q);
+    box.append(q);if(cr)box.append(cr);
     const row=el('div',{class:'row'});row.append(nx);box.append(row);nx.onclick=()=>{if(over)return;i++;i<n?ask():fin(false);};}
   ask();}
 
@@ -4351,7 +4354,7 @@ function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const
   L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
 function testHead(L,title,lede){L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;return $('.grid',L);}
 
-function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence on each answer.'),st=testSetup();
+function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
   const c=card(g,'1. Choose what to test','<p class="hint">Select a subject to include all of its units, or select single units.</p>','w7');
   const tree=el('div',{class:'ttree'});c.append(tree);
   const units=testUnits();if(!Object.keys(st.units).length)units.forEach(({units:us})=>us.forEach(u=>st.units[u]=1));
@@ -4362,7 +4365,7 @@ function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a t
     boxes.forEach(([u,b])=>b.onchange=()=>{st.units[u]=b.checked?1:0;sync();upd();});sync();});
   const c2=card(g,'2. Length and confidence','','w5');
   const lenRow=el('div',{class:'ctl'}),len=ctl(lenRow,[{k:'n',l:'Questions',min:5,max:60,step:5,v:clamp(st.n,5,60)}],v=>{st.n=v.n;upd();});c2.append(lenRow);
-  const sw=el('label',{class:'tsw'},`<input type="checkbox" ${st.conf?'checked':''}><span class="tsk"></span><span><b>Rate my confidence</b><small>Before each answer, say whether you are sure, unsure or guessing. After the test, a revision section sorts your answers by confidence.</small></span></label>`);c2.append(sw);
+  const sw=el('label',{class:'tsw'},`<input type="checkbox" ${st.conf?'checked':''}><span class="tsk"></span><span><b>Rate my confidence</b><small>After each answer, and before you see the result, say whether you were sure, unsure or guessing. After the test, a revision section sorts your answers by confidence.</small></span></label>`);c2.append(sw);
   $('input',sw).onchange=e=>{st.conf=e.target.checked;upd();};
   const sum=el('p',{class:'note'}),row=el('div',{class:'row'}),go=el('button',{type:'button',class:'btn'},icon('play',15)+'Start the test');row.append(go);c2.append(sum,row);
   const upd=()=>{gset('tset',st);const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]),pool=testPool(sel).length,n=Math.min(st.n,pool);
@@ -4371,7 +4374,7 @@ function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a t
   const last=gv('tlast');if(last){const r=card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
 }
 
-function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Rate your confidence, then answer.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Answer each question, then rate how sure you were before you see the result.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
   runRound(box,{items,title:'Question',conf,done:res=>testResults(L,res,conf)});stopBtn(c,L);}
 function stopBtn(c,L){const r=el('div',{class:'row',style:'justify-content:flex-end'}),b=el('button',{type:'button',class:'btn sm ghost'},'Stop this test');let armed=0;
   b.onclick=()=>{if(!armed){armed=1;b.textContent='Select again to stop. Your answers so far are saved.';setTimeout(()=>{armed=0;b.textContent='Stop this test';},4000);return;}testSetupPage(L);};r.append(b);c.append(r);}
