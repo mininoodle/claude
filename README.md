@@ -9,7 +9,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Tab | Units |
 |---|---|
 | Today | Daily 5-question challenge, weekly goal, level, progress map, badges |
-| Physics | Momentum |
+| Physics | Momentum, Forces and fields |
 | Biology | Nervous system, Senses |
 | Chemistry | Equilibrium |
 | Math | No units yet |
