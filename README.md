@@ -14,6 +14,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Chemistry | Equilibrium |
 | Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
+| Social Studies | Ideologies and identity (Related Issue 1): ideology, democratic primer, the American political system, translating the will of the people, classical liberalism, thinkers and liberal democracy |
 | Test | Build a test from any subjects and units, with optional confidence ratings and a revision section |
 
 ## Features
