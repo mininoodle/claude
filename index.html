@@ -108,6 +108,9 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
 .bar{border-radius:999px;padding:5px;max-width:100%;display:flex;align-items:center;gap:4px}
 .modebtn{appearance:none;border:1px solid var(--hair);background:var(--glass2);color:var(--ink);width:36px;height:36px;border-radius:50%;padding:0;display:grid;place-items:center;cursor:pointer;flex:none;box-shadow:inset 0 1px 0 var(--hi);transition:transform .25s var(--spring)}
 .modebtn:active{transform:scale(.9) rotate(20deg)}
+.modebtn.acct.on{color:var(--a1);border-color:var(--a2);background:color-mix(in srgb,var(--a2) 28%,var(--glass2))}
+.modebtn.acct:active{transform:scale(.9)}
+dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--glass2);border:1px solid var(--hair);border-radius:6px;padding:.1em .4em}
 .seg{position:relative;display:flex;border-radius:999px;isolation:isolate}
 .seg.main button{display:flex;align-items:center;gap:.5em}
 .seg button{appearance:none;border:0;background:none;color:var(--ink);font:inherit;font-weight:600;font-size:.94rem;padding:.55em 1.15em;border-radius:999px;cursor:pointer;white-space:nowrap;position:relative;z-index:1;transition:color .3s,transform .2s var(--spring)}
@@ -549,6 +552,10 @@ p.legend>span{white-space:nowrap}
 <main id="main"><div class="units" id="units" hidden></div></main>
 <script>
 'use strict';
+/* Cross-device sync (optional). Paste the web app config from your Firebase project here to turn on Google sign-in,
+   for example: const FIREBASE_CONFIG={apiKey:'...',authDomain:'...firebaseapp.com',projectId:'...',appId:'...'};
+   Leave it as null to keep all progress on this device only. See README.md for the setup steps. */
+const FIREBASE_CONFIG=null;
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 function el(t,a={},h){const e=document.createElement(t);for(const k in a){if(k==='class')e.className=a[k];else e.setAttribute(k,a[k]);}if(h!=null)e.innerHTML=h;return e;}
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -580,7 +587,7 @@ const Store=(()=>{
   const local=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
   async function push(){if(!ref||busy||!dirty)return;busy=true;dirty=false;
     try{await ref.set(JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w,h:D.h,g:D.g})));}
-    catch(e){const c=e&&e.code;if(c==='unavailable'||c==='resource_exhausted')dirty=true;else{ref=null;mode='device';emit();}}
+    catch(e){const c=e&&e.code;if(c==='unavailable'||c==='resource_exhausted')dirty=true;else{ref=null;label='';mode='device';emit();}}
     busy=false;if(dirty&&ref){clearTimeout(timer);timer=setTimeout(push,4000);}}
   const later=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(push,ms);};
   const touch=()=>{local();if(ref)later(1500);};
@@ -590,9 +597,16 @@ const Store=(()=>{
       for(const k in lm){const r=rm[k];if(!r||(lm[k].t||0)>(r.t||0))up=true;}});
     if(ch){local();emit();}if(up)later(800);}
   async function pull(){if(!ref)return;lastPull=Date.now();try{const s=await ref.get();merge(s.exists?s.data():null);}catch(e){}}
+  let label='',lastSync=0;
+  /* attach a remote document {get(),set(data)}; the local data and the remote data are merged, newest entry wins */
+  async function attach(r,o={}){ref=r;label=o.label||'';mode='account';emit();await pull();lastSync=Date.now();if(dirty&&ref){clearTimeout(timer);await push();}emit();}
+  function detach(){ref=null;label='';mode='device';lastSync=0;clearTimeout(timer);emit();}
+  /* a live update from the remote store (another device wrote) */
+  const remote=data=>{if(!ref)return;lastSync=Date.now();merge(data);emit();};
+  async function sync(){if(!ref)return false;clearTimeout(timer);await pull();if(dirty)await push();lastSync=Date.now();emit();return true;}
   async function connect(){try{if(!window.claude||typeof window.claude.use!=='function')return;
     const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return;
-    const id=await user.id();if(!id)return;ref=db.doc('data/users/'+id+'/progress');mode='account';emit();await pull();}catch(e){}}
+    const id=await user.id();if(!id)return;await attach(db.doc('data/users/'+id+'/progress'),{label:'Claude account'});}catch(e){}}
   document.addEventListener('visibilitychange',()=>{if(document.hidden){if(dirty&&ref){clearTimeout(timer);push();}}else if(ref&&Date.now()-lastPull>60000)pull();});
   const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});touch();};
   return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),del(id){if(g('a',id))p('a',id,{x:1});},
@@ -601,7 +615,7 @@ const Store=(()=>{
     w:k=>{const e=g('w',k);return e?e.v:null;},wSet:(k,v)=>p('w',k,{v}),
     x:(m,k)=>g(m,k),xs:(m,k,e)=>p(m,k,e),xk:m=>Object.keys(D[m]).filter(k=>!D[m][k].x),
     clear(f){let n=0;const t=Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&f(m,k)){D[m][k]={x:1,t};n++;}});if(n){touch();emit();}return n;},
-    pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect};
+    pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,account:()=>label,lastSync:()=>lastSync,pending:()=>dirty};
 })();
 /* spaced repetition: a missed question comes back after 1, 3 and 7 days */
 const SRI=[1,3,7],DAY=864e5;
@@ -960,6 +974,24 @@ function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeEl
   $('[data-x]',d).onclick=close;d.addEventListener('cancel',e=>{e.preventDefault();close();});d.addEventListener('click',e=>{if(e.target===d)close();});
   $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
   d.showModal();$('[data-x]',d).focus();}
+/* the account dialog: sign in, sign out, or an explanation when sync is not set up */
+function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',ready=!!(window.SYNC&&window.SYNC.ready);
+  const when=t=>{if(!t)return 'not yet';const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';};
+  let body,row;
+  if(on){body=`<h3 id="ac-h">Signed in</h3><p>Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device. Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.</p>`;
+    row=`<button type="button" class="btn ghost" data-out>Sign out</button><button type="button" class="btn" data-sync>${icon('reset',15)}Sync now</button>`;}
+  else if(ready){body=`<h3 id="ac-h">Sync across devices</h3><p>Sign in with Google to keep your answers, mastery levels, XP and badges the same on every device. The progress already on this device is kept and merged.</p><p class="hint">Only your progress is stored. You can sign out at any time.</p>`;
+    row=`<button type="button" class="btn ghost" data-x>Not now</button><button type="button" class="btn" data-in>${icon('user',15)}Sign in with Google</button>`;}
+  else{body=`<h3 id="ac-h">Sync is not set up</h3><p>Your progress is saved in this browser only. To sync across devices, the owner of this site must add a Firebase configuration to the file <code>index.html</code>. The steps are in the README.</p>${window.SYNC&&window.SYNC.error?`<p class="hint">Sign-in could not start: ${window.SYNC.error}</p>`:''}`;
+    row=`<button type="button" class="btn" data-x>Close</button>`;}
+  const d=el('dialog',{class:'confirm','aria-labelledby':'ac-h'},body+`<div class="row">${row}</div>`);
+  document.body.append(d);const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus();};
+  d.addEventListener('cancel',e=>{e.preventDefault();close();});d.addEventListener('click',e=>{if(e.target===d)close();});
+  const x=$('[data-x]',d);if(x)x.onclick=close;
+  const i=$('[data-in]',d);if(i)i.onclick=async()=>{i.disabled=true;try{await window.SYNC.signIn();close();}catch(e){i.disabled=false;toast('Sign-in did not complete: '+((e&&e.message)||'try again'));}};
+  const o=$('[data-out]',d);if(o)o.onclick=async()=>{close();try{if(window.SYNC&&window.SYNC.signOut)await window.SYNC.signOut();}catch(e){}Store.detach();toast('Signed out. Progress stays on this device.');};
+  const y=$('[data-sync]',d);if(y)y.onclick=async()=>{y.disabled=true;const ok=await Store.sync();close();toast(ok?'Synced.':'Not connected.');};
+  d.showModal();(x||i||y).focus();}
 /* a subject with no units yet: an empty page, no lesson chips */
 function emptySubject(S){
   curS=S.k;document.body.dataset.s=S.k;chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
@@ -981,6 +1013,10 @@ function boot(){
   const mb=el('button',{type:'button',class:'modebtn',id:'mode'});$('.bar').append(mb);
   const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();setTimeout(()=>{_col=null;redrawAll();},960);};
   let m0='light';try{m0=localStorage.getItem('unit-study-site.mode')||'light';}catch(e){}setMode(m0);mb.onclick=()=>setMode(document.documentElement.dataset.mode==='dark'?'light':'dark',true);
+  const ab=el('button',{type:'button',class:'modebtn acct',id:'acct'});$('.bar').append(ab);
+  const acctState=()=>{const on=Store.mode()==='account';ab.classList.toggle('on',on);ab.innerHTML=icon(on?'cloud':'user',17);
+    const t=on?'Synced with '+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
+  acctState();Store.on(acctState);ab.onclick=accountDialog;
   const p=Store.pos();if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
   if(p&&p.u)SUBJECTS.forEach(s=>{if(s.units.includes(p.u[s.k]))curU[s.k]=p.u[s.k];});
   const t0=Math.max(0,SUBJECTS.findIndex(s=>p&&(s.k===p.s||s.units.includes(p.s))));
@@ -1208,6 +1244,8 @@ addEventListener('scroll',tipHide,{passive:true});
 
 /* ---------- icons: 24 px line icons that take the text colour ---------- */
 const ICON={
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.2-4 4-6 8-6s6.8 2 8 6"/>',
+  cloud:'<path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.1 4.5 4.5 0 0 0 7 18.5Z"/><path d="m9.5 13.5 2 2 3.5-3.5"/>',
   mom:'<circle cx="15.5" cy="12" r="5.2"/><path d="M2.5 8.5h5M2 12h4.5M2.5 15.5h5"/>',
   eq:'<path d="M4 9h15.5l-4-4.2"/><path d="M20 15H4.5l4 4.2"/>',
   ns:'<circle cx="8.2" cy="12" r="3.1"/><path d="M5.9 9.9 3.6 6.8M5.1 12H2M5.9 14.1l-2.3 3.1M9.2 9l1-3.4M11.3 12h7.2M18.5 12l3-2.6M18.5 12l3 2.6"/>',
@@ -4504,6 +4542,35 @@ function testRevise(L,items,conf){TBUSY=1;const g=testHead(L,'Revision round',`$
 
 boot();
 
+</script>
+<script type="module">
+/* Google sign-in and cross-device sync. This runs only when FIREBASE_CONFIG above is filled in.
+   Progress is stored in Firestore at users/{uid}/progress/main, and merged with the data on this device. */
+window.SYNC={ready:false,error:''};
+if(FIREBASE_CONFIG){
+  try{
+    const V='10.12.0',U=n=>`https://www.gstatic.com/firebasejs/${V}/firebase-${n}.js`;
+    const [{initializeApp},A,F]=await Promise.all([import(U('app')),import(U('auth')),import(U('firestore'))]);
+    const app=initializeApp(FIREBASE_CONFIG),auth=A.getAuth(app),db=F.getFirestore(app),provider=new A.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    let unsub=null;
+    const popupBlocked=e=>e&&['auth/popup-blocked','auth/operation-not-supported-in-this-environment','auth/cancelled-popup-request'].includes(e.code);
+    window.SYNC={ready:true,error:'',
+      async signIn(){try{await A.signInWithPopup(auth,provider);}catch(e){if(popupBlocked(e))await A.signInWithRedirect(auth,provider);else throw e;}},
+      async signOut(){await A.signOut(auth);}};
+    try{await A.getRedirectResult(auth);}catch(e){window.SYNC.error=e.message||String(e);}
+    A.onAuthStateChanged(auth,async user=>{
+      if(unsub){unsub();unsub=null;}
+      if(!user){Store.detach();return;}
+      const ref=F.doc(db,'users',user.uid,'progress','main');
+      await Store.attach({
+        async get(){const s=await F.getDoc(ref);return {exists:s.exists(),data:()=>s.data()};},
+        async set(data){await F.setDoc(ref,data);}
+      },{label:user.email||user.displayName||'Google account'});
+      unsub=F.onSnapshot(ref,s=>{if(s.exists()&&!s.metadata.hasPendingWrites)Store.remote(s.data());},()=>{});
+    });
+  }catch(e){window.SYNC={ready:false,error:(e&&e.message)||String(e)};}
+}
 </script>
 
 </body></html>
