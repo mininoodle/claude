@@ -21,7 +21,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 
 - Lesson notes, interactive figures and quizzes with hints
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
-- Spaced repetition, review tests and a timed unit exam
+- Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 541 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
 - Boss round, challenge problems, speed rounds and an answer combo
 - Light and dark mode
 - Answers are saved in the browser, with an option to clear each section
