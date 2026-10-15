@@ -1,31 +1,41 @@
 # Wavelength
 
-A working music streaming player modelled on the Spotify desktop and mobile apps, built with plain HTML, CSS and JavaScript. It has no dependencies and makes no network requests apart from loading the Figtree font from Google Fonts.
+A working music streaming player modelled on the Spotify desktop and mobile apps, dressed as a monochrome terminal full of flowers. It is built with plain HTML, CSS and JavaScript, has no dependencies, and makes no network requests apart from loading two pixel fonts from Google Fonts.
 
 Open `index.html` in a browser to use it. Press any play button to start sound, because browsers block audio until the first click.
 
 ## What it does
 
-- Three-panel desktop layout: Your Library, the main view, an optional Now Playing or Queue panel, and the player bar.
+- Three-panel desktop layout: your library, the main view, an optional now playing or queue panel, and the `/media` player bar. Each region is a terminal window with a prompt title, a hairline rule and a `- x` pair.
 - Home, live search with genre browsing, and playlist, album, artist, Liked Songs, genre and queue views.
 - A full player: play and pause, next and previous, seek, shuffle, repeat, a manual queue, volume and mute, auto-advance and keyboard shortcuts.
-- A personal library kept in `localStorage` under keys starting with `wl:`. It holds liked songs, your own playlists, followed artists, saved albums and playlists, recent plays, and the player state, which is restored on reload.
+- A personal library kept in `localStorage` under keys starting with `wl:`. It holds liked songs, your own playlists, followed artists, saved albums and playlists, recent plays, the player state and your display preferences.
 - Tablet layout with a collapsed library rail. Phone layout with bottom navigation, a mini player and a full-screen player.
 
-All artists, albums, tracks and labels are invented. Cover art is drawn on a canvas from a seed. Every track is synthesised with the Web Audio API from its seed and genre, so each one has its own tempo, key, chords, melody, drums and arrangement.
+## The look
+
+- The interface is black, white and grey, set in DotGothic16 and VT323.
+- Anything that carries colour, such as cover art, goes through a media filter. The switcher at the top right offers `mono` (the default), `dither`, `invert`, `color`, `cyano` and `ink`. Only `color` and `cyano` let any hue through.
+- Every cover, artist image and genre tile is a generated flower composition. `src/flora.js` draws 19 species, from sakura and peony to thistle and dandelion, as white botanical silhouettes that are deterministic from a seed. Each genre has its own species.
+- Home has a system readout beside a flowering branch, a live clock and quick picks. Petals drift behind the interface. They can be switched off next to the filters and stop entirely when the system asks for reduced motion.
+
+All artists, albums, tracks and labels are invented. Every track is synthesised with the Web Audio API from its seed and genre, so each one has its own tempo, key, chords, melody, drums and arrangement.
 
 ## Files
 
 | Path | Contents |
 |---|---|
 | `index.html` | Standalone build. Open it directly or serve it. |
-| `src/index.html` | Page shell, icon sprite and script tags. |
-| `src/styles.css`, `src/player.css`, `src/app.css` | Tokens and layout, player styles, view styles. |
+| `src/index.html` | Page shell, pixel icon sprite, SVG filters and script tags. |
+| `src/styles.css`, `src/player.css`, `src/app.css` | Tokens, layout and filters; player styles; view styles. |
+| `src/flora.js` | `Flora`: the generative flower engine. |
 | `src/data.js` | `Catalog`: the generated catalogue, search, formatters and cover art. |
 | `src/audio.js` | `AudioEngine`: the generative music engine. |
 | `src/player.js` | `Player`: playback state machine and the player bar, mini player and full-screen player. |
-| `src/app.js` | `App` and `Library`: routing, views, menus, dialogs, toasts and persistence. |
-| `SPEC.md` | The full behaviour contract, including the acceptance checklist in section 12. |
+| `src/app.js` | `App` and `Library`: routing, views, menus, dialogs, toasts, filters, petals and persistence. |
+| `SPEC.md` | The behaviour contract, including the acceptance checklist in section 12. |
+| `DESIGN.md` | The visual contract for the monochrome restyle. |
+| `design/mocks/` | The three design directions that were compared. `terminal` was chosen and borrows ideas from the other two. |
 | `src/COMPONENTS.md` | Markup and class reference for the shared components. |
 
 ## Build

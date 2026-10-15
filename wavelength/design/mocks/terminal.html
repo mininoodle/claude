@@ -1,0 +1,1621 @@
+<!doctype html>
+<html lang="en" data-fx="mono">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wavelength terminal</title>
+<meta name="description" content="Design mock: Wavelength restyled as a monochrome terminal with media filters and procedural flowers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<style>
+/* =====================================================================
+   Wavelength / terminal — design mock stylesheet
+   One ink (white) on one ground (black); greys for hierarchy; colour only
+   inside media, and only through the --fx filter.
+   ===================================================================== */
+:root {
+  color-scheme: dark;
+  /* ink */
+  --bg: #000;
+  --fg: #fff;          /* primary text, rules that matter, inverted blocks */
+  --fg-2: #a3a3a3;     /* secondary text            8.3:1 on black */
+  --fg-3: #757575;     /* labels, meta, placeholders 4.6:1 on black */
+  --fg-4: #3a3a3a;     /* disabled, faint separators */
+  --rule: #8c8c8c;     /* window hairlines */
+  --rule-dim: #333;    /* row separators, dashed rules */
+  --hover: #1c1c1c;    /* ▒ hover fill */
+  --sel-bg: #fff;      /* █ selection = inverted block */
+  --sel-fg: #000;
+  --pat-playing: repeating-conic-gradient(#2c2c2c 0 25%, #000 0 50%) 0 0 / 4px 4px;   /* ░ playing */
+  --pat-shade: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; /* backdrop / drop shadow */
+  /* type: one pixel face, sizes on its 16px grid */
+  --font: 'DotGothic16', 'MS Gothic', 'Osaka-Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --fs-xs: 12px;   /* tiny caption on covers only */
+  --fs-s: 14px;    /* meta, sub lines, column heads */
+  --fs: 16px;      /* body: 1 px per font pixel */
+  --fs-l: 32px;    /* titles: 2 px per font pixel */
+  --fs-xl: 48px;   /* display: 3 px per font pixel */
+  --lh: 22px;
+  --gap: 12px;
+  /* media filter (set by the fx switcher) */
+  --fx: grayscale(1) contrast(1.12) brightness(1.02);
+}
+:root[data-fx="dither"] { --fx: url(#fx-dither); --fx-fine: url(#fx-dither-fine); }
+:root[data-fx="invert"] { --fx: grayscale(1) invert(1) contrast(1.1); }
+:root[data-fx="color"] { --fx: none; }
+:root[data-fx="cyano"] { --fx: url(#fx-cyano); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--fg); font: var(--fs)/var(--lh) var(--font); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+button, input, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+img { display: block; }
+[hidden] { display: none !important; }
+:focus-visible, .is-focus { outline: 1px dashed var(--fg); outline-offset: 2px; }
+::selection { background: var(--fg); color: var(--bg); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fx-defs { position: absolute; width: 0; height: 0; }
+
+/* scrollbars: a thin grey rail */
+.win__body, .sheet, .ctx-list { scrollbar-width: thin; scrollbar-color: #4a4a4a transparent; }
+
+/* media: every colour-carrying surface goes through the filter */
+.cover, .fx-media { filter: var(--fx); }
+/* thumbnails at 48px and below dither on a 1px grid so they stay readable */
+.lib-row .cover, .quick-tile .cover, .track-row__cover, .pb-cover .cover, .mini-player .cover { filter: var(--fx-fine, var(--fx)); }
+.cover { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; background: #111; }
+.cover--round { border-radius: 50%; }
+
+/* pixel icons (9-cell grids drawn at 2px) */
+.px { flex: none; fill: currentColor; shape-rendering: crispEdges; pointer-events: none; }
+
+/* blinking cursor */
+.cursor { display: inline-block; animation: blink 1.06s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ------------------------------------------------------------- window */
+.win { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding-top: 20px; padding-bottom: 10px; }
+.win::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(var(--rule), var(--rule)) left / 28px 1px no-repeat, linear-gradient(var(--rule), var(--rule)) right / 44px 1px no-repeat; }
+.win__bar { position: absolute; left: 0; right: 0; top: 0; height: 14px; pointer-events: none; }
+.win__bar::before { content: ''; position: absolute; left: 0; right: 52px; top: 7px; border-top: 1px solid var(--rule); }
+.win__ctl { position: absolute; right: 2px; top: -1px; display: flex; gap: 10px; line-height: 14px; color: var(--fg-2); pointer-events: auto; }
+.win__ctl button:hover { color: var(--fg); }
+.win__title { display: flex; align-items: center; gap: 12px; min-height: 26px; padding: 0 2px 0 4px; flex: none; }
+.prompt { white-space: nowrap; }
+.prompt::before { content: '>'; margin-right: 1ch; }
+.win__body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.win--box { border: 1px solid var(--rule); padding: 0; background: var(--bg); }
+.win--box::after { display: none; }
+.shadow { position: relative; }
+.shadow::before { content: ''; position: absolute; inset: 6px -6px -6px 6px; background: repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .22; z-index: -1; }
+
+/* ------------------------------------------------------------- buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 4px; color: var(--fg); white-space: nowrap; }
+.btn::before { content: '['; color: var(--fg-3); }
+.btn::after { content: ']'; color: var(--fg-3); }
+.btn:hover { background: var(--hover); }
+.btn:active, .btn.is-pressed { background: var(--fg); color: var(--bg); transform: translate(1px, 1px); }
+.btn--primary { background: var(--fg); color: var(--bg); padding: 0 10px; }
+.btn--primary::before, .btn--primary::after { content: none; }
+.btn--primary:hover { background: #d9d9d9; }
+.icon-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; color: var(--fg-2); position: relative; }
+.icon-btn:hover { color: var(--fg); background: var(--hover); }
+.icon-btn:active, .icon-btn.is-pressed { background: var(--fg); color: var(--bg); }
+.icon-btn.is-active { color: var(--fg); }
+.icon-btn.is-active::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 4px; height: 2px; margin-left: -2px; background: var(--fg); }
+.icon-btn.is-on { background: var(--fg); color: var(--bg); }
+.play-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; background: var(--fg); color: var(--bg); flex: none; }
+.play-btn:hover { background: #d9d9d9; }
+.play-btn:active { transform: translate(1px, 1px); }
+.play-btn--lg { width: 44px; height: 44px; }
+.play-btn--lg .px { width: 22px; height: 22px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { height: 24px; padding: 0 2px; color: var(--fg-2); text-transform: lowercase; white-space: nowrap; }
+.chip::before { content: '['; color: var(--fg-3); }
+.chip::after { content: ']'; color: var(--fg-3); }
+.chip:hover { color: var(--fg); }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); padding: 0 6px; }
+.chip[aria-pressed="true"]::before, .chip[aria-pressed="true"]::after { content: none; }
+.avatar { display: inline-grid; place-items: center; width: 24px; height: 24px; background: var(--fg); color: var(--bg); flex: none; }
+.avatar--24 { width: 20px; height: 20px; font-size: var(--fs-s); }
+.badge-e { display: inline-grid; place-items: center; width: 14px; height: 14px; color: var(--fg-2); flex: none; }
+
+/* fx switcher */
+.fx { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.fx__label { color: var(--fg-3); margin-right: 6px; }
+.fx__label::after { content: ':'; }
+.fx__opt { height: 24px; padding: 0 6px; color: var(--fg-2); }
+.fx__opt:hover { color: var(--fg); background: var(--hover); }
+.fx__opt[aria-checked="true"] { background: var(--fg); color: var(--bg); }
+
+/* ------------------------------------------------------------- frames */
+.frame, .sheet, .note { will-change: transform; } /* grayscale AA for pixel type (no LCD colour fringes) */
+.frame { position: relative; height: 100vh; min-height: 720px; max-height: 1000px; overflow: hidden; }
+.frame + .frame { border-top: 1px dashed var(--rule-dim); }
+.app { display: grid; grid-template-columns: 288px minmax(0, 1fr); grid-template-rows: 40px minmax(0, 1fr) auto; gap: 10px 16px; height: 100%; padding: 10px 16px 12px; }
+.phone-head, .mini-player, .bottom-nav, .fx--phone, .sheet-backdrop, .win--phone-only { display: none; }
+
+/* top bar */
+.topbar { grid-column: 1 / -1; display: grid; grid-template-columns: 288px minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+.logo { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); white-space: nowrap; }
+.logo__word::after { content: '_'; animation: blink 1.06s steps(1) infinite; }
+.topbar__center { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.round-btn { display: grid; place-items: center; width: 32px; height: 32px; color: var(--fg-2); }
+.round-btn:hover { color: var(--fg); background: var(--hover); }
+.round-btn.is-active { color: var(--fg); }
+.search-pill { position: relative; display: flex; align-items: center; gap: 1ch; width: min(480px, 100%); height: 32px; padding: 0 2px 0 4px; border-bottom: 1px dashed var(--rule); }
+.search-pill::before { content: '>'; color: var(--fg); }
+.search-pill:focus-within { border-bottom-style: solid; border-bottom-color: var(--fg); }
+.search-pill__input { flex: 1; min-width: 0; height: 30px; background: none; border: 0; outline: 0; caret-color: var(--fg); caret-shape: block; padding: 0; }
+.search-pill__input::placeholder { color: var(--fg-3); }
+.search-pill__input::-webkit-search-cancel-button { display: none; }
+.search-pill .caret { position: absolute; left: calc(4px + 27ch); top: 4px; pointer-events: none; animation: blink 1.06s steps(1) infinite; }
+.search-pill__input:focus ~ .caret, .search-pill__input:not(:placeholder-shown) ~ .caret { display: none; }
+.topbar__right { display: flex; align-items: center; gap: 16px; }
+.avatar-btn .avatar { width: 28px; height: 28px; }
+
+/* library window */
+.sidebar { grid-row: 2; grid-column: 1; }
+.lib-header { justify-content: space-between; }
+.lib-title { display: inline-flex; align-items: center; text-transform: lowercase; }
+.lib-title::before { content: '>'; margin-right: 1ch; }
+.lib-chips { display: flex; gap: 6px; padding: 6px 4px 2px; }
+.lib-filter { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 6px 4px; color: var(--fg-2); }
+.lib-sort { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-2); text-transform: lowercase; height: 28px; padding: 0 4px; }
+.lib-sort:hover { color: var(--fg); }
+.lib-cols { display: grid; grid-template-columns: 2ch 40px minmax(0, 1fr) auto; gap: 0 10px; padding: 0 6px 4px; color: var(--fg-3); font-size: var(--fs-s); border-bottom: 1px dashed var(--rule-dim); margin-bottom: 4px; }
+.lib-list { list-style: none; margin: 0; padding: 0; }
+.lib-row { display: grid; grid-template-columns: 2ch 40px minmax(0, 1fr); align-items: center; gap: 0 10px; width: 100%; height: 50px; padding: 0 6px; }
+.lib-row:hover { background: var(--hover); }
+.lib-row__gut { color: var(--fg); display: grid; place-items: center; }
+.lib-row.is-active .lib-row__gut::before { content: '>'; }
+.lib-row.is-playing .lib-row__gut::before { content: none; }
+.lib-row__cover { width: 40px; height: 40px; }
+.lib-row__text { display: flex; flex-direction: column; min-width: 0; }
+.lib-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-row .sub { display: flex; align-items: center; gap: 6px; color: var(--fg-3); font-size: var(--fs-s); line-height: 18px; white-space: nowrap; overflow: hidden; }
+.lib-row.is-playing { background: var(--pat-playing); }
+.lib-row.is-active .name::after { content: ' *'; color: var(--fg-3); }
+.lib-sprig { margin-top: auto; padding: 8px 0 0; opacity: .92; pointer-events: none; }
+.lib-sprig canvas { display: block; }
+
+/* equaliser: three bars, stepped like a meter */
+.equaliser { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.equaliser i { width: 2px; height: 100%; background: var(--fg); transform-origin: bottom; animation: eq 0.9s steps(4) infinite; }
+.equaliser i:nth-child(2) { animation-duration: 0.7s; animation-delay: -0.3s; }
+.equaliser i:nth-child(3) { animation-duration: 1.1s; animation-delay: -0.6s; }
+@keyframes eq { 0% { transform: scaleY(.25); } 50% { transform: scaleY(1); } 100% { transform: scaleY(.4); } }
+
+/* main window */
+.main { grid-row: 2; grid-column: 2; }
+.main-title { justify-content: space-between; }
+.main-title .chips { flex-wrap: nowrap; }
+.chips__avatar { display: none; }
+.main .win__body { padding: 4px 4px 0; }
+.page--home { display: grid; grid-template-columns: minmax(0, 1fr) 404px; gap: 12px 24px; align-items: start; }
+.page--home > .shelf { grid-column: 1 / -1; }
+
+/* system readout (neofetch) */
+.sysfetch { display: flex; align-items: center; gap: 22px; min-width: 0; height: 184px; padding-left: 12px; }
+.sysfetch__flora { flex: none; }
+.sysfetch__info { margin: 0; display: grid; gap: 0; line-height: 18px; min-width: 0; }
+.sysfetch__info div { display: flex; gap: 1ch; white-space: nowrap; }
+.sysfetch__info dt { color: var(--fg); }
+.sysfetch__info dt::after { content: ':'; }
+.sysfetch__info dd { margin: 0; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; }
+.sysfetch__info .gap { height: 10px; }
+.home-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.win--time { padding-bottom: 0; }
+.win--time::after { display: none; }
+.clock { display: flex; align-items: center; gap: 3ch; height: 26px; padding-left: 4px; white-space: nowrap; }
+.clock time { color: var(--fg); letter-spacing: .02em; }
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.home-side .win--time { padding-top: 16px; }
+.quick-tile { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; height: 30px; padding-right: 3px; }
+.quick-tile .cover { width: 30px; height: 30px; }
+.quick-tile__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick-tile .play-btn { width: 24px; height: 24px; visibility: hidden; }
+.quick-tile:hover, .quick-tile.is-hover { background: var(--hover); }
+.quick-tile:hover .play-btn, .quick-tile.is-playing .play-btn, .quick-tile.is-hover .play-btn { visibility: visible; }
+.quick-tile.is-playing { background: var(--pat-playing); }
+
+/* shelves and cards */
+.shelf { min-width: 0; }
+.shelf__head { display: flex; align-items: baseline; justify-content: space-between; height: 24px; }
+.shelf__title { text-transform: lowercase; color: var(--fg); }
+.shelf__title::before { content: '>'; margin-right: 1ch; }
+.shelf__title::after { content: '/'; color: var(--fg-3); }
+.shelf__all { color: var(--fg-3); text-transform: lowercase; font-size: var(--fs-s); }
+.shelf__all::before { content: '['; } .shelf__all::after { content: ']'; }
+.shelf__all:hover { color: var(--fg); text-decoration: none; }
+.card-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
+.card { position: relative; min-width: 0; padding: 0 0 4px; cursor: pointer; }
+.card__cover { position: relative; }
+.card__cover .play-btn { position: absolute; right: 0; bottom: 0; visibility: hidden; }
+.card:hover .card__cover, .card.is-hover .card__cover { outline: 1px solid var(--fg); outline-offset: 2px; }
+.card:hover .play-btn, .card.is-playing .play-btn, .card.is-hover .play-btn, .card:focus-visible .play-btn { visibility: visible; }
+.card__text { padding-top: 5px; line-height: 20px; }
+.card__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card__sub { color: var(--fg-3); font-size: var(--fs-s); line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card.is-playing .card__title::before { content: '▷ '; }
+.card--round .cover { border-radius: 50%; }
+
+/* hero + actions */
+.page--hero { position: relative; }
+.hero-band { position: absolute; left: -4px; right: -4px; top: -4px; height: 250px; background: linear-gradient(180deg, var(--hero-color), transparent); opacity: .6; pointer-events: none; }
+.hero { position: relative; display: flex; align-items: flex-end; gap: 22px; padding: 8px 4px 14px; }
+.hero__cover { width: 168px; flex: none; }
+.hero__info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.hero__type { color: var(--fg-2); text-transform: lowercase; }
+.hero__type::before { content: '# '; color: var(--fg-3); }
+.hero__title { margin: 0; font-weight: 400; font-size: var(--fs-xl); line-height: 52px; letter-spacing: 0; }
+.hero__desc { margin: 0; color: var(--fg-2); }
+.hero__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 1ch; color: var(--fg-2); }
+.hero__meta b { font-weight: 400; color: var(--fg); }
+.actions { position: relative; display: flex; align-items: center; gap: 10px; padding: 6px 4px 10px; }
+.actions .icon-btn { width: 32px; height: 32px; }
+.actions__right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.actions__right .play-btn { display: none; }
+.view-toggle { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 4px; color: var(--fg-2); text-transform: lowercase; }
+.view-toggle:hover { color: var(--fg); }
+
+/* track table: a file listing */
+.track-table { position: relative; --cols: 4ch 24px minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr) 13ch 24px 5ch 24px; }
+.track-table__head, .track-row { display: grid; grid-template-columns: var(--cols); align-items: center; gap: 0 12px; padding: 0 8px 0 4px; }
+.track-table__head { height: 28px; color: var(--fg-3); font-size: var(--fs-s); text-transform: lowercase; border-bottom: 1px dashed var(--rule); margin-bottom: 4px; }
+.track-table__head .cell--title { grid-column: 2 / span 2; }
+.track-table__head .cell--artist { grid-column: 4; }
+.track-table__head .cell--album { grid-column: 5; }
+.track-table__head .cell--date { grid-column: 6; }
+.track-table__head .cell--index, .track-row__index { text-align: right; justify-self: end; }
+.track-table__head .cell--dur { grid-column: 8; justify-self: end; display: flex; }
+.track-row { height: 32px; cursor: default; }
+.track-row__main, .track-row__text, .track-row__end { display: contents; }
+.track-row__index { display: grid; place-items: center end; width: 4ch; color: var(--fg-3); }
+.track-row__index .equaliser, .track-row__index .track-row__play { display: none; }
+.track-row__cover { width: 24px; height: 24px; }
+.track-row__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-row__artist, .track-row__album, .track-row__date { color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.track-row__artist a, .track-row__album a { overflow: hidden; text-overflow: ellipsis; }
+.track-row__date { color: var(--fg-3); }
+.track-row__dur { color: var(--fg-2); text-align: right; }
+.track-row__like, .track-row__more { width: 24px; height: 24px; display: grid; place-items: center; color: var(--fg-2); visibility: hidden; }
+.track-row__like:hover, .track-row__more:hover { color: var(--fg); }
+.track-row:hover, .track-row.is-hover { background: var(--hover); }
+.track-row:hover .track-row__like, .track-row:hover .track-row__more, .track-row.is-hover .track-row__like, .track-row.is-hover .track-row__more, .track-row.is-selected .track-row__like, .track-row.is-selected .track-row__more { visibility: visible; }
+.track-row:hover .track-row__num, .track-row.is-hover .track-row__num { display: none; }
+.track-row:hover .track-row__play, .track-row.is-hover .track-row__play { display: grid; color: var(--fg); }
+.track-row.is-playing { background: var(--pat-playing); }
+.track-row.is-playing .track-row__num { display: none; }
+.track-row.is-playing .equaliser { display: inline-flex; }
+.track-row.is-playing:hover .equaliser { display: none; }
+.track-row.is-current .track-row__title::before { content: '▷ '; }
+.track-row.is-selected { background: var(--sel-bg); color: var(--sel-fg); }
+.track-row.is-selected .track-row__index, .track-row.is-selected .track-row__artist, .track-row.is-selected .track-row__album, .track-row.is-selected .track-row__date, .track-row.is-selected .track-row__dur, .track-row.is-selected .track-row__like, .track-row.is-selected .track-row__more, .track-row.is-selected .badge-e { color: var(--sel-fg); }
+.track-row.is-selected .cover { outline: 1px solid #000; }
+.track-row.is-focus { outline-offset: -1px; }
+.anno { position: absolute; right: -2px; font-size: var(--fs-xs); line-height: 14px; color: var(--fg-3); pointer-events: none; transform: translateX(100%); white-space: nowrap; }
+
+/* player window */
+.player-bar { grid-row: 3; grid-column: 1 / -1; padding-bottom: 6px; }
+.player-bar .win__title { min-height: 22px; }
+.pb { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 24px; padding: 0 4px; }
+.pb-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pb-cover { width: 48px; flex: none; }
+.pb-text { min-width: 0; line-height: 22px; }
+.pb-title, .pb-artist { display: flex; gap: 1ch; white-space: nowrap; min-width: 0; }
+.pb-title a, .pb-artist a { overflow: hidden; text-overflow: ellipsis; }
+.pb-artist a { color: var(--fg-2); }
+.pb-label { color: var(--fg-3); min-width: 7ch; }
+.pb-center { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.pb-controls { display: flex; align-items: center; gap: 14px; }
+.pb-progress { display: flex; align-items: center; gap: 12px; width: 100%; }
+.pb-time { color: var(--fg-2); font-size: var(--fs-s); min-width: 4ch; text-align: right; }
+.pb-time--total { text-align: left; }
+.slider { position: relative; flex: 1; height: 12px; }
+.slider--progress { background: linear-gradient(var(--fg), var(--fg)) left center / var(--fill) 2px no-repeat, repeating-linear-gradient(90deg, #6a6a6a 0 4px, transparent 4px 7px) center / 100% 1px no-repeat; }
+.slider--progress::after { content: ''; position: absolute; top: 1px; left: var(--fill); width: 3px; height: 10px; background: var(--fg); }
+.slider--volume { flex: none; width: 88px; height: 10px; background: repeating-linear-gradient(90deg, var(--fg) 0 6px, transparent 6px 9px) left / var(--fill) 100% no-repeat, repeating-linear-gradient(90deg, #3d3d3d 0 6px, transparent 6px 9px); }
+.pb-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.pb-volume { display: flex; align-items: center; gap: 8px; }
+.pb-vol-pct { color: var(--fg-3); font-size: var(--fs-s); min-width: 4ch; }
+
+/* context menu, submenu */
+.context-menu { position: absolute; z-index: 50; min-width: 252px; padding: 4px; background: var(--bg); border: 1px solid var(--fg); }
+.context-menu { box-shadow: 6px 6px 0 #2b2b2b; }
+.menu-head { padding: 2px 8px 4px; color: var(--fg-3); font-size: var(--fs-s); border-bottom: 1px dashed var(--rule-dim); margin-bottom: 4px; }
+.menu-head::before { content: '> '; }
+.menu-item { display: grid; grid-template-columns: 18px minmax(0, 1fr) 14px; align-items: center; gap: 10px; width: 100%; height: 30px; padding: 0 8px; white-space: nowrap; }
+.menu-item__label { overflow: hidden; text-overflow: ellipsis; }
+.menu-item:hover, .menu-item.is-focused { background: var(--fg); color: var(--bg); }
+.menu-item.is-open { background: var(--hover); }
+.menu-item__chev { color: var(--fg-2); }
+.menu-sep { height: 1px; margin: 4px 8px; border-top: 1px dashed var(--rule-dim); }
+.menu-search { display: flex; align-items: center; gap: 1ch; height: 30px; margin: 0 4px 4px; padding: 0 6px; border: 1px solid var(--rule-dim); color: var(--fg-3); }
+.menu-search::before { content: '>'; color: var(--fg); }
+.menu-search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; caret-shape: block; }
+.menu-search input::placeholder { color: var(--fg-3); }
+
+.context-menu.context-menu--static { position: relative; z-index: auto; left: auto; top: auto; max-width: 340px; }
+
+/* toast */
+.toast { position: absolute; z-index: 60; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 14px 0 10px; background: var(--fg); color: var(--bg); white-space: nowrap; }
+.toast .px { width: 14px; height: 13px; }
+
+/* dialog */
+.dialog-backdrop { position: absolute; inset: 0; display: grid; place-items: center; background: repeating-conic-gradient(rgba(0,0,0,.9) 0 25%, rgba(0,0,0,.55) 0 50%) 0 0 / 2px 2px; }
+.dialog { position: relative; width: min(440px, calc(100% - 32px)); padding: 22px 18px 16px; background: var(--bg); border: 1px solid var(--fg); }
+.dialog { box-shadow: 6px 6px 0 #2b2b2b; }
+.dialog .win__bar { left: 12px; right: 12px; top: 6px; }
+.dialog__close { position: absolute; right: 8px; top: 2px; width: 22px; height: 22px; color: var(--fg-2); display: grid; place-items: center; background: var(--bg); }
+.dialog__close:hover { color: var(--fg); }
+.dialog__title { margin: 6px 0 10px; font-size: var(--fs); font-weight: 400; line-height: 26px; }
+.dialog__title::before { content: '>'; margin-right: 1ch; }
+.dialog__body { color: var(--fg-2); }
+.dialog__body b { font-weight: 400; color: var(--fg); }
+.dialog__actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+.dialog--wide { width: min(560px, calc(100% - 32px)); }
+.edit-details { display: grid; grid-template-columns: 152px minmax(0, 1fr); gap: 16px; }
+.edit-details__fields { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field__label { color: var(--fg-3); font-size: var(--fs-s); text-transform: lowercase; }
+.field__label::after { content: ':'; }
+.field__input { width: 100%; padding: 6px 8px; background: var(--bg); border: 1px solid var(--rule-dim); border-radius: 0; outline: 0; caret-color: var(--fg); caret-shape: block; resize: none; }
+.field__input:focus, .field__input.is-focus { border-color: var(--fg); outline: 0; }
+.field__input::placeholder { color: var(--fg-3); }
+textarea.field__input { height: 86px; }
+
+/* empty states */
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 8px 12px 14px; }
+.empty canvas { margin-bottom: 6px; }
+.empty__title { color: var(--fg); }
+.empty__text { color: var(--fg-3); font-size: var(--fs-s); line-height: 20px; max-width: 30ch; }
+.empty .btn { margin-top: 8px; }
+
+/* ------------------------------------------------------------- notes + sheet */
+.note { padding: 18px 16px 8px; color: var(--fg-3); font-size: var(--fs-s); line-height: 20px; border-top: 1px dashed var(--rule-dim); }
+.note b { font-weight: 400; color: var(--fg); }
+.note::before { content: '// '; }
+.sheet { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 28px 24px; padding: 18px 16px 64px; }
+.sheet > .win { grid-column: span 6; }
+.sheet > .win--full { grid-column: 1 / -1; }
+.sheet > .win--third { grid-column: span 4; }
+.sheet .win__body { overflow: visible; padding: 8px 4px 6px; }
+.stage { position: relative; height: 330px; overflow: hidden; border: 1px dashed var(--rule-dim); }
+.stage__under { padding: 10px; color: var(--fg-2); line-height: 30px; }
+.stage__under div { display: flex; gap: 12px; white-space: nowrap; }
+.stage .dialog-backdrop { position: absolute; }
+.empties { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+/* fx strip */
+.fx-strip { display: grid; gap: 10px; }
+.fx-row { display: grid; grid-template-columns: 22ch minmax(0, 1fr); gap: 16px; align-items: center; }
+.fx-row__label { display: flex; flex-direction: column; line-height: 20px; }
+.fx-row__label b { font-weight: 400; color: var(--fg); align-self: flex-start; }
+.fx-row__label b::before { content: 'fx='; color: var(--fg-3); }
+.fx-row__label span { color: var(--fg-3); font-size: var(--fs-s); }
+.fx-row__covers { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+.fx-row[data-fx-row="mono"] .cover { filter: grayscale(1) contrast(1.12) brightness(1.02); }
+.fx-row[data-fx-row="dither"] .cover { filter: url(#fx-dither); }
+.fx-row[data-fx-row="invert"] .cover { filter: grayscale(1) invert(1) contrast(1.1); }
+.fx-row[data-fx-row="color"] .cover { filter: none; }
+.fx-row[data-fx-row="cyano"] .cover { filter: url(#fx-cyano); }
+.fx-row.is-current .fx-row__label b { background: var(--fg); color: var(--bg); padding: 0 4px; }
+.fx-row.is-current .fx-row__label b::before { color: var(--bg); }
+.sheet-fx-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; color: var(--fg-3); }
+
+/* flora inventory */
+.flora-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 12px; }
+.specimen { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center; }
+.specimen b { font-weight: 400; color: var(--fg); }
+.specimen i { font-style: normal; color: var(--fg-3); font-size: var(--fs-s); line-height: 18px; }
+
+/* type + tokens */
+.type-row { display: grid; grid-template-columns: 6ch minmax(0, 1fr) auto; align-items: baseline; gap: 12px; padding: 4px 0; border-bottom: 1px dashed var(--rule-dim); }
+.type-row span:first-child, .type-row span:last-child { color: var(--fg-3); font-size: var(--fs-s); }
+.type-row .t48 { font-size: var(--fs-xl); line-height: 54px; }
+.type-row .t32 { font-size: var(--fs-l); line-height: 38px; }
+.type-row .t14 { font-size: var(--fs-s); }
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
+.swatch { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: center; font-size: var(--fs-s); line-height: 18px; color: var(--fg-2); }
+.swatch i { width: 28px; height: 28px; border: 1px solid var(--fg-4); }
+.swatch b { font-weight: 400; color: var(--fg); display: block; }
+.states { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.state { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; }
+.state--playing { background: var(--pat-playing); }
+.state--hover { background: var(--hover); }
+.state--sel { background: var(--fg); color: var(--bg); }
+.state--focus { outline: 1px dashed var(--fg); outline-offset: 2px; }
+.state--pressed { background: var(--fg); color: var(--bg); transform: translate(1px, 1px); }
+
+/* falling petals */
+#petals { position: fixed; inset: 0; z-index: 90; pointer-events: none; mix-blend-mode: difference; }
+
+/* ------------------------------------------------------------- tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app { grid-template-columns: 72px minmax(0, 1fr); }
+  .topbar { grid-template-columns: 72px minmax(0, 1fr) auto; }
+  .logo__word, .fx__label, .lib-title span, .lib-chips, .lib-filter, .lib-cols, .lib-row__text, .lib-row__gut, .lib-sprig, .lib-add { display: none; }
+  .lib-row { grid-template-columns: 40px; justify-content: center; }
+  .page--home { grid-template-columns: minmax(0, 1fr); }
+  .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .track-table { --cols: 4ch 24px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 0 24px 5ch 24px; }
+  .track-row__date, .cell--date { visibility: hidden; }
+  .pb-right .pb-vol-pct { display: none; }
+}
+
+/* ------------------------------------------------------------- phone */
+@media (max-width: 767px) {
+  :root { --gap: 10px; }
+  .frame { min-height: 640px; max-height: none; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 0; padding: 0; }
+  .topbar, .sidebar, .player-bar { display: none; }
+  .phone-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 44px; padding: 0 16px; grid-row: 1; }
+  .phone-head time { color: var(--fg-2); margin-left: auto; }
+  .main { grid-row: 2; grid-column: 1; margin: 0 16px; padding-bottom: 8px; }
+  .main .win__body { padding: 4px 0 12px; }
+  .main-title .prompt { overflow: hidden; text-overflow: ellipsis; }
+  .page--home { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .sysfetch { height: auto; gap: 14px; padding-left: 0; align-items: flex-start; }
+  .sysfetch__info { line-height: 19px; font-size: var(--fs-s); }
+  .sysfetch__info .gap { height: 6px; }
+  .sysfetch__info .opt { display: none; }
+  .fx--phone { display: flex; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 2px; }
+  .home-side { gap: 8px; }
+  .quick-grid { gap: 6px 8px; }
+  .quick-tile { grid-template-columns: 44px minmax(0, 1fr); height: 44px; font-size: var(--fs-s); }
+  .quick-tile .cover { width: 44px; height: 44px; }
+  .quick-tile .play-btn { display: none; }
+  .card-grid { display: flex; overflow-x: auto; gap: 12px; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
+  .card { flex: 0 0 132px; }
+  .card__cover .play-btn { display: none; }
+  /* playlist */
+  .hero { flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 4px; }
+  .hero__cover { width: 148px; }
+  .hero__type { display: none; }
+  .hero__title { font-size: var(--fs-l); line-height: 38px; }
+  .hero__desc, .hero__meta { font-size: var(--fs-s); line-height: 20px; }
+  .actions { padding: 2px 0 8px; gap: 6px; }
+  .actions__right { gap: 4px; }
+  .actions__right .view-toggle, .actions__right .icon-btn { display: none; }
+  .actions__right .play-btn { display: grid; }
+  .actions > .play-btn { display: none; }
+  .track-table { --cols: 40px minmax(0, 1fr) 24px; }
+  .track-table__head { display: none; }
+  .track-row { grid-template-columns: var(--cols); grid-template-areas: "cov title more" "cov artist more"; height: 56px; padding: 0 4px; gap: 0 12px; }
+  .track-row__index, .track-row__album, .track-row__date, .track-row__dur, .track-row__like { display: none !important; }
+  .track-row__cover { grid-area: cov; width: 40px; height: 40px; }
+  .track-row__title { grid-area: title; align-self: end; }
+  .track-row__artist { grid-area: artist; align-self: start; font-size: var(--fs-s); }
+  .track-row__more { grid-area: more; visibility: visible; }
+  .anno { display: none; }
+  /* menu becomes a sheet */
+  .sheet-backdrop { display: block; position: absolute; inset: 0; z-index: 45; background: repeating-conic-gradient(rgba(0,0,0,.9) 0 25%, rgba(0,0,0,.5) 0 50%) 0 0 / 2px 2px; }
+  .context-menu { left: 0 !important; right: 0; top: auto !important; bottom: 0; min-width: 0; border-width: 1px 0 0; padding: 8px 8px 14px; }
+  .context-menu { box-shadow: none; }
+  .context-menu--sub { display: none; }
+  .menu-item { height: 40px; }
+  .toast { left: 16px; right: 16px; bottom: 136px; }
+  .frame .sheet-backdrop, .frame .context-menu { display: none; }
+  .win--phone-only { display: flex !important; }
+  /* phone chrome */
+  .mini-player { display: block; position: relative; grid-row: 3; margin: 0 8px 6px; }
+  .mini-player::before { content: ''; position: absolute; inset: 0; background: var(--mini-color); filter: var(--fx); }
+  .mini-player__inner { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr) 32px 32px; align-items: center; gap: 10px; height: 56px; padding: 0 8px; border: 1px solid var(--rule); border-bottom: 0; }
+  .mini-player__text { min-width: 0; line-height: 20px; }
+  .mini-player__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-player__artist { color: var(--fg-2); font-size: var(--fs-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-player .icon-btn { color: var(--fg); width: 32px; height: 32px; }
+  .mini-player__progress { position: relative; height: 3px; background: repeating-linear-gradient(90deg, #6a6a6a 0 4px, transparent 4px 7px) center / 100% 1px no-repeat, var(--bg); border: 1px solid var(--rule); border-top: 0; height: 4px; }
+  .mini-player__progress i { position: absolute; left: 0; top: 0; height: 2px; width: var(--fill); background: var(--fg); }
+  .bottom-nav { display: grid; grid-template-columns: repeat(3, 1fr); grid-row: 4; height: 60px; border-top: 1px solid var(--rule); padding: 6px 8px 8px; }
+  .bottom-nav__item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--fg-3); font-size: var(--fs-s); line-height: 16px; text-transform: lowercase; }
+  .bottom-nav__item:hover { text-decoration: none; color: var(--fg); }
+  .bottom-nav__item.is-active { color: var(--fg); }
+  .bottom-nav__item.is-active span { background: var(--fg); color: var(--bg); padding: 0 4px; }
+  /* sheet */
+  .note { padding: 14px 16px 6px; }
+  .sheet { grid-template-columns: minmax(0, 1fr); padding: 14px 16px 48px; gap: 24px; }
+  .sheet > .win, .sheet > .win--third { grid-column: 1 / -1; }
+  .stage { height: 300px; }
+  .stage--tall { height: 470px; }
+  .edit-details { grid-template-columns: minmax(0, 1fr); }
+  .edit-details__cover { width: 120px; }
+  .empties { grid-template-columns: minmax(0, 1fr); }
+  .fx-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .fx-row__label { flex-direction: row; gap: 1ch; align-items: baseline; flex-wrap: wrap; }
+  .fx-row__covers { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .fx-row__covers > :nth-child(n+5) { display: none; }
+  .flora-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .type-row .t48 { font-size: var(--fs-l); line-height: 40px; }
+  .type-row { grid-template-columns: 4ch minmax(0, 1fr); }
+  .type-row span:last-child { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor, .logo__word::after, .search-pill .caret { animation: none; }
+  .equaliser i { animation: none; transform: scaleY(.7); }
+  #petals { display: none; }
+}
+
+</style>
+</head>
+<body>
+<svg class="fx-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <!-- dither: luminance (with a little contrast), plus a tiled 4x4 Bayer threshold at 2px, then a hard 1-bit step -->
+  <filter id="fx-dither" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB" primitiveUnits="userSpaceOnUse">
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0.255 0.858 0.087 0 -0.1  0.255 0.858 0.087 0 -0.1  0.255 0.858 0.087 0 -0.1  0 0 0 1 0" result="lum"/>
+    <feImage id="fx-bayer" x="0" y="0" width="8" height="8" preserveAspectRatio="none" result="cell"/>
+    <feTile in="cell" result="bayer"/>
+    <feComposite in="lum" in2="bayer" operator="arithmetic" k1="0" k2="1" k3="1" k4="-0.5" result="sum"/>
+    <feComponentTransfer in="sum" result="bw">
+      <feFuncR type="discrete" tableValues="0 1"/>
+      <feFuncG type="discrete" tableValues="0 1"/>
+      <feFuncB type="discrete" tableValues="0 1"/>
+    </feComponentTransfer>
+    <feComposite in="bw" in2="SourceGraphic" operator="in"/>
+  </filter>
+  <!-- the same dither on a 1px grid, for thumbnails -->
+  <filter id="fx-dither-fine" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB" primitiveUnits="userSpaceOnUse">
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0.255 0.858 0.087 0 -0.1  0.255 0.858 0.087 0 -0.1  0.255 0.858 0.087 0 -0.1  0 0 0 1 0" result="lum"/>
+    <feImage id="fx-bayer-fine" x="0" y="0" width="4" height="4" preserveAspectRatio="none" result="cell"/>
+    <feTile in="cell" result="bayer"/>
+    <feComposite in="lum" in2="bayer" operator="arithmetic" k1="0" k2="1" k3="1" k4="-0.5" result="sum"/>
+    <feComponentTransfer in="sum" result="bw">
+      <feFuncR type="discrete" tableValues="0 1"/>
+      <feFuncG type="discrete" tableValues="0 1"/>
+      <feFuncB type="discrete" tableValues="0 1"/>
+    </feComponentTransfer>
+    <feComposite in="bw" in2="SourceGraphic" operator="in"/>
+  </filter>
+  <!-- cyanotype: luminance mapped from prussian blue to paper white -->
+  <filter id="fx-cyano" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/>
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues="0.03 0.07 0.52 0.93"/>
+      <feFuncG type="table" tableValues="0.13 0.25 0.67 0.96"/>
+      <feFuncB type="table" tableValues="0.30 0.52 0.86 0.99"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+<script>
+(function () {
+  var M = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]], s = '';
+  for (var y = 0; y < 4; y++) for (var x = 0; x < 4; x++) { var v = Math.round(255 * (M[y][x] + 0.5) / 16); s += "<rect x='" + x * 2 + "' y='" + y * 2 + "' width='2' height='2' fill='rgb(" + v + ',' + v + ',' + v + ")'/>"; }
+  var uri = 'data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'>" + s + '</svg>');
+  ['fx-bayer', 'fx-bayer-fine'].forEach(function (id) { var fe = document.getElementById(id); fe.setAttribute('href', uri); fe.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', uri); });
+})();
+</script>
+<canvas id="petals" aria-hidden="true"></canvas>
+
+<section class="frame" id="frame-home" aria-label="Home"></section>
+<header class="note"><b>02 playlist</b> · the track listing reads like a file listing: one row per file, aligned columns. row 1 is <b>playing</b> (░ fill, stepped meter, ▷ marker), row 3 is <b>hovered</b> (▒ fill, play glyph, actions), row 5 is <b>selected</b> (█ inverted block) and owns the open context menu with the Add to playlist submenu, row 8 shows <b>focus-visible</b> (dashed ring). shuffle is toggled on (inverted), the player's next button is shown <b>pressed</b>, the toast is the status line.</header>
+<section class="frame" id="frame-playlist" aria-label="Playlist"></section>
+<header class="note"><b>03 overlays, empty states, filters, flora, type</b> · dialogs float as boxed windows over a 1-bit dither backdrop; empty states are flowers waiting to happen; every coloured surface passes through the fx filter.</header>
+<div id="sheet-root"></div>
+
+<script type="application/json" id="catalogue">{"artists":[["ar_marlowvane","Marlow Vane","#a5522b",8420000],["ar_hollowlights","The Hollow Lights","#2f4f7a",3150000],["ar_niasolace","Nia Solace","#7a2e5a",14800000],["ar_kestrelfinch","Kestrel & Finch","#4f6b3a",1240000],["ar_djorrery","DJ Orrery","#1f3f8f",6730000],["ar_ivymarchetti","Ivy Marchetti","#c23a5c",31500000],["ar_saintlumen","Saint Lumen","#2e6b6e",9900000],["ar_orielquartet","Oriel Quartet","#5a4a3a",860000],["ar_tomasreyes","Tomas Reyes","#d1672b",22100000],["ar_lunenoire","Lune Noire","#4a3c78",11400000],["ar_harborstreet","Harbor Street","#8a5a1e",1980000],["ar_vesperray","Vesper Ray","#6b2a8f",18600000],["ar_cassridley","Cass Ridley","#8f2a2a",4420000],["ar_amaraoyelaran","Amara Oyelaran","#c2407a",2760000],["ar_ghostparade","Ghost Parade","#3a3f4f",3880000],["ar_deltavale","Delta Vale","#7a4a1f",9150000],["ar_juniperhale","Juniper Hale","#6b8a3a",5600000],["ar_rookmendoza","Rook Mendoza","#2a7a6b",1520000]],"albums":[["al_boathouse","Boathouse","Marlow Vane","album",2025,"#1abc9c"],["al_everyharbour","Every Harbour","Marlow Vane","album",2021,"#1d8348"],["al_lasttrainhome","Last Train Home","The Hollow Lights","album",2024,"#bb8fce"],["al_cellartapes","Cellar Tapes","The Hollow Lights","ep",2019,"#512e5f"],["al_aftertheparty","After the Party","Nia Solace","album",2025,"#0b5345"],["al_groupchat","Group Chat","Nia Solace","ep",2022,"#2e86c1"],["al_lowlight","Low Light","Nia Solace","single",2026,"#1b4f72"],["al_chapelsessions","Chapel Sessions","Kestrel & Finch","album",2023,"#2874a6"],["al_hedgerow","Hedgerow","Kestrel & Finch","album",2018,"#8e44ad"],["al_orbitalmechanics","Orbital Mechanics","DJ Orrery","album",2026,"#9c640c"],["al_perihelion","Perihelion","DJ Orrery","ep",2020,"#1e8449"],["al_frontrow","Front Row","Ivy Marchetti","album",2025,"#2471a3"],["al_hobokennights","Hoboken Nights","Ivy Marchetti","album",2022,"#d35400"],["al_loudheart","Loud Heart","Ivy Marchetti","single",2026,"#d98880"],["al_slowhours","Slow Hours","Saint Lumen","album",2024,"#d4ac0d"],["al_motorwayhymns","Motorway Hymns","Saint Lumen","album",2020,"#6e2c00"],["al_rosin","Rosin","Oriel Quartet","album",2025,"#21618c"],["al_wintercommissions","Winter Commissions","Oriel Quartet","album",2019,"#0e6655"],["al_mareaalta","Marea Alta","Tomas Reyes","album",2026,"#b03a2e"],["al_cartagena","Cartagena","Tomas Reyes","ep",2021,"#5dade2"],["al_radiatorsongs","Radiator Songs","Lune Noire","album",2024,"#9b59b6"],["al_nightwindow","Night Window","Lune Noire","album",2022,"#a93226"],["al_secondlineswing","Second Line Swing","Harbor Street","album",2023,"#5b2c6f"],["al_baylights","Bay Lights","Harbor Street","album",2017,"#f0b27a"],["al_nightshift","Night Shift","Vesper Ray","album",2025,"#6c3483"],["al_neondiaries","Neon Diaries","Vesper Ray","album",2021,"#e67e22"],["al_rentday","Rent Day","Cass Ridley","album",2024,"#c0392b"],["al_doorslam","Door Slam","Cass Ridley","ep",2020,"#239b56"],["al_blockparty","Block Party","Amara Oyelaran","album",2026,"#7b241c"],["al_peckhamnine","Peckham Nine","Amara Oyelaran","album",2019,"#27ae60"],["al_longdark","Long Dark","Ghost Parade","album",2025,"#154360"],["al_candlelight","Candlelight","Ghost Parade","album",2021,"#16a085"],["al_gospelcrates","Gospel Crates","Delta Vale","album",2024,"#4a235a"],["al_punchline","Punchline","Delta Vale","ep",2022,"#ca6f1e"],["al_porchlight","Porch Light","Juniper Hale","album",2026,"#f39c12"],["al_kitchentable","Kitchen Table","Juniper Hale","album",2020,"#b7950b"],["al_basslines","Bass Lines","Rook Mendoza","album",2023,"#145a32"],["al_eastsidegroove","East Side Groove","Rook Mendoza","ep",2015,"#784212"]],"playlists":[["pl_dailymix1","Daily Mix 1","#3f6fb6","Ivy Marchetti, Marlow Vane, Juniper Hale and more",2400000,42,"mix"],["pl_dailymix2","Daily Mix 2","#b64d3f","Vesper Ray, Nia Solace, Delta Vale and more",1900000,35,"mix"],["pl_dailymix3","Daily Mix 3","#4a8a4a","Cass Ridley, Ghost Parade and The Hollow Lights",1300000,27,"mix"],["pl_dailymix4","Daily Mix 4","#8a4ab0","Tomas Reyes, Amara Oyelaran and Rook Mendoza",980000,27,"mix"],["pl_freshfinds","Fresh Finds","#2a9d8f","The freshest finds from tomorrow’s favourites. Updated every Wednesday.",1650000,30,"editorial"],["pl_newreleases","New Releases","#c0392b","The best new songs of the week, all in one place.",3100000,23,"editorial"],["pl_chillvibes","Chill Vibes","#5b8fb9","Chill beats, lo-fi vibes, new tracks every week. Kick back and let the day go.",12300000,32,"editorial"],["pl_deepfocus","Deep Focus","#2e4a62","Ambient, modern classical and slow electronics to help you think.",9800000,36,"editorial"],["pl_latenightdrive","Late Night Drive","#4a1d6a","Windows down, city lights on. Synths and slow jams for the long way home.",6400000,40,"editorial"],["pl_morningcoffee","Morning Coffee","#b8762b","Gentle folk, soft jazz and warm acoustic songs to start the day right.",7200000,40,"editorial"],["pl_workoutpulse","Workout Pulse","#d93a2b","High-energy beats to push you through the last rep.",8900000,45,"editorial"],["pl_rainydayjazz","Rainy Day Jazz","#35506e","Smoky horns, brushed drums and a window to watch the rain through.",4100000,28,"editorial"],["pl_indiegold","Indie Gold","#c9962b","The indie anthems you know every word to, plus a few you’ll learn.",5600000,40,"editorial"],["pl_electronicessentials","Electronic Essentials","#1f6fd1","The tracks that define electronic music right now, from peak-time bangers to after-hours drift.",7700000,34,"editorial"],["pl_top50global","Top 50 Global","#1d3a5f","Your daily update of the most played tracks right now.",38500000,50,"chart"]],"lnd":[["Ultraviolet Telemetry","DJ Orrery","Orbital Mechanics","Aug 27, 2026","3:11",1,"#9c640c"],["Northern Telemetry","Saint Lumen","Motorway Hymns","Aug 29, 2026","3:53",0,"#6e2c00"],["Letter","Delta Vale","Punchline","Jul 8, 2026","3:17",0,"#ca6f1e"],["Afterhours","Saint Lumen","Slow Hours","Sep 4, 2026","3:38",0,"#d4ac0d"],["Holding the Weekend","Ivy Marchetti","Hoboken Nights","Aug 17, 2026","3:51",0,"#d35400"],["Late Engine","Nia Solace","After the Party","Aug 14, 2026","3:50",1,"#0b5345"],["Heartbeat","Nia Solace","Group Chat","Aug 8, 2026","2:58",0,"#2e86c1"],["Coffee, Sunday","Nia Solace","Group Chat","Aug 14, 2026","2:40",1,"#2e86c1"],["Inside the Season","DJ Orrery","Orbital Mechanics","Jul 25, 2026","4:13",0,"#9c640c"],["Midnight Afterglow (Interlude)","Juniper Hale","Kitchen Table","Aug 1, 2026","2:42",1,"#b7950b"],["Neon Pulse","Saint Lumen","Motorway Hymns","Sep 5, 2026","4:28",0,"#6e2c00"],["Church of Velvet","DJ Orrery","Orbital Mechanics","Sep 20, 2026","3:43",1,"#9c640c"],["Confetti","Juniper Hale","Kitchen Table","Jul 11, 2026","3:34",0,"#b7950b"],["Modular Season","DJ Orrery","Perihelion","Oct 4, 2026","3:23",0,"#1e8449"],["Fireworks","Marlow Vane","Boathouse","Jul 28, 2026","3:25",0,"#1abc9c"],["Losing the Loop","DJ Orrery, Saint Lumen","Orbital Mechanics","Aug 29, 2026","3:46",0,"#9c640c"]],"lndTotal":"about 2 hr 16 min","popularAlbums":["al_cartagena","al_hobokennights","al_neondiaries","al_frontrow","al_motorwayhymns","al_nightshift","al_aftertheparty","al_everyharbour","al_gospelcrates","al_mareaalta"],"popularArtists":["ar_ivymarchetti","ar_tomasreyes","ar_vesperray","ar_niasolace","ar_lunenoire","ar_saintlumen","ar_deltavale","ar_marlowvane","ar_djorrery","ar_juniperhale"],"newReleases":["al_lowlight","al_blockparty","al_loudheart","al_orbitalmechanics","al_mareaalta","al_porchlight","al_nightshift","al_longdark","al_aftertheparty","al_rosin"]}</script>
+<script>
+/* Flora (mock edition) — procedural flowers on canvas.
+ * White silhouettes for the chrome (layered petals with thin dark separations, branches with leaves and buds,
+ * loose petals) and tonal colour compositions for covers, so the media filters have something to transform.
+ * Everything is seeded: the same id always grows the same flowers.
+ */
+(function (W) {
+  'use strict';
+  const TAU = Math.PI * 2;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function hash(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function rng(seed) {
+    let a = typeof seed === 'string' ? hash(seed) : (Number(seed) >>> 0);
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const pick = (R, arr) => arr[Math.floor(R() * arr.length)];
+
+  // ---------------------------------------------------------------- colour
+  function hexToRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function rgbToHex(r, g, b) { const c = (v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0'); return '#' + c(r) + c(g) + c(b); }
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0; const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0); else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+  function hslToRgb(h, s, l) {
+    h = ((h % 360) + 360) % 360; s = clamp(s, 0, 1); l = clamp(l, 0, 1);
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+    return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+  }
+  const hsl = (h, s, l) => rgbToHex.apply(null, hslToRgb(h, s, l));
+  function mix(a, b, t) { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(lerp(A[0], B[0], t), lerp(A[1], B[1], t), lerp(A[2], B[2], t)); }
+  function palette(hex) {
+    const [h, s, l] = rgbToHsl.apply(null, hexToRgb(hex));
+    const S = Math.max(0.35, s);
+    return {
+      base: hex, h: h, s: S, l: l,
+      ink: hsl(h, S * 0.7, 0.07),
+      dark: hsl(h, S * 0.85, 0.16),
+      deep: hsl(h, S * 0.9, 0.3),
+      mid: hsl(h, S, 0.46),
+      light: hsl(h, S * 0.95, 0.68),
+      pale: hsl(h, S * 0.8, 0.86),
+      warm: hsl(h + 38, Math.min(1, S * 1.1), 0.62),
+      cool: hsl(h - 50, S * 0.7, 0.36),
+      leaf: hsl(h - 70, S * 0.55, 0.32),
+      comp: hsl(h + 180, Math.max(0.45, S * 0.85), 0.6),
+      cream: '#f6efe2',
+    };
+  }
+
+  // ---------------------------------------------------------------- petal outlines (base at 0,0; tip at 0,-L)
+  const SHAPES = {
+    round(c, L, w) {
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.62, -L * 0.16, -w * 0.64, -L * 0.98, 0, -L);
+      c.bezierCurveTo(w * 0.64, -L * 0.98, w * 0.62, -L * 0.16, 0, 0);
+    },
+    notch(c, L, w) {
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.5, -L * 0.14, -w * 0.64, -L * 0.74, -w * 0.3, -L * 0.98);
+      c.quadraticCurveTo(-w * 0.12, -L * 1.05, 0, -L * 0.84);
+      c.quadraticCurveTo(w * 0.12, -L * 1.05, w * 0.3, -L * 0.98);
+      c.bezierCurveTo(w * 0.64, -L * 0.74, w * 0.5, -L * 0.14, 0, 0);
+    },
+    pointed(c, L, w) {
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.64, -L * 0.28, -w * 0.42, -L * 0.8, 0, -L);
+      c.bezierCurveTo(w * 0.42, -L * 0.8, w * 0.64, -L * 0.28, 0, 0);
+    },
+    strap(c, L, w) {
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.7, -L * 0.12, -w * 0.6, -L * 0.96, 0, -L);
+      c.bezierCurveTo(w * 0.6, -L * 0.96, w * 0.7, -L * 0.12, 0, 0);
+    },
+    ray(c, L, w) {
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(-w * 0.78, -L * 0.5, -w * 0.4, -L * 0.93);
+      c.quadraticCurveTo(0, -L * 1.06, w * 0.4, -L * 0.93);
+      c.quadraticCurveTo(w * 0.78, -L * 0.5, 0, 0);
+    },
+    tooth(c, L, w) {
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.3, -L * 0.25, -w * 0.56, -L * 0.62, -w * 0.5, -L * 0.9);
+      c.lineTo(-w * 0.31, -L * 0.99); c.lineTo(-w * 0.16, -L * 0.9); c.lineTo(0, -L * 1.01);
+      c.lineTo(w * 0.16, -L * 0.9); c.lineTo(w * 0.31, -L * 0.99); c.lineTo(w * 0.5, -L * 0.9);
+      c.bezierCurveTo(w * 0.56, -L * 0.62, w * 0.3, -L * 0.25, 0, 0);
+    },
+    ruffle(c, L, w, R) {
+      const cy = -L * 0.52, rx = w * 0.5, ry = L * 0.48, a0 = Math.PI + 0.38, a1 = TAU - 0.38, n = 5;
+      const p0x = rx * Math.cos(a0), p0y = cy + ry * Math.sin(a0);
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-w * 0.22, -L * 0.1, p0x * 1.04, p0y * 0.55, p0x, p0y);
+      for (let i = 0; i < n; i++) {
+        const am = lerp(a0, a1, (i + 0.5) / n), ae = lerp(a0, a1, (i + 1) / n), k = 1.12 + (R ? R() * 0.1 : 0.05);
+        c.quadraticCurveTo(rx * k * Math.cos(am), cy + ry * k * Math.sin(am), rx * Math.cos(ae), cy + ry * Math.sin(ae));
+      }
+      const p1x = rx * Math.cos(a1), p1y = cy + ry * Math.sin(a1);
+      c.bezierCurveTo(p1x * 1.04, p1y * 0.55, w * 0.22, -L * 0.1, 0, 0);
+    },
+  };
+
+  // ---------------------------------------------------------------- species
+  const SPECIES = {
+    sakura: { label: 'sakura', latin: 'Prunus serrulata', note: 'five notched petals, stamen burst', layers: [{ n: 5, len: 1, wr: 0.84, shape: 'notch' }], center: 'stamens' },
+    ume: { label: 'ume', latin: 'Prunus mume', note: 'five round petals, long stamens', layers: [{ n: 5, len: 1, wr: 1.02, shape: 'round' }], center: 'long' },
+    peony: { label: 'peony', latin: 'Paeonia lactiflora', note: 'four rings of ruffled petals', layers: [{ n: 9, len: 1, wr: 0.78, shape: 'ruffle' }, { n: 8, len: 0.8, wr: 0.8, shape: 'ruffle' }, { n: 7, len: 0.6, wr: 0.86, shape: 'ruffle' }, { n: 5, len: 0.38, wr: 0.98, shape: 'ruffle' }], center: 'none' },
+    camellia: { label: 'camellia', latin: 'Camellia japonica', note: 'spiralled round petals, golden boss', layers: [{ n: 6, len: 1, wr: 0.98, shape: 'round' }, { n: 6, len: 0.76, wr: 0.98, shape: 'round' }, { n: 5, len: 0.52, wr: 1.02, shape: 'round' }, { n: 4, len: 0.3, wr: 1.1, shape: 'round' }], center: 'boss', spin: 0.5 },
+    chrysanthemum: { label: 'kiku', latin: 'Chrysanthemum morifolium', note: 'four rings of narrow rays', layers: [{ n: 24, len: 1, wr: 0.2, shape: 'ray' }, { n: 20, len: 0.8, wr: 0.22, shape: 'ray' }, { n: 16, len: 0.6, wr: 0.27, shape: 'ray' }, { n: 11, len: 0.4, wr: 0.34, shape: 'ray' }], center: 'none' },
+    cosmos: { label: 'cosmos', latin: 'Cosmos bipinnatus', note: 'eight toothed petals, dotted disc', layers: [{ n: 8, len: 1, wr: 0.5, shape: 'tooth' }], center: 'disc' },
+    magnolia: { label: 'star magnolia', latin: 'Magnolia stellata', note: 'two rings of strap petals', layers: [{ n: 9, len: 1, wr: 0.3, shape: 'strap' }, { n: 6, len: 0.72, wr: 0.36, shape: 'strap' }], center: 'cone' },
+    hydrangea: { label: 'hydrangea', latin: 'Hydrangea macrophylla', note: 'dome of four-petal florets', cluster: true },
+    wisteria: { label: 'wisteria', latin: 'Wisteria floribunda', note: 'hanging racemes of pea flowers', raceme: true },
+  };
+  const LAYERED = ['peony', 'camellia', 'chrysanthemum', 'sakura', 'ume', 'cosmos', 'magnolia'];
+
+  // ---------------------------------------------------------------- primitives
+  // style: { fill(layer, layers, k) | fill: color, sep, lw, center, dot, leaf, stem, bud }
+  const fillOf = (st, li, n, k) => (typeof st.fill === 'function' ? st.fill(li, n, k) : st.fill);
+
+  function bloom(c, x, y, r, sp, st, R) {
+    const S = typeof sp === 'string' ? SPECIES[sp] : sp;
+    R = R || Math.random;
+    if (S.cluster) return cluster(c, x, y, r, st, R);
+    if (S.raceme) return raceme(c, x, y, r * 2.6, st, R, Math.PI / 2 + (R() - 0.5) * 0.3);
+    const rot = st.rot != null ? st.rot : R() * TAU, tilt = st.tilt != null ? st.tilt : 1;
+    c.save();
+    c.translate(x, y); c.rotate(rot); c.scale(1, tilt);
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    c.lineWidth = st.lw; c.strokeStyle = st.sep;
+    const L0 = S.layers;
+    L0.forEach((ly, li) => {
+      const off = (li % 2 ? Math.PI / ly.n : 0) + (S.spin || 0) * li + (R() - 0.5) * 0.35;
+      for (let k = 0; k < ly.n; k++) {
+        const a = off + k * TAU / ly.n + (R() - 0.5) * 0.16;
+        const L = r * ly.len * (0.9 + R() * 0.18), w = L * ly.wr * (0.9 + R() * 0.2);
+        c.save(); c.rotate(a);
+        c.beginPath(); SHAPES[ly.shape](c, L, w, R); c.closePath();
+        c.fillStyle = fillOf(st, li, L0.length, k); c.fill();
+        if (st.lw > 0) c.stroke();
+        c.restore();
+      }
+    });
+    center(c, S.center, r, st, R);
+    c.restore();
+  }
+
+  function center(c, kind, r, st, R) {
+    const dot = st.dot || st.sep, cf = st.center || fillOf(st, 0, 1, 0);
+    if (kind === 'stamens' || kind === 'long') {
+      const n = kind === 'long' ? 18 : 13, len = kind === 'long' ? 0.5 : 0.34;
+      c.strokeStyle = dot; c.lineWidth = st.lw * 0.8;
+      for (let i = 0; i < n; i++) {
+        const a = i * TAU / n + (R() - 0.5) * 0.3, l = r * len * (0.7 + R() * 0.4);
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * l, Math.sin(a) * l); c.stroke();
+        c.beginPath(); c.arc(Math.cos(a) * l, Math.sin(a) * l, r * 0.035, 0, TAU); c.fillStyle = dot; c.fill();
+      }
+      c.beginPath(); c.arc(0, 0, r * 0.07, 0, TAU); c.fillStyle = dot; c.fill();
+    } else if (kind === 'boss' || kind === 'disc') {
+      const rr = r * (kind === 'disc' ? 0.24 : 0.16);
+      c.beginPath(); c.arc(0, 0, rr, 0, TAU); c.fillStyle = cf; c.fill(); c.lineWidth = st.lw; c.strokeStyle = st.sep; if (st.lw > 0) c.stroke();
+      const n = kind === 'disc' ? 14 : 9;
+      c.fillStyle = dot;
+      for (let i = 0; i < n; i++) { const a = i * TAU / n, d = rr * 0.62; c.beginPath(); c.arc(Math.cos(a) * d, Math.sin(a) * d, rr * 0.11, 0, TAU); c.fill(); }
+      c.beginPath(); c.arc(0, 0, rr * 0.22, 0, TAU); c.fill();
+    } else if (kind === 'cone') {
+      c.beginPath(); c.ellipse(0, 0, r * 0.1, r * 0.14, 0, 0, TAU); c.fillStyle = cf; c.fill(); if (st.lw > 0) c.stroke();
+    }
+  }
+
+  // hydrangea: a dome of four-petal florets, back to front
+  function cluster(c, x, y, r, st, R) {
+    const fl = [];
+    const n = 22 + Math.floor(R() * 8);
+    for (let i = 0; i < n; i++) {
+      const a = R() * TAU, d = Math.sqrt(R()) * r * 0.78;
+      fl.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * 0.86, s: r * (0.2 + R() * 0.07), k: i });
+    }
+    fl.sort((a, b) => a.y - b.y);
+    const sub = { layers: [{ n: 4, len: 1, wr: 1.05, shape: 'round' }], center: 'none' };
+    fl.forEach((f) => {
+      bloom(c, f.x, f.y, f.s, sub, Object.assign({}, st, { rot: R() * TAU, tilt: 0.8 + R() * 0.2, fill: fillOf(st, f.k % 3, 3, f.k) }), R);
+      c.beginPath(); c.arc(f.x, f.y, f.s * 0.12, 0, TAU); c.fillStyle = st.dot || st.sep; c.fill();
+    });
+  }
+
+  // wisteria: a raceme hanging from (x,y), florets shrinking toward the tip
+  function raceme(c, x, y, len, st, R, ang) {
+    ang = ang == null ? Math.PI / 2 : ang;
+    const m = 15 + Math.floor(R() * 6), bend = (R() - 0.5) * 0.5;
+    const pts = [];
+    for (let i = 0; i < m; i++) {
+      const t = i / (m - 1), a = ang + bend * t;
+      const px = x + Math.cos(a) * len * t + Math.sin(t * 9 + R()) * len * 0.012, py = y + Math.sin(a) * len * t;
+      const s = len * lerp(0.11, 0.035, t);
+      pts.push({ x: px + (i % 2 ? 1 : -1) * s * 0.55, y: py, s: s, t: t, i: i });
+    }
+    c.save(); c.strokeStyle = st.stem || fillOf(st, 0, 1, 0); c.lineWidth = st.lw * 1.4;
+    c.beginPath(); c.moveTo(x, y); pts.forEach((p) => c.lineTo(p.x, p.y)); c.stroke(); c.restore();
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      c.save(); c.translate(p.x, p.y); c.rotate((i % 2 ? -1 : 1) * 0.5 + (R() - 0.5) * 0.4);
+      c.lineWidth = st.lw; c.strokeStyle = st.sep;
+      for (let k = 0; k < 2; k++) {
+        c.save(); c.rotate(Math.PI + (k ? 0.55 : -0.55));
+        c.beginPath(); SHAPES.round(c, p.s * 1.25, p.s * 1.2); c.closePath();
+        c.fillStyle = fillOf(st, Math.min(2, Math.floor(p.t * 3)), 3, i + k); c.fill(); if (st.lw > 0) c.stroke();
+        c.restore();
+      }
+      c.beginPath(); SHAPES.pointed(c, p.s * 0.9, p.s * 0.9); c.closePath(); c.fillStyle = fillOf(st, 0, 3, i); c.fill(); if (st.lw > 0) c.stroke();
+      c.restore();
+    }
+  }
+
+  function leaf(c, x, y, ang, L, st) {
+    c.save(); c.translate(x, y); c.rotate(ang + Math.PI / 2);
+    c.lineWidth = st.lw; c.strokeStyle = st.sep;
+    const w = L * 0.46;
+    c.beginPath(); c.moveTo(0, 0);
+    c.bezierCurveTo(-w * 0.75, -L * 0.25, -w * 0.5, -L * 0.82, 0, -L);
+    c.bezierCurveTo(w * 0.5, -L * 0.82, w * 0.75, -L * 0.25, 0, 0);
+    c.closePath(); c.fillStyle = st.leaf || fillOf(st, 0, 1, 0); c.fill(); if (st.lw > 0) c.stroke();
+    if (st.lw > 0) {
+      c.beginPath(); c.moveTo(0, -L * 0.06); c.quadraticCurveTo(w * 0.08, -L * 0.5, 0, -L * 0.86); c.stroke();
+      for (let i = 1; i <= 3; i++) { const t = i / 4.2; c.beginPath(); c.moveTo(0, -L * t); c.lineTo(-w * 0.32, -L * (t + 0.12)); c.moveTo(0, -L * (t + 0.04)); c.lineTo(w * 0.32, -L * (t + 0.16)); c.stroke(); }
+    }
+    c.restore();
+  }
+
+  function bud(c, x, y, ang, s, st) {
+    c.save(); c.translate(x, y); c.rotate(ang + Math.PI / 2);
+    c.lineWidth = st.lw; c.strokeStyle = st.sep;
+    c.beginPath(); SHAPES.pointed(c, s * 1.9, s * 1.25); c.closePath(); c.fillStyle = st.budFill || fillOf(st, 1, 2, 0); c.fill(); if (st.lw > 0) c.stroke();
+    for (const k of [-1, 1]) { c.save(); c.rotate(k * 0.42); c.beginPath(); SHAPES.pointed(c, s * 0.95, s * 0.55); c.closePath(); c.fillStyle = st.leaf || fillOf(st, 0, 1, 0); c.fill(); if (st.lw > 0) c.stroke(); c.restore(); }
+    c.restore();
+  }
+
+  function petal(c, x, y, ang, s, st, shape, flip) {
+    c.save(); c.translate(x, y); c.rotate(ang); c.scale(1, flip == null ? 1 : flip);
+    c.lineWidth = st.lw; c.strokeStyle = st.sep;
+    c.beginPath(); SHAPES[shape || 'notch'](c, s, s * 0.8); c.closePath(); c.fillStyle = st.petalFill || fillOf(st, 1, 2, 0); c.fill();
+    c.restore();
+  }
+
+  // ---------------------------------------------------------------- branches
+  function bez(s, t) {
+    const u = 1 - t;
+    return [u * u * u * s.p0[0] + 3 * u * u * t * s.p1[0] + 3 * u * t * t * s.p2[0] + t * t * t * s.p3[0],
+      u * u * u * s.p0[1] + 3 * u * u * t * s.p1[1] + 3 * u * t * t * s.p2[1] + t * t * t * s.p3[1]];
+  }
+  function bezTan(s, t) {
+    const u = 1 - t;
+    return [3 * u * u * (s.p1[0] - s.p0[0]) + 6 * u * t * (s.p2[0] - s.p1[0]) + 3 * t * t * (s.p3[0] - s.p2[0]),
+      3 * u * u * (s.p1[1] - s.p0[1]) + 6 * u * t * (s.p2[1] - s.p1[1]) + 3 * t * t * (s.p3[1] - s.p2[1])];
+  }
+  function taper(c, s, fill) {
+    const N = 28, L = [], Rr = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, p = bez(s, t), d = bezTan(s, t), m = Math.hypot(d[0], d[1]) || 1;
+      const nx = -d[1] / m, ny = d[0] / m, w = lerp(s.w0, s.w1, Math.pow(t, 0.8)) / 2 * (1 + 0.12 * Math.sin(t * 17 + s.p0[0] * 40));
+      L.push([p[0] + nx * w, p[1] + ny * w]); Rr.push([p[0] - nx * w, p[1] - ny * w]);
+    }
+    c.beginPath(); c.moveTo(L[0][0], L[0][1]);
+    L.forEach((p) => c.lineTo(p[0], p[1]));
+    c.arc(s.p3[0], s.p3[1], s.w1 / 2, 0, TAU);
+    for (let i = Rr.length - 1; i >= 0; i--) c.lineTo(Rr[i][0], Rr[i][1]);
+    c.closePath(); c.fillStyle = fill; c.fill();
+  }
+
+  // grow a branch scene in abstract units; returns drawables
+  function growScene(R, o) {
+    const sc = { segs: [], leaves: [], buds: [], blooms: [], petals: [] };
+    const bR = o.bloomR || 0.12;
+    function grow(x, y, ang, len, w, depth) {
+      const bend = (R() - 0.5) * (o.bend || 0.9);
+      const x3 = x + Math.cos(ang) * len, y3 = y + Math.sin(ang) * len;
+      const a1 = ang + bend, a2 = ang - bend * 0.7;
+      const s = { p0: [x, y], p1: [x + Math.cos(a1) * len * 0.36, y + Math.sin(a1) * len * 0.36], p2: [x3 - Math.cos(a2) * len * 0.34, y3 - Math.sin(a2) * len * 0.34], p3: [x3, y3], w0: w, w1: Math.max(w * 0.42, 0.006) };
+      sc.segs.push(s);
+      if (depth > 0) {
+        const kids = depth >= 2 ? 2 + (R() < 0.45 ? 1 : 0) : 1 + (R() < 0.45 ? 1 : 0);
+        let side = R() < 0.5 ? -1 : 1;
+        for (let i = 0; i < kids; i++) {
+          const t = 0.28 + ((i + 0.2 + R() * 0.6) / kids) * 0.58, p = bez(s, t), d = bezTan(s, t), ta = Math.atan2(d[1], d[0]);
+          grow(p[0], p[1], ta + side * (0.45 + R() * 0.55), len * (0.4 + R() * 0.3), lerp(s.w0, s.w1, t) * 0.72, depth - 1);
+          side = -side;
+        }
+      }
+      const nl = (o.leaves === 0) ? 0 : (depth === 0 ? 1 + Math.floor(R() * 2) : Math.floor(R() * 2.4));
+      for (let i = 0; i < nl; i++) {
+        const t = 0.3 + R() * 0.62, p = bez(s, t), d = bezTan(s, t), ta = Math.atan2(d[1], d[0]);
+        sc.leaves.push({ x: p[0], y: p[1], ang: ta + (R() < 0.5 ? -1 : 1) * (0.6 + R() * 0.5), L: bR * (0.9 + R() * 0.7) });
+      }
+      if (R() < 0.7) { const t = 0.45 + R() * 0.4, p = bez(s, t), d = bezTan(s, t), ta = Math.atan2(d[1], d[0]); sc.buds.push({ x: p[0], y: p[1], ang: ta + (R() < 0.5 ? -1 : 1) * (0.5 + R() * 0.5), s: bR * 0.3 }); }
+      const tipR = bR * (depth === 0 ? 0.85 + R() * 0.45 : 0.7 + R() * 0.35);
+      sc.blooms.push({ x: x3, y: y3, r: tipR });
+      const extra = depth === 0 ? (R() < 0.75 ? 1 : 0) + (R() < 0.4 ? 1 : 0) : (R() < 0.35 ? 1 : 0);
+      for (let e = 0; e < extra; e++) {
+        const a = ang + (R() - 0.5) * 2.6, d = tipR * (0.9 + R() * 0.5);
+        sc.blooms.push({ x: x3 + Math.cos(a) * d, y: y3 + Math.sin(a) * d, r: bR * (0.55 + R() * 0.4) });
+      }
+      sc.buds.push({ x: x3 + Math.cos(ang + 0.9) * tipR * 1.1, y: y3 + Math.sin(ang + 0.9) * tipR * 1.1, ang: ang + 0.6 + R() * 0.6, s: bR * 0.26 });
+    }
+    grow(o.x0 || 0, o.y0 || 0, o.ang0 == null ? -Math.PI / 2 : o.ang0, o.len0 || 1, o.w0 || 0.06, o.depth == null ? 3 : o.depth);
+    const np = o.petals == null ? 5 : o.petals;
+    if (np) {
+      let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+      sc.blooms.forEach((b) => { minx = Math.min(minx, b.x); maxx = Math.max(maxx, b.x); miny = Math.min(miny, b.y); maxy = Math.max(maxy, b.y); });
+      const dir = o.petalDir == null ? -1 : o.petalDir;
+      for (let i = 0; i < np; i++) {
+        const t = R();
+        sc.petals.push({ x: (dir < 0 ? lerp(minx, (minx + maxx) / 2, t) : lerp((minx + maxx) / 2, maxx, t)) + dir * bR * (0.5 + R()), y: lerp(miny + (maxy - miny) * 0.35, maxy + bR * 1.4, R()), ang: R() * TAU, s: bR * (0.3 + R() * 0.16), flip: 0.45 + R() * 0.55 });
+      }
+    }
+    return sc;
+  }
+
+  function sceneBox(sc) {
+    let a = Infinity, b = Infinity, cc = -Infinity, d = -Infinity;
+    const add = (x, y, r) => { a = Math.min(a, x - r); b = Math.min(b, y - r); cc = Math.max(cc, x + r); d = Math.max(d, y + r); };
+    sc.segs.forEach((s) => { [s.p0, s.p1, s.p2, s.p3].forEach((p) => add(p[0], p[1], s.w0 / 2)); });
+    sc.blooms.forEach((bl) => add(bl.x, bl.y, bl.r));
+    sc.leaves.forEach((l) => add(l.x, l.y, l.L * 0.8));
+    sc.buds.forEach((l) => add(l.x, l.y, l.s * 2));
+    sc.petals.forEach((p) => add(p.x, p.y, p.s));
+    return { x: a, y: b, w: cc - a, h: d - b };
+  }
+
+  // draw a scene fitted into rect {x,y,w,h}; anchor: 'center' | 'bottom' | 'bottomleft' | 'bottomright'
+  function drawScene(c, sc, rect, st, R, opts) {
+    opts = opts || {};
+    const bx = sceneBox(sc);
+    const k = Math.min(rect.w / bx.w, rect.h / bx.h);
+    const anchor = opts.anchor || 'center';
+    let ox = rect.x + (rect.w - bx.w * k) / 2, oy = rect.y + (rect.h - bx.h * k) / 2;
+    if (/bottom/.test(anchor)) oy = rect.y + rect.h - bx.h * k;
+    if (/left/.test(anchor)) ox = rect.x;
+    if (/right/.test(anchor)) ox = rect.x + rect.w - bx.w * k;
+    c.save();
+    c.translate(ox, oy); c.scale(k, k); c.translate(-bx.x, -bx.y);
+    const lw = (st.lwPx || 1) / k;
+    const S = Object.assign({}, st, { lw: lw });
+    sc.segs.slice().sort((a, b) => b.w0 - a.w0).forEach((s) => taper(c, s, st.stem || '#fff'));
+    sc.leaves.forEach((l) => leaf(c, l.x, l.y, l.ang, l.L, S));
+    sc.buds.forEach((b) => bud(c, b.x, b.y, b.ang, b.s, S));
+    const species = opts.species || ['peony'];
+    sc.blooms.slice().sort((a, b) => a.r - b.r).forEach((b, i) => {
+      bloom(c, b.x, b.y, b.r, pick(R, species), Object.assign({}, S, { rot: R() * TAU, tilt: opts.flat ? 1 : 0.62 + R() * 0.38 }), R);
+    });
+    sc.petals.forEach((p) => petal(c, p.x, p.y, p.ang, p.s, S, opts.petalShape || 'notch', p.flip));
+    c.restore();
+  }
+
+  // ---------------------------------------------------------------- silhouettes (white on black)
+  function canvasFor(el, w, h) {
+    const dpr = Math.min(2, W.devicePixelRatio || 1);
+    const cv = el && el.tagName === 'CANVAS' ? el : document.createElement('canvas');
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { cv, c, dpr };
+  }
+  const INK = { fill: '#fff', sep: '#000', stem: '#fff', leaf: '#fff', dot: '#000', center: '#fff', lwPx: 1.1 };
+
+  // the home readout branch, after the reference: a flowering branch rising from the bottom right
+  function heroBranch(el, w, h, seed, species) {
+    const { c } = canvasFor(el, w, h);
+    const R = rng(seed || 'hero');
+    const sc = growScene(R, { ang0: -Math.PI / 2 - 0.55, len0: 1, w0: 0.07, depth: 2, bloomR: 0.15, petals: 6, petalDir: -1, bend: 1.1 });
+    drawScene(c, sc, { x: 4, y: 4, w: w - 8, h: h - 8 }, INK, R, { species: species || ['peony', 'peony', 'camellia'], anchor: 'center' });
+    return el;
+  }
+  function sprig(el, w, h, seed, species, anchor, ang) {
+    const { c } = canvasFor(el, w, h);
+    const R = rng(seed || 'sprig');
+    const sc = growScene(R, { ang0: ang == null ? -Math.PI / 2 + 0.5 : ang, len0: 1, w0: 0.05, depth: 2, bloomR: 0.11, petals: 4, petalDir: 1 });
+    drawScene(c, sc, { x: 2, y: 2, w: w - 4, h: h - 4 }, INK, R, { species: species || ['sakura'], anchor: anchor || 'bottomleft' });
+    return el;
+  }
+  function specimen(el, w, h, sp, seed) {
+    const { c } = canvasFor(el, w, h);
+    const R = rng(seed || sp);
+    const S = SPECIES[sp];
+    const st = Object.assign({}, INK, { lw: 1.1 });
+    if (S.raceme) {
+      c.save(); c.fillStyle = '#fff';
+      taper(c, { p0: [w * 0.08, h * 0.12], p1: [w * 0.35, h * 0.05], p2: [w * 0.6, h * 0.16], p3: [w * 0.92, h * 0.1], w0: 4, w1: 2 }, '#fff');
+      c.restore();
+      leaf(c, w * 0.75, h * 0.12, -0.4, h * 0.2, st);
+      [[0.28, 0.72], [0.5, 0.8], [0.7, 0.62]].forEach((q, i) => raceme(c, w * q[0], h * 0.12, h * q[1] * 0.95, st, R, Math.PI / 2 + (i - 1) * 0.08));
+    } else if (S.cluster) {
+      leaf(c, w * 0.32, h * 0.62, Math.PI * 0.85, h * 0.32, st);
+      leaf(c, w * 0.66, h * 0.66, Math.PI * 0.15, h * 0.3, st);
+      cluster(c, w / 2, h * 0.44, Math.min(w, h) * 0.36, st, R);
+    } else {
+      leaf(c, w * 0.5, h * 0.55, Math.PI * 0.78, Math.min(w, h) * 0.34, st);
+      leaf(c, w * 0.5, h * 0.55, Math.PI * 0.2, Math.min(w, h) * 0.3, st);
+      bloom(c, w / 2, h * 0.46, Math.min(w, h) * 0.36, sp, Object.assign({}, st, { rot: R() * TAU, tilt: 0.92 }), R);
+    }
+    return el;
+  }
+  // empty-state art: a closed bud on a stem (nothing liked yet)
+  function budStem(el, w, h, seed) {
+    const { c } = canvasFor(el, w, h);
+    const R = rng(seed || 'bud');
+    const st = Object.assign({}, INK, { lw: 1.1 });
+    taper(c, { p0: [w * 0.52, h * 0.98], p1: [w * 0.46, h * 0.7], p2: [w * 0.58, h * 0.45], p3: [w * 0.5, h * 0.3], w0: 4, w1: 2.2 }, '#fff');
+    leaf(c, w * 0.5, h * 0.72, -Math.PI * 0.85, h * 0.26, st);
+    leaf(c, w * 0.53, h * 0.58, -Math.PI * 0.12, h * 0.22, st);
+    bud(c, w * 0.5, h * 0.31, -Math.PI / 2 - 0.08, h * 0.08, st);
+    petal(c, w * 0.78, h * 0.86, 1.2, h * 0.05, st, 'notch', 0.6);
+    return el;
+  }
+  // empty-state art: a bare twig shedding its last petals (no results)
+  function bareTwig(el, w, h, seed) {
+    const { c } = canvasFor(el, w, h);
+    const R = rng(seed || 'twig');
+    const sc = growScene(R, { ang0: -Math.PI / 2 - 0.9, len0: 1, w0: 0.045, depth: 2, bloomR: 0.07, petals: 0, leaves: 0 });
+    sc.blooms = sc.blooms.slice(0, 1); sc.leaves = [];
+    drawScene(c, sc, { x: 6, y: 4, w: w * 0.7, h: h * 0.62 }, INK, R, { species: ['ume'], anchor: 'center' });
+    const st = Object.assign({}, INK, { lw: 1.1 });
+    for (let i = 0; i < 6; i++) petal(c, w * (0.2 + R() * 0.65), h * (0.62 + R() * 0.34), R() * TAU, h * (0.04 + R() * 0.02), st, i % 2 ? 'notch' : 'round', 0.4 + R() * 0.6);
+    return el;
+  }
+
+  // ---------------------------------------------------------------- covers (tonal colour)
+  function toneFill(P, R, mode) {
+    const tones = mode === 'light' ? [P.deep, P.mid, P.dark] : [P.light, P.pale, P.cream];
+    const accent = R() < 0.5 ? P.warm : P.comp;
+    return function (li, n, k) {
+      const t = n > 1 ? li / (n - 1) : 0.5;
+      if (k % 7 === 3 && li === 0) return accent;
+      return mode === 'light' ? mix(tones[0], tones[2], t * 0.8) : mix(tones[0], tones[1], t);
+    };
+  }
+
+  function coverCanvas(size) { const cv = document.createElement('canvas'); cv.width = cv.height = size; return cv; }
+
+  const COMPS = ['bloom', 'branch', 'field', 'bouquet', 'wallpaper', 'hanging', 'moon'];
+
+  // kind: 'album' | 'playlist' | 'artist' | 'liked'; opts: { size, comp, label, numeral, top }
+  function cover(seed, hex, opts) {
+    opts = opts || {};
+    const S = opts.size || 256;
+    const cv = coverCanvas(S), c = cv.getContext('2d');
+    const R = rng(seed + ':cover');
+    const P = palette(hex);
+    const lw = Math.max(1, S * 0.005);
+    const comp = opts.comp || COMPS[hash(seed) % COMPS.length];
+    const spA = opts.species || pick(R, LAYERED), spB = pick(R, LAYERED);
+    const dark = { fill: toneFill(P, R), sep: P.ink, lw: lw, stem: mix(P.dark, '#000', 0.2), leaf: P.leaf, dot: P.ink, center: P.warm, budFill: P.light, petalFill: P.pale };
+
+    // ground
+    const g = c.createLinearGradient(0, 0, S * (0.2 + R() * 0.6), S);
+    if (comp === 'branch' || comp === 'hanging') { g.addColorStop(0, P.pale); g.addColorStop(1, P.light); }
+    else { g.addColorStop(0, P.deep); g.addColorStop(1, P.dark); }
+    c.fillStyle = g; c.fillRect(0, 0, S, S);
+
+    if (comp === 'bloom') {
+      const glow = c.createRadialGradient(S * 0.5, S * 0.5, 0, S * 0.5, S * 0.5, S * 0.7);
+      glow.addColorStop(0, P.mid); glow.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = glow; c.fillRect(0, 0, S, S);
+      const cx = S * (0.4 + R() * 0.2), cy = S * (0.42 + R() * 0.16), r = S * (0.3 + R() * 0.07);
+      for (let i = 0; i < 4; i++) leaf(c, cx, cy, R() * TAU, r * (1.05 + R() * 0.3), dark);
+      bloom(c, S * (R() < 0.5 ? 0.04 : 0.96), S * (0.08 + R() * 0.2), S * 0.2, spB, Object.assign({}, dark, { tilt: 0.85 }), R);
+      bloom(c, S * (R() < 0.5 ? 0.1 : 0.9), S * (0.86 + R() * 0.12), S * 0.17, spA, Object.assign({}, dark, { tilt: 0.8 }), R);
+      bloom(c, cx, cy, r, spA, Object.assign({}, dark, { tilt: 0.86 + R() * 0.14 }), R);
+    } else if (comp === 'branch') {
+      const sc = growScene(R, { ang0: -Math.PI / 2 + (R() < 0.5 ? -0.7 : 0.7), len0: 1, w0: 0.06, depth: 2, bloomR: 0.15, petals: 4 });
+      const ink = { fill: toneFill(P, R, 'light'), sep: P.pale, lwPx: lw, stem: P.ink, leaf: P.deep, dot: P.pale, center: P.warm, budFill: P.mid, petalFill: P.mid };
+      drawScene(c, sc, { x: S * 0.04, y: S * 0.04, w: S * 0.92, h: S * 0.92 }, ink, R, { species: [spA, spA, spB] });
+    } else if (comp === 'field') {
+      const n = 16 + Math.floor(R() * 10);
+      for (let i = 0; i < 8; i++) leaf(c, R() * S, R() * S, R() * TAU, S * (0.08 + R() * 0.06), dark);
+      for (let i = 0; i < n; i++) bloom(c, R() * S, R() * S, S * (0.05 + R() * 0.06), R() < 0.7 ? spA : spB, Object.assign({}, dark, { tilt: 0.6 + R() * 0.4 }), R);
+      for (let i = 0; i < 10; i++) petal(c, R() * S, R() * S, R() * TAU, S * 0.03, dark, 'notch', 0.5 + R() * 0.5);
+    } else if (comp === 'bouquet') {
+      const n = 5 + Math.floor(R() * 3), base = [S * 0.5, S * 1.04], heads = [];
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (i / (n - 1) - 0.5) * 1.5 + (R() - 0.5) * 0.25, L = S * (0.48 + R() * 0.28);
+        const tip = [base[0] + Math.cos(a) * L, base[1] + Math.sin(a) * L];
+        taper(c, { p0: base, p1: [base[0] + Math.cos(a) * L * 0.3, base[1] + Math.sin(a) * L * 0.3], p2: [tip[0] - Math.cos(a + 0.2) * L * 0.3, tip[1] - Math.sin(a + 0.2) * L * 0.3], p3: tip, w0: S * 0.018, w1: S * 0.008 }, P.leaf);
+        leaf(c, base[0] + Math.cos(a) * L * 0.55, base[1] + Math.sin(a) * L * 0.55, a + (R() < 0.5 ? -1 : 1) * 0.8, S * 0.11, dark);
+        heads.push({ x: tip[0], y: tip[1], r: S * (0.1 + R() * 0.07) });
+      }
+      heads.sort((a, b) => a.r - b.r).forEach((h, i) => bloom(c, h.x, h.y, h.r, i % 2 ? spA : spB, Object.assign({}, dark, { tilt: 0.7 + R() * 0.3 }), R));
+    } else if (comp === 'wallpaper') {
+      const n = 4, step = S / n;
+      for (let y = 0; y <= n; y++) for (let x = 0; x <= n; x++) {
+        const ox = x * step + (y % 2 ? step / 2 : 0), oy = y * step;
+        leaf(c, ox + step * 0.5, oy + step * 0.5, (x + y) * 1.3, step * 0.26, dark);
+        bloom(c, ox, oy, step * 0.34, spA, Object.assign({}, dark, { rot: (x * 0.7 + y * 1.1), tilt: 1, fill: toneFill(P, rng(seed + x + ',' + y)) }), R);
+      }
+    } else if (comp === 'hanging') {
+      const vine = { p0: [-S * 0.05, S * 0.08], p1: [S * 0.3, S * 0.02], p2: [S * 0.7, S * 0.16], p3: [S * 1.05, S * 0.06], w0: S * 0.03, w1: S * 0.014 };
+      const ink = { fill: toneFill(P, R, 'light'), sep: P.pale, lw: lw, stem: P.dark, leaf: P.deep, dot: P.pale };
+      const m = 5 + Math.floor(R() * 3);
+      for (let i = 0; i < m; i++) { const t = (i + 0.5) / m, p = bez(vine, t); raceme(c, p[0], p[1], S * (0.42 + R() * 0.42), ink, R); }
+      taper(c, vine, P.ink);
+      for (let i = 0; i < 6; i++) { const t = R(), p = bez(vine, t); leaf(c, p[0], p[1], -Math.PI / 2 + (R() - 0.5) * 2, S * 0.1, ink); }
+    } else if (comp === 'moon') {
+      const mx = S * (0.55 + R() * 0.15), my = S * (0.38 + R() * 0.1), mr = S * (0.3 + R() * 0.06);
+      c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fillStyle = P.pale; c.fill();
+      c.beginPath(); c.arc(mx, my, mr * 1.18, 0, TAU); c.strokeStyle = P.mid; c.lineWidth = lw; c.stroke();
+      const sc = growScene(R, { ang0: -Math.PI / 2 - 0.9, len0: 1, w0: 0.05, depth: 2, bloomR: 0.12, petals: 5 });
+      const sil = { fill: P.ink, sep: P.light, lwPx: lw, stem: P.ink, leaf: P.ink, dot: P.light, center: P.ink, petalFill: P.ink, budFill: P.ink };
+      drawScene(c, sc, { x: S * 0.02, y: S * 0.2, w: S * 0.8, h: S * 0.78 }, sil, R, { species: [spA], anchor: 'bottomleft' });
+    }
+
+    // overlays (pixel type is drawn in the page font)
+    if (opts.numeral) {
+      c.font = Math.round(S * 0.56) + 'px DotGothic16, monospace';
+      c.textBaseline = 'alphabetic'; c.textAlign = 'right';
+      c.lineWidth = S * 0.03; c.strokeStyle = '#000'; c.strokeText(opts.numeral, S * 0.95, S * 0.9);
+      c.fillStyle = '#fff'; c.fillText(opts.numeral, S * 0.95, S * 0.9);
+      c.textAlign = 'left';
+    }
+    if (opts.label) {
+      const fs = Math.round(S * 0.075);
+      c.font = fs + 'px DotGothic16, monospace';
+      const txt = opts.label.toLowerCase();
+      const tw = Math.min(S * 0.86, c.measureText('> ' + txt).width);
+      c.fillStyle = '#000'; c.fillRect(0, S - fs * 2, tw + fs * 1.2, fs * 2);
+      c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText('> ' + txt, fs * 0.6, S - fs, S * 0.86);
+    }
+    if (opts.mark !== false && (opts.label || opts.numeral)) pixelMark(c, S - S * 0.13, S * 0.04, Math.max(1, Math.round(S / 128)));
+    return cv.toDataURL('image/png');
+  }
+
+  function artist(seed, hex, opts) {
+    opts = opts || {};
+    const S = opts.size || 256;
+    const cv = coverCanvas(S), c = cv.getContext('2d');
+    const R = rng(seed + ':artist');
+    const P = palette(hex);
+    const lw = Math.max(1, S * 0.005);
+    const g = c.createRadialGradient(S * 0.45, S * 0.4, 0, S * 0.5, S * 0.5, S * 0.75);
+    g.addColorStop(0, P.mid); g.addColorStop(1, P.dark);
+    c.fillStyle = g; c.fillRect(0, 0, S, S);
+    const sp = opts.species || LAYERED[hash(seed) % LAYERED.length];
+    const st = { fill: toneFill(P, R), sep: P.ink, lw: lw, leaf: P.leaf, dot: P.ink, center: P.warm };
+    for (let i = 0; i < 5; i++) leaf(c, S / 2, S / 2, -Math.PI / 2 + (i - 2) * 0.75 + Math.PI, S * 0.42, st);
+    bloom(c, S / 2, S * 0.5, S * 0.36, sp, Object.assign({}, st, { tilt: 0.92 }), R);
+    return cv.toDataURL('image/png');
+  }
+
+  function liked(opts) {
+    opts = opts || {};
+    const S = opts.size || 256;
+    const cv = coverCanvas(S), c = cv.getContext('2d');
+    const R = rng('liked');
+    const g = c.createLinearGradient(0, 0, S, S);
+    g.addColorStop(0, '#3b12d6'); g.addColorStop(0.55, '#8f7ae8'); g.addColorStop(1, '#c4efd9');
+    c.fillStyle = g; c.fillRect(0, 0, S, S);
+    const inHeart = (x, y) => { const X = (x - 0.5) * 2.5, Y = (0.42 - y) * 2.5; const q = X * X + Y * Y - 1; return q * q * q - X * X * Y * Y * Y <= 0; };
+    const pts = [];
+    for (let i = 0; i < 400 && pts.length < 34; i++) { const x = 0.12 + R() * 0.76, y = 0.12 + R() * 0.76; if (inHeart(x, y) && pts.every((p) => Math.hypot(p[0] - x, p[1] - y) > 0.075)) pts.push([x, y]); }
+    const st = { fill: (li, n, k) => (k % 3 ? '#ffffff' : '#ffe3f1'), sep: '#2a0f7a', lw: Math.max(1, S * 0.005), dot: '#2a0f7a' };
+    pts.sort((a, b) => a[1] - b[1]).forEach((p) => bloom(c, p[0] * S, p[1] * S, S * (0.055 + R() * 0.02), 'sakura', Object.assign({}, st, { tilt: 0.85 + R() * 0.15 }), R));
+    return cv.toDataURL('image/png');
+  }
+
+  // ---------------------------------------------------------------- pixel art (logo)
+  // a 13x13 five-petal blossom computed from a rose curve; returns rows of 0/1
+  const BLOSSOM = ['.....XXX.....', '....XXXXX....', '....XXXXX....', '.XXX.XXX.XXX.', '.XXXX.X.XXXX.', 'XXXXX...XXXXX', '.XXXX.X.XXXX.', '....X...X....', '..XXXX.XXXX..', '..XXXX.XXXX..', '..XXXX.XXXX..', '...XXX.XXX...'];
+  function pixelFlowerGrid() { return BLOSSOM.map((r) => r.replace(/X/g, '1').replace(/[.]/g, '0')); }
+  function gridPath(rows) {
+    let d = '';
+    rows.forEach((row, y) => {
+      let x = 0;
+      while (x < row.length) {
+        if (row[x] === '1' || row[x] === 'X') { let e = x; while (e < row.length && (row[e] === '1' || row[e] === 'X')) e++; d += 'M' + x + ' ' + y + 'h' + (e - x) + 'v1h-' + (e - x) + 'z'; x = e; } else x++;
+      }
+    });
+    return d;
+  }
+  function pixelMark(c, x, y, s) {
+    const rows = pixelFlowerGrid(13);
+    c.fillStyle = '#fff';
+    rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '1') c.fillRect(x + i * s, y + j * s, s, s); });
+  }
+
+  W.Flora = { SPECIES, LAYERED, rng, hash, palette, mix, bloom, leaf, bud, petal, raceme, cluster, taper, growScene, drawScene, heroBranch, sprig, specimen, budStem, bareTwig, cover, artist, liked, pixelFlowerGrid, gridPath, SHAPES };
+})(window);
+
+</script>
+<script>
+/* Wavelength / terminal — mock renderer. Builds the frames from the real catalogue (src/data.js subset). */
+(function () {
+  'use strict';
+  const F = window.Flora;
+  const D = JSON.parse(document.getElementById('catalogue').textContent);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  // ------------------------------------------------------------- catalogue maps
+  const AR = {}, AL = {}, ALT = {}, PL = {};
+  D.artists.forEach(([id, name, color, listeners]) => { AR[id] = { id, name, color, listeners }; });
+  D.albums.forEach(([id, title, artist, type, year, color]) => { AL[id] = { id, title, artist, type, year, color }; ALT[title] = AL[id]; });
+  D.playlists.forEach(([id, name, color, desc, saves, n, kind]) => { PL[id] = { id, name, color, desc, saves, n, kind }; });
+  const arByName = (n) => Object.values(AR).find((a) => a.name === n);
+
+  // ------------------------------------------------------------- pixel icons (X = lit cell, drawn at 2px)
+  const PX = {
+    play: ['.X.......', '.XXX.....', '.XXXXX...', '.XXXXXXX.', '.XXXXXXXX', '.XXXXXXX.', '.XXXXX...', '.XXX.....', '.X.......'],
+    pause: ['.........', '.XX...XX.', '.XX...XX.', '.XX...XX.', '.XX...XX.', '.XX...XX.', '.XX...XX.', '.XX...XX.', '.........'],
+    next: ['X.....XX.', 'XX....XX.', 'XXX...XX.', 'XXXX..XX.', 'XXXXX.XX.', 'XXXX..XX.', 'XXX...XX.', 'XX....XX.', 'X.....XX.'],
+    prev: ['.XX.....X', '.XX....XX', '.XX...XXX', '.XX..XXXX', '.XX.XXXXX', '.XX..XXXX', '.XX...XXX', '.XX....XX', '.XX.....X'],
+    shuffle: ['.......X.', 'XXX...XXX', '...X.X.X.', '....X....', '...X.X.X.', 'XXX...XXX', '.......X.'],
+    repeat: ['.....X...', 'XXXXXXX..', 'X....X...', 'X.......X', 'X.......X', '...X....X', '..XXXXXXX', '...X.....'],
+    heart: ['.XX...XX.', 'XXXX.XXXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....'],
+    heartO: ['.XX...XX.', 'X..X.X..X', 'X...X...X', 'X.......X', '.X.....X.', '..X...X..', '...X.X...', '....X....'],
+    plus: ['....X....', '....X....', '....X....', '....X....', 'XXXXXXXXX', '....X....', '....X....', '....X....', '....X....'],
+    add: ['XXXXXXXXX', 'X.......X', 'X...X...X', 'X...X...X', 'X.XXXXX.X', 'X...X...X', 'X...X...X', 'X.......X', 'XXXXXXXXX'],
+    saved: ['XXXXXXXXX', 'XXXXXXXXX', 'XXXXXXX.X', 'XXXXXX.XX', 'X.XXX.XXX', 'XX.X.XXXX', 'XXX.XXXXX', 'XXXXXXXXX', 'XXXXXXXXX'],
+    home: ['....X....', '...XXX...', '..XX.XX..', '.XX...XX.', 'XX.....XX', '.X.....X.', '.X.XXX.X.', '.X.X.X.X.', '.XXX.XXX.'],
+    homeF: ['....X....', '...XXX...', '..XXXXX..', '.XXXXXXX.', 'XXXXXXXXX', '.XXXXXXX.', '.XXX.XXX.', '.XXX.XXX.', '.XXX.XXX.'],
+    search: ['.XXXX....', 'X....X...', 'X....X...', 'X....X...', 'X....X...', '.XXXX....', '.....XX..', '......XX.', '.......XX'],
+    library: ['X.X..X...', 'X.X..X...', 'X.X...X..', 'X.X...X..', 'X.X...X..', 'X.X....X.', 'X.X....X.', 'X.X.....X', 'X.X.....X'],
+    queue: ['XXXXXXXXX', '.........', 'XXXXXXXXX', '.........', 'XXXX.X...', '.....XX..', 'XXXX.XXX.', '.....XX..', '.....X...'],
+    nowplaying: ['XXXXXXXXX', 'X.......X', 'X..X....X', 'X..XX...X', 'X..XXX..X', 'X..XX...X', 'X..X....X', 'X.......X', 'XXXXXXXXX'],
+    volume: ['...X.....', '..XX...X.', 'XXXX.X..X', 'XXXX..X.X', 'XXXX..X.X', 'XXXX.X..X', '..XX...X.', '...X.....'],
+    more: ['XX.XX.XX', 'XX.XX.XX'],
+    close: ['X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X...X.', 'X.....X'],
+    chevDown: ['X.....X', '.X...X.', '..X.X..', '...X...'],
+    chevRight: ['X...', '.X..', '..X.', '...X', '..X.', '.X..', 'X...'],
+    chevLeft: ['...X', '..X.', '.X..', 'X...', '.X..', '..X.', '...X'],
+    clock: ['..XXXXX..', '.X.....X.', 'X...X...X', 'X...X...X', 'X...XXX.X', 'X.......X', '.X.....X.', '..XXXXX..'],
+    download: ['....X....', '....X....', '....X....', '..X.X.X..', '...XXX...', '....X....', '.........', 'X.......X', 'XXXXXXXXX'],
+    browse: ['.XXXXXXX.', 'X.......X', 'XXXXXXXXX', 'X.......X', 'X..XXX..X', 'X.......X', 'X.......X', 'XXXXXXXXX'],
+    list: ['XXXXXXXXX', '.........', '.........', 'XXXXXXXXX', '.........', '.........', 'XXXXXXXXX'],
+    E: ['XXXXXXX', 'XX...XX', 'XX.XXXX', 'XX..XXX', 'XX.XXXX', 'XX...XX', 'XXXXXXX'],
+    pin: ['..XXX..', '..XXX..', '..XXX..', '.XXXXX.', 'XXXXXXX', '...X...', '...X...'],
+    share: ['....X....', '...XXX...', '..X.X.X..', '....X....', '....X....', 'X...X...X', 'X.......X', 'X.......X', 'XXXXXXXXX'],
+    expand: ['....XXXXX', '......XXX', '.....X..X', '....X...X', '.........', 'X...X....', 'X..X.....', 'XXX......', 'XXXXX....'],
+    blossom: F.pixelFlowerGrid().map((r) => r.replace(/1/g, 'X')),
+  };
+  function px(name, scale, cls) {
+    const g = PX[name], s = scale || 2;
+    return '<svg class="px' + (cls ? ' ' + cls : '') + '" width="' + g[0].length * s + '" height="' + g.length * s + '" viewBox="0 0 ' + g[0].length + ' ' + g.length + '" aria-hidden="true" focusable="false"><path d="' + F.gridPath(g) + '"/></svg>';
+  }
+  const winBar = (ctl) => '<div class="win__bar" aria-hidden="true"><span class="win__ctl">' + (ctl || '<span>-</span><span>×</span>') + '</span></div>';
+
+  // ------------------------------------------------------------- entities and covers
+  const COMP = { pl_dailymix1: 'field', pl_dailymix2: 'bloom', pl_dailymix3: 'wallpaper', pl_dailymix4: 'bouquet', pl_freshfinds: 'hanging', pl_newreleases: 'bloom', pl_chillvibes: 'branch', pl_deepfocus: 'moon', pl_latenightdrive: 'moon', pl_morningcoffee: 'bouquet', pl_workoutpulse: 'field', pl_rainydayjazz: 'hanging', pl_indiegold: 'wallpaper', pl_electronicessentials: 'bloom', pl_top50global: 'field' };
+  function coverSpec(kind, id) {
+    if (kind === 'liked') return { liked: true };
+    if (kind === 'artist') return { artist: true, hex: AR[id].color };
+    if (kind === 'album') return { hex: AL[id].color };
+    const p = PL[id];
+    const o = { hex: p.color, comp: COMP[id] };
+    if (p.kind === 'mix') { o.numeral = p.name.replace(/\D+/g, ''); o.label = 'daily mix'; }
+    else if (p.kind === 'chart') { o.numeral = '50'; o.label = 'top 50 global'; }
+    else o.label = p.name;
+    return o;
+  }
+  const coverCache = {};
+  function coverURL(key) {
+    if (coverCache[key]) return coverCache[key];
+    const [kind, id] = key.split(':');
+    const s = coverSpec(kind, id);
+    let url;
+    if (s.liked) url = F.liked({ size: 256 });
+    else if (s.artist) url = F.artist(id, s.hex, { size: 256 });
+    else url = F.cover(id, s.hex, { size: 256, comp: s.comp, label: s.label, numeral: s.numeral });
+    return (coverCache[key] = url);
+  }
+  function ent(kind, id) {
+    if (kind === 'liked') return { key: 'liked:liked', name: 'Liked Songs', sub: 'Playlist • 23 songs', type: 'Playlist' };
+    if (kind === 'playlist') { const p = PL[id]; return { key: 'playlist:' + id, id, name: p.name, sub: p.desc, lib: 'Playlist • Wavelength' }; }
+    if (kind === 'album') { const a = AL[id]; return { key: 'album:' + id, id, name: a.title, sub: a.artist, lib: (a.type === 'single' ? 'Single' : a.type === 'ep' ? 'EP' : 'Album') + ' • ' + a.artist }; }
+    if (kind === 'artist') { const a = AR[id]; return { key: 'artist:' + id, id, name: a.name, sub: 'Artist', lib: 'Artist', round: true }; }
+  }
+  const img = (key, cls) => '<img class="cover' + (cls ? ' ' + cls : '') + '" data-cover="' + key + '" alt="">';
+
+  // ------------------------------------------------------------- shared chrome
+  const FX = [['mono', 'grayscale(1) contrast(1.12)'], ['dither', '1-bit ordered dither, 4×4 bayer at 2px'], ['invert', 'grayscale, then negative'], ['color', 'colour passes through'], ['cyano', 'cyanotype: prussian blue to paper white']];
+  const fxSwitch = (cls) => '<div class="fx' + (cls ? ' ' + cls : '') + '" role="radiogroup" aria-label="Media filter"><span class="fx__label" aria-hidden="true">fx</span>' +
+    FX.map(([k]) => '<button class="fx__opt" role="radio" aria-checked="' + (k === 'mono') + '" tabindex="' + (k === 'mono' ? 0 : -1) + '" data-fx="' + k + '">' + k + '</button>').join('') + '</div>';
+  const logo = () => '<a class="logo topbar__logo" href="#" aria-label="Wavelength">' + px('blossom') + '<span class="logo__word" aria-hidden="true">wavelength</span></a>';
+
+  function topbar() {
+    return '<div class="topbar" role="banner">' +
+      '<div class="topbar__left">' + logo() + '</div>' +
+      '<div class="topbar__center"><button class="round-btn is-active" aria-label="Home">' + px('homeF') + '</button>' +
+      '<div class="search-pill"><input class="search-pill__input" type="search" placeholder="What do you want to play?" aria-label="Search" autocomplete="off"><span class="caret" aria-hidden="true">_</span>' +
+      '<button class="icon-btn search-pill__browse" aria-label="Browse">' + px('browse') + '</button></div></div>' +
+      '<div class="topbar__right">' + fxSwitch() + '<button class="avatar-btn" aria-label="Account menu"><span class="avatar">N</span></button></div></div>';
+  }
+  function phoneHead() {
+    return '<div class="phone-head">' + logo() + '<time data-live="clock-short"></time><button class="avatar-btn" aria-label="Account menu"><span class="avatar">N</span></button></div>';
+  }
+
+  const LIB = [['liked', 'liked'], ['playlist', 'pl_latenightdrive'], ['playlist', 'pl_dailymix1'], ['playlist', 'pl_chillvibes'], ['artist', 'ar_lunenoire'], ['album', 'al_nightwindow'], ['playlist', 'pl_top50global']];
+  function sidebar(view) {
+    const rows = LIB.map(([k, id]) => {
+      const e = ent(k, id);
+      const cur = id === 'pl_latenightdrive', act = cur && view === 'playlist';
+      const sub = k === 'liked' ? px('pin', 1) + '<span>' + esc(e.sub) + '</span>' : '<span>' + esc(e.lib) + '</span>';
+      return '<li><button class="lib-row' + (act ? ' is-active' : '') + (cur ? ' is-current is-playing' : '') + '" title="' + esc(e.name) + '" aria-label="' + esc(e.name) + '">' +
+        '<span class="lib-row__gut" aria-hidden="true">' + (cur ? '<span class="equaliser"><i></i><i></i><i></i></span>' : '') + '</span>' +
+        '<span class="lib-row__cover">' + img(e.key, e.round ? 'cover--round' : '') + '</span>' +
+        '<span class="lib-row__text"><span class="name">' + esc(e.name) + '</span><span class="sub">' + sub + '</span></span></button></li>';
+    }).join('');
+    return '<aside class="sidebar win" aria-label="Your Library">' + winBar() +
+      '<div class="lib-header win__title"><button class="lib-title" title="Your Library" aria-label="Collapse Your Library"><span>Your Library</span></button><button class="icon-btn lib-add" aria-label="Create playlist">' + px('plus') + '</button></div>' +
+      '<div class="lib-chips"><button class="chip" aria-pressed="false">Playlists</button><button class="chip" aria-pressed="false">Artists</button><button class="chip" aria-pressed="false">Albums</button></div>' +
+      '<div class="lib-filter"><button class="icon-btn" aria-label="Search in Your Library">' + px('search') + '</button><button class="lib-sort" aria-label="Sort by: Recents">Recents ' + px('chevDown') + '</button></div>' +
+      '<ul class="lib-list">' + rows + '</ul>' +
+      '<div class="lib-sprig" aria-hidden="true"><canvas data-flora="sprig" data-w="270" data-h="150" data-seed="lib-' + view + '"></canvas></div></aside>';
+  }
+
+  const NOW = { title: 'Ultraviolet Telemetry', artist: 'DJ Orrery', album: 'al_orbitalmechanics', elapsed: '0:42', total: '3:11', fill: 22 };
+  function playerBar(pressNext) {
+    return '<footer class="player-bar win" aria-label="Now playing">' + winBar() +
+      '<div class="win__title"><span class="prompt">/media</span></div>' +
+      '<div class="pb"><div class="pb-left"><div class="pb-cover">' + img('album:' + NOW.album) + '</div>' +
+      '<div class="pb-text"><div class="pb-title"><span class="pb-label" aria-hidden="true">Song:</span><a href="#">' + NOW.title + '</a></div><div class="pb-artist"><span class="pb-label" aria-hidden="true">Author:</span><a href="#">' + NOW.artist + '</a></div></div>' +
+      '<button class="icon-btn" aria-label="Add to Liked Songs">' + px('add') + '</button></div>' +
+      '<div class="pb-center"><div class="pb-controls">' +
+      '<button class="icon-btn icon-btn--dot is-active" aria-label="Disable shuffle">' + px('shuffle') + '</button>' +
+      '<button class="icon-btn" aria-label="Previous">' + px('prev') + '</button>' +
+      '<button class="play-btn play-btn--white" aria-label="Pause">' + px('pause') + '</button>' +
+      '<button class="icon-btn' + (pressNext ? ' is-pressed' : '') + '" aria-label="Next">' + px('next') + '</button>' +
+      '<button class="icon-btn icon-btn--dot" aria-label="Enable repeat">' + px('repeat') + '</button></div>' +
+      '<div class="pb-progress"><span class="pb-time">' + NOW.elapsed + '</span><div class="slider slider--progress" role="slider" aria-label="Seek" aria-valuenow="22" style="--fill:' + NOW.fill + '%"></div><span class="pb-time pb-time--total">' + NOW.total + '</span></div></div>' +
+      '<div class="pb-right"><button class="icon-btn icon-btn--dot" aria-label="Now playing view">' + px('nowplaying') + '</button>' +
+      '<button class="icon-btn icon-btn--dot" aria-label="Queue">' + px('queue') + '</button>' +
+      '<div class="pb-volume"><button class="icon-btn" aria-label="Mute">' + px('volume') + '</button><div class="slider slider--volume" role="slider" aria-label="Volume" aria-valuenow="70" style="--fill:70%"></div><span class="pb-vol-pct" aria-hidden="true">70%</span></div></div></div></footer>';
+  }
+  function miniPlayer() {
+    return '<div class="mini-player" style="--mini-color:' + F.mix(AL[NOW.album].color, '#000000', 0.62) + '"><div class="mini-player__inner">' + img('album:' + NOW.album, 'cover--40') +
+      '<div class="mini-player__text"><div class="mini-player__title">' + NOW.title + '</div><div class="mini-player__artist">' + NOW.artist + '</div></div>' +
+      '<button class="icon-btn" aria-label="Add to Liked Songs">' + px('add') + '</button><button class="icon-btn" aria-label="Pause">' + px('pause') + '</button></div>' +
+      '<div class="mini-player__progress" aria-hidden="true"><i style="--fill:' + NOW.fill + '%"></i></div></div>';
+  }
+  function bottomNav() {
+    return '<nav class="bottom-nav" aria-label="Primary">' +
+      '<a class="bottom-nav__item is-active" href="#">' + px('homeF') + '<span>Home</span></a>' +
+      '<a class="bottom-nav__item" href="#">' + px('search') + '<span>Search</span></a>' +
+      '<a class="bottom-nav__item" href="#">' + px('library') + '<span>Your Library</span></a></nav>';
+  }
+
+  // ------------------------------------------------------------- home
+  function card(e, extra) {
+    const playing = extra && extra.playing;
+    return '<div class="card' + (e.round ? ' card--round' : '') + (playing ? ' is-current is-playing' : '') + (extra && extra.cls ? ' ' + extra.cls : '') + '" role="button" tabindex="0">' +
+      '<div class="card__cover">' + img(e.key, e.round ? 'cover--round' : '') + '<button class="play-btn" aria-label="' + (playing ? 'Pause ' : 'Play ') + esc(e.name) + '">' + px(playing ? 'pause' : 'play') + '</button></div>' +
+      '<div class="card__text"><div class="card__title">' + esc(e.name) + '</div><div class="card__sub">' + esc(e.sub) + '</div></div></div>';
+  }
+  function shelf(title, id, items) {
+    return '<section class="shelf" data-shelf="' + id + '"><div class="shelf__head"><a class="shelf__title" href="#">' + esc(title) + '</a><a class="shelf__all" href="#">Show all</a></div>' +
+      '<div class="card-grid card-grid--row">' + items.map((x) => card(x[0], x[1])).join('') + '</div></section>';
+  }
+  const E = (k, id, x) => [ent(k, id), x];
+  function home() {
+    const quick = [E('liked', 'liked'), E('playlist', 'pl_latenightdrive', { playing: true }), E('playlist', 'pl_dailymix1'), E('playlist', 'pl_chillvibes', { cls: 'is-hover' }), E('playlist', 'pl_deepfocus'), E('playlist', 'pl_top50global'), E('playlist', 'pl_dailymix2'), E('playlist', 'pl_dailymix3')];
+    const tiles = quick.map(([e, x]) => '<button class="quick-tile' + (x && x.playing ? ' is-current is-playing' : '') + (x && x.cls ? ' ' + x.cls : '') + '">' + img(e.key) +
+      '<span class="quick-tile__name">' + esc(e.name) + '</span><span class="play-btn" aria-hidden="true">' + px(x && x.playing ? 'pause' : 'play') + '</span></button>').join('');
+    const pls = (ids) => ids.map((id) => E('playlist', id));
+    return '<main class="main win" id="main-home" aria-label="Home">' + winBar() +
+      '<div class="win__title main-title"><span class="prompt">/home</span><div class="chips chips--home"><span class="avatar chips__avatar" aria-hidden="true">N</span>' +
+      '<button class="chip" aria-pressed="true">All</button><button class="chip" aria-pressed="false">Music</button><button class="chip" aria-pressed="false">Podcasts</button></div></div>' +
+      '<div class="win__body"><div class="page page--home">' +
+      '<section class="sysfetch" aria-label="System readout"><canvas class="sysfetch__flora" data-flora="hero" data-w="196" data-h="196" data-pw="128" data-ph="156" data-seed="home" aria-hidden="true"></canvas>' +
+      '<dl class="sysfetch__info">' +
+      '<div><dt>Host</dt><dd>wavelength</dd></div>' +
+      '<div><dt>Os</dt><dd>Wavelength 2.6</dd></div>' +
+      '<div class="opt"><dt>Architecture</dt><dd>x64</dd></div>' +
+      '<div><dt>Contact</dt><dd lang="ja">花鳥風月</dd></div>' +
+      '<div class="gap" aria-hidden="true"></div>' +
+      '<div><dt>FPS</dt><dd data-live="fps">60</dd></div>' +
+      '<div><dt>Location</dt><dd>~/home</dd></div>' +
+      '<div><dt>Connection</dt><dd>ESTABLISHED</dd></div>' +
+      '<div class="opt"><dt>Session Number</dt><dd data-live="session">0287</dd></div>' +
+      '<div><dt>Filter</dt><dd data-live="fx">mono</dd></div></dl></section>' +
+      '<div class="home-side"><div class="win win--time">' + winBar() + '<div class="clock"><span class="prompt">/time</span><time data-live="clock"></time></div></div>' +
+      fxSwitch('fx--phone') +
+      '<div class="quick-grid">' + tiles + '</div></div>' +
+      shelf('Made For You', 'made-for-you', [...pls(['pl_dailymix1']), E('playlist', 'pl_dailymix2', { cls: 'is-focus' }), ...pls(['pl_dailymix3', 'pl_dailymix4', 'pl_freshfinds', 'pl_newreleases'])]) +
+      shelf('Recently played', 'recent', [E('playlist', 'pl_latenightdrive', { playing: true }), E('album', 'al_orbitalmechanics'), E('artist', 'ar_djorrery'), E('playlist', 'pl_chillvibes'), E('album', 'al_lowlight'), E('artist', 'ar_ivymarchetti'), E('album', 'al_nightwindow')]) +
+      shelf('Jump back in', 'jump-back-in', [...pls(['pl_dailymix1', 'pl_chillvibes', 'pl_deepfocus', 'pl_top50global']), E('album', 'al_cartagena'), E('album', 'al_hobokennights'), E('album', 'al_neondiaries')]) +
+      shelf('Popular albums', 'popular-albums', D.popularAlbums.slice(0, 7).map((id) => E('album', id))) +
+      shelf('Popular artists', 'popular-artists', D.popularArtists.slice(0, 7).map((id) => E('artist', id))) +
+      shelf('Discover picks for you', 'discover', pls(['pl_chillvibes', 'pl_deepfocus', 'pl_latenightdrive', 'pl_morningcoffee', 'pl_workoutpulse', 'pl_rainydayjazz', 'pl_indiegold'])) +
+      '</div></div></main>';
+  }
+
+  // ------------------------------------------------------------- playlist
+  function trackRow(t, i) {
+    const [title, artists, album, date, dur, explicit] = t;
+    const st = { 0: ' is-current is-playing', 2: ' is-hover', 4: ' is-selected', 7: ' is-focus' }[i] || '';
+    const al = ALT[album];
+    return '<div class="track-row' + st + '" role="row" tabindex="' + (i === 7 ? 0 : -1) + '" data-row="' + (i + 1) + '">' +
+      '<span class="track-row__index"><span class="track-row__num">' + (i + 1) + '</span><span class="equaliser" aria-hidden="true"><i></i><i></i><i></i></span><button class="track-row__play" aria-label="Play ' + esc(title) + '">' + px('play') + '</button></span>' +
+      '<span class="track-row__main">' + img('album:' + al.id, 'track-row__cover') + '<span class="track-row__text"><span class="track-row__title">' + esc(title) + '</span>' +
+      '<span class="track-row__artist">' + (explicit ? '<span class="badge-e" role="img" aria-label="Explicit">' + px('E') + '</span>' : '') + '<a href="#">' + esc(artists) + '</a></span></span></span>' +
+      '<span class="track-row__album"><a href="#">' + esc(album) + '</a></span><span class="track-row__date">' + esc(date) + '</span>' +
+      '<span class="track-row__end"><button class="track-row__like" aria-label="Add to Liked Songs">' + px('add') + '</button><span class="track-row__dur">' + dur + '</span>' +
+      '<button class="track-row__more" aria-label="More options for ' + esc(title) + '">' + px('more') + '</button></span></div>';
+  }
+  function playlist() {
+    const p = PL.pl_latenightdrive;
+    const pause = '<button class="play-btn play-btn--lg" aria-label="Pause Late Night Drive">' + px('pause') + '</button>';
+    return '<main class="main win" id="main-playlist" aria-label="Late Night Drive">' + winBar() +
+      '<div class="win__title main-title"><span class="prompt">/playlist/latenightdrive</span><span class="chips" aria-hidden="true" style="color:var(--fg-3)">40 files</span></div>' +
+      '<div class="win__body"><section class="page page--hero" style="--hero-color:' + p.color + '"><div class="hero-band fx-media" aria-hidden="true"></div>' +
+      '<div class="hero"><div class="hero__cover">' + img('playlist:pl_latenightdrive') + '</div><div class="hero__info"><span class="hero__type">Playlist</span>' +
+      '<h1 class="hero__title">Late Night Drive</h1><p class="hero__desc">' + esc(p.desc) + '</p>' +
+      '<div class="hero__meta"><span class="avatar avatar--24">W</span><b>Wavelength</b><span>•</span><span>6,400,000 saves</span><span>•</span><span>40 songs,</span><span>' + esc(D.lndTotal) + '</span></div></div></div>' +
+      '<div class="actions">' + pause +
+      '<button class="icon-btn is-on" aria-label="Disable shuffle">' + px('shuffle') + '</button>' +
+      '<button class="icon-btn is-active" aria-label="Remove from Your Library">' + px('saved') + '</button>' +
+      '<button class="icon-btn" aria-label="Download">' + px('download') + '</button>' +
+      '<button class="icon-btn" aria-label="More options for Late Night Drive">' + px('more') + '</button>' +
+      '<div class="actions__right"><button class="icon-btn" aria-label="Search in playlist">' + px('search') + '</button><button class="view-toggle" aria-label="View as: List">List ' + px('chevDown') + '</button>' + pause + '</div></div>' +
+      '<div class="track-table" role="grid" aria-label="Late Night Drive"><div class="track-table__head" role="row"><span class="cell cell--index">#</span><span class="cell cell--title">Title</span>' +
+      '<span class="cell cell--artist" aria-hidden="true">artist</span><span class="cell cell--album">Album</span><span class="cell cell--date">Date added</span><span class="cell cell--dur">' + px('clock') + '</span></div>' +
+      D.lnd.map(trackRow).join('') + '</div></section></div></main>';
+  }
+  const menuItem = (icon, label, o) => '<button class="menu-item' + (o && o.cls ? ' ' + o.cls : '') + '" role="menuitem"' + (o && o.sub ? ' aria-haspopup="true" aria-expanded="' + (o.cls === 'is-open') + '"' : '') + '><span class="menu-item__icon">' + (icon ? px(icon) : '') + '</span><span class="menu-item__label">' + esc(label) + '</span>' + (o && o.sub ? '<span class="menu-item__chev">' + px('chevRight') + '</span>' : '<span></span>') + '</button>';
+  const item = menuItem;
+  const mainMenu = (id, cls, open) => '<div class="context-menu' + (cls || '') + '" role="menu"' + (id ? ' id="' + id + '"' : '') + '><div class="menu-head" aria-hidden="true">' + esc(D.lnd[4][0]) + '</div>' +
+      item('plus', 'Add to playlist', { sub: true, cls: open === false ? '' : 'is-open' }) + item('add', 'Save to your Liked Songs', open === false ? { cls: 'is-focused' } : null) + item('queue', 'Add to queue') +
+      '<div class="menu-sep" role="separator"></div>' + item('', 'Go to artist') + item('', 'Go to album') + '<div class="menu-sep" role="separator"></div>' + item('share', 'Share', { sub: true }) + '</div>';
+  function menus() {
+    return '<div class="sheet-backdrop" aria-hidden="true"></div>' + mainMenu('ctx-main') +
+      '<div class="context-menu context-menu--sub" role="menu" id="ctx-sub"><div class="menu-search"><input type="text" placeholder="Find a playlist" aria-label="Find a playlist" autocomplete="off"></div>' +
+      item('plus', 'New playlist') + '<div class="menu-sep" role="separator"></div>' + item('', 'My Playlist #1', { cls: 'is-focused' }) + item('', 'My Playlist #2') + '</div>' +
+      '<div class="toast" role="status" id="toast">' + px('blossom', 1) + 'Added to queue</div>';
+  }
+
+  // ------------------------------------------------------------- frames
+  function frame(view) {
+    return '<div class="app" data-view="' + view + '">' + phoneHead() + topbar() + sidebar(view) + (view === 'home' ? home() : playlist()) + playerBar(view === 'playlist') + miniPlayer() + bottomNav() + '</div>' + (view === 'playlist' ? menus() : '');
+  }
+
+  // ------------------------------------------------------------- sheet
+  function sheet() {
+    const under = '<div class="stage__under" aria-hidden="true">' + D.lnd.slice(0, 9).map((t, i) => '<div><span style="width:3ch;text-align:right">' + (i + 1) + '</span><span>' + esc(t[0]) + '</span><span style="color:var(--fg-3)">' + esc(t[1]) + '</span></div>').join('') + '</div>';
+    const confirm = '<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-a">' + winBar('&nbsp;') +
+      '<h2 class="dialog__title" id="dlg-a">Already added</h2><div class="dialog__body">This is already in your \'My Playlist #1\' playlist.</div>' +
+      '<div class="dialog__actions"><button class="btn text-btn">Don\'t add</button><button class="btn btn--primary pill pill--primary">Add anyway</button></div></div></div>';
+    const edit = '<div class="dialog-backdrop"><div class="dialog dialog--wide" role="dialog" aria-modal="true" aria-labelledby="dlg-b">' + winBar('&nbsp;') +
+      '<button class="icon-btn dialog__close" aria-label="Close">' + px('close') + '</button>' +
+      '<h2 class="dialog__title" id="dlg-b">Edit details</h2><div class="dialog__body"><div class="edit-details"><div class="edit-details__cover">' + img('playlist:pl_morningcoffee') + '</div><div class="edit-details__fields">' +
+      '<label class="field"><span class="field__label">Name</span><input class="field__input edit-details__name is-focus" type="text" value="My Playlist #1" placeholder="Add a name" maxlength="100" autocomplete="off"></label>' +
+      '<label class="field"><span class="field__label">Description</span><textarea class="field__input edit-details__desc" placeholder="Add an optional description" maxlength="300"></textarea></label></div></div></div>' +
+      '<div class="dialog__actions"><button class="btn btn--primary pill pill--primary">Save</button></div></div></div>';
+    const empties = '<div class="empties">' +
+      '<div class="empty"><canvas data-flora="bud" data-w="120" data-h="132" aria-hidden="true"></canvas><div class="empty__title">Songs you like will appear here</div><div class="empty__text">Save songs by tapping the heart icon.</div><button class="btn btn--primary pill pill--primary">Find songs</button></div>' +
+      '<div class="empty no-results"><canvas data-flora="twig" data-w="150" data-h="132" aria-hidden="true"></canvas><div class="empty__title no-results__title">No results found for \'xqzv\'</div><div class="empty__text no-results__text">Please make sure your words are spelled correctly, or use fewer or different keywords.</div></div>' +
+      '<div class="empty empty--sm"><canvas data-flora="vase" data-w="150" data-h="132" aria-hidden="true"></canvas><div class="empty__title">Add to your queue</div><div class="empty__text">Tap "Add to queue" from a song\'s menu to see it here.</div></div></div>';
+    const strip = ['album:al_boathouse', 'album:al_hobokennights', 'album:al_slowhours', 'album:al_hedgerow', 'album:al_mareaalta', 'album:al_cartagena', 'artist:ar_amaraoyelaran', 'liked:liked'];
+    const fxRows = FX.map(([k, d]) => '<div class="fx-row' + (k === 'mono' ? ' is-current' : '') + '" data-fx-row="' + k + '"><div class="fx-row__label"><b>' + k + '</b><span># ' + esc(d) + (k === 'mono' ? ' (default)' : '') + '</span></div><div class="fx-row__covers">' +
+      strip.map((s) => img(s, s.indexOf('artist') === 0 ? 'cover--round' : '')).join('') + '</div></div>').join('');
+    const flora = Object.keys(F.SPECIES).map((k) => { const s = F.SPECIES[k]; return '<div class="specimen"><canvas data-flora="specimen" data-sp="' + k + '" data-w="120" data-h="120" data-pw="100" data-ph="100" aria-hidden="true"></canvas><b>' + esc(s.label) + '</b><i>' + esc(s.latin) + '</i></div>'; }).join('');
+    const typeRows = [['48', 't48', 'Late Night Drive', 'display · hero titles'], ['32', 't32', 'Made For You', 'title · page titles, phone hero'], ['16', '', 'Ultraviolet Telemetry  3:11', 'body · everything else'], ['14', 't14', 'DJ Orrery · Playlist • Wavelength', 'meta · sub lines, column heads']]
+      .map((r) => '<div class="type-row"><span>' + r[0] + '</span><span class="' + r[1] + '">' + esc(r[2]) + '</span><span>' + r[3] + '</span></div>').join('');
+    const tokens = [['#000', '--bg', 'ground'], ['#fff', '--fg', 'ink, selection'], ['#a3a3a3', '--fg-2', 'secondary 8.3:1'], ['#757575', '--fg-3', 'meta 4.6:1'], ['#8c8c8c', '--rule', 'window hairline'], ['#333', '--rule-dim', 'dashed rules'], ['#1c1c1c', '--hover', 'hover fill'], ['#3a3a3a', '--fg-4', 'disabled']]
+      .map((t) => '<div class="swatch"><i style="background:' + t[0] + '"></i><span><b>' + t[1] + '</b>' + t[0] + ' · ' + t[2] + '</span></div>').join('');
+    return '<div class="sheet" id="sheet">' +
+      '<section class="win win--phone-only" aria-label="Track menu as a sheet">' + winBar() + '<div class="win__title"><span class="prompt">/menu --sheet</span></div><div class="win__body">' + mainMenu('', ' context-menu--static', false) + '</div></section>' +
+      '<section class="win" aria-label="Confirm dialog">' + winBar() + '<div class="win__title"><span class="prompt">/dialog --confirm</span></div><div class="win__body"><div class="stage">' + under + confirm + '</div></div></section>' +
+      '<section class="win" aria-label="Edit details dialog">' + winBar() + '<div class="win__title"><span class="prompt">/dialog --edit</span></div><div class="win__body"><div class="stage stage--tall">' + under + edit + '</div></div></section>' +
+      '<section class="win win--full" aria-label="Empty states">' + winBar() + '<div class="win__title"><span class="prompt">/empty</span></div><div class="win__body">' + empties + '</div></section>' +
+      '<section class="win win--full" id="fx-window" aria-label="Media filters">' + winBar() + '<div class="win__title"><span class="prompt">/fx</span></div><div class="win__body">' +
+      '<div class="sheet-fx-head"><span>every colour-carrying surface (covers, artist images, hero bands, the mini player tint) renders through one filter. the ui itself never leaves black, white and grey.</span>' + fxSwitch() + '</div>' +
+      '<div class="fx-strip">' + fxRows + '</div></div></section>' +
+      '<section class="win win--full" aria-label="Flower inventory">' + winBar() + '<div class="win__title"><span class="prompt">/flora</span><span style="color:var(--fg-3)">9 species, white silhouettes, 1px dark separations</span></div><div class="win__body"><div class="flora-grid">' + flora + '</div></div></section>' +
+      '<section class="win" aria-label="Type scale">' + winBar() + '<div class="win__title"><span class="prompt">/type</span><span style="color:var(--fg-3)">DotGothic16, half-width cells</span></div><div class="win__body">' + typeRows + '</div></section>' +
+      '<section class="win" aria-label="Tokens and states">' + winBar() + '<div class="win__title"><span class="prompt">/tokens</span></div><div class="win__body"><div class="swatches">' + tokens + '</div>' +
+      '<div class="states"><span class="state state--playing">playing</span><span class="state state--hover">hover</span><span class="state state--sel">selected</span><span class="state state--focus">focus-visible</span><span class="state state--pressed">pressed</span><span class="state" style="color:var(--fg-4)">disabled</span></div></div></section>' +
+      '</div>';
+  }
+
+  // ------------------------------------------------------------- mount
+  $('#frame-home').innerHTML = frame('home');
+  $('#frame-playlist').innerHTML = frame('playlist');
+  $('#sheet-root').innerHTML = sheet();
+
+  // covers: drawn once the pixel face is ready (labels on covers use it)
+  function fillCovers() { $$('img[data-cover]').forEach((im) => { im.src = coverURL(im.getAttribute('data-cover')); }); }
+
+  // flora canvases, sized per breakpoint
+  function drawFlora() {
+    const phone = innerWidth < 768;
+    $$('canvas[data-flora]').forEach((cv) => {
+      const k = cv.dataset.flora, w = +((phone && cv.dataset.pw) || cv.dataset.w), h = +((phone && cv.dataset.ph) || cv.dataset.h);
+      if (k === 'hero') F.heroBranch(cv, w, h, cv.dataset.seed || 'home');
+      else if (k === 'sprig') F.sprig(cv, w, h, cv.dataset.seed || 'lib', ['sakura'], 'bottomleft');
+      else if (k === 'specimen') F.specimen(cv, w, h, cv.dataset.sp);
+      else if (k === 'bud') F.budStem(cv, w, h);
+      else if (k === 'twig') F.bareTwig(cv, w, h);
+      else if (k === 'vase') F.sprig(cv, w, h, 'queue', ['ume'], 'center', -Math.PI / 2 - 0.3);
+    });
+  }
+
+  // place the context menu, submenu and toast against the real row positions
+  function placeOverlays() {
+    const fr = $('#frame-playlist'), row = $('#frame-playlist .track-row[data-row="5"]');
+    const m = $('#ctx-main'), s = $('#ctx-sub'), t = $('#toast'), pb = $('#frame-playlist .player-bar');
+    if (!fr || !row || innerWidth < 768) { [m, s, t].forEach((x) => x && x.removeAttribute('style')); return; }
+    const F0 = fr.getBoundingClientRect(), R = row.getBoundingClientRect();
+    const left = R.left - F0.left + Math.min(430, R.width * 0.46), top = R.top - F0.top + 18 - m.offsetHeight;
+    m.style.left = left + 'px'; m.style.top = top + 'px';
+    const open = m.querySelector('.is-open').getBoundingClientRect(), M = m.getBoundingClientRect();
+    s.style.left = (M.right - F0.left - 2) + 'px'; s.style.top = (open.top - F0.top - 5 - 34) + 'px';
+    const P = pb.getBoundingClientRect(), main = $('#main-playlist').getBoundingClientRect();
+    t.style.top = (P.top - F0.top - 52) + 'px';
+    t.style.left = (main.left - F0.left + main.width / 2 - t.offsetWidth / 2) + 'px';
+  }
+
+  // live readouts
+  const pad = (n) => String(n).padStart(2, '0');
+  function clock() {
+    const d = new Date();
+    let h = d.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    const long = pad(d.getDate()) + '-' + pad(d.getMonth() + 1) + '-' + d.getFullYear() + ' ' + pad(h) + ':' + pad(d.getMinutes()) + ' ' + ap;
+    $$('[data-live="clock"]').forEach((e) => { e.textContent = long; e.setAttribute('datetime', d.toISOString()); });
+    $$('[data-live="clock-short"]').forEach((e) => { e.textContent = pad(h) + ':' + pad(d.getMinutes()) + ' ' + ap; });
+    const start = new Date(d.getFullYear(), 0, 0), doy = Math.floor((d - start) / 864e5);
+    $$('[data-live="session"]').forEach((e) => { e.textContent = String(doy).padStart(4, '0'); });
+  }
+  let frames = 0, last = performance.now();
+  function fpsLoop(t) {
+    frames++;
+    if (t - last >= 1000) { const f = Math.round(frames * 1000 / (t - last)); $$('[data-live="fps"]').forEach((e) => { e.textContent = f; }); frames = 0; last = t; }
+    requestAnimationFrame(fpsLoop);
+  }
+
+  // fx switcher
+  function setFx(k) {
+    document.documentElement.setAttribute('data-fx', k);
+    $$('.fx__opt').forEach((b) => { const on = b.dataset.fx === k; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+    $$('.fx-row').forEach((r) => r.classList.toggle('is-current', r.dataset.fxRow === k));
+    $$('[data-live="fx"]').forEach((e) => { e.textContent = k; });
+    try { localStorage.setItem('wl-terminal-fx', k); } catch (e) { /* storage blocked */ }
+  }
+  document.addEventListener('click', (e) => { const b = e.target.closest('.fx__opt'); if (b) setFx(b.dataset.fx); });
+  document.addEventListener('keydown', (e) => {
+    const b = e.target.closest && e.target.closest('.fx__opt');
+    if (!b || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    const keys = FX.map((x) => x[0]), i = keys.indexOf(b.dataset.fx), n = keys[(i + (e.key === 'ArrowRight' ? 1 : keys.length - 1)) % keys.length];
+    setFx(n); const nb = b.parentNode.querySelector('[data-fx="' + n + '"]'); if (nb) nb.focus(); e.preventDefault();
+  });
+  let saved = null; try { saved = localStorage.getItem('wl-terminal-fx'); } catch (e) { /* storage blocked */ }
+  const qfx = (location.search.match(/[?&]fx=(\w+)/) || [])[1];
+  if (qfx || saved) setFx(qfx || saved);
+
+  // falling petals: white XOR sprites (difference blend) so they never hide text
+  function petals() {
+    const cv = $('#petals');
+    if (!cv || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = cv.getContext('2d');
+    let W = 0, H = 0, dpr = 1;
+    const size = () => { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; c.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size(); addEventListener('resize', size);
+    const R = F.rng('petals');
+    const spawn = (init) => ({ x: R() * (W + 200), y: init ? R() * H : -12 - R() * 40, s: 6 + R() * 6, vy: 0.22 + R() * 0.4, vx: -0.12 - R() * 0.3, a: R() * 6.28, va: (R() - 0.5) * 0.03, ph: R() * 6.28, f: 0.6 + R() * 1.2, shape: R() < 0.65 ? 'notch' : 'round' });
+    const n = innerWidth < 768 ? 12 : 22;
+    const ps = Array.from({ length: n }, () => spawn(true));
+    const st = { lw: 0, sep: '#000', petalFill: '#fff' };
+    let running = true;
+    document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) requestAnimationFrame(tick); });
+    function tick(t) {
+      if (!running) return;
+      c.clearRect(0, 0, W, H);
+      ps.forEach((p, i) => {
+        p.y += p.vy; p.x += p.vx + Math.sin(t / 1000 * p.f + p.ph) * 0.3; p.a += p.va;
+        if (p.y > H + 16 || p.x < -16) ps[i] = spawn(false);
+        c.globalAlpha = 0.9;
+        F.petal(c, p.x, p.y, p.a, p.s, st, p.shape, Math.max(0.25, Math.abs(Math.cos(t / 900 * p.f + p.ph))));
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  async function boot() {
+    try { await Promise.race([document.fonts.load('16px DotGothic16', 'abcdefghijklmnopqrstuvwxyz> 0123456789'), new Promise((r) => setTimeout(r, 2500))]); } catch (e) { /* font unavailable: fall back */ }
+    fillCovers(); drawFlora(); clock(); placeOverlays();
+    setInterval(clock, 1000);
+    requestAnimationFrame(fpsLoop);
+    petals();
+    let rt = 0, lastPhone = innerWidth < 768;
+    addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { const ph = innerWidth < 768; if (ph !== lastPhone) { lastPhone = ph; drawFlora(); } placeOverlays(); }, 120); });
+    document.documentElement.classList.add('is-ready');
+  }
+  clock();
+  boot();
+})();
+
+</script>
+</body>
+</html>

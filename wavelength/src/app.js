@@ -73,6 +73,47 @@
   function on(el, ev, fn, opts) { el.addEventListener(ev, fn, opts); }
 
   // ---------------------------------------------------------------------------
+  // Terminal look helpers (DESIGN.md 2-6): windows, flower sprites, slugs
+  // ---------------------------------------------------------------------------
+  const flora = () => (typeof W.Flora === 'object' && W.Flora && typeof W.Flora.sprite === 'function' ? W.Flora : null);
+  const FILTERS = ['mono', 'dither', 'invert', 'color', 'cyano', 'ink'];
+  const reducedMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener: function () {} };
+  const tabletMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(min-width: 768px) and (max-width: 1023px)') : { matches: false, addEventListener: function () {} };
+  const reducedMotion = () => !!reducedMQ.matches;
+  // slug for breadcrumbs and file names: lowercase, accents stripped, runs of anything but letters/digits (any
+  // script, so a CJK name keeps its characters) -> '_', trimmed, capped with a visible '…'
+  let slugRe = null;
+  try { slugRe = new RegExp('[^\\p{L}\\p{N}]+', 'gu'); } catch (e) { slugRe = /[^a-z0-9]+/g; }
+  function slug(s, max) {
+    let t = normText(s);
+    try { t = t.normalize('NFC'); } catch (e) { /* ignore */ }   // recompose kana voicing marks that normText split off
+    t = t.replace(slugRe, '_').replace(/^_+|_+$/g, '');
+    const m = max || 32;
+    if (t.length > m) t = t.slice(0, m - 1).replace(/_+$/, '') + '…';
+    return t || 'untitled';
+  }
+  // A lazy flower silhouette (DESIGN 3.0a): rendered without src, painted by the cover pump; nothing without Flora.
+  function floraImg(cls, opts) {
+    if (!flora()) return '';
+    return '<img class="flora ' + cls + '" alt="" aria-hidden="true" width="' + opts.w + '" height="' + opts.h + '" data-flora="' + esc(JSON.stringify(opts)) + '">';
+  }
+  // a decorative window bar (the hairline that stops short + "- ×"), always the first child of its window
+  function winBar(w) { return '<div class="win__bar" aria-hidden="true" style="--rule-w:' + w + '%"></div>'; }
+  function winTitle(path, meta) { return '<div class="win__title" aria-hidden="true" data-path="' + esc(path) + '"' + (meta != null ? ' data-meta="' + esc(meta) + '"' : '') + '></div>'; }
+  // empty-state art (DESIGN 3.12): bud (Liked), twig (no results / not found), ume sprig (queue), seedling (generic)
+  const ART = {
+    bud: { kind: 'bud', species: 'sakura', seed: 'liked-empty' },
+    twig: { kind: 'twig', species: 'ume', seed: 'none' },
+    queue: { kind: 'sprig', species: 'ume', seed: 'queue', anchor: 'center' },
+    seedling: { kind: 'seedling', species: 'sakura', seed: 'empty' },
+  };
+  function artImg(cls, art, small, w, h) {
+    const a = ART[art];
+    if (!a) return '';
+    return floraImg(cls, Object.assign({}, a, { w: w || (small ? 96 : 120), h: h || (small ? 104 : 132) }));
+  }
+
+  // ---------------------------------------------------------------------------
   // Library — persistence + personal collection (SPEC §7.1)
   // ---------------------------------------------------------------------------
   const Library = (function () {
@@ -270,7 +311,9 @@
     recommendSeed: {},
     sb: { filter: null, sort: 'recents', query: '', filterOpen: false },
     heroObserver: null,
-    stripHeight: 64,
+    stripHeight: 44,
+    filter: 'mono',     // media filter mode (DESIGN 4), mirrored on html[data-filter]
+    petals: true,       // the falling-petal layer = the ambient motion switch (DESIGN 4.6)
   };
 
   function appEmit(event, arg) {
@@ -365,13 +408,15 @@
     if (type === 'track') { const c = cat(); const t = c && c.track(id); return t ? Object.assign(ent('album', t.albumId), { trackId: t.id, name: t.title, sub: 'Song', kind: 'track', route: 'album', id: t.albumId }) : null; }
     return ent(type, id);
   }
-  function coverFor(key) {
+  // variant 'thumb' for covers rendered at 92 px or smaller (only editorial playlists differ: no label strip)
+  function coverFor(key, variant) {
     const c = cat();
     if (!c || !key) return '';
+    const o = variant === 'thumb' ? { variant: 'thumb' } : undefined;
     try {
-      if (key === 'liked') return c.cover('liked') || '';
-      if (key.indexOf('plu_') === 0) { const p = Library.playlist(key); return (p ? c.cover(p) : c.playlistMosaic([])) || ''; }
-      return c.cover(key) || '';
+      if (key === 'liked') return c.cover('liked', o) || '';
+      if (key.indexOf('plu_') === 0) { const p = Library.playlist(key); return (p ? c.cover(p, o) : c.playlistMosaic([])) || ''; }
+      return c.cover(key, o) || '';
     } catch (e) { return ''; }
   }
   // Covers are drawn on demand: a cover Catalog already holds is painted at once; the others are drawn when
@@ -380,20 +425,47 @@
   // is measured with getBoundingClientRect from timers (not IntersectionObserver / rAF, which do not run in a
   // hidden tab), so a page loaded in the background still has its visible covers.
   const lazyCovers = { pending: new Set(), timer: 0 };
-  function coverReady(key) {
+  function coverReady(key, variant) {
     const c = cat();
     if (!c || typeof c.hasCover !== 'function') return false;
+    const o = variant === 'thumb' ? { variant: 'thumb' } : undefined;
     try {
-      if (key.indexOf('plu_') === 0) { const p = Library.playlist(key); return p ? c.hasCover(p) : false; }
-      return c.hasCover(key);
+      if (key.indexOf('plu_') === 0) { const p = Library.playlist(key); return p ? c.hasCover(p, o) : false; }
+      return c.hasCover(key, o);
     } catch (e) { return false; }
   }
   function paintCover(img) {
     const key = img.getAttribute('data-cover');
     img.removeAttribute('data-cover');
-    const src = key ? coverFor(key) : '';
+    if (key) img.setAttribute('data-cover-key', key);   // remembered so a stale cover can be requested again
+    const src = key ? coverFor(key, img.getAttribute('data-cover-variant')) : '';
     if (src) img.src = src;
   }
+  // Catalog dropped covers it had drawn before the pixel face loaded ('catalog:coversstale'): the painted <img>s
+  // whose cover is no longer cached go back into the lazy pump and get the redrawn image.
+  function refreshStaleCovers() {
+    let any = false;
+    D.querySelectorAll('img[data-cover-key]:not([data-cover])').forEach((img) => {
+      const key = img.getAttribute('data-cover-key');
+      if (!key || coverReady(key, img.getAttribute('data-cover-variant'))) return;
+      img.setAttribute('data-cover', key);
+      lazyCovers.pending.add(img);
+      any = true;
+    });
+    if (any) scheduleCoverPump();
+  }
+  // flower sprites share the pump (DESIGN 3.0a): one sprite per check, removed when Flora returns ''
+  // sprites this page has already drawn are in Flora's cache: a re-render paints them at once (no empty frame)
+  const floraSeen = new Set();
+  function paintFlora(img) {
+    const F = flora();
+    const key = img.getAttribute('data-flora');
+    let src = '';
+    try { src = F ? F.sprite(JSON.parse(key)) : ''; } catch (e) { src = ''; }
+    if (src) { img.src = src; if (floraSeen.size < 200) floraSeen.add(key); } else img.remove();
+  }
+  const floraDue = (img) => img.hasAttribute('data-flora') && !img.hasAttribute('src');
+  function paintLazy(img) { if (img.hasAttribute('data-cover')) paintCover(img); else paintFlora(img); }
   const COVER_MARGIN = 200;   // px around the viewport / panel that counts as "near"
   function coverNearView(img) {
     const r = img.getBoundingClientRect();
@@ -413,11 +485,11 @@
     const t0 = clock();
     let more = false;
     for (const img of Array.from(lazyCovers.pending)) {
-      if (!img.isConnected || !img.hasAttribute('data-cover')) { lazyCovers.pending.delete(img); continue; }
+      if (!img.isConnected || !(img.hasAttribute('data-cover') || floraDue(img))) { lazyCovers.pending.delete(img); continue; }
       if (!coverNearView(img)) continue;
       if (clock() - t0 > budget) { more = true; break; }
       lazyCovers.pending.delete(img);
-      paintCover(img);
+      paintLazy(img);
     }
     if (more) scheduleCoverPump();
   }
@@ -433,7 +505,12 @@
   function fillCovers(root) {
     root.querySelectorAll('img[data-cover]').forEach((img) => {
       const key = img.getAttribute('data-cover');
-      if (!key || coverReady(key)) { paintCover(img); return; }
+      if (!key || coverReady(key, img.getAttribute('data-cover-variant'))) { paintCover(img); return; }
+      lazyCovers.pending.add(img);
+    });
+    root.querySelectorAll('img[data-flora]:not([src])').forEach((img) => {
+      if (!flora()) { img.remove(); return; }
+      if (floraSeen.has(img.getAttribute('data-flora'))) { paintFlora(img); return; }
       lazyCovers.pending.add(img);
     });
     // forget images that a re-render has removed
@@ -470,7 +547,7 @@
     if (!cur || cur.route.view !== r.view || (cur.route.id || '') !== (r.id || '')) { state.finderQuery = ''; state.discoTab = 'popular'; }
     beforeRoute(r);
     render(r);
-    if (!o.keepScroll) els.main.scrollTop = 0;
+    if (!o.keepScroll && state.firstPaintDone) els.main.scrollTop = 0;
   }
   function go(delta) {
     const to = state.pos + delta;
@@ -506,6 +583,7 @@
       const box = els.main.querySelector('.search-results');
       if (box) {
         box.innerHTML = searchResultsHTML(r);
+        syncStripPath(r);
         fillCovers(box);
         applyHighlights(box);
         afterRender(r, true);
@@ -537,7 +615,31 @@
         const hide = cols > 0 && i >= cols;
         if (card.hidden !== hide) card.hidden = hide;
       });
+      shelfSpray(grid, cols, tpl);
     });
+  }
+  // Shelf spray (DESIGN 3.7): a short one-row shelf in grid mode gets a sakura spray in its first empty slot. The
+  // sprite is drawn at a fixed bucket (128 / 160 / 192) and scaled by CSS, so resizing never redraws it.
+  function shelfSpray(grid, cols, tpl) {
+    let spray = null;
+    for (const ch of grid.children) if (ch.classList.contains('card-grid__spray')) spray = ch;
+    let cards = 0;
+    for (const ch of grid.children) if (ch.classList.contains('card')) cards++;
+    if (!(cols > 0 && cards < cols && flora())) { if (spray) spray.remove(); return; }
+    const colW = parseFloat(String(tpl).trim().split(' ')[0]) || 128;
+    const bucket = colW <= 128 ? 128 : colW <= 160 ? 160 : 192;
+    if (spray && spray.getAttribute('data-bucket') === String(bucket)) return;
+    const shelf = grid.closest('.shelf');
+    const title = shelf && shelf.querySelector('.shelf__title');
+    const id = (shelf && shelf.getAttribute('data-shelf')) || slug(title ? title.textContent : 'shelf');
+    const html = floraImg('card-grid__spray-img', { kind: 'spray', species: 'sakura', seed: 'spray:' + id, w: bucket, h: bucket });
+    if (!html) return;
+    if (!spray) { spray = D.createElement('div'); spray.className = 'card-grid__spray'; spray.setAttribute('aria-hidden', 'true'); grid.appendChild(spray); }
+    spray.setAttribute('data-bucket', String(bucket));
+    spray.innerHTML = html;
+    const img = spray.firstElementChild;
+    if (img && floraSeen.has(img.getAttribute('data-flora'))) paintFlora(img);
+    else if (img) { lazyCovers.pending.add(img); scheduleCoverPump(); }
   }
   let shelfClampTimer = 0;
   function scheduleShelfClamp() {
@@ -550,10 +652,16 @@
     syncNavButtons();
     markSidebarActive();
     syncLibTitleLabel();
-    clampShelfRows(els.main);
+    cycleShelfRules(els.main);
+    // the first render defers the shelf clamp (it reads the computed grid, which forces a full layout) to its own
+    // task right after; the clipped cards are invisible either way (grid-auto-rows: 0)
+    if (state.firstPaintDone) clampShelfRows(els.main); else scheduleShelfClamp();
     if (partial) return;
-    state.stripHeight = isPhone() ? 48 : 64;
     const h1 = els.main.querySelector('.hero h1');
+    // the strip height is measured where it matters (hero title observer, sticky table head); fallback = --strip-h
+    const stripEl = h1 || els.main.querySelector('.track-table__head') ? els.main.querySelector('.main-header') : null;
+    state.stripHeight = (stripEl && stripEl.offsetHeight) || (isPhone() ? 40 : 44);
+    if (r.view === 'home') { refreshReadout(); prewarmGenreSprites(); }
     const ctx = els.main.querySelector('.main-header__ctx');
     if (h1 && ctx && typeof W.IntersectionObserver === 'function') {
       state.heroObserver = new W.IntersectionObserver((entries) => {
@@ -561,7 +669,8 @@
       }, { root: els.main, rootMargin: '-' + state.stripHeight + 'px 0px 0px 0px', threshold: 0 });
       state.heroObserver.observe(h1);
     }
-    onMainScroll();
+    // first render: #main is at the top already; reading scrollTop would force a full layout inside the init task
+    if (state.firstPaintDone) onMainScroll();
   }
   function onMainScroll() {
     const main = els.main;
@@ -696,16 +805,55 @@
   // ---------------------------------------------------------------------------
   // Shared view fragments
   // ---------------------------------------------------------------------------
+  // Breadcrumb of the #main window head (DESIGN 3.5): [dir, leaf]
+  function stripPath(r) {
+    const c = cat();
+    const s = (x) => slug(x, isPhone() ? 20 : 32);
+    if (!r) return ['~/', 'home'];
+    switch (r.view) {
+      case 'home': return ['~/', 'home'];
+      case 'search': { const q = (r.query || '').trim(); return q ? ['~/search/', s(q)] : ['~/', 'search']; }
+      case 'playlist': {
+        if (r.id && r.id.indexOf('plu_') === 0) { const p = Library.playlist(r.id); return ['~/you/', s(p ? p.name : r.id)]; }
+        const p = c && c.playlist(r.id);
+        return ['~/playlist/', s(p ? p.name : r.id)];
+      }
+      case 'album': { const a = c && c.album(r.id); return ['~/album/', s(a ? a.title : r.id)]; }
+      case 'artist': { const a = c && c.artist(r.id); return ['~/artist/', s(a ? a.name : r.id)]; }
+      case 'liked': return ['~/', 'liked_songs'];
+      case 'genre': { const g = c && c.genre(r.id); return ['~/genre/', s(g ? g.name : r.id)]; }
+      case 'section': return ['~/home/', s(r.id || '')];
+      case 'queue': return ['~/', 'queue'];
+      case 'library': return ['~/', 'library'];
+      default: return ['~/', s(r.view)];
+    }
+  }
+  function syncStripPath(r) {
+    const el = els.main && els.main.querySelector('.main-header__path');
+    if (!el) return;
+    const p = stripPath(r);
+    if (el.getAttribute('data-dir') !== p[0]) el.setAttribute('data-dir', p[0]);
+    if (el.getAttribute('data-leaf') !== p[1]) el.setAttribute('data-leaf', p[1]);
+  }
   function stripHTML(o) {
     const canBack = state.pos > 0, canFwd = state.pos < state.hist.length - 1;
     let ctx = '';
     if (o.ctx) {
       ctx = '<div class="main-header__ctx"><button class="play-btn" aria-label="Play ' + esc(o.title) + '" data-context-uri="' + esc(o.ctx.uri) + '" data-name="' + esc(o.title) + '">' + playIcons(false) + '</button><span class="main-header__title">' + esc(o.title) + '</span></div>';
     }
-    return '<div class="main-header" style="--strip-tint:' + esc(o.tint || 'var(--bg-panel)') + ';--strip-opacity:0">' +
+    const path = stripPath(state.route);
+    // the untinted default is literal black: through --fx-band it stays black, and white under invert (DESIGN 1.4)
+    const tint = !o.tint || o.tint === 'var(--bg-panel)' ? '#000000' : o.tint;
+    return '<div class="main-header win' + (o.home ? ' main-header--home' : '') + '" style="--strip-tint:' + esc(tint) + ';--strip-opacity:0">' + winBar(94) +
       '<div class="main-header__nav"><button class="nav-btn nav-btn--back" aria-label="Go back"' + (canBack ? '' : ' disabled') + '>' + icon('i-chevron-left', 'icon--sm') + '</button>' +
       '<button class="nav-btn nav-btn--forward" aria-label="Go forward"' + (canFwd ? '' : ' disabled') + '>' + icon('i-chevron-right', 'icon--sm') + '</button></div>' +
-      ctx + '<div class="main-header__end"></div></div>';
+      '<span class="main-header__path" aria-hidden="true" data-dir="' + esc(path[0]) + '" data-leaf="' + esc(path[1]) + '"></span>' +
+      ctx + '<div class="main-header__end">' + (o.end || '') + '</div></div>';
+  }
+  // shelves cycle their rule length by their index on the page (74 / 58 / 80 / 66 %, DESIGN 2.3)
+  const SHELF_RULES = [74, 58, 80, 66];
+  function cycleShelfRules(root) {
+    (root || els.main).querySelectorAll('.shelf > .win__bar').forEach((b, i) => { b.style.setProperty('--rule-w', SHELF_RULES[i % 4] + '%'); });
   }
   function cardHTML(e, opts) {
     const o = opts || {};
@@ -726,13 +874,13 @@
     const head = sectionId
       ? '<a class="shelf__title" href="#" data-route="section" data-id="' + esc(sectionId) + '">' + esc(title) + '</a>' + (o.noAll ? '' : '<a class="shelf__all" href="#" data-route="section" data-id="' + esc(sectionId) + '">Show all</a>')
       : '<h2 class="shelf__title">' + esc(title) + '</h2>' + (o.end || '');
-    return '<section class="shelf' + (o.cls ? ' ' + o.cls : '') + '"' + (sectionId ? ' data-shelf="' + esc(sectionId) + '"' : '') + '><div class="shelf__head">' + head + '</div>' +
+    return '<section class="shelf win' + (o.cls ? ' ' + o.cls : '') + '"' + (sectionId ? ' data-shelf="' + esc(sectionId) + '"' : '') + '>' + winBar(SHELF_RULES[0]) + '<div class="shelf__head">' + head + '</div>' +
       (o.between || '') +
       '<div class="card-grid' + (o.all ? '' : ' card-grid--row') + '">' + cardsHtml + '</div></section>';
   }
   function tileHTML(e) {
     return '<button class="quick-tile" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-color="' + esc(e.kind === 'liked' ? 'var(--liked-hero)' : e.color) + '">' +
-      '<img class="cover" data-cover="' + esc(e.coverKey) + '" alt=""><span class="quick-tile__name">' + esc(e.name) + '</span>' +
+      '<img class="cover" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><span class="quick-tile__name">' + esc(e.name) + '</span>' +
       '<span class="play-btn" aria-hidden="true">' + playIcons(false) + '</span></button>';
   }
   function artistLinks(t) {
@@ -748,7 +896,7 @@
     const al = c.album(t.albumId);
     const liked = Library.isLiked(t.id);
     const links = artistLinks(t);
-    const cover = o.showCover ? '<img class="cover track-row__cover" data-cover="' + esc(al.id) + '" alt="">' : '';
+    const cover = o.showCover ? '<img class="cover track-row__cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt="">' : '';
     // ARIA table semantics: the table is not a 2-D keyboard grid, so role=table/row/columnheader/cell
     const middle = (o.variant === 'album' || o.variant === 'popular')
       ? '<span class="track-row__plays" role="cell">' + esc(c.formatPlays(t.plays)) + '</span>'
@@ -773,9 +921,11 @@
     const cls = 'track-table' + (variant === 'playlist' || variant === 'liked' ? '' : ' track-table--' + variant) + (compact ? ' track-table--compact' : '');
     let head = '';
     if (!o.noHead) {
-      head = '<div class="track-table__head" role="row"><span class="cell cell--index" role="columnheader">#</span><span class="cell" role="columnheader">Title</span>' +
-        (compact ? '<span class="cell" role="columnheader">Artist</span>' : '') +
-        (variant === 'album' || variant === 'popular' ? '<span class="cell" role="columnheader"><span class="sr-only">Plays</span></span>' : '<span class="cell" role="columnheader">Album</span>') +
+      // header cell classes place each head on its named grid line (DESIGN 3.10); the artist head of non-compact
+      // tables is a new aria-hidden span without the .cell class (its text comes from CSS)
+      head = '<div class="track-table__head" role="row"><span class="cell cell--index" role="columnheader">#</span><span class="cell cell--title" role="columnheader">Title</span>' +
+        (compact ? '<span class="cell cell--artist" role="columnheader">Artist</span>' : '<span class="track-table__artist-head" aria-hidden="true"></span>') +
+        (variant === 'album' || variant === 'popular' ? '<span class="cell cell--plays" role="columnheader"><span class="sr-only">Plays</span></span>' : '<span class="cell cell--album" role="columnheader">Album</span>') +
         (hasDate ? '<span class="cell cell--date" role="columnheader">Date added</span>' : '') +
         '<span class="cell cell--dur" role="columnheader">' + icon('i-clock', 'icon--sm') + '<span class="sr-only">Duration</span></span></div>';
     }
@@ -783,7 +933,12 @@
       index: (o.startIndex || 0) + i + 1, variant: variant, compact: compact, showCover: variant !== 'album', pos: i,
       date: hasDate ? o.dates[i] : null, qid: o.qids ? o.qids[i] : null,
     })).join('');
-    return '<div class="' + cls + '" role="table" aria-label="' + esc(o.label || '') + '" data-ctx="' + esc(o.ctxUri || '') + '"' + (o.playlistId ? ' data-playlist-id="' + esc(o.playlistId) + '"' : '') + (o.section ? ' data-section="' + o.section + '"' : '') + '>' + head + rows + '</div>';
+    const table = '<div class="' + cls + '" role="table" aria-label="' + esc(o.label || '') + '" data-ctx="' + esc(o.ctxUri || '') + '"' + (o.playlistId ? ' data-playlist-id="' + esc(o.playlistId) + '"' : '') + (o.section ? ' data-section="' + o.section + '"' : '') + '>' + head + rows + '</div>';
+    // the track list is a file listing window: "> late_night_drive.m3u ... 40 files" (DESIGN 3.10)
+    if (!o.file) return table;
+    // o.heading: a visible heading that takes the place of the "> name.m3u" prompt (artist "Popular")
+    if (o.heading) return '<div class="win win--table win--headed">' + winBar(66) + o.heading + table + '</div>';
+    return '<div class="win win--table">' + winBar(66) + winTitle(o.file, cat().pluralize(tracks.length, 'file')) + table + '</div>';
   }
   // Compact song row (search "Songs" column and the right panel)
   function songRowHTML(t, o) {
@@ -792,17 +947,59 @@
     const liked = Library.isLiked(t.id);
     const oo = o || {};
     return '<div class="song-row" data-track-id="' + esc(t.id) + '"' + (oo.qid ? ' data-qid="' + esc(oo.qid) + '"' : '') + (oo.pos != null ? ' data-pos="' + oo.pos + '"' : '') + ' tabindex="0">' +
-      '<span class="song-row__cover"><img class="cover" data-cover="' + esc(al.id) + '" alt=""><button class="song-row__play" aria-label="Play" tabindex="-1">' + playIcons(false, 'icon--sm') + '</button></span>' +
+      '<span class="song-row__cover"><img class="cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""><button class="song-row__play" aria-label="Play" tabindex="-1">' + playIcons(false, 'icon--sm') + '</button></span>' +
       '<span class="song-row__text"><span class="song-row__title">' + esc(t.title) + '</span><span class="song-row__artist">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '</span></span>' +
       '<span class="song-row__end"><button class="icon-btn song-row__like' + (liked ? ' is-liked' : '') + '" aria-label="' + (liked ? 'Remove from Liked Songs' : 'Add to Liked Songs') + '" tabindex="-1">' + icon(liked ? 'i-check-circle' : 'i-add-circle', 'icon--sm') + '</button>' +
       '<span class="song-row__dur">' + esc(c.formatDuration(t.durationMs)) + '</span>' +
       '<button class="icon-btn song-row__more" aria-label="More options for ' + esc(t.title) + '" tabindex="-1">' + icon('i-more', 'icon--sm') + '</button></span></div>';
   }
+  // Hero sprig (DESIGN 3.9): a sparse sprig of the context's species hanging in from the top-right
+  function sprigSize() { return isPhone() ? [88, 120] : tabletMQ.matches ? [140, 156] : [160, 176]; }
+  function sprigOpts(species, seed) {
+    const s = sprigSize();
+    return { kind: 'sprig', species: species, seed: 'hero:' + seed, w: s[0], h: s[1], anchor: 'topright', angle: Math.PI / 2 + 0.35 };
+  }
+  function heroSpecies(kind, id) {
+    const c = cat(), F = flora();
+    if (!c || !F) return '';
+    const cs = (x) => { try { return typeof c.coverSpecies === 'function' ? c.coverSpecies(x) || '' : ''; } catch (e) { return ''; } };
+    const sf = (x) => { try { return typeof F.speciesFor === 'function' ? F.speciesFor(x) || '' : ''; } catch (e) { return ''; } };
+    if (kind === 'user') {
+      const p = Library.playlist(id);
+      const t = p && p.trackIds.length ? c.track(p.trackIds[0]) : null;
+      return (t && cs(t.albumId)) || 'ume';
+    }
+    if (kind === 'genre') return sf(id) || 'sakura';
+    if (kind === 'liked') return cs('liked') || 'sakura';
+    return cs(id) || sf(id) || 'sakura';
+  }
+  function heroSprigHTML(h) {
+    if (!flora()) return '';
+    const id = h.kind === 'liked' ? 'liked' : h.id || h.coverKey || h.title;
+    const sp = heroSpecies(h.kind, id);
+    return sp ? floraImg('hero__sprig', sprigOpts(sp, id)) : '';
+  }
+  // tablet <-> desktop does not re-render: resize the sprig sprites in place (a fixed size per breakpoint)
+  function refreshSprigSizes() {
+    if (!els.main) return;
+    const s = sprigSize();
+    els.main.querySelectorAll('img.hero__sprig[data-flora]').forEach((img) => {
+      let o;
+      try { o = JSON.parse(img.getAttribute('data-flora')); } catch (e) { return; }
+      if (o.w === s[0] && o.h === s[1]) return;
+      o.w = s[0]; o.h = s[1];
+      img.setAttribute('width', s[0]); img.setAttribute('height', s[1]);
+      img.setAttribute('data-flora', JSON.stringify(o));
+      img.removeAttribute('src');
+      lazyCovers.pending.add(img);
+    });
+    scheduleCoverPump();
+  }
   function heroHTML(h) {
     const cls = 'hero' + (h.kind === 'artist' ? ' hero--artist' : '') + (h.kind === 'liked' ? ' hero--liked' : '') + (h.kind === 'genre' ? ' hero--genre' : '') + (h.editable ? ' hero--editable' : '');
     const tcls = titleClass(h.title);
     if (h.kind === 'genre') {
-      return '<div class="' + cls + '"><div class="hero__info"><h1 class="hero__title ' + tcls + '">' + esc(h.title) + '</h1></div></div><div class="hero-band" aria-hidden="true"></div>';
+      return '<div class="' + cls + '"><div class="hero__info"><h1 class="hero__title ' + tcls + '">' + esc(h.title) + '</h1></div></div><div class="hero-band" aria-hidden="true"></div>' + heroSprigHTML(h);
     }
     const editAttr = h.editable ? ' role="button" tabindex="0"' : '';
     return '<div class="' + cls + '">' +
@@ -812,7 +1009,7 @@
       '<div class="hero__info"><span class="hero__type">' + h.type + '</span>' +
       '<h1 class="hero__title ' + tcls + '"' + editAttr + '>' + esc(h.title) + '</h1>' +
       (h.desc ? '<p class="hero__desc"' + editAttr + '>' + esc(h.desc) + '</p>' : '') +
-      '<div class="hero__meta">' + h.meta + '</div></div></div><div class="hero-band" aria-hidden="true"></div>';
+      '<div class="hero__meta">' + h.meta + '</div></div></div><div class="hero-band" aria-hidden="true"></div>' + heroSprigHTML(h);
   }
   function actionsHTML(a) {
     const st = playerState();
@@ -822,7 +1019,7 @@
       '<button class="play-btn play-btn--lg" aria-label="' + (playing ? 'Pause ' : 'Play ') + esc(a.name) + '" data-context-uri="' + esc(a.ctx.uri) + '" data-name="' + esc(a.name) + '">' + playIcons(playing) + '</button>';
     if (a.shuffle) html += '<button class="icon-btn actions__shuffle' + (shuffleOn ? ' is-active' : '') + '" aria-label="' + (shuffleOn ? 'Disable shuffle' : 'Enable shuffle') + '">' + icon('i-shuffle', 'icon--lg') + '</button>';
     if (a.save) html += '<button class="icon-btn actions__save' + (a.save.saved ? ' is-active' : '') + '" aria-label="' + (a.save.saved ? 'Remove from Your Library' : 'Add to Your Library') + '">' + icon(a.save.saved ? 'i-check-circle' : 'i-add-circle', 'icon--lg') + '</button>';
-    if (a.follow) html += '<button class="pill actions__follow">' + (a.follow.following ? 'Following' : 'Follow') + '</button>';
+    if (a.follow) html += '<button class="pill actions__follow' + (a.follow.following ? ' is-active' : '') + '">' + (a.follow.following ? 'Following' : 'Follow') + '</button>';
     html += '<button class="icon-btn actions__download" aria-label="Download">' + icon('i-download', 'icon--lg') + '</button>';
     html += '<button class="icon-btn actions__more" aria-label="More options for ' + esc(a.name) + '">' + icon('i-more', 'icon--lg') + '</button>';
     if (a.filter || a.view) {
@@ -837,20 +1034,21 @@
     return '<section class="page page--hero" style="--hero-color:' + esc(color) + '">' + inner + '</section>';
   }
   // iconId: an optional large icon above the title (only the Liked Songs empty state uses one: i-heart, SPEC §8.7)
-  function emptyHTML(title, text, extra, small, iconId) {
-    return '<div class="empty' + (small ? ' empty--sm' : '') + '">' + (!small && iconId ? icon(iconId, 'empty__icon') : '') + '<div class="empty__title">' + esc(title) + '</div><div class="empty__text">' + esc(text) + '</div>' + (extra || '') + '</div>';
+  // art: an optional flower silhouette above the title (DESIGN 3.12): 'bud' | 'twig' | 'queue' | 'seedling'
+  function emptyHTML(title, text, extra, small, iconId, art) {
+    return '<div class="empty' + (small ? ' empty--sm' : '') + '">' + (art ? artImg('empty__flora', art, small) : '') + (!small && iconId ? icon(iconId, 'empty__icon') : '') + '<div class="empty__title">' + esc(title) + '</div><div class="empty__text">' + esc(text) + '</div>' + (extra || '') + '</div>';
   }
   function finderRowHTML(t) {
     const c = cat();
     const al = c.album(t.albumId);
-    return '<div class="finder-row" data-track-id="' + esc(t.id) + '"><img class="cover cover--40" data-cover="' + esc(al.id) + '" alt="">' +
+    return '<div class="finder-row" data-track-id="' + esc(t.id) + '"><img class="cover cover--40" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt="">' +
       '<span class="finder-row__text"><span class="finder-row__title">' + esc(t.title) + '</span><span class="finder-row__artist">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '</span></span>' +
       '<span class="finder-row__album"><a href="#" data-route="album" data-id="' + esc(al.id) + '">' + esc(al.title) + '</a></span>' +
       '<button class="pill pill--outline finder-row__add">Add</button></div>';
   }
   function finderHTML(p) {
     const q = state.finderQuery;
-    return '<div class="playlist-finder" data-playlist-id="' + esc(p.id) + '"><h2 class="playlist-finder__title">Let\'s find something for your playlist</h2>' +
+    return '<div class="playlist-finder win" data-playlist-id="' + esc(p.id) + '">' + winBar(70) + (p.trackIds.length ? '' : artImg('playlist-finder__flora', 'seedling', true, 96, 72)) + '<h2 class="playlist-finder__title">Let\'s find something for your playlist</h2>' +
       '<div class="finder-search">' + icon('i-search') + '<input type="text" placeholder="Search for songs" aria-label="Search for songs" value="' + esc(q) + '"><button class="icon-btn finder-search__clear" aria-label="Clear"' + (q ? '' : ' hidden') + '>' + icon('i-close', 'icon--sm') + '</button></div>' +
       '<div class="finder-list">' + finderResultsHTML(p) + '</div></div>';
   }
@@ -877,7 +1075,7 @@
   }
   function recommendedHTML(p) {
     const rows = recommendedTracks(p).map(finderRowHTML).join('');
-    return '<div class="playlist-finder playlist-finder--recommended" data-playlist-id="' + esc(p.id) + '"><h2 class="playlist-finder__title">Recommended</h2><p class="playlist-finder__sub">Based on what\'s in this playlist</p>' +
+    return '<div class="playlist-finder playlist-finder--recommended win" data-playlist-id="' + esc(p.id) + '">' + winBar(70) + '<h2 class="playlist-finder__title">Recommended</h2><p class="playlist-finder__sub">Based on what\'s in this playlist</p>' +
       '<div class="finder-list">' + rows + '</div>' +
       '<div class="finder-foot"><button class="text-btn finder-refresh">Refresh</button><a class="text-link finder-more" href="#">Find more</a></div></div>';
   }
@@ -924,11 +1122,14 @@
   }
   const HOME_SHELVES = ['made-for-you', 'recent', 'jump-back-in', 'popular-albums', 'popular-artists', 'discover'];
 
+  // Home (DESIGN 3.6): the chips live in the strip; readout band + .home-side (/time, /filter on phone, /quick_picks)
   views.home = function () {
-    let html = stripHTML({ tint: 'var(--bg-panel)' }) + '<div class="home-head" aria-hidden="true"></div><div class="page page--home">';
-    html += '<div class="chips chips--home"><span class="avatar chips__avatar" aria-hidden="true">N</span>' +
+    const chips = '<div class="chips chips--home"><span class="avatar chips__avatar" aria-hidden="true">N</span>' +
       [['all', 'All'], ['music', 'Music'], ['podcasts', 'Podcasts']].map((x) => '<button class="chip" aria-pressed="' + (state.homeChip === x[0]) + '" data-home-chip="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
-    html += '<div class="quick-grid">' + quickPicks().map(tileHTML).join('') + '</div>';
+    let html = stripHTML({ tint: 'var(--bg-panel)', end: chips, home: true }) + '<div class="home-head" aria-hidden="true"></div><div class="page page--home">';
+    html += readoutHTML();
+    html += '<div class="home-side">' + clockWinHTML() + filterWinHTML() +
+      '<div class="win win--quick">' + winBar(86) + winTitle('/quick_picks') + '<div class="quick-grid">' + quickPicks().map(tileHTML).join('') + '</div></div></div>';
     HOME_SHELVES.forEach((id) => {
       const s = sectionItems(id);
       if (!s || !s.items.length) return;
@@ -941,7 +1142,7 @@
     let html = stripHTML({ tint: 'var(--bg-panel)' }) + '<div class="page">';
     if (!s) return html + '<h1 class="page-title page-title--lg">Not found</h1></div>';
     html += '<h1 class="page-title page-title--lg">' + esc(s.title) + '</h1>';
-    html += s.items.length ? '<div class="card-grid">' + s.items.map((e) => cardHTML(e)).join('') + '</div>' : emptyHTML('Nothing here yet', 'Play something and it will show up here.', '', true);
+    html += s.items.length ? '<div class="card-grid">' + s.items.map((e) => cardHTML(e)).join('') + '</div>' : emptyHTML('Nothing here yet', 'Play something and it will show up here.', '', true, null, 'seedling');
     return html + '</div>';
   };
   views.library = function () {
@@ -959,7 +1160,7 @@
     const queued = up.filter((u) => u.source === 'queue');
     const fromCtx = up.filter((u) => u.source !== 'queue');
     let html = stripHTML({ tint: 'var(--bg-panel)' }) + '<div class="page page--queue"><h1 class="page-title page-title--lg">Queue</h1>';
-    if (!cur && !queued.length) return html + emptyHTML('Add to your queue', 'Tap "Add to queue" from a song\'s menu to see it here.', '', true) + '</div>';
+    if (!cur && !queued.length) return html + emptyHTML('Add to your queue', 'Tap "Add to queue" from a song\'s menu to see it here.', '', true, null, 'queue') + '</div>';
     let n = 0;
     if (cur) {
       html += '<section class="queue-section"><div class="queue-section__head"><h2 class="queue-section__title">Now playing</h2></div>' +
@@ -996,7 +1197,8 @@
       html += '<h2 class="section-title browse-title">Browse all</h2><div class="browse-grid">' + c.genres.map((g) => {
         const gc = c.genreContent(g.id);
         const first = gc.playlists[0] || gc.albums[0];
-        return '<button class="browse-card" style="--browse-color:' + esc(g.color) + '" data-route="genre" data-id="' + esc(g.id) + '">' + esc(g.name) + (first ? '<img class="cover" data-cover="' + esc(first.id) + '" alt="">' : '') + '</button>';
+        // the name sits on its own black label; the genre species grows from the corner (DESIGN 3.8)
+        return '<button class="browse-card" style="--browse-color:' + esc(g.color) + '" data-route="genre" data-id="' + esc(g.id) + '"><span class="browse-card__name">' + esc(g.name) + '</span>' + (first ? '<img class="cover" data-cover="' + esc(first.id) + '" alt="">' : '') + floraImg('browse-card__flora', tileOpts(g.id)) + '</button>';
       }).join('') + '</div>';
       return html;
     }
@@ -1005,18 +1207,18 @@
     let html = '<div class="chips search-chips">' + [['all', 'All'], ['songs', 'Songs'], ['artists', 'Artists'], ['albums', 'Albums'], ['playlists', 'Playlists']].map((x) =>
       '<button class="chip" aria-pressed="' + (state.searchTab === x[0]) + '" data-search-chip="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
     if (!total) {
-      return html + '<div class="no-results"><div class="no-results__title">No results found for \'' + esc(q) + '\'</div><div class="no-results__text">Please make sure your words are spelled correctly, or use fewer or different keywords.</div></div>';
+      return html + '<div class="no-results">' + artImg('no-results__flora', 'twig', false) + '<div class="no-results__title">No results found for \'' + esc(q) + '\'</div><div class="no-results__text">Please make sure your words are spelled correctly, or use fewer or different keywords.</div></div>';
     }
     const tab = state.searchTab;
     const cards = (list, kind, subStyle) => list.map((x) => cardHTML(ent(kind, x.id, subStyle), { searchType: kind, searchId: x.id })).join('');
     if (tab === 'songs') {
-      html += res.tracks.length ? trackTableHTML(res.tracks, { variant: 'songs', label: 'Songs', ctxUri: 'search' }) : emptyHTML('No songs found', 'Try a different search.', '', true);
+      html += res.tracks.length ? trackTableHTML(res.tracks, { variant: 'songs', label: 'Songs', ctxUri: 'search', file: 'songs.m3u' }) : emptyHTML('No songs found', 'Try a different search.', '', true, null, 'twig');
     } else if (tab === 'artists') {
-      html += res.artists.length ? '<div class="card-grid">' + cards(res.artists, 'artist') + '</div>' : emptyHTML('No artists found', 'Try a different search.', '', true);
+      html += res.artists.length ? '<div class="card-grid">' + cards(res.artists, 'artist') + '</div>' : emptyHTML('No artists found', 'Try a different search.', '', true, null, 'twig');
     } else if (tab === 'albums') {
-      html += res.albums.length ? '<div class="card-grid">' + cards(res.albums, 'album', 'year') + '</div>' : emptyHTML('No albums found', 'Try a different search.', '', true);
+      html += res.albums.length ? '<div class="card-grid">' + cards(res.albums, 'album', 'year') + '</div>' : emptyHTML('No albums found', 'Try a different search.', '', true, null, 'twig');
     } else if (tab === 'playlists') {
-      html += res.playlists.length ? '<div class="card-grid">' + cards(res.playlists, 'playlist') + '</div>' : emptyHTML('No playlists found', 'Try a different search.', '', true);
+      html += res.playlists.length ? '<div class="card-grid">' + cards(res.playlists, 'playlist') + '</div>' : emptyHTML('No playlists found', 'Try a different search.', '', true, null, 'twig');
     } else {
       const top = res.top;
       let topHtml = '';
@@ -1026,14 +1228,14 @@
           const t = top.item;
           const al = c.album(t.albumId);
           topHtml = '<div class="top-result" role="button" tabindex="0" data-track-id="' + esc(t.id) + '" data-route="album" data-id="' + esc(al.id) + '" data-search-type="track" data-search-id="' + esc(t.id) + '">' +
-            '<img class="cover cover--92" data-cover="' + esc(al.id) + '" alt=""><div class="top-result__name">' + esc(t.title) + '</div>' +
+            '<img class="cover cover--92" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""><div class="top-result__name">' + esc(t.title) + '</div>' +
             '<div class="top-result__meta">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '<span class="type-pill">Song</span></div>' +
             '<button class="play-btn" aria-label="Play ' + esc(t.title) + '" tabindex="-1">' + playIcons(false) + '</button></div>';
         } else {
           const e = ent(kind, top.item.id, 'year');
           const label = kind === 'artist' ? 'Artist' : kind === 'album' ? 'Album' : 'Playlist';
           topHtml = '<div class="top-result" role="button" tabindex="0" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-search-type="' + kind + '" data-search-id="' + esc(e.id) + '">' +
-            '<img class="cover cover--92' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" alt=""><div class="top-result__name">' + esc(e.name) + '</div>' +
+            '<img class="cover cover--92' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><div class="top-result__name">' + esc(e.name) + '</div>' +
             '<div class="top-result__meta">' + (kind === 'album' ? '<span>' + esc(e.owner) + '</span>' : '') + '<span class="type-pill">' + label + '</span></div>' +
             '<button class="play-btn" aria-label="Play ' + esc(e.name) + '" tabindex="-1">' + playIcons(false) + '</button></div>';
         }
@@ -1073,7 +1275,7 @@
     return stripHTML({ tint: shade(p.color, 0.3), title: p.name, ctx: ctx }) + heroPage(p.color,
       heroHTML({ kind: 'playlist', coverKey: p.id, type: 'Playlist', title: p.name, desc: p.description, meta: meta }) +
       actionsHTML({ ctx: ctx, name: p.name, shuffle: true, save: { saved: saved }, filter: 'Search in playlist', view: true }) +
-      trackTableHTML(tracks, { variant: 'playlist', label: p.name, ctxUri: ctx.uri, dates: dates, compact: state.viewMode === 'compact' }));
+      trackTableHTML(tracks, { variant: 'playlist', label: p.name, ctxUri: ctx.uri, dates: dates, compact: state.viewMode === 'compact', file: slug(p.name) + '.m3u' }));
   };
   function userPlaylistView(r) {
     const c = cat();
@@ -1088,7 +1290,7 @@
       actionsHTML({ ctx: ctx, name: p.name, shuffle: true, filter: 'Search in playlist', view: true });
     if (!tracks.length) body += finderHTML(p);
     else {
-      body += trackTableHTML(tracks, { variant: 'playlist', label: p.name, ctxUri: ctx.uri, dates: dates, compact: state.viewMode === 'compact', playlistId: p.id });
+      body += trackTableHTML(tracks, { variant: 'playlist', label: p.name, ctxUri: ctx.uri, dates: dates, compact: state.viewMode === 'compact', playlistId: p.id, file: slug(p.name) + '.m3u' });
       body += recommendedHTML(p);
       if (state.finderOpen[p.id]) body += finderHTML(p);
     }
@@ -1102,13 +1304,13 @@
     const e = ent('album', al.id);
     const ctx = contextOf(e);
     const saved = Library.isSavedAlbum(al.id);
-    const meta = '<img class="cover cover--24" data-cover="' + esc(ar.id) + '" alt=""><a href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><span>•</span><span>' + al.year + '</span><span>•</span>' + metaCount(al.trackIds);
+    const meta = '<img class="cover cover--24" data-cover="' + esc(ar.id) + '" data-cover-variant="thumb" alt=""><a href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><span>•</span><span>' + al.year + '</span><span>•</span>' + metaCount(al.trackIds);
     const tracks = c.tracksOf(al.id);
     const more = c.albumsOf(ar.id).filter((a) => a.id !== al.id).map((a) => cardHTML(ent('album', a.id, 'year'))).join('');
     return stripHTML({ tint: shade(al.color, 0.3), title: al.title, ctx: ctx }) + heroPage(al.color,
       heroHTML({ kind: 'album', coverKey: al.id, type: albumType(al), title: al.title, desc: '', meta: meta }) +
       actionsHTML({ ctx: ctx, name: al.title, shuffle: true, save: { saved: saved } }) +
-      trackTableHTML(tracks, { variant: 'album', label: al.title, ctxUri: ctx.uri }) +   // albums have no view toggle
+      trackTableHTML(tracks, { variant: 'album', label: al.title, ctxUri: ctx.uri, file: slug(al.title) + '.m3u' }) +   // albums have no view toggle
       copyrightHTML(al) +
       (more ? shelfHTML('More by ' + ar.name, null, more, { cls: 'shelf--more' }) : ''));
   };
@@ -1130,8 +1332,8 @@
     return stripHTML({ tint: shade(ar.color, 0.3), title: ar.name, ctx: ctx }) + heroPage(ar.color,
       heroHTML({ kind: 'artist', coverKey: ar.id, round: true, type: type, title: ar.name, desc: '', meta: meta }) +
       actionsHTML({ ctx: ctx, name: ar.name, shuffle: true, follow: { following: Library.isFollowing(ar.id) } }) +
-      '<h2 class="section-title popular-title">Popular</h2>' +
-      trackTableHTML(shown, { variant: 'popular', noHead: true, label: 'Popular', ctxUri: ctx.uri }) +
+      // the section heading is the title of the list's window (one window head, like the shelves below it)
+      trackTableHTML(shown, { variant: 'popular', noHead: true, label: 'Popular', ctxUri: ctx.uri, file: 'popular.m3u', heading: '<h2 class="section-title popular-title">Popular</h2>' }) +
       (top.length > 5 ? '<a class="table-more" href="#" data-popular-toggle="' + esc(ar.id) + '">' + (expanded ? 'Show less' : 'See more') + '</a>' : '') +
       shelfHTML('Discography', null, discoList.map((a) => cardHTML(ent('album', a.id, 'year'))).join('') || '<div class="section-sub disco-empty">No releases of this kind.</div>', { cls: 'shelf--disco', between: '<div class="disco-chips">' + discoChips + '</div>' }) +
       (fans ? shelfHTML('Fans also like', null, fans) : '') +
@@ -1149,8 +1351,8 @@
     let body = heroHTML({ kind: 'liked', coverKey: 'liked', type: 'Playlist', title: 'Liked Songs', desc: '', meta: meta }) +
       actionsHTML({ ctx: ctx, name: 'Liked Songs', shuffle: true, filter: 'Search in Liked Songs', view: true });
     body += tracks.length
-      ? trackTableHTML(tracks, { variant: 'liked', label: 'Liked Songs', ctxUri: 'liked', dates: dates, compact: state.viewMode === 'compact' })
-      : emptyHTML('Songs you like will appear here', 'Save songs by tapping the heart icon.', '<button class="pill pill--primary" data-route="search">Find songs</button>', false, 'i-heart');
+      ? trackTableHTML(tracks, { variant: 'liked', label: 'Liked Songs', ctxUri: 'liked', dates: dates, compact: state.viewMode === 'compact', file: 'liked_songs.m3u' })
+      : emptyHTML('Songs you like will appear here', 'Save songs by tapping the heart icon.', '<button class="pill pill--primary" data-route="search">Find songs</button>', false, 'i-heart', 'bud');
     return stripHTML({ tint: shade(LIKED_COLOR, 0.3), title: 'Liked Songs', ctx: ctx }) + heroPage(LIKED_COLOR, body);
   };
   views.genre = function (r) {
@@ -1164,14 +1366,14 @@
     const als = gc.albums.slice(0, 10).map((a) => cardHTML(ent('album', a.id))).join('');
     const ars = gc.artists.slice(0, 10).map((a) => cardHTML(ent('artist', a.id))).join('');
     return stripHTML({ tint: shade(g.color, 0.3), title: g.name, ctx: ctx }) + heroPage(g.color,
-      heroHTML({ kind: 'genre', title: g.name }) +
+      heroHTML({ kind: 'genre', id: g.id, title: g.name }) +
       '<div class="genre-body">' +
       (pls ? shelfHTML('Popular playlists', null, pls) : '') + (als ? shelfHTML('Popular albums', null, als) : '') + (ars ? shelfHTML('Popular artists', null, ars) : '') +
       '<h2 class="section-title songs-title">Top songs</h2>' +
-      trackTableHTML(gc.tracks, { variant: 'songs', label: 'Top songs', ctxUri: ctx.uri }) + '</div>');
+      trackTableHTML(gc.tracks, { variant: 'songs', label: 'Top songs', ctxUri: ctx.uri, file: 'top_songs.m3u' }) + '</div>');
   };
   function notFound(what) {
-    return stripHTML({ tint: 'var(--bg-panel)' }) + '<div class="page">' + emptyHTML(what + ' not found', 'It may have been removed.', '<button class="pill pill--primary" data-route="home">Go home</button>') + '</div>';
+    return stripHTML({ tint: 'var(--bg-panel)' }) + '<div class="page">' + emptyHTML(what + ' not found', 'It may have been removed.', '<button class="pill pill--primary" data-route="home">Go home</button>', false, null, 'twig') + '</div>';
   }
 
   // ---------------------------------------------------------------------------
@@ -1204,7 +1406,7 @@
     const active = isActiveEntity(e);
     const sub = e.kind === 'liked' ? icon('i-pin', 'icon--xs') + 'Playlist • ' + esc(cat().pluralize(Library.likedTrackIds().length, 'song')) : esc(e.sub);
     return '<li><button class="lib-row' + (active ? ' is-active' : '') + '" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-kind="' + esc(e.kind) + '" title="' + esc(e.name) + '" aria-label="' + esc(e.name) + '">' +
-      '<span class="lib-row__cover' + (round ? ' lib-row__cover--round' : '') + '"><img class="cover cover--48' + (round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" alt=""><span class="lib-row__play" aria-hidden="true">' + playIcons(false) + '</span></span>' +
+      '<span class="lib-row__cover' + (round ? ' lib-row__cover--round' : '') + '"><img class="cover cover--48' + (round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><span class="lib-row__play" aria-hidden="true">' + playIcons(false) + '</span></span>' +
       '<span class="lib-row__text"><span class="name">' + esc(e.name) + '</span><span class="sub">' + sub + '</span></span>' +
       '<span class="lib-row__end">' + icon('i-speaker', 'icon--sm lib-row__speaker') + '</span></button>' +
       (e.kind === 'liked' ? '' : '<button class="icon-btn lib-row__more" aria-label="More options for ' + esc(e.name) + '" data-kind="' + esc(e.kind) + '" data-id="' + esc(e.id) + '">' + icon('i-more', 'icon--sm') + '</button>') + '</li>';
@@ -1233,10 +1435,11 @@
   function libListHTML() {
     const list = libraryItems();
     if (!list.length) {
-      if (state.sb.query) return '<div class="lib-empty"><strong>Couldn\'t find "' + esc(state.sb.query) + '"</strong>Try searching again using a different spelling or keyword.</div>';
+      const art = artImg('lib-empty__flora', 'seedling', true, 96, 72);
+      if (state.sb.query) return '<div class="lib-empty">' + art + '<strong>Couldn\'t find "' + esc(state.sb.query) + '"</strong>Try searching again using a different spelling or keyword.</div>';
       const what = { artists: ['Follow your first artist', 'Follow artists you like by tapping the Follow button.'], albums: ['Save your first album', 'Save albums by tapping the add button on an album page.'] }[state.sb.filter] ||
         ['Create your first playlist', 'It\'s easy, we\'ll help you.'];
-      return '<div class="lib-empty"><strong>' + esc(what[0]) + '</strong>' + esc(what[1]) + '</div>';
+      return '<div class="lib-empty">' + art + '<strong>' + esc(what[0]) + '</strong>' + esc(what[1]) + '</div>';
     }
     return '<ul class="lib-list">' + list.map(libRowHTML).join('') + '</ul>';
   }
@@ -1244,9 +1447,12 @@
     const sb = els.sidebar;
     const input = sb.querySelector('.lib-filter input');
     const focused = input && D.activeElement === input;
-    sb.innerHTML = '<div class="lib-header"><button class="lib-title" aria-label="' + libTitleLabel() + '" title="Your Library">' + icon('i-library-filled') + '<span>Your Library</span></button>' +
-      '<button class="icon-btn lib-add" aria-label="Create playlist">' + icon('i-plus') + '</button></div>' +
-      libChipsHTML() + libFilterHTML() + libListHTML();
+    // the library window head: "> your library", "+", and a live "-" (collapse, desktop only) as the LAST child
+    sb.innerHTML = '<div class="lib-header win"><button class="lib-title" aria-label="' + libTitleLabel() + '" title="Your Library">' + icon('i-library-filled') + '<span>Your Library</span></button>' +
+      '<button class="icon-btn lib-add" aria-label="Create playlist">' + icon('i-plus') + '</button>' +
+      '<div class="win__bar win__bar--live" style="--rule-w:92%"><span class="win__ctl"><button type="button" class="win__btn win__btn--min lib-collapse" aria-label="' + libTitleLabel() + '"></button><span class="win__btn win__btn--close" aria-hidden="true"></span></span></div></div>' +
+      libChipsHTML() + libFilterHTML() + libListHTML() +
+      (flora() ? '<div class="lib-sprig" aria-hidden="true">' + floraImg('lib-sprig__img', { kind: 'sprig', species: 'sakura', seed: 'lib', w: 260, h: 150 }) + '</div>' : '');
     fillCovers(sb);
     applyHighlights(sb);
     if (focused) { const ni = sb.querySelector('.lib-filter input'); if (ni) { ni.focus(); try { ni.setSelectionRange(ni.value.length, ni.value.length); } catch (e) { /* ignore */ } } }
@@ -1274,14 +1480,15 @@
     els.app.setAttribute('data-sidebar', v ? 'rail' : 'full');
     Library.setPref('sidebarCollapsed', !!v);
     syncLibTitleLabel();
+    scheduleCoverPump();   // the library sprig shows again in full mode
   }
   function libTitleLabel() {
     if (!isDesktop()) return 'Your Library';
     return state.sidebarCollapsed ? 'Expand Your Library' : 'Collapse Your Library';
   }
   function syncLibTitleLabel() {
-    const t = els.sidebar && els.sidebar.querySelector('.lib-title');
-    if (t) t.setAttribute('aria-label', libTitleLabel());
+    if (!els.sidebar) return;
+    els.sidebar.querySelectorAll('.lib-title, .lib-collapse').forEach((t) => t.setAttribute('aria-label', libTitleLabel()));
   }
 
   // ---------------------------------------------------------------------------
@@ -1302,7 +1509,13 @@
     const e = st.context ? entFromUri(st.context.uri) : null;
     const name = st.context ? st.context.name : (state.rightMode === 'queue' ? 'Queue' : 'Now playing');
     const title = e ? '<a href="#" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '">' + esc(name) + '</a>' : esc(name);
-    return '<div class="rp__head"><h2 class="rp__title">' + title + '</h2><button class="icon-btn rp__close" aria-label="Close">' + icon('i-close', 'icon--sm') + '</button></div>';
+    // window head (DESIGN 3.13): "> /now_playing" path, the context title, and a live bar as the LAST child with
+    // the existing close button moved into its "×" slot
+    // with no context the title is the generic "Queue" / "Now playing": it is then shown as the prompt itself
+    // ("> /queue", CSS) instead of after a "> /queue" path that repeats it
+    return '<div class="rp__head win"><span class="win__path" aria-hidden="true" data-path="' + (state.rightMode === 'queue' ? '/queue' : '/now_playing') + '"></span><h2 class="rp__title' + (st.context ? '' : ' rp__title--generic') + '">' + title + '</h2>' +
+      '<div class="win__bar win__bar--live" style="--rule-w:88%"><span class="win__ctl"><span class="win__btn win__btn--min" aria-hidden="true"></span>' +
+      '<button class="icon-btn rp__close win__btn win__btn--close" aria-label="Close">' + icon('i-close', 'icon--sm') + '</button></span></div></div>';
   }
   function renderRightPanel() {
     const rp = els.right;
@@ -1312,20 +1525,20 @@
     const cur = st.currentTrackId && c ? c.track(st.currentTrackId) : null;
     let html = rpHeadHTML(st) + '<div class="rp__body">';
     if (!cur) {
-      html += emptyHTML(state.rightMode === 'queue' ? 'Add to your queue' : 'Nothing playing', state.rightMode === 'queue' ? 'Tap "Add to queue" from a song\'s menu to see it here.' : 'Play something and it will show up here.', '', true);
+      html += emptyHTML(state.rightMode === 'queue' ? 'Add to your queue' : 'Nothing playing', state.rightMode === 'queue' ? 'Tap "Add to queue" from a song\'s menu to see it here.' : 'Play something and it will show up here.', '', true, null, state.rightMode === 'queue' ? 'queue' : 'seedling');
     } else if (state.rightMode === 'now-playing') {
       const al = c.album(cur.albumId);
       const ar = c.artist(cur.artistId);
       const liked = Library.isLiked(cur.id);
       const up = arr(pcall('upcoming', 1));
       const nextT = up.length ? c.track(up[0].trackId) : null;
-      html += '<img class="cover rp__cover" data-cover="' + esc(al.id) + '" alt="">' +
+      html += '<div class="rp__cover-frame"><img class="cover rp__cover" data-cover="' + esc(al.id) + '" alt=""></div>' +
         '<div class="rp__track" data-track-id="' + esc(cur.id) + '"><div class="rp__track-text"><div class="rp__track-title"><a href="#" data-route="album" data-id="' + esc(al.id) + '">' + esc(cur.title) + '</a></div><div class="rp__track-artist">' + artistLinks(cur) + '</div></div>' +
         '<button class="icon-btn rp__like' + (liked ? ' is-active' : '') + '" aria-label="' + (liked ? 'Remove from Liked Songs' : 'Add to Liked Songs') + '">' + icon(liked ? 'i-check-circle' : 'i-add-circle') + '</button></div>' +
-        '<div class="rp-card rp-card--artist"><div class="rp-card__img"><img class="cover" data-cover="' + esc(ar.id) + '" alt=""><span class="rp-card__img-label">About the artist</span></div>' +
+        '<div class="rp-card rp-card--artist win">' + winBar(70) + '<div class="rp-card__img"><img class="cover" data-cover="' + esc(ar.id) + '" alt=""><span class="rp-card__img-label">About the artist</span></div>' +
         '<div class="rp-card__body"><div class="rp-card__row"><div><a class="rp-card__name" href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><div class="rp-card__sub">' + esc(c.formatPlays(ar.monthlyListeners)) + ' monthly listeners</div></div>' +
-        '<button class="pill rp__follow" data-id="' + esc(ar.id) + '">' + (Library.isFollowing(ar.id) ? 'Following' : 'Follow') + '</button></div><p class="rp-card__bio">' + esc(ar.bio) + '</p></div></div>';
-      html += '<div class="rp-card rp-card--queue"><div class="rp-card__head"><span class="rp-card__name">Next in queue</span><a class="text-link" href="#" data-route="queue">Open queue</a></div>' +
+        '<button class="pill rp__follow' + (Library.isFollowing(ar.id) ? ' is-active' : '') + '" data-id="' + esc(ar.id) + '">' + (Library.isFollowing(ar.id) ? 'Following' : 'Follow') + '</button></div><p class="rp-card__bio">' + esc(ar.bio) + '</p></div></div>';
+      html += '<div class="rp-card rp-card--queue win">' + winBar(70) + '<div class="rp-card__head"><span class="rp-card__name">Next in queue</span><a class="text-link" href="#" data-route="queue">Open queue</a></div>' +
         (nextT ? '<div class="song-list" data-section="next">' + songRowHTML(nextT, { qid: up[0].qid || '', pos: 0 }) + '</div>' : '<div class="rp-card__empty">Nothing queued yet.</div>') + '</div>';
     } else {
       const up = arr(pcall('upcoming', 50));
@@ -1338,7 +1551,7 @@
         const link = e ? '<a href="#" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '">' + esc(st.context.name) + '</a>' : esc(st.context.name);
         html += '<section class="queue-section"><div class="queue-section__head"><h2 class="queue-section__title"><span class="muted">Next from:</span> ' + link + '</h2></div><div class="song-list" data-section="context">' + fromCtx.map((u, i) => { const t = c.track(u.trackId); return t ? songRowHTML(t, { pos: i }) : ''; }).join('') + '</div></section>';
       }
-      if (!queued.length && !fromCtx.length) html += emptyHTML('Add to your queue', 'Tap "Add to queue" from a song\'s menu to see it here.', '', true);
+      if (!queued.length && !fromCtx.length) html += emptyHTML('Add to your queue', 'Tap "Add to queue" from a song\'s menu to see it here.', '', true, null, 'queue');
     }
     rp.innerHTML = html + '</div>';
     fillCovers(rp);
@@ -1359,12 +1572,15 @@
   // Top bar and bottom nav (rendered once, synced per route)
   // ---------------------------------------------------------------------------
   function renderTopbar() {
-    els.topbar.innerHTML = '<div class="topbar__left"><button class="topbar__logo" aria-label="Wavelength" data-route="home">' + icon('i-logo') + '</button></div>' +
+    // DESIGN 3.3: logo + "wavelength_", home, the look_in.txt search window (prompt, caret), filter bar, avatar
+    els.topbar.innerHTML = '<div class="topbar__left"><button class="topbar__logo" aria-label="Wavelength" data-route="home">' + icon('i-logo') + '</button><span class="topbar__word" aria-hidden="true"></span></div>' +
       '<div class="topbar__center"><button class="round-btn topbar__home" aria-label="Home" data-route="home">' + icon('i-home') + '</button>' +
-      '<div class="search-pill">' + icon('i-search') + '<input class="search-pill__input" type="search" placeholder="What do you want to play?" aria-label="Search" autocomplete="off">' +
+      '<div class="search-win win win--dashed">' + winBar(62) +
+      '<div class="search-pill"><span class="search-pill__prompt" aria-hidden="true" data-path="look_in.txt"></span>' + icon('i-search') + '<input class="search-pill__input" type="search" placeholder="What do you want to play?" aria-label="Search" autocomplete="off">' +
+      '<span class="search-pill__caret" aria-hidden="true"></span>' +
       '<button class="icon-btn search-pill__clear" aria-label="Clear search" hidden>' + icon('i-close', 'icon--sm') + '</button><span class="search-pill__divider" aria-hidden="true"></span>' +
-      '<button class="icon-btn search-pill__browse" aria-label="Browse">' + icon('i-browse') + '</button></div></div>' +
-      '<div class="topbar__right"><button class="avatar-btn" aria-label="Account menu"><span class="avatar">N</span></button></div>';
+      '<button class="icon-btn search-pill__browse" aria-label="Browse">' + icon('i-browse') + '</button></div></div></div>' +
+      '<div class="topbar__right">' + fxBarHTML(true) + '<button class="avatar-btn" aria-label="Account menu"><span class="avatar">N</span></button></div>';
   }
   function setUse(svgParent, id) { const u = svgParent && svgParent.querySelector('use'); if (u && u.getAttribute('href') !== '#' + id) u.setAttribute('href', '#' + id); }
   function syncTopbar(r) {
@@ -1381,7 +1597,7 @@
   }
   function renderBottomNav() {
     els.bottomNav.innerHTML = [['home', 'Home', 'i-home'], ['search', 'Search', 'i-search'], ['library', 'Your Library', 'i-library']].map((x) =>
-      '<a class="bottom-nav__item" href="#" data-route="' + x[0] + '" data-icon="' + x[2] + '">' + icon(x[2]) + x[1] + '</a>').join('');
+      '<a class="bottom-nav__item" href="#" data-route="' + x[0] + '" data-icon="' + x[2] + '">' + icon(x[2]) + '<span class="bottom-nav__label">' + x[1] + '</span></a>').join('');
   }
   function syncBottomNav(r) {
     const active = r.view === 'library' ? 'library' : r.view === 'search' ? 'search' : 'home';
@@ -1409,8 +1625,11 @@
       (it.submenu ? icon('i-chevron-right', 'icon--sm menu-item__chev') : '') + (it.checked ? icon('i-check', 'icon--sm menu-item__check') : '') + '</button>' +
       (it.separatorAfter ? '<div class="menu-sep" role="separator"></div>' : '');
   }
-  function renderMenuList(el, items) {
-    el.innerHTML = '<div class="menu-list">' + items.map(menuItemHTML).join('') + '</div>';
+  // A floating window (DESIGN 3.14): a decorative bar and a "> <target>" line head the item list.
+  // head: { title, sub } or null (the phone inline submenu has no head)
+  function renderMenuList(el, items, head) {
+    const h = head ? winBar(head.sub ? 60 : 70) + '<div class="menu-target" aria-hidden="true" data-path="' + esc(head.title == null || head.title === '' ? 'opts' : String(head.title)) + '"></div>' : '';
+    el.innerHTML = h + '<div class="menu-list">' + items.map(menuItemHTML).join('') + '</div>';
     el._items = items;
   }
   function placeMenu(el, x, y) {
@@ -1432,7 +1651,7 @@
     if (!list.length) return;
     hideTooltip();
     const el = els.menu;
-    renderMenuList(el, list);
+    renderMenuList(el, list, { title: o.title });
     el.hidden = false;
     el.style.left = '0px'; el.style.top = '0px';
     let x = 0, y = 0;
@@ -1496,15 +1715,19 @@
     closeSubmenu(false);
     const items = arr(typeof it.submenu === 'function' ? it.submenu() : it.submenu).filter(Boolean);
     if (!items.length) return;
+    // phone: the menu is a bottom sheet and the submenu opens inline under its parent item (DESIGN 3.14)
+    const inline = isPhone() && els.menu.contains(itemEl);
     const sub = D.createElement('div');
-    sub.className = 'context-menu context-menu--sub';
-    sub.setAttribute('role', 'menu');
-    renderMenuList(sub, items);
-    D.body.appendChild(sub);
+    sub.className = 'context-menu context-menu--sub' + (inline ? ' context-menu--inline' : '');
+    sub.setAttribute('role', inline ? 'group' : 'menu');
+    if (inline) sub.setAttribute('aria-label', String(it.label || ''));
+    renderMenuList(sub, items, inline ? null : { title: String(it.label || '').toLowerCase(), sub: true });
+    if (inline) itemEl.after(sub); else D.body.appendChild(sub);
     menu.sub = sub;
     menu.subParent = itemEl;
     itemEl.classList.add('is-open');
     itemEl.setAttribute('aria-expanded', 'true');
+    if (inline) return;   // no auto-focus of the inline search: it would pop the phone keyboard over the sheet
     const pr = itemEl.getBoundingClientRect();
     const vw = W.innerWidth, vh = W.innerHeight;
     sub.style.maxHeight = Math.max(120, vh - 16) + 'px';
@@ -1584,7 +1807,9 @@
     const item = e.target.closest('.menu-item');
     if (!item) return;
     const menuEl = item.closest('.context-menu');
-    if (menuEl === els.menu) {
+    // phone: the bottom sheet grows upwards when the inline submenu opens, so a hover (the emulated mouseover of a
+    // tap) must never open or close it, or the tap's click would land on whatever moved under the finger
+    if (menuEl === els.menu && !isPhone()) {
       const it = (menuEl._items || [])[Number(item.getAttribute('data-idx'))];
       if (it && it.submenu && !it.disabled) openSubmenu(item, it);
       else if (menu.sub) closeSubmenu(false);
@@ -1618,14 +1843,27 @@
     dlg.setAttribute('role', 'dialog');
     dlg.setAttribute('aria-modal', 'true');
     dlg.setAttribute('aria-labelledby', 'dlg-title');
+    // a floating window (DESIGN 3.15): without a close button the bar is decorative and comes first; with one it is
+    // a live bar appended LAST (focus order) and the existing close button sits in its "×" slot
+    let closeBar = null;
     if (opts.closeButton) {
       const b = D.createElement('button');
-      b.className = 'icon-btn dialog__close';
+      b.className = 'icon-btn dialog__close win__btn win__btn--close';
       b.setAttribute('aria-label', 'Close');
       b.innerHTML = icon('i-close');
       b.addEventListener('click', () => closeDialog());
-      dlg.appendChild(b);
+      closeBar = D.createElement('div');
+      closeBar.className = 'win__bar win__bar--live';
+      closeBar.style.setProperty('--rule-w', '64%');
+      const ctl = D.createElement('span');
+      ctl.className = 'win__ctl';
+      ctl.innerHTML = '<span class="win__btn win__btn--min" aria-hidden="true"></span>';
+      ctl.appendChild(b);
+      closeBar.appendChild(ctl);
+    } else {
+      dlg.insertAdjacentHTML('beforeend', winBar(64));
     }
+    if (opts.body && opts.body.classList && opts.body.classList.contains('edit-details')) dlg.classList.add('dialog--wide');
     const h = D.createElement('h2');
     h.className = 'dialog__title';
     h.id = 'dlg-title';
@@ -1652,8 +1890,14 @@
       });
       dlg.appendChild(row);
     }
-    backdrop.appendChild(dlg);
-    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeDialog(); });
+    if (closeBar) dlg.appendChild(closeBar);
+    // the frame hugs the dialog and holds the peony sprig outside its border (desktop >= 1024)
+    const frame = D.createElement('div');
+    frame.className = 'dialog-frame';
+    frame.appendChild(dlg);
+    frame.insertAdjacentHTML('beforeend', floraImg('dialog__flora', { kind: 'sprig', species: 'peony', seed: 'dialog', w: 120, h: 168, anchor: 'bottomright' }));
+    backdrop.appendChild(frame);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop || e.target === frame) closeDialog(); });
     backdrop.addEventListener('keydown', (e) => {
       if (e.key !== 'Tab') return;
       const f = Array.prototype.filter.call(dlg.querySelectorAll('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])'), (x) => !x.disabled && !x.hidden);
@@ -1664,6 +1908,9 @@
     });
     dialogState.prevFocus = D.activeElement;
     els.dialogRoot.appendChild(backdrop);
+    fillCovers(frame);
+    petalsCtl.paused.dialog = true;
+    syncPetals();
     const focusTarget = dlg.querySelector('.dialog__body input, .dialog__body textarea') || dlg.querySelector('.dialog__actions .pill--primary') || dlg.querySelector('button');
     if (focusTarget) { focusTarget.focus(); if (focusTarget.select && focusTarget.tagName === 'INPUT') { try { focusTarget.select(); } catch (e) { /* ignore */ } } }
     return dlg;
@@ -1671,6 +1918,8 @@
   function closeDialog() {
     if (!els.dialogRoot.firstElementChild) return;
     els.dialogRoot.innerHTML = '';
+    petalsCtl.paused.dialog = false;
+    syncPetals();
     const pf = dialogState.prevFocus;
     dialogState.prevFocus = null;
     if (pf && pf.focus && D.contains(pf)) { try { pf.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
@@ -1733,6 +1982,7 @@
     if (tip.el) tip.el.classList.remove('is-visible');
   }
   function onTipEnter(e) {
+    if (tip.touch) return;   // the compatibility mouseover a tap fires: no hover tooltip that would stay up
     const b = iconOnlyButton(e.target);
     if (!b) { if (tip.anchor && !(e.target.closest && e.target.closest('button[aria-label]') === tip.anchor)) hideTooltip(); return; }
     if (b === tip.anchor) return;
@@ -1873,7 +2123,7 @@
     if (!p) return;
     const body = D.createElement('div');
     body.className = 'edit-details';
-    body.innerHTML = '<div class="edit-details__cover"><img class="cover" alt=""></div><div class="edit-details__fields">' +
+    body.innerHTML = '<div class="edit-details__cover"><img class="cover" alt=""><span class="edit-details__edit" aria-hidden="true">' + icon('i-edit', 'icon--lg') + '</span></div><div class="edit-details__fields">' +
       '<label class="field"><span class="field__label">Name</span><input class="field__input edit-details__name" type="text" placeholder="Add a name" maxlength="100" autocomplete="off"></label>' +
       '<label class="field"><span class="field__label">Description</span><textarea class="field__input edit-details__desc" placeholder="Add an optional description" maxlength="300"></textarea></label></div>';
     const img = body.querySelector('img');
@@ -1992,6 +2242,7 @@
     row.classList.add('is-selected');
     try { row.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   }
+  function trackTitleOf(id) { const c = cat(); const t = c && id ? c.track(id) : null; return t ? t.title : ''; }
   function openRowMenu(row, pos) {
     const trackId = row.getAttribute('data-track-id');
     const qid = row.getAttribute('data-qid');
@@ -2001,7 +2252,7 @@
     const items = trackMenuItems(trackId, { playlistId: plId || undefined, index: posAttr != null ? Number(posAttr) : undefined });
     if (qid) items.unshift({ label: 'Remove from queue', icon: 'i-close', onClick: () => { if (pcall('removeFromQueue', qid) !== false) toast('Removed from queue'); } });
     if (!isPhone() && row.classList.contains('track-row')) selectRow(row);
-    openContextMenu(items, Object.assign({ origin: row }, pos));
+    openContextMenu(items, Object.assign({ origin: row, title: trackTitleOf(trackId) }, pos));
   }
   function setViewMode(mode) {
     if (state.viewMode === mode) return;
@@ -2064,7 +2315,7 @@
     Object.keys(SORT_LABELS).forEach((k) => {
       items.push({ label: SORT_LABELS[k], checked: state.sb.sort === k, onClick: () => { state.sb.sort = k; Library.setPref('sidebarSort', k); refreshLibraryUI(); } });
     });
-    openContextMenu(items, { anchor: anchor });
+    openContextMenu(items, { anchor: anchor, title: 'sort' });
   }
   function toggleLibFilterInput(filterEl) {
     const box = filterEl.querySelector('.lib-filter__input');
@@ -2087,7 +2338,7 @@
     const next = tmp.firstElementChild;
     if (old) { if (next) old.replaceWith(next); else old.remove(); }
     else if (next) { const anchor = main.querySelector('.shelf[data-shelf="made-for-you"]'); const page = main.querySelector('.page--home'); if (anchor) anchor.after(next); else if (page) page.appendChild(next); }
-    if (next && next.isConnected) { clampShelfRows(next.parentNode || els.main); fillCovers(next); applyHighlights(next); }
+    if (next && next.isConnected) { cycleShelfRules(els.main); clampShelfRows(next.parentNode || els.main); fillCovers(next); applyHighlights(next); }
   }
   function focusSearch() {
     if (isPhone()) {
@@ -2124,6 +2375,11 @@
     let el;
     if (t.closest('.nav-btn--back')) { back(); return; }
     if (t.closest('.nav-btn--forward')) { forward(); return; }
+    // filter switcher, petals toggle, compact filter menu, library window "-" (DESIGN 4.6, 3.4)
+    if ((el = t.closest('[data-filter-set]'))) { setFilter(el.getAttribute('data-filter-set')); return; }
+    if (t.closest('.fx-petals')) { if (!reducedMotion()) setPetals(!state.petals); return; }
+    if ((el = t.closest('.fx-menu-btn'))) { openFilterMenu(el); return; }
+    if (t.closest('.lib-collapse')) { if (isDesktop()) setSidebarCollapsed(!state.sidebarCollapsed); return; }
     if ((el = t.closest('.play-btn'))) {
       const holder = el.closest('[data-context-uri], [data-track-id]');
       if (holder) {
@@ -2136,7 +2392,7 @@
     }
     // the cover's play overlay is a hover affordance; touch screens (phone) have no hover, so a tap on the cover opens the item
     if (!isPhone() && (el = t.closest('.lib-row__play'))) { e.stopPropagation(); toggleContextUri(el.closest('.lib-row').getAttribute('data-context-uri')); return; }
-    if ((el = t.closest('.lib-row__more'))) { openContextMenu(sidebarRowMenuItems(ent(el.getAttribute('data-kind'), el.getAttribute('data-id'))), { anchor: el }); return; }
+    if ((el = t.closest('.lib-row__more'))) { const re = ent(el.getAttribute('data-kind'), el.getAttribute('data-id')); openContextMenu(sidebarRowMenuItems(re), { anchor: el, title: re && re.name }); return; }
     if ((el = t.closest('.card__close'))) {
       e.stopPropagation();
       const card = el.closest('.card');
@@ -2180,14 +2436,14 @@
       return;
     }
     if (t.closest('.actions__download')) { toast("Downloads aren't available in this demo"); return; }
-    if ((el = t.closest('.actions__more'))) { openContextMenu(entityMenuItems(pageEntity()), { anchor: el }); return; }
+    if ((el = t.closest('.actions__more'))) { const pe = pageEntity(); openContextMenu(entityMenuItems(pe), { anchor: el, title: pe && pe.name }); return; }
     if (t.closest('.actions__filter-btn')) { openInlineFilter(); return; }
     if ((el = t.closest('.view-toggle'))) {
       openContextMenu([
         { type: 'header', label: 'View as' },
         { label: 'Compact', icon: 'i-list', checked: state.viewMode === 'compact', onClick: () => setViewMode('compact') },
         { label: 'List', icon: 'i-list', checked: state.viewMode === 'list', onClick: () => setViewMode('list') },
-      ], { anchor: el });
+      ], { anchor: el, title: 'view as' });
       return;
     }
     if (t.closest('.hero--editable .hero__cover, .hero--editable .hero__title, .hero--editable .hero__desc')) { if (state.route) openEditDetails(state.route.id); return; }
@@ -2236,7 +2492,7 @@
     if (t.closest('.queue-clear')) { pcall('clearQueue'); return; }
     // the tablet rail is CSS only, so the collapse toggle (a desktop preference) only acts at desktop widths
     if ((el = t.closest('.lib-title'))) { if (el.closest('#sidebar') && isDesktop()) setSidebarCollapsed(!state.sidebarCollapsed); return; }
-    if ((el = t.closest('.lib-add'))) { openContextMenu([{ label: 'Create a new playlist', icon: 'i-plus', onClick: createPlaylistAndGo }], { anchor: el }); return; }
+    if ((el = t.closest('.lib-add'))) { openContextMenu([{ label: 'Create a new playlist', icon: 'i-plus', onClick: createPlaylistAndGo }], { anchor: el, title: 'new' }); return; }
     if (t.closest('.lib-chip-clear')) { setLibFilter(null); return; }
     if ((el = t.closest('[data-lib-chip]'))) { const v = el.getAttribute('data-lib-chip'); setLibFilter(v === state.sb.filter ? null : v); return; }
     if ((el = t.closest('.lib-filter__btn'))) { toggleLibFilterInput(el.closest('.lib-filter')); return; }
@@ -2244,7 +2500,7 @@
     if (t.closest('.search-pill__clear, .search-field__clear')) { clearSearch(); focusSearch(); return; }
     if (t.closest('.search-pill__browse')) { navigate({ view: 'search', query: '' }); return; }
     if ((el = t.closest('.avatar-btn'))) {
-      openContextMenu(['Account', 'Settings', 'Log out'].map((label) => ({ label: label, onClick: () => toast('Not available in this demo') })), { anchor: el });
+      openContextMenu(['Account', 'Settings', 'Log out'].map((label) => ({ label: label, onClick: () => toast('Not available in this demo') })), { anchor: el, title: 'account' });
       return;
     }
     if (t.closest('.rp__close')) { setRightPanel(null); return; }
@@ -2261,18 +2517,20 @@
     if (!t || !t.closest) return;
     let el;
     if ((el = t.closest('.track-row, .song-row'))) { e.preventDefault(); openRowMenu(el, { x: e.clientX, y: e.clientY }); return; }
-    if ((el = t.closest('.lib-row'))) { e.preventDefault(); openContextMenu(sidebarRowMenuItems(ent(el.getAttribute('data-kind'), el.getAttribute('data-id'))), { x: e.clientX, y: e.clientY }); return; }
+    if ((el = t.closest('.lib-row'))) { e.preventDefault(); const re = ent(el.getAttribute('data-kind'), el.getAttribute('data-id')); openContextMenu(sidebarRowMenuItems(re), { x: e.clientX, y: e.clientY, title: re && re.name }); return; }
     if ((el = t.closest('.card, .quick-tile, .top-result'))) {
       e.preventDefault();
-      if (el.hasAttribute('data-track-id')) openContextMenu(trackMenuItems(el.getAttribute('data-track-id')), { x: e.clientX, y: e.clientY });
-      else openContextMenu(entityMenuItems(entFromUri(el.getAttribute('data-context-uri'))), { x: e.clientX, y: e.clientY });
+      if (el.hasAttribute('data-track-id')) openContextMenu(trackMenuItems(el.getAttribute('data-track-id')), { x: e.clientX, y: e.clientY, title: trackTitleOf(el.getAttribute('data-track-id')) });
+      else { const ce = entFromUri(el.getAttribute('data-context-uri')); openContextMenu(entityMenuItems(ce), { x: e.clientX, y: e.clientY, title: ce && ce.name }); }
       return;
     }
-    if (t.closest('.hero__cover')) { e.preventDefault(); openContextMenu(entityMenuItems(pageEntity()), { x: e.clientX, y: e.clientY }); }
+    if (t.closest('.hero__cover')) { e.preventDefault(); const pe = pageEntity(); openContextMenu(entityMenuItems(pe), { x: e.clientX, y: e.clientY, title: pe && pe.name }); }
   }
   function onPanelKeydown(e) {
     const t = e.target;
     if (!t || !t.closest) return;
+    const fxGroup = t.closest('.fx[role="radiogroup"]');
+    if (fxGroup && !e.altKey && !e.ctrlKey && !e.metaKey && onFxKey(e, fxGroup)) return;
     if (e.key === 'Escape') {
       if (t.closest('.inline-filter')) { e.preventDefault(); closeInlineFilter(); return; }
       if (t.closest('.finder-search')) { e.preventDefault(); state.finderQuery = ''; t.value = ''; refreshFinder(); return; }
@@ -2384,13 +2642,284 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Filter switcher, falling petals, readout, clock (DESIGN 4.6, 5.7, 6.1, 6.2, 6.4, 6.6)
+  // ---------------------------------------------------------------------------
+  function fxRadioHTML() {
+    const cur = state.filter;
+    return '<div class="fx" role="radiogroup" aria-label="Media filter"><span class="fx__label" aria-hidden="true"></span>' +
+      FILTERS.map((m) => '<button type="button" class="fx__opt" role="radio" aria-checked="' + (m === cur) + '" tabindex="' + (m === cur ? '0' : '-1') + '" data-filter-set="' + m + '">' + m + '</button>').join('') + '</div>';
+  }
+  function petalsBtnHTML() {
+    const rm = reducedMotion();
+    return '<button type="button" class="fx-petals" aria-pressed="' + (state.petals && !rm) + '"' + (rm ? ' aria-disabled="true"' : '') + ' aria-label="Falling petals">' + icon('i-petal') + '</button>';
+  }
+  // topbar: radiogroup + the compact [mode] menu button (shown below 1280 px) + petals; phone /filter: radiogroup + petals
+  function fxBarHTML(topbar) {
+    return '<div class="fx-bar">' + fxRadioHTML() +
+      (topbar ? '<button type="button" class="fx-menu-btn" aria-haspopup="menu" aria-label="Media filter: ' + state.filter + '" data-mode="' + state.filter + '">' + icon('i-chevron-down') + '</button>' : '') +
+      petalsBtnHTML() + '</div>';
+  }
+  function filterWinHTML() { return '<div class="win win--filter">' + winBar(54) + winTitle('/filter') + fxBarHTML(false) + '</div>'; }
+  function setFilter(mode) {
+    const m = FILTERS.indexOf(mode) >= 0 ? mode : 'mono';
+    state.filter = m;
+    D.documentElement.setAttribute('data-filter', m);
+    Library.setPref('filter', m);
+    D.querySelectorAll('.fx__opt').forEach((b) => {
+      const onv = b.getAttribute('data-filter-set') === m;
+      b.setAttribute('aria-checked', String(onv));
+      b.setAttribute('tabindex', onv ? '0' : '-1');
+    });
+    D.querySelectorAll('.fx-menu-btn').forEach((b) => { b.setAttribute('data-mode', m); b.setAttribute('aria-label', 'Media filter: ' + m); });
+    setReadout('filter', m);
+    if (petalsCtl.ctl) petalsCtl.ctl.setFill(petalFill());
+    appEmit('filter', m);
+    return m;
+  }
+  function openFilterMenu(anchor) {
+    const items = [{ type: 'header', label: 'Media filter' }].concat(FILTERS.map((m) => ({ label: m, checked: state.filter === m, onClick: () => setFilter(m) })));
+    openContextMenu(items, { anchor: anchor, title: 'filter' });
+  }
+  // radiogroup keyboard: arrows move focus and select (wrapping), Home/End jump; runs before the document listeners
+  function onFxKey(e, group) {
+    const opts = Array.prototype.slice.call(group.querySelectorAll('.fx__opt'));
+    const i = opts.indexOf(e.target.closest('.fx__opt'));
+    if (i < 0) return false;
+    let n = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') n = (i + 1) % opts.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') n = (i - 1 + opts.length) % opts.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = opts.length - 1;
+    if (n < 0) return false;
+    e.preventDefault();
+    setFilter(opts[n].getAttribute('data-filter-set'));
+    opts[n].focus();
+    return true;
+  }
+
+  // petals: started only when allowed (pref on, no reduced motion); paused under the expanded player and dialogs
+  const petalsCtl = { ctl: null, paused: { xp: false, dialog: false } };
+  function petalCount() { return isPhone() ? 8 : tabletMQ.matches ? 12 : 14; }
+  function petalFill() { return state.filter === 'invert' ? '#000' : '#fff'; }
+  function petalsAllowed() { return !!state.petals && !reducedMotion(); }
+  function syncPetals() {
+    const want = petalsAllowed() && !petalsCtl.paused.xp && !petalsCtl.paused.dialog;
+    const F = flora();
+    if (want && !petalsCtl.ctl && F && typeof F.petals === 'function') {
+      const cv = D.getElementById('petals');
+      if (cv) { try { petalsCtl.ctl = F.petals(cv, { count: petalCount(), fill: petalFill() }); } catch (e) { petalsCtl.ctl = null; } }
+    }
+    const c = petalsCtl.ctl;
+    if (!c) return;
+    try { if (want) { if (!c.running) { c.setFill(petalFill()); c.start(); } } else if (c.running) c.stop(); } catch (e) { /* the layer is decoration */ }
+  }
+  function syncMotionAttr() {
+    if (state.petals) D.documentElement.removeAttribute('data-motion');
+    else D.documentElement.setAttribute('data-motion', 'off');
+  }
+  function syncPetalButtons() {
+    const rm = reducedMotion();
+    D.querySelectorAll('.fx-petals').forEach((b) => {
+      b.setAttribute('aria-pressed', String(!!state.petals && !rm));
+      if (rm) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
+    });
+  }
+  function setPetals(onv) {
+    state.petals = !!onv;
+    Library.setPref('petals', state.petals);
+    syncMotionAttr();
+    syncPetalButtons();
+    syncPetals();
+    return state.petals;
+  }
+  function onMotionPrefChange() { syncPetalButtons(); syncPetals(); }
+  function onPetalBreakpoint() { if (petalsCtl.ctl) { try { petalsCtl.ctl.setCount(petalCount()); } catch (e) { /* ignore */ } } }
+  function watchExpandedPlayer() {
+    const xp = D.getElementById('expanded-player');
+    if (!xp || typeof W.MutationObserver !== 'function') return;
+    const sync = () => { const open = !xp.hidden; if (open !== petalsCtl.paused.xp) { petalsCtl.paused.xp = open; syncPetals(); } };
+    try { new W.MutationObserver(sync).observe(xp, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* ignore */ }
+    sync();
+  }
+
+  // readout values: module-level state, live updates through module-level listeners and timers only
+  const ro = { env: null, session: '0001', fps: '--', audio: 'idle', everPlayed: false, conn: 'ESTABLISHED', clockOn: false, fpsOn: false };
+  const isDriven = () => !!(W.navigator && W.navigator.webdriver);
+  function setReadout(key, val) {
+    const v = String(val);
+    D.querySelectorAll('[data-readout="' + key + '"]').forEach((el) => { if (el.textContent !== v) el.textContent = v; });
+  }
+  function envValues() {
+    if (ro.env) return ro.env;
+    const nav = W.navigator || {};
+    if (isDriven()) { ro.env = { os: 'wavelength os 1.0', arch: 'x64', location: 'Earth' }; return ro.env; }
+    const ua = String(nav.userAgent || '');
+    let os = 'unknown', m;
+    if ((m = /iPhone OS (\d+)/.exec(ua)) || (m = /CPU OS (\d+)/.exec(ua))) os = 'iOS ' + m[1];
+    else if ((m = /Android (\d+)/.exec(ua))) os = 'Android ' + m[1];
+    else if (/Windows NT/.test(ua)) os = 'Windows';
+    else if (/Mac OS X/.test(ua)) os = 'macOS';
+    else if (/CrOS/.test(ua)) os = 'ChromeOS';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    let arch = 'unknown';
+    if (/Win64|x64|x86_64|amd64|WOW64/i.test(ua)) arch = 'x64';
+    else if (/arm64|aarch64/i.test(ua)) arch = 'arm64';
+    let location = 'Earth';
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && !/^(UTC|GMT|Etc\/)/i.test(tz)) location = tz.split('/').pop().replace(/_/g, ' ');
+    } catch (e) { /* Earth */ }
+    ro.env = { os: os, arch: arch, location: location };
+    // refine once per page load with UA client hints (local only; nothing leaves the page)
+    try {
+      const uad = nav.userAgentData;
+      if (uad && typeof uad.getHighEntropyValues === 'function') {
+        uad.getHighEntropyValues(['platformVersion', 'architecture', 'bitness']).then((h) => {
+          const plat = String(uad.platform || '');
+          const pv = String((h && h.platformVersion) || '').split('.');
+          const major = parseInt(pv[0], 10) || 0;
+          let o = ro.env.os;
+          if (/windows/i.test(plat)) o = major >= 13 ? 'Windows 11' : major >= 1 ? 'Windows 10' : 'Windows';
+          else if (/mac/i.test(plat)) o = 'macOS' + (pv[0] ? ' ' + pv[0] + (pv[1] ? '.' + pv[1] : '') : '');
+          else if (/android/i.test(plat)) o = 'Android' + (major ? ' ' + major : '');
+          else if (/chrome ?os|cros/i.test(plat)) o = 'ChromeOS';
+          else if (/linux/i.test(plat)) o = 'Linux';
+          let a = ro.env.arch;
+          const ar = String((h && h.architecture) || ''), bits = String((h && h.bitness) || '');
+          if (/arm/i.test(ar)) a = bits === '32' ? 'arm' : 'arm64';
+          else if (/x86/i.test(ar)) a = bits === '32' ? 'x86' : 'x64';
+          ro.env.os = o; ro.env.arch = a;
+          setReadout('os', o); setReadout('arch', a);
+        }).catch(() => {});
+      }
+    } catch (e) { /* UA fallback stays */ }
+    return ro.env;
+  }
+  function audioText() {
+    const st = playerState();
+    if (st.isPlaying) ro.everPlayed = true;
+    if (!st.isPlaying) return ro.everPlayed ? 'paused' : 'idle';
+    let k = '';
+    try {
+      const an = W.AudioEngine && W.AudioEngine.analyser;
+      const sr = an && an.context ? an.context.sampleRate : 0;
+      if (sr) k = ' · ' + String(Math.round(sr / 100) / 10).replace(/\.0$/, '') + ' kHz';
+    } catch (e) { /* no rate */ }
+    return 'playing' + k;
+  }
+  function updateAudioReadout() { ro.audio = audioText(); setReadout('audio', ro.audio); }
+  function readoutHTML() {
+    const env = envValues();
+    const F = flora();
+    const row = (dt, dd, key, cls, lang) => '<div class="readout__row' + (cls ? ' ' + cls : '') + '"><dt>' + dt + '</dt><dd' + (key ? ' data-readout="' + key + '"' : '') + (lang ? ' lang="' + lang + '"' : '') + '>' + esc(dd) + '</dd></div>';
+    const size = isPhone() ? [128, 156] : [236, 196];
+    const branch = F ? floraImg('readout__flora', { kind: 'branch', species: ['peony', 'sakura', 'ume'], seed: F.HOME_SEED || 'home-20', w: size[0], h: size[1] }) : '';
+    return '<section class="readout" aria-label="System readout">' + branch + '<dl class="readout__info">' +
+      row('Host', 'wavelength') +
+      row('Os', env.os, 'os') +
+      row('Architecture', env.arch, 'arch', 'readout__row--opt') +
+      row('Contact', '花鳥風月', null, null, 'ja') +
+      row('FPS', isDriven() ? '60' : ro.fps, 'fps', 'readout__row--gap') +
+      row('Location', env.location, 'location') +
+      row('Connection', ro.conn, 'connection') +
+      row('Session Number', ro.session, 'session', 'readout__row--opt') +
+      row('Audio', audioText(), 'audio') +
+      row('Filter', state.filter, 'filter') +
+      '</dl></section>';
+  }
+  function refreshReadout() { updateAudioReadout(); setReadout('connection', ro.conn); }
+  function setFps(n) { if (n > 0 && isFinite(n)) { ro.fps = String(n); setReadout('fps', ro.fps); } }
+  // FPS: reuse the petal loop's frame counter when it runs; otherwise sample rAF for 1 s every 5 s, only while a
+  // readout is in the document and the page is visible. Deterministic 60 under automation (no loop).
+  function sampleFps() {
+    const now = () => (W.performance && W.performance.now ? W.performance.now() : Date.now());
+    const pc = petalsCtl.ctl;
+    if (pc && pc.running) {
+      const f0 = pc.frames, t0 = now();
+      setTimeout(() => { const dt = (now() - t0) / 1000; if (pc.running && dt > 0.5) setFps(Math.round((pc.frames - f0) / dt)); }, 1000);
+      return;
+    }
+    if (typeof W.requestAnimationFrame !== 'function') return;
+    let n = 0;
+    const t0 = now();
+    const step = () => { const dt = now() - t0; if (dt < 1000) { n++; W.requestAnimationFrame(step); } else setFps(Math.round(n * 1000 / dt)); };
+    W.requestAnimationFrame(step);
+  }
+  function startFpsSampler() {
+    if (ro.fpsOn || isDriven()) return;
+    ro.fpsOn = true;
+    const cycle = () => {
+      setTimeout(cycle, 5000);
+      if (!D.hidden && D.querySelector('[data-readout="fps"]')) sampleFps();
+    };
+    setTimeout(cycle, 400);
+  }
+  function startConnectionWatch() {
+    const upd = () => { ro.conn = W.navigator && W.navigator.onLine === false ? 'OFFLINE' : 'ESTABLISHED'; setReadout('connection', ro.conn); };
+    upd();
+    on(W, 'online', upd);
+    on(W, 'offline', upd);
+  }
+  // the /time window: DD-MM-YYYY hh:mm AM/PM, one module-level timer re-armed at each minute boundary
+  const pad2 = (n) => String(n).padStart(2, '0');
+  function clockParts(d) {
+    const h = d.getHours();
+    return {
+      text: pad2(d.getDate()) + '-' + pad2(d.getMonth() + 1) + '-' + d.getFullYear() + ' ' + pad2(h % 12 || 12) + ':' + pad2(d.getMinutes()) + ' ' + (h < 12 ? 'AM' : 'PM'),
+      iso: d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(h) + ':' + pad2(d.getMinutes()),
+    };
+  }
+  function clockWinHTML() {
+    const p = clockParts(new Date());
+    return '<div class="win win--time">' + winBar(72) + '<div class="clock"><span class="win__path" aria-hidden="true" data-path="/time"></span><time class="clock__time" data-clock datetime="' + p.iso + '">' + p.text + '</time></div></div>';
+  }
+  function tickClock() {
+    const p = clockParts(new Date());
+    D.querySelectorAll('[data-clock]').forEach((t) => {
+      if (t.textContent !== p.text) t.textContent = p.text;
+      if (t.getAttribute('datetime') !== p.iso) t.setAttribute('datetime', p.iso);
+    });
+  }
+  function startClock() {
+    if (ro.clockOn) return;
+    ro.clockOn = true;
+    const arm = () => {
+      const d = new Date();
+      setTimeout(() => { tickClock(); arm(); }, 60000 - (d.getSeconds() * 1000 + d.getMilliseconds()) + 20);
+    };
+    arm();
+    on(D, 'visibilitychange', () => { if (!D.hidden) tickClock(); });
+  }
+  // genre tile sprites: drawn in idle time after Home's first paint, one per idle callback, so Browse finds them cached
+  function tileOpts(genreId) {
+    const F = flora();
+    let sp = 'sakura';
+    try { sp = (F && typeof F.speciesFor === 'function' && F.speciesFor(genreId)) || 'sakura'; } catch (e) { /* default */ }
+    return { kind: 'tile', species: sp, seed: genreId, w: 120, h: 120 };
+  }
+  let genrePrewarmed = false;
+  function prewarmGenreSprites() {
+    const F = flora(), c = cat();
+    if (genrePrewarmed || !F || !c || !Array.isArray(c.genres)) return;
+    genrePrewarmed = true;
+    const list = c.genres.map((g) => tileOpts(g.id));
+    const idle = typeof W.requestIdleCallback === 'function' ? (fn) => W.requestIdleCallback(fn, { timeout: 3000 }) : (fn) => setTimeout(fn, 200);
+    const next = () => {
+      const o = list.shift();
+      if (o) { try { F.sprite(o); } catch (e) { /* drawn on demand later */ } }
+      if (list.length) idle(next);
+    };
+    idle(next);
+  }
+
+  // ---------------------------------------------------------------------------
   // Subscriptions and init
   // ---------------------------------------------------------------------------
   function subscribePlayer() {
     const p = player();
     if (!p || typeof p.on !== 'function') return;
-    p.on('trackchange', () => { applyAllHighlights(); refreshQueueViews(); });
-    p.on('statechange', () => { applyAllHighlights(); });
+    p.on('trackchange', () => { applyAllHighlights(); refreshQueueViews(); updateAudioReadout(); });
+    p.on('statechange', () => { applyAllHighlights(); updateAudioReadout(); });
     p.on('contextchange', () => { applyAllHighlights(); refreshQueueViews(); });
     p.on('queuechange', () => { refreshQueueViews(); });
     // shuffle / repeat change what upcoming() returns, so the queue lists follow them too
@@ -2431,6 +2960,14 @@
     els.app.setAttribute('data-right', state.rightMode || 'none');
     els.app.setAttribute('data-sidebar', state.sidebarCollapsed ? 'rail' : 'full');
     els.right.hidden = !state.rightMode;
+    // media filter (before Player.init and before any cover paints), petals pref, session number (DESIGN 4.1, 6.1)
+    state.filter = FILTERS.indexOf(prefs.filter) >= 0 ? prefs.filter : 'mono';
+    D.documentElement.setAttribute('data-filter', state.filter);
+    state.petals = prefs.petals !== false;
+    syncMotionAttr();
+    const session = (Math.max(0, Math.floor(Number(prefs.sessionCount) || 0)) % 9999) + 1;
+    Library.setPref('sessionCount', session);
+    ro.session = String(session).padStart(4, '0');
     // 3. subscriptions + keyboard
     subscribePlayer();
     Library.on('change', onLibraryChange);
@@ -2458,12 +2995,27 @@
     // lazily drawn covers: re-check what has come into view
     on(D, 'scroll', scheduleCoverPump, { capture: true, passive: true });
     on(D, 'visibilitychange', () => { if (lazyCovers.timer === -1) lazyCovers.timer = 0; scheduleCoverPump(); });
+    on(W, 'catalog:coversstale', refreshStaleCovers);
+    // skip links (index.html, first in #app, shown only while focused): jump past long track tables
+    on(D, 'click', (e) => {
+      const s = e.target && e.target.closest ? e.target.closest('.skip[data-skip]') : null;
+      if (!s) return;
+      e.preventDefault();
+      // the player: its play button, or (nothing loaded) the first button that can take focus
+      const shown = (b) => { try { return typeof b.checkVisibility === 'function' ? b.checkVisibility({ visibilityProperty: true }) : !!b.offsetParent; } catch (x) { return true; } };
+      const to = s.getAttribute('data-skip') === 'player'
+        ? Array.prototype.find.call(D.querySelectorAll('#player-bar .pb-play, #player-bar button'), (b) => !b.disabled && shown(b))
+        : els.main;
+      if (to && typeof to.focus === 'function') to.focus();
+    });
     on(els.menu, 'click', onMenuClick);
     on(els.menu, 'mouseover', onMenuOver);
     on(els.menu, 'input', onMenuInput);
-    on(D.body, 'click', (e) => { if (menu.sub && menu.sub.contains(e.target)) onMenuClick(e); });
-    on(D.body, 'mouseover', (e) => { if (menu.sub && menu.sub.contains(e.target)) { const item = e.target.closest('.menu-item'); if (item) setMenuFocus(menu.sub, item); } });
-    on(D.body, 'input', (e) => { if (menu.sub && menu.sub.contains(e.target)) onMenuInput(e); });
+    // body-level submenu listeners skip the phone inline submenu, which lives inside #context-menu (handled above)
+    const inBodySub = (e) => !!(menu.sub && menu.sub.contains(e.target) && !els.menu.contains(e.target));
+    on(D.body, 'click', (e) => { if (inBodySub(e)) onMenuClick(e); });
+    on(D.body, 'mouseover', (e) => { if (inBodySub(e)) { const item = e.target.closest('.menu-item'); if (item) setMenuFocus(menu.sub, item); } });
+    on(D.body, 'input', (e) => { if (inBodySub(e)) onMenuInput(e); });
     on(D, 'mouseover', onTipEnter);
     on(D, 'mouseout', onTipLeave);
     // keyboard focus only: focus moved back by script after a mouse interaction (menu close, dialog close) shows no tooltip
@@ -2471,23 +3023,38 @@
     on(D, 'focusin', (e) => { const b = iconOnlyButton(e.target); if (b && e.target === b && focusVisible(b)) { hideTooltip(); tip.anchor = b; tip.timer = setTimeout(() => { if (tip.anchor === b) showTooltip(b); }, 300); } });
     on(D, 'focusout', () => hideTooltip());
     on(D, 'pointerdown', () => hideTooltip(), true);
+    // the last pointer that moved over the page: touch taps also fire mouseover, which must not open a tooltip
+    on(D, 'pointerover', (e) => { tip.touch = e.pointerType === 'touch'; }, true);
     // the media-query change event drives breakpoint re-renders; resize is a fallback for engines that
     // report the change late. onBreakpointChange() only acts when the phone/wider state really flipped.
     on(W, 'resize', () => { hideTooltip(); onBreakpointChange(); });
     if (typeof phoneMQ.addEventListener === 'function') phoneMQ.addEventListener('change', onBreakpointChange);
     else if (typeof phoneMQ.addListener === 'function') phoneMQ.addListener(onBreakpointChange);
-    if (typeof desktopMQ.addEventListener === 'function') desktopMQ.addEventListener('change', syncLibTitleLabel);
-    else if (typeof desktopMQ.addListener === 'function') desktopMQ.addListener(syncLibTitleLabel);
+    const onDesktopChange = () => { syncLibTitleLabel(); refreshSprigSizes(); onPetalBreakpoint(); };
+    if (typeof desktopMQ.addEventListener === 'function') desktopMQ.addEventListener('change', onDesktopChange);
+    else if (typeof desktopMQ.addListener === 'function') desktopMQ.addListener(onDesktopChange);
+    if (typeof tabletMQ.addEventListener === 'function') tabletMQ.addEventListener('change', () => { refreshSprigSizes(); onPetalBreakpoint(); });
+    if (typeof reducedMQ.addEventListener === 'function') reducedMQ.addEventListener('change', onMotionPrefChange);
+    else if (typeof reducedMQ.addListener === 'function') reducedMQ.addListener(onMotionPrefChange);
     state.wasPhone = isPhone();
     initResizers();
     renderSidebar();
     renderRightPanel();
     navigate({ view: 'home' }, { replace: true });
+    // live readout fields, the clock, the petal layer (all module-level, armed once)
+    startClock();
+    startFpsSampler();
+    startConnectionWatch();
+    watchExpandedPlayer();
+    // after the first paint: later renders clamp shelves synchronously; the petal controller measures the canvas
+    // (a forced layout), so it starts in its own task
+    setTimeout(() => { state.firstPaintDone = true; syncPetals(); }, 0);
   }
   function onBreakpointChange() {
     const phone = isPhone();
     if (!state.route || phone === state.wasPhone) return;
     state.wasPhone = phone;
+    onPetalBreakpoint();
     if (state.route.view === 'library' && !isPhone()) navigate({ view: 'home' }, { replace: true });
     else rerender();
   }
@@ -2511,6 +3078,11 @@
     rerender: rerender,
     trackMenuItems: trackMenuItems,
     entityMenuItems: entityMenuItems,
+    // terminal restyle (DESIGN 4.6): media filter and the ambient-motion (falling petals) switch
+    setFilter: setFilter,
+    filter: () => state.filter,
+    setPetals: setPetals,
+    petals: () => !!state.petals,
     on: function (event, fn) { if (typeof fn === 'function') (appListeners[event] = appListeners[event] || []).push(fn); return this; },
     off: function (event, fn) { const l = appListeners[event]; if (l) { const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } return this; },
   };

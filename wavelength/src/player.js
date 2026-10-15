@@ -12,6 +12,7 @@
   var REPEAT_MODES = ['off', 'context', 'track'];
   var PHONE_MQ = '(max-width: 767px)';
   var APP_TITLE = 'Wavelength';
+  var XP_FLORA = { w: 220, h: 156 };  // the expanded player's floor sprig (CSS px; drawn by Flora.sprite at dpr)
 
   /* ------------------------------------------------------------------ state */
   var state = {
@@ -661,8 +662,22 @@
   function progressSlider(extra) {
     return '<input type="range" class="slider slider--progress' + (extra ? ' ' + extra : '') + '" min="0" max="1000" step="1" value="0" aria-label="Seek">';
   }
+  // Terminal window chrome (DESIGN 2.1 / 3.18): a decorative bar (hairline + "- ×") and the "> /media" prompt title.
+  // Both are new aria-hidden elements whose text comes from CSS, so no existing text node changes.
+  function winBar(ruleW) {
+    return '<div class="win__bar" aria-hidden="true" style="--rule-w:' + ruleW + '"></div>';
+  }
+  // Stepped 3-bar meter shown beside "> /media" while audio plays (state as shape, never colour; DESIGN 3.0).
+  function meterMarkup(cls) {
+    return '<span class="equaliser ' + cls + '" aria-hidden="true"><i></i><i></i><i></i></span>';
+  }
+  function floraReady() {
+    return typeof window.Flora === 'object' && window.Flora !== null && typeof window.Flora.sprite === 'function';
+  }
   function barMarkup() {
     return '' +
+      winBar('100%') +
+      '<div class="win__title pb-win-title" aria-hidden="true" data-path="/media">' + meterMarkup('pb-eq') + '</div>' +
       '<div class="pb-left">' +
         '<div class="pb-cover"><img class="cover" alt="" draggable="false"><button class="pb-cover__expand" type="button" aria-label="Expand">' + svg('i-expand') + '</button></div>' +
         '<div class="pb-text"><div class="pb-title"><a class="pb-title__link" href="#"></a></div><div class="pb-artist"></div></div>' +
@@ -682,11 +697,13 @@
         '<button class="icon-btn icon-btn--dot pb-npv" type="button" aria-label="Now playing view">' + svg('i-now-playing', 'icon--sm') + '</button>' +
         '<button class="icon-btn icon-btn--dot pb-queue" type="button" aria-label="Queue">' + svg('i-queue', 'icon--sm') + '</button>' +
         '<div class="pb-volume"><button class="icon-btn pb-mute" type="button" aria-label="Mute">' + volumeIcons('icon--sm') + '</button>' +
-        '<input type="range" class="slider slider--volume" min="0" max="100" step="1" value="70" aria-label="Volume"></div>' +
+        '<input type="range" class="slider slider--volume" min="0" max="100" step="1" value="70" aria-label="Volume">' +
+        '<span class="pb-vol-pct" aria-hidden="true">70%</span></div>' +
       '</div>';
   }
   function miniMarkup() {
     return '' +
+      winBar('80%') +
       '<div class="mini-player__inner">' +
         // cover + text form one real button, so keyboard and screen-reader users can open the full-screen player
         '<button class="mini-player__open" type="button" aria-label="Open Now Playing view">' +
@@ -702,7 +719,9 @@
       '<div class="mini-player__progress" aria-hidden="true"><i style="--fill:0%"></i></div>';
   }
   function expandedMarkup() {
+    // the bar is decorative (both "- ×" drawn); the chevron .xp-close stays the only close control (DESIGN 3.21)
     return '' +
+      winBar('76%') +
       '<div class="xp__top">' +
         '<button class="icon-btn xp-close" type="button" aria-label="Close">' + svg('i-chevron-down') + '</button>' +
         '<div class="xp__context"><span class="eyebrow xp-eyebrow"></span><span class="xp__context-name xp-ctx-name"></span></div>' +
@@ -720,7 +739,11 @@
         '<button class="icon-btn xp-next" type="button" aria-label="Next">' + svg('i-next') + '</button>' +
         '<button class="icon-btn icon-btn--dot xp-repeat" type="button" aria-label="Enable repeat">' + repeatIcons() + '</button>' +
       '</div>' +
-      '<div class="xp__bottom"><button class="icon-btn xp-queue" type="button" aria-label="Queue">' + svg('i-queue') + '</button></div>';
+      // the window floor: a lazily painted sprig of the album's species grows in from the bottom-left corner
+      // (new aria-hidden .flora image, painted when the view opens; not rendered at all without Flora)
+      '<div class="xp__bottom">' +
+        (floraReady() ? '<img class="flora xp__flora" alt="" aria-hidden="true" width="' + XP_FLORA.w + '" height="' + XP_FLORA.h + '" draggable="false">' : '') +
+        '<button class="icon-btn xp-queue" type="button" aria-label="Queue">' + svg('i-queue') + '</button></div>';
   }
 
   /* ------------------------------------------------------------------ UI: build + wiring */
@@ -761,7 +784,8 @@
         title: q(barRoot, '.pb-title__link'), artist: q(barRoot, '.pb-artist'), like: q(barRoot, '.pb-like'),
         shuffle: q(barRoot, '.pb-shuffle'), prev: q(barRoot, '.pb-prev'), play: q(barRoot, '.pb-play'), next: q(barRoot, '.pb-next'), repeat: q(barRoot, '.pb-repeat'),
         elapsed: q(barRoot, '.pb-time--elapsed'), total: q(barRoot, '.pb-time--total'), progress: q(barRoot, '.slider--progress'),
-        npv: q(barRoot, '.pb-npv'), queue: q(barRoot, '.pb-queue'), mute: q(barRoot, '.pb-mute'), volume: q(barRoot, '.slider--volume')
+        npv: q(barRoot, '.pb-npv'), queue: q(barRoot, '.pb-queue'), mute: q(barRoot, '.pb-mute'), volume: q(barRoot, '.slider--volume'),
+        volPct: q(barRoot, '.pb-vol-pct')
       };
       wireBar(ui.bar);
     }
@@ -785,7 +809,7 @@
         coverWrap: q(xpRoot, '.xp__cover'), cover: q(xpRoot, '.xp__cover .cover'), title: q(xpRoot, '.xp__title'), artist: q(xpRoot, '.xp__artist'), like: q(xpRoot, '.xp-like'),
         progress: q(xpRoot, '.slider--progress'), elapsed: q(xpRoot, '.xp-elapsed'), remaining: q(xpRoot, '.xp-remaining'),
         shuffle: q(xpRoot, '.xp-shuffle'), prev: q(xpRoot, '.xp-prev'), play: q(xpRoot, '.xp-play'), next: q(xpRoot, '.xp-next'), repeat: q(xpRoot, '.xp-repeat'),
-        queue: q(xpRoot, '.xp-queue')
+        queue: q(xpRoot, '.xp-queue'), flora: q(xpRoot, '.xp__flora')
       };
       wireExpanded(ui.xp);
     }
@@ -860,9 +884,10 @@
     x.like.addEventListener('click', likeCurrent);
     x.queue.addEventListener('click', function () { closeExpanded(); navigate({ view: 'queue' }); });
     x.more.addEventListener('click', function () {
-      var A = app(), id = state.currentTrackId;
+      var A = app(), id = state.currentTrackId, tr = trackOf(id);
       if (!A || !id || typeof A.openContextMenu !== 'function' || typeof A.trackMenuItems !== 'function') return;
-      try { A.openContextMenu(A.trackMenuItems(id), { anchor: x.more }); } catch (e) {}
+      // `title` names the menu's "> <target>" head line (DESIGN 3.14); an app that does not know it ignores it
+      try { A.openContextMenu(A.trackMenuItems(id), { anchor: x.more, title: tr ? tr.title : '' }); } catch (e) {}
     });
     wireProgress(x.progress, null, function (sec) {
       setText(x.elapsed, fmtTime(sec));
@@ -960,6 +985,16 @@
       if (typeof phoneMql.addEventListener === 'function') phoneMql.addEventListener('change', onChange);
       else if (typeof phoneMql.addListener === 'function') phoneMql.addListener(onChange);
     } catch (e) { phoneMql = null; }
+    // re-measure the marquee when ambient motion is switched off/on (App.setPetals sets html[data-motion])
+    // or when the reduced-motion preference changes
+    try {
+      if (typeof window.MutationObserver === 'function') {
+        new MutationObserver(queueMarquee).observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
+      }
+      var rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (typeof rmq.addEventListener === 'function') rmq.addEventListener('change', queueMarquee);
+      else if (typeof rmq.addListener === 'function') rmq.addListener(queueMarquee);
+    } catch (e) {}
     // keep the stored position exact across reloads (the periodic save only runs every 5 s of playback)
     window.addEventListener('pagehide', persistLive);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') persistLive(); });
@@ -1021,7 +1056,7 @@
       renderArtistLinks(x.artist, artists);
       var xc = darken(color, 0.7);
       if (xc) x.root.style.setProperty('--xp-color', xc); else x.root.style.removeProperty('--xp-color');
-      if (!tr) closeExpanded();
+      if (!tr) closeExpanded(); else scheduleXpFlora();
     }
     renderContext();
     renderLike();
@@ -1041,6 +1076,11 @@
       if (!btn) return;
       setIcon(btn, id);
       setLabel(btn, label);
+    });
+    // playback state as an attribute for the CSS (the stepped meter beside "> /media"); never a colour
+    var st = !state.currentTrackId ? 'empty' : playing ? 'playing' : 'paused';
+    [ui.bar, ui.mini, ui.xp].forEach(function (part) {
+      if (part && part.root.getAttribute('data-state') !== st) part.root.setAttribute('data-state', st);
     });
   }
   function renderTime() {
@@ -1088,6 +1128,9 @@
     var pct = Math.round(v * 100);
     if (num(ui.bar.volume.value, -1) !== pct) ui.bar.volume.value = pct;
     setFill(ui.bar.volume, pct);
+    // the 10-cell volume bar fills whole cells: --fill-q is the value rounded to the nearest 10% (DESIGN 3.19)
+    ui.bar.volume.style.setProperty('--fill-q', Math.round(pct / 10) * 10 + '%');
+    setText(ui.bar.volPct, pct + '%');
   }
   function renderLike() {
     if (!ui) return;
@@ -1117,6 +1160,8 @@
     if (ui.mini.root.hidden || !m.clientWidth) return;
     var still = false;
     try { still = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    // the petals toggle is the ambient-motion switch: html[data-motion="off"] stops the marquee too (DESIGN 8.3)
+    if (document.documentElement.getAttribute('data-motion') === 'off') still = true;
     if (!still && inner.scrollWidth > m.clientWidth + 1) {
       var dup = inner.firstElementChild.cloneNode(true);
       dup.setAttribute('aria-hidden', 'true');
@@ -1127,6 +1172,34 @@
 
   /* ------------------------------------------------------------------ expanded player */
   function isExpanded() { return !!(ui && ui.xp && !ui.xp.root.hidden); }
+  // The floor sprig of the expanded view: the current album's cover species, seeded per album. It is painted
+  // lazily (next frame, then a task) only while the view is open: one Flora.sprite call, cached by Flora's LRU.
+  var xpFloraKey = '', xpFloraTimer = 0;
+  function xpFloraOpts() {
+    var tr = currentTrack(), C = catalog(), sp = '';
+    if (!tr) return null;
+    try { if (C && typeof C.coverSpecies === 'function') sp = C.coverSpecies(albumOf(tr) || tr.albumId) || ''; } catch (e) { sp = ''; }
+    return { kind: 'sprig', species: sp || 'sakura', seed: 'xp:' + (tr.albumId || tr.id), w: XP_FLORA.w, h: XP_FLORA.h, anchor: 'bottomleft' };
+  }
+  function paintXpFlora() {
+    xpFloraTimer = 0;
+    var img = ui && ui.xp ? ui.xp.flora : null;
+    if (!img || !isExpanded() || !floraReady()) return;
+    var o = xpFloraOpts();
+    if (!o) return;
+    var key = JSON.stringify(o);
+    if (key === xpFloraKey && img.hasAttribute('src')) return;
+    var src = '';
+    try { src = window.Flora.sprite(o) || ''; } catch (e) { src = ''; }
+    xpFloraKey = key;
+    if (src) { setImg(img, src); img.hidden = false; } else { setImg(img, ''); img.hidden = true; }
+  }
+  function scheduleXpFlora() {
+    if (xpFloraTimer || !ui || !ui.xp || !ui.xp.flora || !isExpanded()) return;
+    xpFloraTimer = -1;
+    var run = function () { xpFloraTimer = setTimeout(paintXpFlora, 0); };
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(run); else run();
+  }
   // The expanded view is the phone now-playing screen: it only opens at phone widths (styles.css hides it above).
   var xpReturnFocus = null;
   // While the overlay is open, the rest of #app (hidden under it) leaves the tab order and the accessibility tree.
@@ -1145,6 +1218,7 @@
     setBackgroundInert(true);
     ui.xp.root.scrollTop = 0;
     renderTime();
+    scheduleXpFlora();
     try { ui.xp.close.focus({ preventScroll: true }); } catch (e) {}
   }
   function closeExpanded() {

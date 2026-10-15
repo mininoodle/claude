@@ -998,9 +998,18 @@
   const coverCache = Object.create(null);
   const mosaicCache = Object.create(null);
   let mosaicCount = 0;
-  const FONT = '"Figtree", "Helvetica Neue", Arial, sans-serif';
+  const FONT = '"DotGothic16", "MS Gothic", "Helvetica Neue", Arial, sans-serif';
   const TITLE_FONT = 'bold 34px ' + FONT;
-  const fontPending = new Set();   // cache keys drawn with text before Figtree was available
+  const CHECK_FONT = '22px DotGothic16';
+  // the characters cover text uses (numerals, "> label" strips, the ellipsis). Google Fonts serves DotGothic16 as
+  // ~120 unicode-range slices and only a few ever load, so check() without a sample (= every slice) stays false.
+  const CHECK_TEXT = '0123456789> abcdefghijklmnopqrstuvwxyz…';
+  const fontPending = new Set();   // cache keys drawn with text before DotGothic16 was available
+  // window.Flora (flora.js, loaded before this file) paints the flower covers; without it the drawings below are used
+  function floraLib() {
+    const F = typeof window !== 'undefined' ? window.Flora : (typeof globalThis !== 'undefined' ? globalThis.Flora : null);
+    return F && typeof F === 'object' && typeof F.paintCover === 'function' && typeof F.speciesFor === 'function' ? F : null;
+  }
 
   function hasDom() {
     return typeof document !== 'undefined' && document && typeof document.createElement === 'function';
@@ -1011,7 +1020,8 @@
     try {
       canvas = document.createElement('canvas');
       canvas.width = S; canvas.height = S;
-      ctx = canvas.getContext('2d');
+      // a software canvas: every cover is read back by toDataURL, and a GPU canvas readback cost ~55 ms on the first cover
+      ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) ctxFailed = true;
     } catch (e) { ctxFailed = true; ctx = null; }
     return ctx;
@@ -1052,24 +1062,40 @@
     c.fillRect(0, 0, S, S);
     c.restore();
   }
-  // True once the Figtree face exists and is loaded. Covers with text drawn before that are cached anyway
+  // True once the DotGothic16 face exists and is loaded. Covers with text drawn before that are cached anyway
   // (the fallback typeface is fine) and simply get redrawn on their next request after the font arrives.
   function fontReady() {
     try {
       if (!hasDom() || !document.fonts || typeof document.fonts.check !== 'function') return true;
       let has = false;
-      document.fonts.forEach((f) => { if (/figtree/i.test(f.family)) has = true; });
-      return has && document.fonts.check(TITLE_FONT);
+      document.fonts.forEach((f) => { if (/dotgothic16/i.test(f.family)) has = true; });
+      return has && document.fonts.check(CHECK_FONT, CHECK_TEXT);
     } catch (e) { return true; }
   }
+  // Covers drawn with the fallback typeface are dropped from the cache once the face is ready, and the page is told
+  // ('catalog:coversstale' on window, detail.keys) so it can request the covers it already shows again (app.js does).
   function watchFonts() {
     try {
       if (!hasDom() || !document.fonts) return;
-      const flush = function () {
-        if (!fontPending.size || !fontReady()) return;
-        fontPending.forEach((key) => { delete coverCache[key]; });
-        fontPending.clear();
+      let kicks = 0;
+      // load the slices the cover text needs now, instead of waiting for page text to request them
+      const kick = function () {
+        if (kicks++ >= 4 || typeof document.fonts.load !== 'function') return;
+        try { document.fonts.load(CHECK_FONT, CHECK_TEXT).then(flush, () => {}); } catch (e) { /* ignore */ }
       };
+      const flush = function () {
+        if (!fontPending.size) return;
+        if (!fontReady()) { kick(); return; }
+        const keys = [];
+        fontPending.forEach((key) => { delete coverCache[key]; keys.push(key); });
+        fontPending.clear();
+        try {
+          if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('catalog:coversstale', { detail: { keys: keys } }));
+          }
+        } catch (e) { /* ignore */ }
+      };
+      kick();
       if (document.fonts.ready && typeof document.fonts.ready.then === 'function') document.fonts.ready.then(flush, () => {});
       if (typeof document.fonts.addEventListener === 'function') document.fonts.addEventListener('loadingdone', flush);
     } catch (e) { /* no font events: covers keep the fallback typeface */ }
@@ -1499,25 +1525,105 @@
     return null;
   }
 
-  function cover(entity) {
-    if (typeof entity === 'string') entity = entity === 'liked' ? { kind: 'liked' } : byId[entity];
+  // --- flower covers (Flora.paintCover, DESIGN.md 5.6) ----------------------------------------
+  // entity object or id string ('liked' included) -> { entity, kind }; tracks resolve to their album
+  function resolveCover(entityOrId) {
+    let entity = typeof entityOrId === 'string' ? (entityOrId === 'liked' ? { kind: 'liked' } : byId[entityOrId]) : entityOrId;
     let kind = kindOf(entity);
     if (kind === 'track') { entity = byId[entity.albumId]; kind = entity ? 'album' : null; }
-    if (!kind) return '';
-    if (kind === 'user') return playlistMosaic(entity.trackIds || []);
-    const key = kind === 'liked' ? 'liked' : entity.id;
+    return { entity: entity, kind: kind };
+  }
+  const PLAYLIST_COMP = {
+    pl_dailymix1: 'field', pl_dailymix2: 'bloom', pl_dailymix3: 'wallpaper', pl_dailymix4: 'bouquet', pl_freshfinds: 'stalks',
+    pl_newreleases: 'bloom', pl_chillvibes: 'branch', pl_deepfocus: 'moon', pl_latenightdrive: 'moon', pl_morningcoffee: 'bouquet',
+    pl_workoutpulse: 'field', pl_rainydayjazz: 'branch', pl_indiegold: 'hanging', pl_electronicessentials: 'bloom', pl_top50global: 'field',
+  };
+  const PLAYLIST_SPECIES = {
+    pl_freshfinds: 'iris', pl_newreleases: 'iris', pl_chillvibes: 'camellia', pl_deepfocus: 'ume', pl_latenightdrive: 'moonflower',
+    pl_morningcoffee: 'daisy', pl_workoutpulse: 'sunflower', pl_rainydayjazz: 'magnolia', pl_indiegold: 'wisteria',
+    pl_electronicessentials: 'moonflower', pl_top50global: 'dandelion',
+  };
+  const ALBUM_COMPS = [['bloom', 0.3], ['branch', 0.2], ['bouquet', 0.18], ['stalks', 0.12], ['wallpaper', 0.1], ['hanging', 0.1]];
+  const ALL_COMPS = ['bloom', 'branch', 'bouquet', 'stalks', 'field', 'wallpaper', 'hanging', 'moon'];
+  // by hash, then fitted to the plant: stalk flowers never hang from a bar or grow as a woody branch, and
+  // wisteria hangs instead of standing in a bouquet
+  function albumComp(album, species) {
+    let x = (hashString('comp:' + album.id) % 10000) / 10000, comp = 'bloom';
+    for (let i = 0; i < ALBUM_COMPS.length; i++) { x -= ALBUM_COMPS[i][1]; if (x < 0) { comp = ALBUM_COMPS[i][0]; break; } }
+    const F = floraLib(), form = F && F.SPECIES && F.SPECIES[species] ? F.SPECIES[species].form : '';
+    if (form === 'stalks' || form === 'pad') { if (comp === 'hanging') comp = 'stalks'; else if (comp === 'branch') comp = 'bouquet'; }
+    if (form === 'hanging' && (comp === 'bouquet' || comp === 'stalks' || comp === 'wallpaper')) comp = 'hanging';
+    return comp;
+  }
+  function albumGenre(album) {
+    const first = byId[(album.trackIds || [])[0]];
+    if (first && first.genreId) return first.genreId;
+    const ar = byId[album.artistId];
+    return (ar && ar.genreIds && ar.genreIds[0]) || album.id;
+  }
+  // the species key of an entity's cover ('' without Flora; user playlists are resolved by app.js)
+  function coverSpecies(entityOrId) {
+    const F = floraLib();
+    if (!F) return '';
+    const r = resolveCover(entityOrId), e = r.entity;
+    if (!r.kind || r.kind === 'user') return '';
+    if (r.kind === 'liked') return 'sakura';
+    if (r.kind === 'album') return F.speciesFor(albumGenre(e));
+    if (r.kind === 'artist') return F.speciesFor((e.genreIds && e.genreIds[0]) || e.id);
+    return PLAYLIST_SPECIES[e.id] || F.speciesFor(e.genreId || e.id);
+  }
+  // Extra (not in the contract): the Flora.paintCover spec of a cover, or null (no Flora, user playlist, unknown id)
+  function coverSpec(entityOrId, opts) {
+    const F = floraLib();
+    if (!F) return null;
+    const r = resolveCover(entityOrId), e = r.entity, variant = opts && opts.variant === 'thumb' ? 'thumb' : 'full';
+    if (!r.kind || r.kind === 'user') return null;
+    if (r.kind === 'liked') return { kind: 'liked', seed: 'liked', color: '#450af5', species: 'sakura', variant: variant };
+    const spec = { kind: r.kind, seed: e.id, color: e.color || '#777777', species: coverSpecies(e), variant: variant };
+    if (r.kind === 'album') spec.comp = albumComp(e, spec.species);
+    else if (r.kind === 'artist') spec.comp = 'portrait';
+    else {
+      spec.comp = PLAYLIST_COMP[e.id] || ALL_COMPS[hashString('comp:' + e.id) % ALL_COMPS.length];
+      spec.mark = true;
+      if (e.kind === 'mix') spec.numeral = (String(e.name).match(/\d+/) || [''])[0] || undefined;
+      else if (e.kind === 'chart') spec.numeral = (String(e.name).match(/\d+/) || ['50'])[0];
+      else spec.label = e.name;
+    }
+    return spec;
+  }
+  // cache key: the entity key, plus '#thumb' only for editorial playlists (the only covers whose variants differ)
+  function coverKey(r, opts) {
+    if (r.kind === 'liked') return 'liked';
+    const thumb = opts && opts.variant === 'thumb' && r.kind === 'playlist' && r.entity.kind !== 'mix' && r.entity.kind !== 'chart' && floraLib();
+    return r.entity.id + (thumb ? '#thumb' : '');
+  }
+  function drawLegacy(c, r) {
+    if (r.kind === 'liked') { drawLiked(c); return false; }
+    if (r.kind === 'album') return drawAlbum(c, r.entity);
+    if (r.kind === 'artist') { drawArtist(c, r.entity); return false; }
+    drawPlaylist(c, r.entity);
+    return true;
+  }
+
+  // cover(entityOrId, opts): 300x300 PNG data URL ('' in Node); opts.variant 'full' (default) | 'thumb'
+  function cover(entityOrId, opts) {
+    const r = resolveCover(entityOrId);
+    if (!r.kind) return '';
+    if (r.kind === 'user') return playlistMosaic(r.entity.trackIds || []);
+    const key = coverKey(r, opts);
     if (coverCache[key] != null) return coverCache[key];
     const c = getCtx();
     if (!c) return '';
     let usesText = false;
+    const F = floraLib();
     c.save();
     try {
       resetCtx(c);
-      if (kind === 'liked') drawLiked(c);
-      else if (kind === 'album') usesText = drawAlbum(c, entity);
-      else if (kind === 'artist') drawArtist(c, entity);
-      else { drawPlaylist(c, entity); usesText = true; }
-    } catch (e) { /* a drawing failure leaves an empty cover rather than breaking the caller */ }
+      if (F) usesText = !!F.paintCover(c, S, coverSpec(r.entity.kind === 'liked' ? 'liked' : r.entity, opts)).usesText;
+      else usesText = drawLegacy(c, r);
+    } catch (e) {
+      try { resetCtx(c); usesText = drawLegacy(c, r); } catch (e2) { /* a drawing failure leaves an empty cover rather than breaking the caller */ }
+    }
     c.restore();
     const url = exportPng();
     coverCache[key] = url;
@@ -1525,15 +1631,13 @@
     return url;
   }
   function artistImage(artist) { return cover(artist); }
-  // Extra (not in the contract): true when cover(entity) would return a cached image without drawing, so
+  // Extra (not in the contract): true when cover(entityOrId, opts) would return a cached image without drawing, so
   // callers can paint cached covers at once and defer the rest (app.js draws off-screen covers lazily).
-  function hasCover(entity) {
-    if (typeof entity === 'string') entity = entity === 'liked' ? { kind: 'liked' } : byId[entity];
-    let kind = kindOf(entity);
-    if (kind === 'track') { entity = byId[entity.albumId]; kind = entity ? 'album' : null; }
-    if (!kind) return true;   // nothing to draw: cover() returns '' at once
-    if (kind === 'user') return mosaicCache[mosaicAlbums(entity.trackIds || []).map((a) => a.id).join(',')] != null;
-    return coverCache[kind === 'liked' ? 'liked' : entity.id] != null;
+  function hasCover(entityOrId, opts) {
+    const r = resolveCover(entityOrId);
+    if (!r.kind) return true;   // nothing to draw: cover() returns '' at once
+    if (r.kind === 'user') return mosaicCache[mosaicAlbums(r.entity.trackIds || []).map((a) => a.id).join(',')] != null;
+    return coverCache[coverKey(r, opts)] != null;
   }
   function mosaicAlbums(trackIds) {
     const seen = Object.create(null), als = [];
@@ -1551,10 +1655,19 @@
     const als = mosaicAlbums(trackIds);
     const key = als.map((a) => a.id).join(',');
     if (mosaicCache[key] != null) return mosaicCache[key];
+    const F = floraLib();
     c.save();
     try {
       resetCtx(c);
-      if (als.length === 0) drawEmptyMosaic(c);
+      if (F) {
+        // the same flower compositions as the album covers (an empty playlist gets the pale seedling)
+        if (als.length === 0) F.paintCover(c, S, { kind: 'mosaic-empty', seed: 'mosaic-empty' });
+        else if (als.length < 4) F.paintCover(c, S, coverSpec(als[0]));
+        else {
+          const half = S / 2;
+          als.forEach((al, i) => { c.save(); c.translate((i % 2) * half, Math.floor(i / 2) * half); F.paintCover(c, half, coverSpec(al)); c.restore(); });
+        }
+      } else if (als.length === 0) drawEmptyMosaic(c);
       else if (als.length < 4) drawAlbum(c, als[0]);
       else {
         const half = S / 2;
@@ -1585,7 +1698,7 @@
     formatDate: formatDate, formatLongDate: formatLongDate, relativeDate: relativeDate,
     seededRandom: seededRandom, pluralize: pluralize,
     // extras (not in the contract, safe to ignore)
-    hashString: hashString, hasCover: hasCover,
+    hashString: hashString, hasCover: hasCover, coverSpecies: coverSpecies, coverSpec: coverSpec,
     trackArtists: function (track) {
       const t = typeof track === 'string' ? byId[track] : track;
       if (!t) return [];
