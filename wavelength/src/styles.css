@@ -1,0 +1,459 @@
+/* ============================================================================
+   Wavelength / terminal — styles.css
+   Owner: shell engineer. Binding contract: DESIGN.md (visuals) + SPEC.md (behaviour).
+   Sections:
+     1. Tokens (DESIGN 1.2), invert overrides (1.4), filter modes (4.2)
+     2. Base reset (SPEC §3, verbatim) + base additions (DESIGN 1.3)
+     3. #app grid, containers and breakpoints (SPEC §10, DESIGN 3.2)
+     4. Scrollbars (DESIGN 3.1)
+     5. Window chrome primitives (DESIGN 2.1)
+     6. Primitives (DESIGN 3.1)
+     7. Hit-area extenders (DESIGN 1.5)
+     8. Flora, petals, motion (DESIGN 1.3, 5.7, 8.3)
+   Per the CSS ownership rule (SPEC §3) this file holds no component styles:
+   everything rendered inside #topbar, #sidebar, #main, #right-panel,
+   #bottom-nav, #context-menu, #dialog-root and #toast-root is styled in
+   app.css, and everything inside #player-bar, #mini-player and
+   #expanded-player (including .slider) in player.css.
+   Rules: one ground, one ink, three greys; no hues outside the filter modes;
+   font sizes 14/16/32/48; icon sizes 16/32/48/64; no radius except round
+   artist covers; hover/focus instant; pixel motion in steps().
+   ========================================================================== */
+
+/* ---------- 1. Tokens --------------------------------------------------- */
+:root {
+  color-scheme: dark;
+  /* ---- ink: the only UI colours ---- */
+  --bg: #000000;          /* ground: page and every window (windows are unfilled) */
+  --fg: #ffffff;          /* 21:1   primary text, important rules, inverted blocks */
+  --fg-2: #a3a3a3;        /* 8.3:1  secondary text, values, artists, descriptions */
+  --fg-3: #757575;        /* 4.6:1  meta, labels, placeholders, brackets, dates */
+  --fg-4: #3a3a3a;        /* 1.9:1  disabled controls, faint separators: NEVER information */
+  --rule: #8c8c8c;        /* window hairlines, corner fragments, field boxes (3:1), ink-mode cover frame */
+  --rule-dim: #333333;    /* dashed row/section rules: decoration only */
+  --hover: #161616;       /* hover fill */
+  --press: #262626;       /* open submenu parent, pressed rows */
+  --sel-bg: var(--fg);    /* selection = inverted block */
+  --sel-fg: var(--bg);
+  --shadow-hard: #262626; /* 6px offset shadow of floating windows */
+  --scrim-a: rgba(0,0,0,.9);
+  --scrim-b: rgba(0,0,0,.6);   /* dialog / sheet backdrop: 2px checker of a and b */
+  --cover-empty: #111111;      /* <img class="cover"> before its src arrives */
+
+  /* ---- accent and signal colours follow the filter (section 4) ---- */
+  --accent: var(--fg);
+  --accent-hover: #d6d6d6;
+  --accent-press: #a3a3a3;
+  --on-accent: var(--bg);
+  --danger: var(--fg);
+  --verified: var(--fg);
+
+  /* ---- SPEC §2 names, remapped (every existing rule keeps working) ---- */
+  --bg-base: var(--bg);
+  --bg-panel: var(--bg);
+  --bg-elevated: var(--bg);
+  --bg-menu: var(--bg);
+  --bg-highlight: var(--press);
+  --bg-tinted: var(--hover);
+  --bg-tinted-strong: #1f1f1f;
+  --bg-tinted-press: #0d0d0d;
+  --fg-sub: var(--fg-2);
+  --fg-muted: var(--fg-3);
+  --border: var(--rule-dim);
+  --liked-a: #450af5;          /* colour: only ever painted on a filtered layer */
+  --liked-b: #c4efd9;
+  --liked-hero: #5038a0;
+  --avatar-bg: #e8115b;
+  --shadow-cover: none;
+  --shadow-menu: 6px 6px 0 var(--shadow-hard);
+  --shadow-toast: none;
+  --radius-panel: 0;
+  --radius-card: 0;
+  --radius-pill: 0;
+  --selected: var(--sel-bg);
+  --tile-hover: var(--hover);
+  --overlay: rgba(0,0,0,.6);
+  --backdrop: rgba(0,0,0,.75);
+  --focus-ring: none;          /* focus is an outline now (section 2 base additions) */
+
+  /* ---- type ---- */
+  /* running text is VT323, the terminal face: at 20px it sits on its pixel grid with an 8px advance (the same ch as
+     DotGothic16 at 16px) and keeps i / l / 1 / I apart, which DotGothic16 merges below 24px. DotGothic16 stays the
+     display face (32 / 48px titles, cover numerals) and the CJK fallback. */
+  --font: 'VT323', 'DotGothic16', 'MS Gothic', 'Osaka-Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --font-display: 'DotGothic16', 'MS Gothic', 'Osaka-Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --fs-s: 18px;  --lh-s: 20px;   /* VT323 18 ~ the old DotGothic16 14 (7.2px advance) */
+  --fs: 20px;    --lh: 22px;     /* VT323 20 ~ the old DotGothic16 16 (8px advance) */
+  --fs-cjk: 16px;                /* DotGothic16's own size, for CJK runs inside running text */
+  --fs-l: 32px;  --lh-l: 38px;
+  --fs-xl: 48px; --lh-xl: 52px;
+  --bold: 1px 0 0 currentColor;
+
+  /* ---- window chrome ---- */
+  --win-bar-h: 14px;
+  --win-ctl-w: 34px;
+  --dash: repeating-linear-gradient(90deg, var(--rule) 0 3px, transparent 3px 5px);
+  --dash-dim: repeating-linear-gradient(90deg, var(--rule-dim) 0 3px, transparent 3px 5px);
+  --corners: linear-gradient(var(--rule), var(--rule)) left bottom / 22px 1px no-repeat,
+             linear-gradient(var(--rule), var(--rule)) right bottom / 30px 1px no-repeat;
+  --blossom-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2013%2012'%20shape-rendering%3D'crispEdges'%3E%3Cpath%20d%3D'M5%200h3v1h-3zM4%201h5v1h-5zM4%202h5v1h-5zM1%203h3v1h-3zM5%203h3v1h-3zM9%203h3v1h-3zM1%204h4v1h-4zM6%204h1v1h-1zM8%204h4v1h-4zM0%205h5v1h-5zM8%205h5v1h-5zM1%206h4v1h-4zM6%206h1v1h-1zM8%206h4v1h-4zM4%207h1v1h-1zM8%207h1v1h-1zM2%208h4v1h-4zM7%208h4v1h-4zM2%209h4v1h-4zM7%209h4v1h-4zM2%2010h4v1h-4zM7%2010h4v1h-4zM3%2011h3v1h-3zM7%2011h3v1h-3z'%2F%3E%3C%2Fsvg%3E");
+  --blossom-img: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2013%2012'%20shape-rendering%3D'crispEdges'%3E%3Cpath%20fill%3D'%23ffffff'%20d%3D'M5%200h3v1h-3zM4%201h5v1h-5zM4%202h5v1h-5zM1%203h3v1h-3zM5%203h3v1h-3zM9%203h3v1h-3zM1%204h4v1h-4zM6%204h1v1h-1zM8%204h4v1h-4zM0%205h5v1h-5zM8%205h5v1h-5zM1%206h4v1h-4zM6%206h1v1h-1zM8%206h4v1h-4zM4%207h1v1h-1zM8%207h1v1h-1zM2%208h4v1h-4zM7%208h4v1h-4zM2%209h4v1h-4zM7%209h4v1h-4zM2%2010h4v1h-4zM7%2010h4v1h-4zM3%2011h3v1h-3zM7%2011h3v1h-3z'%2F%3E%3C%2Fsvg%3E");
+
+  /* ---- layout ---- */
+  --gap: 16px;            /* column gap; also the resizer width */
+  --gap-y: 10px;          /* row gap */
+  --topbar-h: 48px;
+  --strip-h: 44px;        /* .main-header (window head of #main); 40px on phone */
+  --player-h: 92px;
+  --sidebar-w: 288px;
+  --sidebar-rail-w: 72px;
+  --right-w: 300px;
+  --bottom-nav-h: 56px;
+  --mini-player-h: 72px;  /* phone only: 12 bar + 56 body + 4 progress */
+
+  /* ---- media filter (section 4); these are the mono defaults ---- */
+  --fx: grayscale(1) contrast(1.12) brightness(1.02);
+  --fx-fine: var(--fx);
+  --fx-tint: grayscale(1) brightness(.4);
+  --fx-band: grayscale(1) brightness(.22);
+}
+@media (max-width: 767px) { :root { --strip-h: 40px; --win-bar-h: 12px; } }   /* --mini-player-h already assumes the 12px bar */
+
+/* invert: a full negative, black ink on white paper (DESIGN 1.4) */
+:root[data-filter="invert"] {
+  color-scheme: light;
+  --bg: #ffffff;  --fg: #000000;
+  --fg-2: #595959;   /* 7.0:1 on white */
+  --fg-3: #767676;   /* 4.5:1 on white */
+  --fg-4: #c4c4c4;
+  --rule: #737373;  --rule-dim: #cccccc;
+  --hover: #ebebeb; --press: #d9d9d9;
+  --shadow-hard: #d4d4d4;
+  --scrim-a: rgba(255,255,255,.9); --scrim-b: rgba(255,255,255,.6);
+  --cover-empty: #eeeeee;
+  --accent-hover: #2b2b2b; --accent-press: #595959;
+  --bg-tinted-strong: #e0e0e0; --bg-tinted-press: #f2f2f2;
+  --overlay: rgba(255,255,255,.7); --backdrop: rgba(255,255,255,.75);
+  --blossom-img: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2013%2012'%20shape-rendering%3D'crispEdges'%3E%3Cpath%20fill%3D'%23000000'%20d%3D'M5%200h3v1h-3zM4%201h5v1h-5zM4%202h5v1h-5zM1%203h3v1h-3zM5%203h3v1h-3zM9%203h3v1h-3zM1%204h4v1h-4zM6%204h1v1h-1zM8%204h4v1h-4zM0%205h5v1h-5zM8%205h5v1h-5zM1%206h4v1h-4zM6%206h1v1h-1zM8%206h4v1h-4zM4%207h1v1h-1zM8%207h1v1h-1zM2%208h4v1h-4zM7%208h4v1h-4zM2%209h4v1h-4zM7%209h4v1h-4zM2%2010h4v1h-4zM7%2010h4v1h-4zM3%2011h3v1h-3zM7%2011h3v1h-3z'%2F%3E%3C%2Fsvg%3E");
+  --fx: grayscale(1) invert(1) contrast(1.1);
+  --fx-fine: var(--fx);
+  --fx-tint: grayscale(1) invert(1) contrast(.1) brightness(1.9);   /* output 0.855–1.0 for any input */
+  --fx-band: grayscale(1) invert(1) contrast(.1) brightness(1.9);
+}
+/* per-mode media filters (DESIGN 4.2); mono is the :root block above */
+:root[data-filter="dither"] { --fx: url(#fx-dither); --fx-fine: url(#fx-dither-fine);
+  --fx-tint: grayscale(1) brightness(.4); --fx-band: grayscale(1) brightness(.22); }   /* no 1-bit pattern under text */
+:root[data-filter="color"]  { --fx: none; --fx-fine: none; --fx-tint: brightness(.4); --fx-band: brightness(.22);
+  --accent: #1ed760; --accent-hover: #3be477; --accent-press: #1fdf64; --danger: #f15e6c; --verified: #3d91f4; }
+:root[data-filter="cyano"]  { --fx: url(#fx-cyano); --fx-fine: url(#fx-cyano);
+  --fx-tint: url(#fx-cyano) brightness(.4); --fx-band: url(#fx-cyano) brightness(.22);
+  --accent: #a8c6ff; --accent-hover: #c4d8ff; --accent-press: #7f9fd6; --verified: #a8c6ff; }
+:root[data-filter="ink"]    { --fx: url(#fx-ink); --fx-fine: url(#fx-ink);
+  --fx-tint: url(#fx-ink) brightness(.4); --fx-band: grayscale(1) brightness(.22); }
+/* WebKit (iOS) has a history of not rendering feImage inside CSS-referenced filters on HTML content;
+   dither there falls back to a hard grey print (untested on a real device; DESIGN 9.e) */
+@supports (-webkit-touch-callout: none) {
+  :root[data-filter="dither"] { --fx: grayscale(1) contrast(1.8); --fx-fine: grayscale(1) contrast(1.8); }
+}
+
+/* ---------- 2. Base reset (verbatim from SPEC §3) ----------------------- */
+*,*::before,*::after{box-sizing:border-box}
+html,body,#app{height:100%}
+body{font-family:var(--font);background:var(--bg-base);color:var(--fg);overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:disabled{cursor:default;color:var(--fg-muted)}
+a{color:inherit;text-decoration:none}
+ul,ol{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p{margin:0}
+img{display:block}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+
+/* base additions (DESIGN 1.3) */
+[hidden]{display:none!important}
+body { font: var(--fs)/var(--lh) var(--font); font-synthesis: none; background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; -webkit-tap-highlight-color: transparent; }
+b, strong, h1, h2, h3, h4 { font-weight: 400; }
+input, textarea, select { font: inherit; color: inherit; }
+button:disabled { color: var(--fg-4); }
+:focus-visible { outline: 1px dashed var(--fg); outline-offset: 2px; box-shadow: none; }
+::selection { background: var(--fg); color: var(--bg); }
+input::placeholder, textarea::placeholder { color: var(--fg-3); opacity: 1; }
+input, textarea { caret-color: var(--fg); caret-shape: block; }
+input[type="search"]::-webkit-search-decoration, input[type="search"]::-webkit-search-cancel-button { display: none; }
+svg { display: block; }
+.flora { pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+:root[data-filter="invert"] .flora:not(canvas) { filter: invert(1); }   /* white silhouettes become black ink; the petal canvas draws black itself */
+.fx-defs { position: absolute; width: 0; height: 0; overflow: hidden; }   /* never display:none */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+/* ---------- 3. #app grid, containers, breakpoints (SPEC §10, DESIGN 3.2) */
+.app {
+  --_side: var(--sidebar-w);
+  display: grid;
+  grid-template-columns: var(--_side) minmax(0,1fr);
+  grid-template-rows: var(--topbar-h) minmax(0,1fr) var(--player-h);
+  grid-template-areas: "topbar topbar" "sidebar main" "player player";
+  gap: var(--gap-y) var(--gap);
+  padding: 8px 16px 10px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;           /* above #petals (z 0); no transform/filter/will-change/contain here: #app holds the fixed #expanded-player */
+}
+#app[data-sidebar="rail"] { --_side: var(--sidebar-rail-w); }
+#app[data-right="now-playing"], #app[data-right="queue"] {
+  grid-template-columns: var(--_side) minmax(0,1fr) var(--right-w);
+  grid-template-areas: "topbar topbar topbar" "sidebar main right" "player player player";
+}
+#topbar { grid-area: topbar; min-width: 0; height: var(--topbar-h); background: transparent; }
+#sidebar { grid-area: sidebar; }
+#main { grid-area: main; }
+#right-panel { grid-area: right; }
+#player-bar { grid-area: player; min-width: 0; height: var(--player-h); background: var(--bg); }   /* opaque: petals pass only through empty space */
+#sidebar, #main, #right-panel {
+  min-width: 0; min-height: 0; position: relative;
+  background: transparent; border-radius: 0;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+}
+#main { isolation: isolate; outline: none; container-type: inline-size; }
+#main:focus-visible { outline: none; box-shadow: none; }
+#topbar, #player-bar, #mini-player, #bottom-nav { will-change: transform; }   /* grayscale AA: no LCD colour fringes */
+#mini-player, #bottom-nav, #expanded-player { display: none; }
+/* the falling-petal layer: behind #app, never over menus, dialogs or toasts */
+#petals { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; mix-blend-mode: normal; }
+@media (prefers-reduced-motion: reduce) { #petals { display: none; } }   /* the controller is never started either (app) */
+:root[data-motion="off"] #petals { display: none; }                     /* App.setPetals(false) */
+/* resizers: live in the 16px column gaps beside #main (desktop only) */
+.resizer { display: none; position: relative; z-index: 10; cursor: col-resize; align-self: stretch; }
+.resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; margin-left: -.5px; background: var(--rule); opacity: 0; }
+.resizer:hover::after, .resizer.is-dragging::after { opacity: 1; }
+#resizer-left { grid-area: sidebar; justify-self: end; width: var(--gap); margin-right: calc(-1 * var(--gap)); }
+#resizer-right { grid-area: right; justify-self: start; width: var(--gap); margin-left: calc(-1 * var(--gap)); }
+@media (min-width: 1024px) {
+  .resizer { display: block; }
+  #app:not([data-right="now-playing"]):not([data-right="queue"]) #resizer-right { display: none; }
+}
+/* tablet: icon rail, no right panel, no resizers */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #app, #app[data-sidebar="full"] { --_side: var(--sidebar-rail-w); --rail-hide: none; --rail-cols: 48px; --rail-pad: 4px; --rail-just: center; --rail-dir: column; }
+  #app, #app[data-right="now-playing"], #app[data-right="queue"] {
+    grid-template-columns: var(--_side) minmax(0,1fr);
+    grid-template-areas: "topbar topbar" "sidebar main" "player player";
+  }
+  #right-panel, .resizer { display: none; }
+}
+/* desktop rail (prefs.sidebarCollapsed): same variables as the tablet rail */
+#app[data-sidebar="rail"] { --rail-hide: none; --rail-cols: 48px; --rail-pad: 4px; --rail-just: center; --rail-dir: column; }
+/* phone */
+@media (max-width: 767px) {
+  .app, #app[data-right="now-playing"], #app[data-right="queue"] {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(0,1fr) auto calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+    grid-template-areas: "main" "mini-player" "bottom-nav";
+    gap: 0; padding: 0;
+  }
+  #topbar, #sidebar, #right-panel, #player-bar, .resizer { display: none; }
+  #main { border-radius: 0; }
+  #mini-player { grid-area: mini-player; display: block; position: relative; z-index: 20; min-width: 0; }
+  #bottom-nav { grid-area: bottom-nav; display: flex; position: relative; z-index: 20; min-width: 0;
+    background: var(--bg); border-top: 1px solid var(--rule); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  #expanded-player { display: flex; position: fixed; inset: 0; z-index: 30; overflow-y: auto; }
+}
+
+/* ---------- 4. Scrollbars (DESIGN 3.1; replaces the SPEC §2 overlay rules) */
+#sidebar, #main, #right-panel, #expanded-player, .context-menu { scrollbar-width: thin; scrollbar-color: var(--fg-4) transparent; }
+#sidebar:hover, #main:hover, #right-panel:hover, #expanded-player:hover, .context-menu:hover { scrollbar-color: var(--rule) transparent; }
+#sidebar::-webkit-scrollbar, #main::-webkit-scrollbar, #right-panel::-webkit-scrollbar, #expanded-player::-webkit-scrollbar, .context-menu::-webkit-scrollbar { width: 6px; height: 6px; }
+#sidebar::-webkit-scrollbar-track, #main::-webkit-scrollbar-track, #right-panel::-webkit-scrollbar-track, #expanded-player::-webkit-scrollbar-track, .context-menu::-webkit-scrollbar-track { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb, #main::-webkit-scrollbar-thumb, #right-panel::-webkit-scrollbar-thumb, #expanded-player::-webkit-scrollbar-thumb, .context-menu::-webkit-scrollbar-thumb { border: 0; border-radius: 0; background: var(--fg-4); }
+#sidebar::-webkit-scrollbar-thumb:hover, #main::-webkit-scrollbar-thumb:hover, #right-panel::-webkit-scrollbar-thumb:hover, #expanded-player::-webkit-scrollbar-thumb:hover, .context-menu::-webkit-scrollbar-thumb:hover { background: var(--rule); }
+
+/* ---------- 5. Window chrome (DESIGN 2.1) -------------------------------- */
+/* A window = any element with class "win" (or an owner container with the same rules) holding a .win__bar.
+   Decorative bar: FIRST child, aria-hidden. Live bar: LAST child (focus order), real buttons in .win__ctl.
+   Owners that set padding on a window write padding-top: calc(var(--win-bar-h) + Npx). */
+.win { position: relative; padding-top: var(--win-bar-h); }
+.win__bar { position: absolute; left: 0; right: 0; top: 0; height: var(--win-bar-h); pointer-events: none; z-index: 1; }
+.win__bar::before { content: ""; position: absolute; left: 0; top: calc(var(--win-bar-h) / 2);
+  width: min(var(--rule-w, 84%), calc(100% - var(--win-ctl-w) - 12px)); border-top: 1px solid var(--rule); }
+/* the decorative "- ×" is inert, so it is drawn a step dimmer (--fg-3) than the working window buttons (--fg) */
+.win__bar::after { content: "-\2002\00d7"; content: "-\2002\00d7" / ""; position: absolute; right: 2px; top: 0; white-space: pre;
+  font-size: var(--fs-s); line-height: var(--win-bar-h); color: var(--fg-3); }
+.win__bar--live::after { content: none; }
+.win__ctl { position: absolute; right: 0; top: 0; height: var(--win-bar-h); display: flex; align-items: center; gap: 6px; pointer-events: auto; }
+.win__ctl .win__btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 14px;
+  height: var(--win-bar-h); padding: 0 2px; border-radius: 0; background: none; color: var(--fg);
+  font-size: var(--fs-s); line-height: var(--win-bar-h); transform: none; }
+.win__ctl .win__btn:hover { color: var(--fg); background: var(--hover); }
+.win__ctl span.win__btn { color: var(--fg-3); }                  /* a decorative glyph beside a live button */
+.win__ctl .win__btn:active { color: var(--bg); background: var(--fg); transform: none; }
+.win__btn--min::before { content: "-"; content: "-" / ""; }
+.win__btn--close::before { content: "\00d7"; content: "\00d7" / ""; }
+.win__ctl .win__btn > .icon { display: none; }           /* an existing icon button moved into the slot shows the glyph */
+.win__ctl span.win__btn { pointer-events: none; }
+.win__title, .win__path { display: block; min-height: var(--lh); line-height: var(--lh); color: var(--fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win__path { display: inline-block; vertical-align: top; }
+.win__title::before, .win__path::before { content: "> " attr(data-path); content: "> " attr(data-path) / ""; }
+/* with a meta (the "13 files" count) the title is a flex row: the prompt ellipsizes, the count keeps a 1ch gap */
+.win__title[data-meta] { display: flex; align-items: baseline; gap: 1ch; }
+.win__title[data-meta]::before { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.win__title[data-meta]::after { content: attr(data-meta); content: attr(data-meta) / ""; flex: none; color: var(--fg-3); font-size: var(--fs-s); }
+.win--dashed { padding-bottom: 6px; }
+.win--dashed::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--dash); pointer-events: none; }
+.prompt::before { content: "> "; content: "> " / ""; }                        /* for an existing heading used as a window title */
+.win__ctl .win__btn::after { content: ""; position: absolute; inset: -5px; }                                      /* desktop: 24px hit area */
+@media (max-width: 767px) { .win__ctl .win__btn::after { inset: -16px -13px; } }  /* phone: 40x44 hit area */
+/* the dashed rule as a standalone separator (menus, list heads): <div class="rule-dash" aria-hidden="true"></div> */
+.rule-dash { height: 1px; background: var(--dash); }
+.rule-dash--dim { background: var(--dash-dim); }
+
+/* ---------- 6. Primitives (DESIGN 3.1) ----------------------------------- */
+/* Icon: 16x16 pixel grid, rendered only at 16 / 32 / 48 / 64 */
+.icon { width: 16px; height: 16px; fill: currentColor; flex: none; pointer-events: none; shape-rendering: crispEdges; }
+.icon--sm { width: 16px; height: 16px; }
+.icon--xs { width: 16px; height: 16px; }
+.icon--lg { width: 32px; height: 32px; }
+.icon--xl { width: 48px; height: 48px; }
+.icon--xxl { width: 64px; height: 64px; }
+
+/* Icon button: 32x32 square */
+.icon-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 0; color: var(--fg-2); background: none; flex: none; transition: none; }
+.icon-btn:hover { color: var(--fg); background: var(--hover); }
+.icon-btn:focus-visible { color: var(--fg); }
+.icon-btn:active { color: var(--bg); background: var(--fg); transform: translate(1px, 1px); }
+.icon-btn.is-active, .icon-btn.is-active:hover { color: var(--accent); }
+.icon-btn.is-active:active { color: var(--bg); }
+.icon-btn:disabled, .icon-btn.is-disabled { color: var(--fg-4); background: none; transform: none; pointer-events: none; }
+/* toggles (shuffle, repeat, now playing view, queue): "on" is a hairline box plus a 12px bar, "off" is grey; hover
+   only fills, so a hovered or focused "off" toggle never looks "on" */
+.icon-btn--dot.is-active::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 12px; height: 2px; margin-left: -6px; background: var(--accent); }
+.icon-btn--dot.is-active { box-shadow: inset 0 0 0 1px currentColor; }
+.icon-btn--dot:not(.is-active):hover, .icon-btn--dot:not(.is-active):focus-visible { color: var(--fg-2); }
+.icon-btn--lg { width: 40px; height: 40px; }
+.icon-btn--round { border: 1px solid var(--rule-dim); background: none; }
+.icon-btn--round:hover { background: var(--hover); border-color: var(--rule); }
+/* nav buttons (back / forward): app.css draws them; the primitive only anchors the hit extender */
+.nav-btn { position: relative; }
+
+/* Play button: a square block in the accent colour */
+.play-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0;
+  background: var(--accent); color: var(--on-accent); flex: none; transition: none; }
+.play-btn .icon { width: 16px; height: 16px; }
+.play-btn:hover, .play-btn:focus-visible { background: var(--accent-hover); transform: none; }
+.play-btn:active { background: var(--accent-press); transform: translate(1px, 1px); }
+.play-btn:disabled, .play-btn.is-disabled { background: var(--fg-4); color: var(--bg); transform: none; cursor: default; }
+.play-btn--lg { width: 40px; height: 40px; }
+.play-btn--xl { width: 64px; height: 64px; }
+.play-btn--xl .icon { width: 32px; height: 32px; }
+.play-btn--white { width: 32px; height: 32px; background: var(--fg); color: var(--bg); }
+.play-btn--white:hover, .play-btn--white:focus-visible { background: color-mix(in srgb, var(--fg) 84%, var(--bg)); }   /* #d6d6d6 / invert #2b2b2b, never a hue */
+.play-btn--white:active { background: color-mix(in srgb, var(--fg) 64%, var(--bg)); }
+.play-btn--white:disabled, .play-btn--white.is-disabled { background: var(--fg-4); color: var(--bg); }
+.play-btn--white.play-btn--xl { width: 64px; height: 64px; }
+.play-btn--white.play-btn--xl .icon { width: 32px; height: 32px; }
+
+/* Pill: a bracket button  [ label ]  */
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 1ch; height: 28px; min-height: 0; padding: 0 4px;
+  border: 0; border-radius: 0; font-size: var(--fs); line-height: var(--lh); color: var(--fg); background-color: transparent;
+  text-transform: lowercase; white-space: nowrap; flex: none; transition: none; }
+.pill::before { content: "["; content: "[" / ""; color: var(--fg-3); }
+.pill::after { content: "]"; content: "]" / ""; color: var(--fg-3); }
+.pill:hover, .pill:focus-visible { background-color: var(--hover); transform: none; }
+.pill:hover::before, .pill:hover::after { color: var(--fg-2); }
+.pill:active { background-color: var(--fg); color: var(--bg); transform: translate(1px, 1px); opacity: 1; }
+.pill:active::before, .pill:active::after { color: inherit; }
+.pill--primary { background-color: var(--fg); color: var(--bg); padding: 0 10px; }
+.pill--primary::before, .pill--primary::after { content: none; }
+.pill--primary:hover, .pill--primary:focus-visible { background-color: var(--accent-hover); color: var(--bg); }
+.pill--primary:active { background-color: var(--accent-press); color: var(--bg); }
+.pill--outline { border: 0; }
+.pill--sm { font-size: var(--fs-s); line-height: var(--lh-s); height: 24px; }
+.pill:disabled, .pill.is-disabled { color: var(--fg-4); background-color: transparent; transform: none; cursor: default; }
+.pill--primary:disabled, .pill--primary.is-disabled { background-color: var(--fg-4); color: var(--bg); }
+/* text button: same bracket look ( [ cancel ], [ refresh ] ) */
+.text-btn { display: inline-flex; align-items: center; justify-content: center; gap: 1ch; height: 28px; padding: 0 4px;
+  font-size: var(--fs); line-height: var(--lh); color: var(--fg); text-transform: lowercase; white-space: nowrap; transition: none; }
+.text-btn::before { content: "["; content: "[" / ""; color: var(--fg-3); }
+.text-btn::after { content: "]"; content: "]" / ""; color: var(--fg-3); }
+.text-btn:hover, .text-btn:focus-visible { background-color: var(--hover); transform: none; }
+.text-btn:hover::before, .text-btn:hover::after { color: var(--fg-2); }
+.text-btn:active { background-color: var(--fg); color: var(--bg); transform: translate(1px, 1px); }
+.text-btn:active::before, .text-btn:active::after { color: inherit; }
+.text-btn:disabled { color: var(--fg-4); background-color: transparent; transform: none; }
+
+/* Chip: [label]; pressed / active = inverted block without brackets */
+.chip { display: inline-flex; align-items: center; justify-content: center; gap: 0; height: 24px; padding: 0 2px; border-radius: 0;
+  font-size: var(--fs); line-height: var(--lh); color: var(--fg-2); background-color: transparent; text-transform: lowercase;
+  white-space: nowrap; flex: none; transition: none; }
+.chip::before { content: "["; content: "[" / ""; color: var(--fg-3); }
+.chip::after { content: "]"; content: "]" / ""; color: var(--fg-3); }
+.chip:hover { color: var(--fg); background-color: transparent; }
+.chip[aria-pressed="true"], .chip.is-active { background-color: var(--fg); color: var(--bg); padding-inline: 6px; }
+.chip[aria-pressed="true"]::before, .chip[aria-pressed="true"]::after, .chip.is-active::before, .chip.is-active::after { content: none; }
+.chip:active { transform: translate(1px, 1px); }
+.chip--icon { width: auto; padding-inline: 2px; }
+.chip--icon .icon { width: 16px; height: 16px; }
+
+/* Cover: every colour-carrying image goes through the filter variable */
+.cover { border-radius: 0; object-fit: cover; flex: none; display: block; background: var(--cover-empty); filter: var(--fx); }
+.cover--round { border-radius: 50%; }
+.cover--24 { width: 24px; height: 24px; border-radius: 50%; }   /* the artist avatar in album hero meta: stays round */
+.cover--32 { width: 32px; height: 32px; }
+.cover--40 { width: 40px; height: 40px; }
+.cover--48 { width: 48px; height: 48px; }
+.cover--56 { width: 56px; height: 56px; }
+.cover--64 { width: 64px; height: 64px; }
+.cover--92 { width: 92px; height: 92px; }
+.cover--24, .cover--32, .cover--40, .cover--48 { filter: var(--fx-fine); }
+.cover--round.cover--40, .cover--round.cover--48, .cover--round.cover--56, .cover--round.cover--64, .cover--round.cover--92 { border-radius: 50%; }
+/* ink: the only frame ever drawn on a filtered cover (posterises to the 42% grey; DESIGN 4.5) */
+:root[data-filter="ink"] .cover { outline: 1px solid var(--rule); outline-offset: -1px; }
+
+/* Equaliser: three 2px bars, stepped meter. Colour via `color` (owners recolour with color:, e.g. --sel-fg) */
+.equaliser { display: inline-flex; align-items: flex-end; justify-content: center; gap: 2px; width: 10px; height: 12px; flex: none; color: var(--accent); }
+.equaliser i { display: block; width: 2px; height: 7px; background: currentColor; animation: eq .9s steps(4) infinite; }
+.equaliser i:nth-child(1) { animation-delay: -.6s; height: 7px; }
+.equaliser i:nth-child(2) { animation-delay: -.2s; height: 12px; }
+.equaliser i:nth-child(3) { animation-delay: -.45s; height: 5px; }
+@keyframes eq { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+
+/* Eyebrow, avatar, links, badges, utilities */
+.eyebrow { font-size: var(--fs-s); line-height: var(--lh-s); font-weight: 400; text-transform: lowercase; letter-spacing: 0; color: var(--fg-3); }
+.avatar { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border: 1px solid var(--rule); border-radius: 0; background: none;
+  color: var(--fg); font-size: var(--fs); line-height: 1; font-weight: 400; flex: none; overflow: hidden; }
+.avatar::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--avatar-bg); filter: var(--fx-tint); }
+.avatar--24 { width: 20px; height: 20px; font-size: var(--fs-s); }
+.text-link { font-size: var(--fs-s); line-height: var(--lh-s); font-weight: 400; color: var(--fg-2); text-transform: lowercase; white-space: nowrap; }
+.text-link:hover, .text-link:focus-visible { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+.link:hover, .link:focus-visible { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+.badge-e { color: var(--fg-2); flex: none; }
+.badge-verified { color: var(--verified); flex: none; }
+.truncate { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.tabular { font-variant-numeric: tabular-nums; }
+.px-bold { text-shadow: var(--bold); }                    /* bitmap bold (the face has one weight) */
+/* the pixel blossom as an inline mark: <span class="blossom" aria-hidden="true"></span> (13x12, currentColor) */
+.blossom { display: inline-block; width: 13px; height: 12px; flex: none; background: currentColor;
+  -webkit-mask: var(--blossom-mask) center / 13px 12px no-repeat; mask: var(--blossom-mask) center / 13px 12px no-repeat; }
+
+/* ---------- 7. Hit-area extenders (DESIGN 1.5) --------------------------- */
+@media (max-width: 767px) {
+  :is(.icon-btn, .nav-btn):not(.win__btn, .search-pill__clear, .search-field__clear, .finder-search__clear, .card__close)::before { content: ""; position: absolute; inset: -6px; }
+  /* 44px hit height from a transparent border (not padding + content-box), so the inline padding of
+     .pill--primary / pressed chips stays inside the drawn block and the label never touches its edge */
+  .pill, .text-btn { height: auto; min-height: 44px; border-block: 8px solid transparent; background-clip: padding-box; }
+  .pill--sm { border-block-width: 10px; }
+  .chip { height: auto; min-height: 44px; min-width: 44px; border-block: 10px solid transparent; background-clip: padding-box; }
+}
+
+/* ---------- 8. Motion ---------------------------------------------------- */
+@keyframes blink { 50% { opacity: 0; } }

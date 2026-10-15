@@ -1,0 +1,1591 @@
+<!doctype html>
+<html lang="en" data-filter="mono">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wavelength · garden</title>
+<meta name="description" content="Design mock for the Wavelength restyle, direction 'garden': a black and white terminal world where white flowers are the protagonist.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=DotGothic16&display=swap">
+<style>
+/* =====================================================================
+   1. TOKENS
+   ===================================================================== */
+:root{
+  color-scheme:dark;
+  --bg:#000;
+  --fg:#fff;            /* primary text, hairline rules, flower silhouettes */
+  --fg-2:#c2c2c2;       /* values, secondary text */
+  --fg-3:#8a8a8a;       /* tertiary, placeholders, dates */
+  --fg-4:#4d4d4d;       /* disabled, faint rules */
+  --fg-5:#1c1c1c;       /* wells */
+  --rule:rgba(255,255,255,.82);
+  --rule-2:rgba(255,255,255,.32);
+  --hover:rgba(255,255,255,.08);
+  --hover-2:rgba(255,255,255,.15);
+  --sel-bg:#fff; --sel-fg:#000;
+  --dash:repeating-linear-gradient(90deg,rgba(255,255,255,.8) 0 3px,transparent 3px 6px);
+  --dash-faint:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 2px,transparent 2px 4px);
+  --checker:repeating-conic-gradient(rgba(255,255,255,.5) 0 25%,transparent 0 50%) 0 0/2px 2px;
+  --font:'VT323','DotGothic16',ui-monospace,'Cascadia Mono',Consolas,'Courier New',monospace;
+  --fs-xs:15px; --fs-sm:16px; --fs-md:18px; --fs-lg:20px; --fs-xl:24px; --fs-2xl:32px; --fs-hero:84px;
+  --pad:16px; --gap:24px;
+  --topbar-h:44px; --player-h:82px; --sidebar-w:248px;
+  --blossom:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='black'%3E%3Ccircle cx='50' cy='24' r='23'/%3E%3Ccircle cx='74.7' cy='42' r='23'/%3E%3Ccircle cx='65.3' cy='71' r='23'/%3E%3Ccircle cx='34.7' cy='71' r='23'/%3E%3Ccircle cx='25.3' cy='42' r='23'/%3E%3Ccircle cx='50' cy='50' r='28'/%3E%3C/g%3E%3C/svg%3E");
+  --blossom-white:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='white'%3E%3Ccircle cx='50' cy='24' r='23'/%3E%3Ccircle cx='74.7' cy='42' r='23'/%3E%3Ccircle cx='65.3' cy='71' r='23'/%3E%3Ccircle cx='34.7' cy='71' r='23'/%3E%3Ccircle cx='25.3' cy='42' r='23'/%3E%3C/g%3E%3Ccircle cx='50' cy='50' r='12' fill='black'/%3E%3C/svg%3E");
+}
+/* FILTERS: everything that carries colour reads --tone-filter. The UI itself is black/white/grey only. */
+:root,.f-mono{--tone-filter:grayscale(1) contrast(1.12) brightness(1.04);--accent:#fff;--play-bg:#fff;--play-fg:#000}
+:root[data-filter="dither"],.f-dither{--tone-filter:url(#wl-dither);--accent:#fff;--play-bg:#fff;--play-fg:#000}
+:root[data-filter="invert"],.f-invert{--tone-filter:grayscale(1) invert(1) contrast(1.06);--accent:#fff;--play-bg:#fff;--play-fg:#000}
+:root[data-filter="color"],.f-color{--tone-filter:none;--accent:#1ed760;--play-bg:#1ed760;--play-fg:#000}
+:root[data-filter="cyano"],.f-cyano{--tone-filter:url(#wl-cyano);--accent:#a8c6ff;--play-bg:#fff;--play-fg:#0b2a66}
+.tone{filter:var(--tone-filter)}
+
+/* =====================================================================
+   2. BASE
+   ===================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:var(--fs-md);line-height:1.12;overflow-x:hidden;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0}
+button{cursor:pointer;text-align:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin:0;font-weight:400}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sprite,.fx-defs{position:absolute;width:0;height:0;overflow:hidden}
+.icon{width:16px;height:16px;fill:currentColor;flex:none;display:block}
+.icon--sm{width:14px;height:14px}
+.icon--lg{width:20px;height:20px}
+:focus-visible,.is-focus{outline:1px dashed #fff;outline-offset:3px}
+.k{color:var(--fg)} .v{color:var(--fg-2)}
+.cursor{display:inline-block;animation:blink 1.1s steps(1,end) infinite}
+@keyframes blink{50%{opacity:0}}
+.dash{height:1px;background:var(--dash)}
+.ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* =====================================================================
+   3. WINDOW CHROME  (rule that stops short, "- ×", prompt title)
+   ===================================================================== */
+.win{position:relative;min-width:0}
+.chrome{display:flex;align-items:flex-end;height:11px;pointer-events:none;user-select:none}
+.chrome__rule{flex:1 1 auto;height:1px;background:var(--rule);margin-right:var(--stop,24px)}
+.chrome__ctl{flex:none;font-size:16px;line-height:10px;white-space:nowrap;transform:translateY(-3px);color:var(--fg)}
+.chrome--short .chrome__rule{flex:0 1 var(--len,60%);margin-right:auto}
+.chrome--short .chrome__ctl{margin-left:12px}
+.wt{display:flex;align-items:baseline;gap:1ch;white-space:nowrap;padding:5px 0 0 6px;min-width:0}
+.wt__p{flex:none}
+.wt__path{color:var(--fg)}
+.wt__path::before{content:"/"}
+.lc{text-transform:lowercase}
+
+/* =====================================================================
+   4. SCENES + APP GRID
+   ===================================================================== */
+.scene{position:relative;height:100vh;min-height:640px;overflow:hidden;isolation:isolate}
+.app{position:relative;height:100%;display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr);grid-template-rows:var(--topbar-h) minmax(0,1fr) var(--player-h);grid-template-areas:"topbar topbar" "sidebar main" "player player";column-gap:var(--gap);row-gap:4px;padding:0 var(--pad)}
+.topbar{grid-area:topbar}.sidebar{grid-area:sidebar}.main{grid-area:main}.player-bar{grid-area:player}
+.mini-player,.bottom-nav{display:none}
+.app .only-phone{display:none}
+.main{position:relative;min-height:0;min-width:0;overflow:hidden}
+.main__scroll{height:100%;overflow:auto;scrollbar-width:none;padding-bottom:24px}
+.main__scroll::-webkit-scrollbar{display:none}
+
+.phone-only-block{display:none}
+.sheet-dim{position:absolute;inset:0;z-index:55;background:repeating-conic-gradient(rgba(0,0,0,.85) 0 25%,rgba(0,0,0,.55) 0 50%) 0 0/2px 2px}
+.band{display:flex;align-items:baseline;gap:2ch;flex-wrap:wrap;padding:28px var(--pad) 18px;border-top:1px solid var(--rule-2);font-size:var(--fs-md);color:var(--fg-3)}
+.band b{font-weight:400;color:var(--fg);font-size:var(--fs-xl)}
+.band__no{color:var(--fg)}
+
+/* =====================================================================
+   5. TOP BAR
+   ===================================================================== */
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;min-width:0}
+.topbar__left{display:flex;align-items:center;min-width:0}
+.topbar__logo{display:flex;align-items:center;gap:8px;font-size:22px;padding:2px 4px}
+.topbar__logo:hover .wordmark{text-decoration:underline;text-underline-offset:3px}
+.mark{display:block;flex:none}
+.topbar__center{display:flex;align-items:center;gap:10px}
+.nav-sq{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--rule-2);color:var(--fg)}
+.nav-sq:hover,.nav-sq.is-hover{border-color:#fff}
+.nav-sq:active{background:var(--hover-2)}
+.nav-sq.is-active{background:#fff;color:#000;border-color:#fff}
+.search-pill{position:relative;display:flex;align-items:center;gap:8px;width:420px;height:34px;padding:0 8px;border-bottom:1px solid var(--rule-2)}
+.search-pill:hover{border-bottom-color:#fff}
+.search-pill:focus-within{outline:1px solid #fff;outline-offset:0;border-bottom-color:transparent}
+.search-pill__p{flex:none}
+.search-pill__input{flex:1;min-width:0;height:100%;font-size:var(--fs-md);outline:none;caret-color:#fff}
+.search-pill__input::placeholder{color:var(--fg-3);opacity:1}
+.search-pill .cursor{position:absolute;left:calc(8px + 2ch + 25ch);top:7px;pointer-events:none}
+.search-pill__input:focus ~ .cursor,.search-pill__input:not(:placeholder-shown) ~ .cursor{display:none}
+.search-pill__divider{width:1px;height:18px;background:var(--rule-2)}
+.search-pill__browse{display:grid;place-items:center;width:26px;height:26px;color:var(--fg-2)}
+.search-pill__browse:hover{color:#fff}
+.topbar__right{display:flex;align-items:center;justify-content:flex-end;gap:14px;min-width:0}
+.fx{display:flex;align-items:center;gap:2px;font-size:var(--fs-sm);white-space:nowrap}
+.fx__label{color:var(--fg-3);margin-right:4px}
+.fx__opt{padding:1px 4px;color:var(--fg-2)}
+.fx__opt:hover{color:#fff;text-decoration:underline dashed;text-underline-offset:3px}
+.fx__opt[aria-checked="true"]{background:#fff;color:#000;text-decoration:none}
+.fx__opt[aria-checked="true"]::before{content:"["}
+.fx__opt[aria-checked="true"]::after{content:"]"}
+.avatar-btn{position:relative;width:30px;height:30px;display:grid;place-items:center;font-size:18px}
+.avatar-btn .avatar{position:absolute;inset:3px;border-radius:50%;background:var(--avatar-bg,#e91e63);filter:var(--tone-filter)}
+.avatar-btn .avatar-n{position:relative;color:#fff}
+.avatar-btn::after{content:"";position:absolute;inset:0;border:1px solid var(--rule-2);border-radius:50%}
+.avatar-btn:hover::after{border-color:#fff}
+
+/* =====================================================================
+   6. LIBRARY WINDOW
+   ===================================================================== */
+.sidebar{position:relative;display:flex;flex-direction:column;min-height:0;padding-top:10px}
+.lib-header{display:flex;align-items:center;justify-content:space-between;padding:4px 0 0 6px}
+.lib-title{display:flex;align-items:center;gap:1ch;font-size:var(--fs-md)}
+.lib-title span.t{text-transform:lowercase}
+.lib-title span.t::before{content:"/"}
+.lib-title:hover span.t{text-decoration:underline;text-underline-offset:3px}
+.icon-btn{display:grid;place-items:center;width:28px;height:28px;color:var(--fg-2);position:relative}
+.icon-btn:hover,.icon-btn.is-hover{color:#fff}
+.icon-btn:active{transform:translateY(1px)}
+.icon-btn.is-active{color:var(--accent)}
+.icon-btn--dot.is-active::after{content:"";position:absolute;bottom:0;left:50%;width:4px;height:2px;margin-left:-2px;background:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:var(--fs-sm);padding:1px 2px;color:var(--fg-2);text-transform:lowercase;white-space:nowrap}
+.chip::before{content:"["}.chip::after{content:"]"}
+.chip:hover,.chip.is-hover{color:#fff}
+.chip.is-active{background:#fff;color:#000}
+.lib-chips{padding:10px 6px 4px}
+.lib-sortrow{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 4px 2px}
+.lib-sort{display:flex;align-items:center;gap:4px;font-size:var(--fs-sm);color:var(--fg-2);text-transform:lowercase}
+.lib-sort:hover{color:#fff}
+.lib-list{position:relative;z-index:1}
+.lib-row{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;height:50px;padding:0 6px;cursor:pointer}
+.lib-row:hover,.lib-row.is-hover{background:var(--hover)}
+.lib-row.is-active{background:var(--hover-2)}
+.lib-row.is-active::before{content:">";position:absolute;left:-10px;top:50%;transform:translateY(-55%)}
+.lib-row__cover{position:relative;width:40px;height:40px}
+.lib-row__cover canvas{width:40px;height:40px;display:block}
+.lib-row__cover--round canvas{border-radius:50%}
+.lib-row__name{font-size:var(--fs-md)}
+.lib-row.is-current .lib-row__name{color:var(--accent)}
+.lib-row__sub{display:flex;align-items:center;gap:4px;font-size:var(--fs-xs);color:var(--fg-3)}
+.lib-row__sub .icon{width:12px;height:12px;color:var(--accent)}
+.lib-row__speaker{color:var(--accent)}
+.lib-flora{flex:1 1 auto;min-height:0;width:calc(100% + 10px);margin:0 0 -4px -6px;pointer-events:none;display:block}
+
+/* =====================================================================
+   7. HOME
+   ===================================================================== */
+.home{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.home-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:end}
+.main-header{display:flex;align-items:center;gap:10px;padding:6px 0 0 6px;min-width:0}
+.nav-btn{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--rule-2);color:var(--fg)}
+.nav-btn:hover{border-color:#fff}
+.nav-btn[disabled]{color:var(--fg-4);border-color:var(--fg-5);cursor:default}
+.main-header .wt{padding:0 0 0 6px}
+.chips--home{margin-left:12px}
+.clock{color:var(--fg)}
+.win--time .wt{gap:2.5ch}
+.home-mid{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:28px;align-items:start}
+.look .wt{padding-bottom:8px}
+.look .wt .cursor{margin-left:14ch}
+.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;padding-left:6px}
+.quick-tile{position:relative;display:flex;align-items:center;gap:10px;height:34px;padding-right:44px;cursor:pointer;background:rgba(255,255,255,.035)}
+.quick-tile::after{content:"";position:absolute;left:34px;right:0;bottom:0;height:1px;background:var(--dash-faint)}
+.quick-tile canvas{width:34px;height:34px;display:block;flex:none}
+.quick-tile__name{font-size:var(--fs-md);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quick-tile:hover,.quick-tile.is-hover{background:var(--hover-2)}
+.quick-tile .play-btn{position:absolute;right:4px;top:50%;margin-top:-15px;width:30px;height:30px;opacity:0;transition:opacity .15s}
+.quick-tile:hover .play-btn,.quick-tile.is-hover .play-btn{opacity:1}
+.quick-tile.is-current .quick-tile__name{color:var(--accent)}
+.quick-tile .equaliser{position:absolute;right:14px;top:50%;margin-top:-6px}
+.quick-tile:hover .equaliser,.quick-tile.is-hover .equaliser{display:none}
+.look .dash{margin:10px 0 0 6px}
+.sys{position:relative;display:grid;grid-template-columns:200px minmax(0,1fr);gap:6px;align-items:center;min-height:190px}
+.sys__flora{width:224px;height:214px;margin:-20px 0 -10px -24px;pointer-events:none}
+.sys__lines{font-size:var(--fs-sm);line-height:17px;white-space:nowrap}
+.sys__lines .k{color:#fff}
+.sys__lines .v{color:var(--fg-2)}
+.sys__gap{height:14px}
+.cjk{font-family:'DotGothic16',var(--font);font-size:14px;letter-spacing:.08em}
+.shelf .shelf__head{display:flex;align-items:baseline;justify-content:space-between;padding:3px 0 5px 6px;gap:12px}
+.shelf__title{font-size:var(--fs-lg);text-transform:lowercase;display:flex;gap:1ch;align-items:baseline}
+.shelf__title a::before{content:"/"}
+.shelf__title a:hover{text-decoration:underline;text-underline-offset:3px}
+.shelf__all{font-size:var(--fs-sm);color:var(--fg-3);text-transform:lowercase}
+.shelf__all::before{content:"[ "}.shelf__all::after{content:" ]"}
+.shelf__all:hover{color:#fff}
+.card-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));grid-template-rows:auto;grid-auto-rows:0;column-gap:10px;overflow:hidden;padding-left:0}
+.card{position:relative;padding:4px;cursor:pointer;min-width:0}
+.card:hover,.card.is-hover{background:var(--hover)}
+.card__cover{position:relative;aspect-ratio:1/1}
+.card__cover canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.card--round .card__cover canvas{border-radius:50%}
+.card .play-btn{position:absolute;right:6px;bottom:6px;width:40px;height:40px;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s}
+.card:hover .play-btn,.card.is-hover .play-btn,.card:focus-within .play-btn{opacity:1;transform:none}
+.card__title{display:block;margin-top:5px;font-size:var(--fs-md);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card__sub{font-size:var(--fs-xs);color:var(--fg-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:14px;margin-top:1px}
+.card.is-current .card__title{color:var(--accent)}
+.shelf-flora{position:absolute;right:-10px;bottom:-6px;width:140px;height:196px;pointer-events:none}
+
+/* =====================================================================
+   8. PLAY BUTTON (a white blossom) + EQUALISER
+   ===================================================================== */
+.play-btn{position:relative;display:grid;place-items:center;width:48px;height:48px;color:var(--play-fg);flex:none}
+.play-btn::before{content:"";position:absolute;inset:0;background:var(--play-bg);-webkit-mask:var(--blossom) center/contain no-repeat;mask:var(--blossom) center/contain no-repeat;transition:transform .25s}
+.play-btn .icon{position:relative;width:38%;height:38%}
+.play-btn:hover::before,.play-btn.is-hover::before{transform:scale(1.07) rotate(18deg)}
+.play-btn:active::before,.play-btn.is-press::before{transform:scale(.93) rotate(36deg)}
+.play-btn--lg{width:58px;height:58px}
+.equaliser{display:inline-flex;align-items:flex-end;gap:2px;width:14px;height:12px}
+.equaliser i{display:block;width:3px;background:var(--accent);animation:eq 1s steps(4,end) infinite}
+.equaliser i:nth-child(1){height:60%;animation-delay:-.2s}
+.equaliser i:nth-child(2){height:100%;animation-delay:-.6s}
+.equaliser i:nth-child(3){height:40%;animation-delay:-.4s}
+@keyframes eq{0%{height:30%}25%{height:100%}50%{height:55%}75%{height:85%}100%{height:30%}}
+
+/* =====================================================================
+   9. PLAYER (/media window)
+   ===================================================================== */
+.player-bar{display:flex;flex-direction:column;min-width:0;position:relative}
+.player-bar .chrome{--stop:28px}
+.pb-grid{flex:1;display:grid;grid-template-columns:32% 36% 32%;align-items:center;min-height:0}
+.pb-left{display:flex;align-items:center;gap:12px;min-width:0;padding-left:6px}
+.pb-left .wt{padding:0;flex:none}
+.pb-cover{position:relative;width:52px;height:52px;flex:none}
+.pb-cover canvas{width:52px;height:52px;display:block}
+.pb-text{min-width:0;font-size:var(--fs-sm);line-height:18px}
+.pb-line{display:flex;gap:1ch;min-width:0}
+.pb-k{color:#fff;flex:none;width:7ch}
+.pb-title,.pb-artist{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-2)}
+.pb-title{color:#fff}
+.pb-title:hover,.pb-artist:hover{text-decoration:underline;text-underline-offset:3px;color:#fff}
+.pb-center{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.pb-controls{display:flex;align-items:center;gap:14px}
+.pb-play{width:36px;height:36px;display:grid;place-items:center;background:#fff;color:#000}
+.pb-play:hover{background:#000;color:#fff;outline:1px solid #fff}
+.pb-play .icon{width:16px;height:16px}
+.pb-progress{display:flex;align-items:center;gap:10px;width:100%;max-width:470px;font-size:var(--fs-xs);color:var(--fg-3);font-variant-numeric:tabular-nums}
+.pb-right{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding-right:4px}
+.slider{-webkit-appearance:none;appearance:none;flex:1;width:100%;height:14px;background:transparent;cursor:pointer;margin:0}
+.slider::-webkit-slider-runnable-track{height:2px;background:linear-gradient(to right,var(--fg) var(--fill,0%),transparent 0),var(--dash-faint)}
+.slider::-moz-range-track{height:2px;background:linear-gradient(to right,var(--fg) var(--fill,0%),transparent 0),var(--dash-faint)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5.5px;background:var(--blossom-white) center/contain no-repeat;opacity:0;transition:opacity .15s}
+.slider::-moz-range-thumb{width:13px;height:13px;border:0;background:var(--blossom-white) center/contain no-repeat;opacity:0}
+.slider:hover::-webkit-slider-thumb,.slider:focus-visible::-webkit-slider-thumb,.slider.is-hover::-webkit-slider-thumb{opacity:1}
+.slider:hover::-moz-range-thumb,.slider:focus-visible::-moz-range-thumb{opacity:1}
+.slider:hover::-webkit-slider-runnable-track,.slider.is-hover::-webkit-slider-runnable-track{background:linear-gradient(to right,var(--accent) var(--fill,0%),transparent 0),var(--dash-faint)}
+.slider:focus-visible{outline:1px dashed #fff;outline-offset:3px}
+.slider--volume{flex:none;width:92px}
+.player-flora{position:absolute;right:56px;top:-56px;width:120px;height:72px;pointer-events:none}
+
+/* =====================================================================
+   10. PLAYLIST PAGE (hero, actions, track table)
+   ===================================================================== */
+.page{padding-top:10px}
+.hero{position:relative;isolation:isolate;display:grid;grid-template-columns:184px minmax(0,1fr);gap:24px;align-items:end;padding:16px 6px 18px;min-height:220px}
+.hero::before{content:"";position:absolute;inset:-6px -30px 0 -30px;background:linear-gradient(180deg,var(--hero-color,#333) 0%,#000 100%);opacity:.55;filter:var(--tone-filter);z-index:-2}
+.hero__cover{position:relative;width:184px;height:184px}
+.hero__cover canvas{width:184px;height:184px;display:block}
+.hero__cover::after{content:"";position:absolute;inset:-5px;border:1px solid var(--rule-2);pointer-events:none}
+.hero__info{min-width:0;position:relative;z-index:1}
+.eyebrow{font-size:var(--fs-sm);color:var(--fg-2);text-transform:lowercase}
+.eyebrow::before{content:"> cat ";color:#fff}
+.hero__title{font-size:var(--fs-hero);line-height:.92;margin:4px 0 8px -4px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero__desc{font-size:var(--fs-md);color:var(--fg-2);max-width:62ch}
+.hero__meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:var(--fs-sm);color:var(--fg-2)}
+.hero__meta b{font-weight:400;color:#fff}
+.avatar--24{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid #fff;font-size:14px;color:#fff}
+.hero-flora{position:absolute;right:-22px;top:-30px;width:250px;height:300px;pointer-events:none;z-index:-1}
+.actions{display:flex;align-items:center;gap:18px;padding:12px 6px 10px}
+.actions__right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.view-toggle{display:flex;align-items:center;gap:4px;font-size:var(--fs-sm);color:var(--fg-2);text-transform:lowercase}
+.view-toggle:hover{color:#fff}
+.track-table{position:relative;font-size:var(--fs-md)}
+.track-table__head,.track-row{display:grid;grid-template-columns:28px minmax(0,6fr) minmax(0,4fr) minmax(0,3fr) 112px;gap:16px;align-items:center;padding:0 10px}
+.track-table__head{height:28px;font-size:var(--fs-sm);color:var(--fg-3);text-transform:lowercase;position:relative}
+.track-table__head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--dash)}
+.track-table__head .th-dur{display:flex;justify-content:flex-end;padding-right:30px}
+.track-table__head span:first-child{text-align:right}
+.track-row{height:50px;position:relative;cursor:default}
+.track-row:hover,.track-row.is-hover{background:var(--hover)}
+.track-row__index{position:relative;display:flex;justify-content:flex-end;align-items:center;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.track-row__play{display:none;color:#fff}
+.track-row:hover .track-row__num,.track-row.is-hover .track-row__num,.track-row:hover .equaliser,.track-row.is-hover .equaliser{display:none}
+.track-row:hover .track-row__play,.track-row.is-hover .track-row__play{display:grid}
+.track-row.is-playing .track-row__num{display:none}
+.track-row__main{display:flex;align-items:center;gap:12px;min-width:0}
+.track-row__main canvas{width:38px;height:38px;flex:none;display:block}
+.track-row__text{min-width:0}
+.track-row__title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-row__artist{display:flex;align-items:center;gap:6px;font-size:var(--fs-sm);color:var(--fg-3);white-space:nowrap;overflow:hidden}
+.badge-e{display:inline-grid;place-items:center;width:13px;height:13px;font-size:12px;line-height:1;background:var(--fg-2);color:#000;flex:none}
+.track-row__album,.track-row__date{font-size:var(--fs-sm);color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-row__end{display:flex;align-items:center;justify-content:flex-end;gap:14px;color:var(--fg-3);font-size:var(--fs-sm);font-variant-numeric:tabular-nums}
+.track-row__end .icon-btn{width:16px;height:16px;visibility:hidden}
+.track-row:hover .track-row__end .icon-btn,.track-row.is-hover .track-row__end .icon-btn,.track-row.is-selected .track-row__end .icon-btn,.track-row:focus-within .track-row__end .icon-btn{visibility:visible}
+.track-row__dur{width:4ch;text-align:right}
+.track-row.is-current .track-row__title{color:var(--accent)}
+.track-row.is-current .track-row__title::after{content:"_";margin-left:2px;animation:blink 1.1s steps(1,end) infinite}
+.track-row.is-selected{background:var(--sel-bg);color:var(--sel-fg)}
+.track-row.is-selected .track-row__artist,.track-row.is-selected .track-row__album,.track-row.is-selected .track-row__date,.track-row.is-selected .track-row__end,.track-row.is-selected .track-row__index,.track-row.is-selected .icon-btn{color:#333}
+.track-row.is-selected .badge-e{background:#333;color:#fff}
+.track-row.is-selected::before{content:">";position:absolute;left:-12px;top:50%;transform:translateY(-55%);color:#fff}
+
+/* =====================================================================
+   11. MENUS, TOAST, DIALOG
+   ===================================================================== */
+.context-menu{position:absolute;z-index:60;min-width:236px;padding:5px;font-size:var(--fs-md)}
+/* floating panels: a black (or white) sheet with a hairline, over a 50% dithered drop shadow */
+.context-menu::before,.dialog::before,.toast::before{content:"";position:absolute;inset:0;background:#000;border:1px solid #fff;z-index:-1;pointer-events:none}
+.context-menu::after,.dialog::after,.toast::after{content:"";position:absolute;left:6px;top:6px;right:-6px;bottom:-6px;background:var(--checker);z-index:-2;pointer-events:none}
+.menu-head{display:flex;align-items:baseline;gap:1ch;padding:2px 8px 6px;color:var(--fg-3);font-size:var(--fs-sm);border-bottom:1px solid var(--rule-2);margin-bottom:4px}
+.menu-head b{font-weight:400;color:#fff}
+.menu-item{display:flex;align-items:center;gap:12px;width:100%;height:32px;padding:0 10px;white-space:nowrap;color:#fff}
+.menu-item .icon{color:inherit}
+.menu-item__chev{margin-left:auto}
+.menu-item:hover,.menu-item.is-hover,.menu-item.is-open{background:#fff;color:#000}
+.menu-item--danger{color:#fff}
+.menu-sep{height:1px;margin:4px 6px;background:var(--dash-faint)}
+.menu-search{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;margin-bottom:2px;border-bottom:1px solid var(--rule-2)}
+.menu-search input{flex:1;min-width:0;font-size:var(--fs-md);outline:none}
+.menu-search input::placeholder{color:var(--fg-3);opacity:1}
+.menu-sub-anchor{display:contents}
+.toast{position:absolute;z-index:70;left:50%;transform:translateX(-50%);bottom:calc(var(--player-h) + 18px);display:flex;align-items:center;gap:10px;color:#000;padding:7px 14px 7px 10px;font-size:var(--fs-md);white-space:nowrap}
+.toast .mark{flex:none}
+.toast::before{background:#fff}
+.toast::after{background:repeating-conic-gradient(rgba(255,255,255,.4) 0 25%,transparent 0 50%) 0 0/2px 2px}
+.dialog-backdrop{position:absolute;inset:0;z-index:80;background:repeating-conic-gradient(rgba(0,0,0,.88) 0 25%,rgba(0,0,0,.6) 0 50%) 0 0/2px 2px;display:grid;place-items:center;padding:16px}
+.dialog{position:relative;z-index:0;width:min(440px,100%);padding:12px 20px 18px}
+.dialog .chrome{margin:0 -8px 0 -8px}
+.dialog .chrome__ctl{margin-right:16px}
+.dialog__close{position:absolute;right:10px;top:3px;width:20px;height:20px;display:grid;place-items:center;font-size:18px;line-height:1;color:#fff;pointer-events:auto}
+.dialog__close:hover,.dialog__close:focus-visible{background:#fff;color:#000}
+.dialog__title{font-size:var(--fs-xl);margin:10px 0 8px;display:flex;gap:1ch}
+.dialog__body{font-size:var(--fs-md);color:var(--fg-2);line-height:1.2;max-width:46ch}
+.dialog__actions{display:flex;justify-content:flex-end;align-items:center;gap:18px;margin-top:22px}
+.text-btn{font-size:var(--fs-md);color:var(--fg-2);padding:4px 2px}
+.text-btn:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.pill{font-size:var(--fs-md);padding:5px 14px;white-space:nowrap}
+.pill--primary{background:#fff;color:#000}
+.pill--primary::before{content:"[ "}.pill--primary::after{content:" ]"}
+.pill--primary:hover,.pill--primary.is-hover{background:#000;color:#fff;outline:1px solid #fff}
+.pill--primary:active{transform:translateY(1px)}
+.pill--outline{border:1px solid var(--rule-2);color:#fff}
+.pill--outline:hover{border-color:#fff}
+.dialog-flora{position:absolute;left:-150px;bottom:-34px;width:190px;height:230px;pointer-events:none}
+
+/* =====================================================================
+   12. PHONE PARTS (mini player, bottom nav)
+   ===================================================================== */
+.mini-player{position:relative;margin:0 8px 6px;padding:0 0 4px}
+.mini-player::before{content:"";position:absolute;inset:11px 0 0 0;background:linear-gradient(90deg,var(--mini-color,#333),#000 85%);opacity:.5;filter:var(--tone-filter);z-index:-1}
+.mini-player__inner{display:flex;align-items:center;gap:10px;padding:8px 6px 6px}
+.mini-player__inner canvas{width:40px;height:40px;flex:none;display:block}
+.mini-player__text{flex:1;min-width:0;font-size:var(--fs-sm);line-height:17px}
+.mini-player__progress{height:2px;margin:0 6px;background:linear-gradient(to right,#fff 34%,transparent 0),var(--dash-faint)}
+.mini-player .play-btn{width:40px;height:40px}
+.bottom-nav{display:none;justify-content:space-around;align-items:center;height:56px;border-top:1px solid var(--rule-2);padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav__item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:var(--fs-sm);color:var(--fg-3);padding:4px 10px;text-transform:lowercase}
+.bottom-nav__item.is-active{color:#fff}
+.bottom-nav__item.is-active span{background:#fff;color:#000;padding:0 4px}
+
+/* =====================================================================
+   13. BOARDS (filters, flora, states)
+   ===================================================================== */
+.board{position:relative;padding:8px var(--pad) 40px}
+.board__intro{max-width:76ch;color:var(--fg-2);margin:0 0 18px 6px;line-height:1.2}
+.board__intro b{font-weight:400;color:#fff}
+.fx-board__switch{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 22px 6px}
+.fx-board__switch .fx{font-size:var(--fs-lg)}
+.fx-rows{display:flex;flex-direction:column;gap:18px}
+.fx-row{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;align-items:start}
+.fx-row__label{padding:4px 0 0 6px}
+.fx-row__label .wt{padding:0;font-size:var(--fs-lg)}
+.fx-row__label p{margin-top:6px;color:var(--fg-3);font-size:var(--fs-sm);line-height:1.15;max-width:30ch}
+.fx-row__items{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.25fr) minmax(0,1.4fr);gap:12px;align-items:end}
+.fx-item{min-width:0}
+.fx-item canvas{display:block;width:100%;aspect-ratio:1/1}
+.fx-item--round canvas{border-radius:50%}
+.fx-item small{display:block;margin-top:4px;font-size:var(--fs-xs);color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-hero{position:relative;height:118px;display:flex;align-items:flex-end;padding:8px;isolation:isolate}
+.fx-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--hero-color) 0%,#000 100%);filter:var(--tone-filter);z-index:-1}
+.fx-hero span{font-size:30px;line-height:1}
+.fx-mini{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;padding:6px;height:52px;margin-bottom:6px}
+.fx-mini::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--mini-color),#000 95%);filter:var(--tone-filter);z-index:-1}
+.fx-mini canvas{width:40px!important;height:40px;flex:none}
+.fx-mini div{min-width:0;font-size:var(--fs-sm);line-height:16px}
+.fx-mini .t{color:var(--accent)}
+.fx-chiprow{display:flex;gap:8px;align-items:center;font-size:var(--fs-sm)}
+.fx-chiprow .dot{width:10px;height:10px;background:var(--accent)}
+
+.browse-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+.browse-card{position:relative;aspect-ratio:1/1;overflow:hidden;isolation:isolate;cursor:pointer}
+.browse-card::before{content:"";position:absolute;inset:0;background:var(--browse-color);filter:var(--tone-filter);z-index:-2}
+.browse-card canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.browse-card__name{position:absolute;left:0;top:0;font-size:var(--fs-lg);background:#000;color:#fff;padding:1px 7px 2px 6px}
+.browse-card__sp{position:absolute;left:0;bottom:0;font-size:var(--fs-xs);background:#000;color:var(--fg-2);padding:0 6px 1px}
+.browse-card:hover{outline:1px solid #fff;outline-offset:3px}
+
+.specimens{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0;border-top:1px solid var(--rule-2);border-left:1px solid var(--rule-2)}
+.specimen{position:relative;border-right:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);aspect-ratio:3/4;min-width:0}
+.specimen canvas{position:absolute;inset:22px 4px 26px;width:calc(100% - 8px);height:calc(100% - 48px)}
+.specimen__no{position:absolute;left:6px;top:4px;font-size:var(--fs-xs);color:var(--fg-3)}
+.specimen__name{position:absolute;left:6px;right:6px;bottom:5px;font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.specimen__name span{color:var(--fg-3)}
+
+.states{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px}
+.state-card{min-width:0}
+.state-card .wt{padding:5px 0 10px 6px}
+.state-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:6px 6px 10px}
+.state-row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.state-row figcaption{font-size:var(--fs-xs);color:var(--fg-3)}
+.state-rows .track-row{grid-template-columns:28px minmax(0,1fr) 92px}
+.empty{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:6px 10px 10px}
+.empty canvas{width:120px;height:120px}
+.empty__title{font-size:var(--fs-xl)}
+.empty__text{color:var(--fg-2)}
+.foot{padding:30px var(--pad) 60px;color:var(--fg-3);font-size:var(--fs-sm);display:flex;gap:2ch;flex-wrap:wrap;align-items:baseline}
+
+/* petals layer */
+.petals{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:90;mix-blend-mode:difference}
+
+/* =====================================================================
+   14. TABLET (768-1023): rail library, no filter label
+   ===================================================================== */
+@media (min-width:768px) and (max-width:1023px){
+  :root{--sidebar-w:72px;--gap:16px}
+  .lib-title span.t,.lib-chips,.lib-sortrow,.lib-row__text,.lib-row__speaker,.lib-flora,.wordmark,.fx__label{display:none}
+  .lib-row{grid-template-columns:40px;justify-content:center}
+  .search-pill{width:300px}
+  .home-mid{grid-template-columns:1fr}
+  .home-top{grid-template-columns:1fr}
+  .track-table__head,.track-row{grid-template-columns:28px minmax(0,6fr) minmax(0,4fr) 100px}
+  .track-row__date,.th-date{display:none}
+  .fx-row{grid-template-columns:1fr}
+  .browse-grid,.specimens{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .states{grid-template-columns:1fr 1fr}
+}
+
+/* =====================================================================
+   15. PHONE (< 768): stacked windows, mini player, bottom nav
+   ===================================================================== */
+@media (max-width:767px){
+  :root{--fs-hero:44px;--pad:0px}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto 56px;grid-template-areas:"main" "mini" "nav";column-gap:0;row-gap:0;padding:0}
+  .topbar,.sidebar,.player-bar{display:none}
+  .mini-player{display:block;grid-area:mini}
+  .bottom-nav{display:flex;grid-area:nav}
+  .app .only-phone{display:block}
+  .app .phone-avatar{display:grid}
+  .main__scroll{padding:0 16px 24px}
+  .home{gap:12px}
+  .home-top{grid-template-columns:1fr;gap:10px}
+  .chips--home{margin-left:6px}
+  .home .main-header .nav-btn,.home .main-header > .wt{display:none}
+  .home-mid{grid-template-columns:1fr;gap:16px}
+  .home-mid .sys{order:-1}
+  .sys{grid-template-columns:138px minmax(0,1fr);min-height:0}
+  .sys__flora{width:150px;height:176px;margin:-8px 0 -8px -10px}
+  .sys__lines{font-size:var(--fs-xs);line-height:16px}
+  .look .wt .cursor{margin-left:4ch}
+  .quick-grid{gap:6px 8px;padding-left:0}
+  .quick-tile{height:46px;padding-right:8px}
+  .quick-tile canvas{width:46px;height:46px}
+  .quick-tile::after{left:46px}
+  .quick-tile .play-btn{display:none}
+  .quick-tile__name{font-size:var(--fs-sm);white-space:normal;line-height:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .card-grid{grid-auto-flow:column;grid-auto-columns:132px;grid-template-columns:none;grid-auto-rows:auto;overflow-x:auto;scrollbar-width:none;margin-right:-16px;padding-right:16px}
+  .card-grid::-webkit-scrollbar{display:none}
+  .shelf-flora{display:none}
+  .hero{grid-template-columns:1fr;justify-items:center;gap:14px;padding:12px 0 10px;min-height:0}
+  .hero__cover,.hero__cover canvas{width:150px;height:150px}
+  .hero__info{justify-self:stretch}
+  .hero__title{white-space:normal;margin:4px 0 6px}
+  .hero-flora{right:-18px;top:-8px;width:130px;height:210px}
+  .actions{gap:16px;padding:8px 0}
+  .actions .play-btn--lg{order:9;margin-left:auto}
+  .actions__right{display:none}
+  .track-table__head{display:none}
+  .track-table__head,.track-row{grid-template-columns:minmax(0,1fr) 28px;gap:10px;padding:0 4px}
+  .track-row__index,.track-row__album,.track-row__date,.track-row__end .track-row__like,.track-row__dur{display:none}
+  .track-row__end .icon-btn{visibility:visible}
+  .track-row.is-selected{background:var(--hover);color:#fff}
+  .track-row.is-selected::before{content:none}
+  .track-row.is-selected .track-row__artist,.track-row.is-selected .icon-btn{color:var(--fg-3)}
+  /* phone: the track menu becomes a bottom sheet above the mini player; the submenu opens inline */
+  .phone-only-block{display:block}
+  .scene--playlist .context-menu{display:none}
+  .quick-tile.is-playing{padding-right:24px}
+  .quick-tile .equaliser{right:8px}
+  .context-menu{left:8px!important;right:8px!important;top:auto!important;bottom:calc(56px + 72px)!important;min-width:0}
+  .context-menu--sub{position:relative!important;inset:auto!important;z-index:1;margin:2px 0 4px 24px;min-width:0}
+  .context-menu--sub::before{border-style:dashed}
+  .context-menu--sub::after{content:none}
+  .menu-item{height:36px}
+  .toast{bottom:calc(56px + 72px + 12px)}
+  .scene--playlist .toast{bottom:auto;top:62px}
+  .band{padding:24px 16px 14px}
+  .board{padding:8px 16px 32px}
+  .fx-row{grid-template-columns:1fr;gap:10px}
+  .fx-row__items{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .fx-item--wide{grid-column:span 3}
+  .browse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .specimens{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .states{grid-template-columns:1fr}
+  .dialog-flora{left:-20px;width:110px;height:130px;bottom:-40px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9.5z"/></symbol>
+  <symbol id="i-home-filled" viewBox="0 0 24 24"><path d="M12 2.2 2.5 10.1V20a1.5 1.5 0 0 0 1.5 1.5h5.5v-7h5v7H20a1.5 1.5 0 0 0 1.5-1.5v-9.9L12 2.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m15.5 15.5 5.5 5.5"/></symbol>
+  <symbol id="i-search-filled" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="3.6"/><path fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" d="m15.8 15.8 5 5"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 3v18M9 3v18M14.5 3.6 20 21"/></symbol>
+  <symbol id="i-library-filled" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M4 3.3v17.4M9.6 3.3v17.4M15.2 3.9l5.3 16.8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4.5a1 1 0 0 1 1.5-.87l13 7.5a1 1 0 0 1 0 1.74l-13 7.5A1 1 0 0 1 6 19.5v-15z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M4 4.9a1 1 0 0 1 1.5-.87L16 12V4.5h3v15h-3V12L5.5 19.97A1 1 0 0 1 4 19.1V4.9z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M20 4.9a1 1 0 0 0-1.5-.87L8 12V4.5H5v15h3V12l10.5 7.97A1 1 0 0 0 20 19.1V4.9z"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 7h3.3a4 4 0 0 1 3.2 1.6l5 6.8a4 4 0 0 0 3.2 1.6H21M3 17h3.3a4 4 0 0 0 3.2-1.6l.9-1.2M13.6 9.8l.9-1.2A4 4 0 0 1 17.7 7H21m-3-3 3 3-3 3m0 4 3 3-3 3"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 13V9a3 3 0 0 1 3-3h12m-3-3 3 3-3 3M20 11v4a3 3 0 0 1-3 3H5m3-3-3 3 3 3"/></symbol>
+  <symbol id="i-add-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.1" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 8v8m-4-4h8"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.4 14.3-4.1-4.1 1.4-1.4 2.7 2.7 5.5-5.5 1.4 1.4-6.9 6.9z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 20.3 4.6 13.2a4.6 4.6 0 0 1 6.5-6.5l.9.9.9-.9a4.6 4.6 0 0 1 6.5 6.5L12 20.3z"/></symbol>
+  <symbol id="i-volume-high" viewBox="0 0 24 24"><path d="M3 9.5v5h3.5l5 4v-13l-5 4H3z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 5h18M3 10h12M3 15h8M3 20h8"/><path d="M14.5 13.3a1 1 0 0 1 1.5-.87l5 2.9a1 1 0 0 1 0 1.74l-5 2.9a1 1 0 0 1-1.5-.87v-5.8z"/></symbol>
+  <symbol id="i-now-playing" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 9.3a.8.8 0 0 1 1.2-.7l4.2 2.7a.8.8 0 0 1 0 1.4l-4.2 2.7a.8.8 0 0 1-1.2-.7V9.3z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm7 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm7 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M5.6 4.2 12 10.6l6.4-6.4 1.4 1.4-6.4 6.4 6.4 6.4-1.4 1.4-6.4-6.4-6.4 6.4-1.4-1.4 6.4-6.4-6.4-6.4 1.4-1.4z"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 4.5 7.5 12l7.5 7.5"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 4.5 7.5 7.5L9 19.5"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m4.5 9 7.5 7.5L19.5 9"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M3 9.5v5h3.5l5 4v-13l-5 4H3z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.5 5 5 10-10"/></symbol>
+  <symbol id="i-browse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM6 4h12l2 5H4l2-5z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9.5 13h5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M8 2h8v2h-1v6l3 3v2h-5v6l-1 1-1-1v-6H6v-2l3-3V4H8V2z"/></symbol>
+  <symbol id="i-explicit" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4 2.5h16A1.5 1.5 0 0 1 21.5 4v16a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 20V4A1.5 1.5 0 0 1 4 2.5zM9 7v10h7v-2h-5v-2h4v-2h-4V9h5V7H9z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.1" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7v9m-3.5-3.5L12 16l3.5-3.5"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol>
+</svg>
+<svg class="fx-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <!-- 1-bit ordered dither: luminance, minus a tiled 4x4 Bayer threshold (8x8 px), thresholded at .5 -->
+    <filter id="wl-dither" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values=".3 .59 .11 0 0 .3 .59 .11 0 0 .3 .59 .11 0 0 0 0 0 1 0" result="g0"/>
+      <feComponentTransfer in="g0" result="g">
+        <feFuncR type="linear" slope="1.55" intercept="-0.2"/>
+        <feFuncG type="linear" slope="1.55" intercept="-0.2"/>
+        <feFuncB type="linear" slope="1.55" intercept="-0.2"/>
+      </feComponentTransfer>
+      <feImage id="wl-bayer" x="0" y="0" width="8" height="8" preserveAspectRatio="none" result="b"/>
+      <feTile in="b" result="t"/>
+      <feComposite in="g" in2="t" operator="arithmetic" k1="0" k2="1" k3="-1" k4="0.5" result="d"/>
+      <feColorMatrix in="d" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1" result="o"/>
+      <feComponentTransfer in="o" result="q">
+        <feFuncR type="discrete" tableValues="0 0.94"/>
+        <feFuncG type="discrete" tableValues="0 0.94"/>
+        <feFuncB type="discrete" tableValues="0 0.94"/>
+      </feComponentTransfer>
+      <feComposite in="q" in2="SourceAlpha" operator="in"/>
+    </filter>
+    <!-- cyanotype: luminance mapped onto Prussian blue → paper white, like a sun print of a pressed flower -->
+    <filter id="wl-cyano" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values=".3 .59 .11 0 0 .3 .59 .11 0 0 .3 .59 .11 0 0 0 0 0 1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.02 0.07 0.40 0.93"/>
+        <feFuncG type="table" tableValues="0.09 0.22 0.60 0.96"/>
+        <feFuncB type="table" tableValues="0.27 0.50 0.84 1"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
+
+<canvas class="petals" id="petals" aria-hidden="true"></canvas>
+
+<div id="page"></div>
+
+<script>
+/* =====================================================================
+   A. FLORA — procedural flowers (white silhouettes for the UI, tonal colour still-lifes for covers)
+   ===================================================================== */
+(function (g) {
+  'use strict';
+  const TAU = Math.PI * 2;
+  function hash(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { let a = (typeof seed === 'number' ? seed : hash(seed)) >>> 0; return function () { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function hexToHsl(hex) {
+    const n = parseInt(hex.slice(1), 16); let r = ((n >> 16) & 255) / 255, gg = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b); let h = 0, s = 0; const l = (mx + mn) / 2;
+    if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); if (mx === r) h = (gg - b) / d + (gg < b ? 6 : 0); else if (mx === gg) h = (b - r) / d + 2; else h = (r - gg) / d + 4; h *= 60; }
+    return [h, s, l];
+  }
+  const hsl = (h, s, l, a) => 'hsla(' + (((h % 360) + 360) % 360).toFixed(1) + ',' + (clamp(s, 0, 1) * 100).toFixed(1) + '%,' + (clamp(l, 0, 1) * 100).toFixed(1) + '%,' + (a == null ? 1 : a) + ')';
+  function mixHue(a, b, t) { let d = ((b - a + 540) % 360) - 180; return a + d * t; }
+  function shuffle(a, R) { for (let i = a.length - 1; i > 0; i--) { const j = (R() * (i + 1)) | 0; const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  // ---------- paths ----------
+  function petalPath(ctx, shape, L, W, o) {
+    ctx.beginPath();
+    switch (shape) {
+      case 'notch':
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(W * .95, -L * .18, W * 1.05, -L * .8, W * .3, -L);
+        ctx.quadraticCurveTo(W * .12, -L * .92, 0, -L * .85);
+        ctx.quadraticCurveTo(-W * .12, -L * .92, -W * .3, -L);
+        ctx.bezierCurveTo(-W * 1.05, -L * .8, -W * .95, -L * .18, 0, 0);
+        break;
+      case 'oval':
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(W * 1.3, -L * .12, W * 1.15, -L * 1.02, 0, -L);
+        ctx.bezierCurveTo(-W * 1.15, -L * 1.02, -W * 1.3, -L * .12, 0, 0);
+        break;
+      case 'lance':
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(W * 1.25, -L * .28, W * .7, -L * .78, 0, -L);
+        ctx.bezierCurveTo(-W * .7, -L * .78, -W * 1.25, -L * .28, 0, 0);
+        break;
+      case 'strap':
+        ctx.moveTo(-W * .4, 0);
+        ctx.lineTo(-W, -L * .84);
+        ctx.quadraticCurveTo(0, -L * 1.1, W, -L * .84);
+        ctx.lineTo(W * .4, 0);
+        break;
+      case 'spoon':
+        ctx.moveTo(-W * .35, 0);
+        ctx.quadraticCurveTo(-W * .55, -L * .45, -W, -L + W);
+        ctx.arc(0, -L + W, W, Math.PI, 0);
+        ctx.quadraticCurveTo(W * .55, -L * .45, W * .35, 0);
+        break;
+      case 'ruffle': {
+        const k = (o && o.lobes) || 4, amp = (o && o.amp) || .1;
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-W * .7, -L * .12, -W * 1.08, -L * .42, -W * .92, -L * .62);
+        for (let i = 1; i <= k; i++) {
+          const t0 = Math.PI + ((i - 1) / k) * Math.PI, t1 = Math.PI + (i / k) * Math.PI, tm = (t0 + t1) / 2;
+          ctx.quadraticCurveTo(Math.cos(tm) * W * (.92 + amp * 1.7), -L * .62 + Math.sin(tm) * L * (.38 + amp * 1.3), Math.cos(t1) * W * .92, -L * .62 + Math.sin(t1) * L * .38);
+        }
+        ctx.bezierCurveTo(W * 1.08, -L * .42, W * .7, -L * .12, 0, 0);
+        break;
+      }
+      default: ctx.arc(0, -L / 2, L / 2, 0, TAU);
+    }
+    ctx.closePath();
+  }
+  function fillStroke(ctx, fill, P) { ctx.fillStyle = fill; ctx.fill(); if (P.line) { ctx.strokeStyle = P.line; ctx.lineWidth = P.lw; ctx.lineJoin = 'round'; ctx.stroke(); } }
+  // petal at angle a (0 = up), offset d from the head centre; filled in head space so radial gradients stay centred
+  function pet(ctx, a, d, shape, L, W, fill, P, o) {
+    ctx.save(); ctx.rotate(a); ctx.translate(0, -d); petalPath(ctx, shape, L, W, o); ctx.restore();
+    fillStroke(ctx, fill, P);
+  }
+  function vein(ctx, a, d, L, P) { ctx.save(); ctx.rotate(a); ctx.translate(0, -d); ctx.beginPath(); ctx.moveTo(0, -L * .12); ctx.quadraticCurveTo(L * .04, -L * .45, 0, -L * .74); ctx.restore(); ctx.strokeStyle = P.line; ctx.lineWidth = P.lw * .8; ctx.stroke(); }
+  function dot(ctx, x, y, r, c) { ctx.beginPath(); ctx.arc(x, y, Math.max(.5, r), 0, TAU); ctx.fillStyle = c; ctx.fill(); }
+  function disc(ctx, r, fill, P) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); fillStroke(ctx, fill, P); }
+  function seeds(ctx, r, n, dr, c) { for (let k = 1; k < n; k++) { const rr = r * Math.sqrt(k / n), a = k * 2.39996; dot(ctx, Math.cos(a) * rr, Math.sin(a) * rr, dr, c); } }
+  function stamens(ctx, len, n, r, P, R) {
+    ctx.lineWidth = Math.max(.6, r * .022); ctx.strokeStyle = P.mark; ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const a = R() * TAU, l = len * (.55 + R() * .45), x = Math.cos(a) * l, y = Math.sin(a) * l;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, y); ctx.stroke(); dot(ctx, x, y, r * .045, P.anther);
+    }
+    dot(ctx, 0, 0, r * .07, P.mark);
+  }
+
+  // ---------- flower heads (drawn around 0,0; r = radius) ----------
+  const HEADS = {
+    sakura(ctx, r, P, R, F) {
+      const a0 = R() * TAU;
+      for (let i = 0; i < 5; i++) pet(ctx, a0 + i * TAU / 5 + (R() - .5) * .14, r * .04, 'notch', r * .96, r * .56, F(0, i), P);
+      stamens(ctx, r * .5, 14, r, P, R);
+    },
+    peony(ctx, r, P, R, F) {
+      [[9, 1, .6, 0], [8, .84, .56, .05], [7, .68, .5, .08], [6, .52, .46, .1], [5, .36, .42, .1]].forEach(([n, ls, ws, dd], li) => {
+        const a0 = R() * TAU;
+        for (let i = 0; i < n; i++) pet(ctx, a0 + i * TAU / n + (R() - .5) * .35, r * dd, 'ruffle', r * ls * (.92 + R() * .14), r * ws * ls * 1.05, F(li, i), P, { lobes: 3 + ((R() * 3) | 0), amp: .14 });
+      });
+      for (let i = 0; i < 5; i++) pet(ctx, R() * TAU, r * .02, 'ruffle', r * .2, r * .16, F(5, i), P, { lobes: 3, amp: .2 });
+    },
+    camellia(ctx, r, P, R, F) {
+      let a0 = R() * TAU;
+      [[7, 1, .62], [7, .8, .58], [6, .6, .54], [5, .42, .5]].forEach(([n, ls, ws], li) => {
+        a0 += Math.PI / n;
+        for (let i = 0; i < n; i++) pet(ctx, a0 + i * TAU / n + (R() - .5) * .12, 0, 'oval', r * ls, r * ws * ls, F(li, i), P);
+      });
+      disc(ctx, r * .15, P.center, P);
+      for (let i = 0; i < 14; i++) { const a = i * TAU / 14; dot(ctx, Math.cos(a) * r * .1, Math.sin(a) * r * .1, r * .022, P.mark); }
+    },
+    chrysanthemum(ctx, r, P, R, F) {
+      [[30, 1, .085], [26, .87, .09], [22, .74, .1], [18, .61, .11], [14, .48, .12], [11, .35, .13], [7, .22, .14]].forEach(([n, ls, w], li) => {
+        const a0 = R() * TAU;
+        for (let i = 0; i < n; i++) pet(ctx, a0 + i * TAU / n + (R() - .5) * .08, 0, li > 2 ? 'spoon' : 'strap', r * ls, r * w, F(li, i), P);
+      });
+    },
+    lily(ctx, r, P, R, F) {
+      const a0 = R() * TAU;
+      for (let i = 0; i < 3; i++) { const a = a0 + i * TAU / 3; pet(ctx, a, 0, 'lance', r, r * .3, F(0, i), P); vein(ctx, a, 0, r, P); }
+      for (let i = 0; i < 3; i++) { const a = a0 + TAU / 6 + i * TAU / 3; pet(ctx, a, 0, 'lance', r * .9, r * .36, F(1, i), P); vein(ctx, a, 0, r * .9, P); }
+      for (let i = 0; i < 18; i++) { const a = R() * TAU, d = r * (.12 + R() * .3); dot(ctx, Math.sin(a) * d, -Math.cos(a) * d, r * .02, P.mark); }
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 6; i++) {
+        const a = a0 + i * TAU / 6 + .3, l = r * (.62 + R() * .14), x = Math.sin(a) * l, y = -Math.cos(a) * l;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(x * .5 + y * .1, y * .5 - x * .1, x, y); ctx.strokeStyle = P.mark; ctx.lineWidth = P.lw * .9; ctx.stroke();
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a + Math.PI / 2); ctx.beginPath(); ctx.ellipse(0, 0, r * .07, r * .025, 0, 0, TAU); ctx.restore(); ctx.fillStyle = P.anther; ctx.fill();
+      }
+    },
+    daisy(ctx, r, P, R, F) {
+      const n = 18, a0 = R() * TAU;
+      for (let i = 0; i < n; i++) pet(ctx, a0 + i * TAU / n, r * .14, 'strap', r * .86, r * .12, F(0, i), P);
+      for (let i = 0; i < n; i++) pet(ctx, a0 + (i + .5) * TAU / n, r * .12, 'strap', r * .78, r * .11, F(1, i), P);
+      disc(ctx, r * .27, P.center, P); seeds(ctx, r * .25, 46, r * .022, P.mark);
+    },
+    sunflower(ctx, r, P, R, F) {
+      const n = 22, a0 = R() * TAU;
+      for (let i = 0; i < n; i++) pet(ctx, a0 + i * TAU / n, r * .38, 'lance', r * .62, r * .11, F(0, i), P);
+      for (let i = 0; i < n; i++) pet(ctx, a0 + (i + .5) * TAU / n, r * .36, 'lance', r * .56, r * .1, F(1, i), P);
+      disc(ctx, r * .46, P.center, P); seeds(ctx, r * .43, 150, r * .018, P.mark);
+    },
+    rose(ctx, r, P, R, F) {
+      const a0 = R() * TAU;
+      for (let i = 0; i < 5; i++) pet(ctx, a0 + i * TAU / 5, 0, 'oval', r, r * .62, F(0, i), P);
+      for (let i = 0; i < 5; i++) pet(ctx, a0 + (i + .5) * TAU / 5, 0, 'oval', r * .8, r * .56, F(1, i), P);
+      for (let k = 0; k < 9; k++) pet(ctx, a0 + k * 2.4, r * .02, 'oval', r * (.6 - k * .052), r * (.46 - k * .035), F(2 + (k >> 2), k), P);
+      ctx.beginPath(); for (let t = 0; t < 14; t += .2) { const rr = r * .02 * t; ctx.lineTo(Math.cos(t + a0) * rr, Math.sin(t + a0) * rr); }
+      ctx.strokeStyle = P.line; ctx.lineWidth = P.lw; ctx.stroke();
+    },
+    hibiscus(ctx, r, P, R, F) {
+      const a0 = R() * TAU;
+      for (let i = 0; i < 5; i++) { pet(ctx, a0 + i * TAU / 5 + .1, r * .02, 'ruffle', r, r * .5, F(0, i), P, { lobes: 4, amp: .08 }); vein(ctx, a0 + i * TAU / 5 + .1, 0, r * 1.1, P); }
+      ctx.strokeStyle = P.mark; ctx.lineWidth = P.lw * 1.1;
+      for (let i = 0; i < 20; i++) { const a = a0 + i * TAU / 20, l = r * (.2 + R() * .14); ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * .04, Math.sin(a) * r * .04); ctx.lineTo(Math.cos(a) * l, Math.sin(a) * l); ctx.stroke(); }
+      const ca = R() * TAU, cl = r * .95, ex = Math.cos(ca) * cl, ey = Math.sin(ca) * cl;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.strokeStyle = P.line || P.mark; ctx.lineWidth = r * .08 + P.lw * 2; ctx.stroke();
+      ctx.strokeStyle = P.center; ctx.lineWidth = r * .08; ctx.stroke();
+      for (let i = 0; i < 12; i++) { const t = .55 + R() * .4, s = (R() - .5) * r * .2; dot(ctx, ex * t - Math.sin(ca) * s, ey * t + Math.cos(ca) * s, r * .035, P.anther); }
+      for (let i = 0; i < 5; i++) { const a = ca + (i - 2) * .35; dot(ctx, ex + Math.cos(a) * r * .07, ey + Math.sin(a) * r * .07, r * .03, P.mark); }
+    },
+    magnolia(ctx, r, P, R, F) {
+      ctx.translate(0, r * .48);
+      [[-.5, .9, .34, 0], [.5, .9, .34, 0], [0, 1, .36, 0], [-.22, .86, .4, 1], [.22, .86, .4, 1]].forEach(([a, l, w, ly], i) => pet(ctx, a + (R() - .5) * .1, 0, 'lance', r * l, r * w, F(ly, i), P));
+      pet(ctx, -1.5, 0, 'lance', r * .3, r * .12, F(2, 0), P); pet(ctx, 1.5, 0, 'lance', r * .3, r * .12, F(2, 1), P);
+    },
+    lotus(ctx, r, P, R, F) {
+      ctx.translate(0, r * .42);
+      [-1.25, 1.25, -.85, .85].forEach((a, i) => pet(ctx, a, 0, 'lance', r * .75, r * .26, F(0, i), P));
+      [-.45, .45, 0].forEach((a, i) => pet(ctx, a, 0, 'lance', r * .98, r * .3, F(1, i), P));
+      [-.62, .62, -.22, .22].forEach((a, i) => pet(ctx, a, 0, 'lance', r * .82, r * .34, F(2, i), P));
+    },
+    iris(ctx, r, P, R, F) {
+      [-.38, .38].forEach((a, i) => pet(ctx, a, 0, 'oval', r * .78, r * .24, F(0, i), P)); pet(ctx, 0, 0, 'oval', r * .86, r * .28, F(0, 2), P);
+      [2.1, -2.1, Math.PI].forEach((a, i) => {
+        pet(ctx, a, 0, 'oval', r * (i === 2 ? .86 : .96), r * .36, F(1, i), P); vein(ctx, a, 0, r * .8, P);
+        for (let k = 0; k < 6; k++) { const d = r * (.12 + k * .06); dot(ctx, Math.sin(a) * d, -Math.cos(a) * d, r * .025, P.mark); }
+      });
+    },
+    moonflower(ctx, r, P, R, F) {
+      const a0 = R() * TAU;
+      ctx.beginPath();
+      for (let i = 0; i <= 90; i++) { const a = i / 90 * TAU, rr = r * (.93 + .07 * Math.cos(5 * (a - a0))); ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      ctx.closePath(); fillStroke(ctx, F(0, 0), P);
+      ctx.strokeStyle = P.line || P.mark; ctx.lineWidth = P.lw;
+      for (let i = 0; i < 5; i++) {
+        const a = a0 + i * TAU / 5;
+        ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * .16, Math.sin(a) * r * .16); ctx.lineTo(Math.cos(a) * r * .92, Math.sin(a) * r * .92); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(Math.cos(a + .2) * r * .2, Math.sin(a + .2) * r * .2); ctx.lineTo(Math.cos(a + .05) * r * .78, Math.sin(a + .05) * r * .78); ctx.stroke();
+      }
+      dot(ctx, 0, 0, r * .14, P.mark);
+      dot(ctx, 0, 0, r * .06, P.center);
+    },
+    wisteria(ctx, r, P, R, F) {
+      const n = 22, len = r * 2.5;
+      ctx.beginPath(); ctx.moveTo(0, -r * .1); ctx.quadraticCurveTo(r * .15, len * .5, 0, len); ctx.strokeStyle = P.stem; ctx.lineWidth = Math.max(1, r * .05); ctx.stroke();
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1), y = t * len, spread = r * .55 * (1 - t * .75), s = r * .33 * (1 - t * .5);
+        const side = i % 2 ? -1 : 1, x = side * spread * (.35 + R() * .65);
+        ctx.save(); ctx.translate(x, y);
+        pet(ctx, side * (1.9 + R() * .5), 0, 'oval', s, s * .72, F.solid(i % 3), P);
+        pet(ctx, Math.PI + (R() - .5) * .6, 0, 'oval', s * .72, s * .45, F.solid((i + 1) % 3), P);
+        ctx.restore();
+      }
+    },
+    dandelion(ctx, r, P, R, F) {
+      const col = F.solid(0); ctx.lineWidth = Math.max(.6, r * .014); ctx.strokeStyle = col; ctx.lineCap = 'round';
+      for (let k = 0; k < 74; k++) {
+        const a = k * 2.39996 + R() * .1, l = r * (.7 + R() * .3), ex = Math.cos(a) * l, ey = Math.sin(a) * l;
+        ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * .1, Math.sin(a) * r * .1); ctx.lineTo(ex, ey); ctx.stroke();
+        for (let j = -3; j <= 3; j++) { const b = a + j * .2; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(b) * r * .13, ey + Math.sin(b) * r * .13); ctx.stroke(); }
+      }
+      disc(ctx, r * .13, col, P);
+    },
+    thistle(ctx, r, P, R, F) {
+      const col = F.solid(0); ctx.lineCap = 'round';
+      for (let i = 0; i < 48; i++) {
+        const a = -Math.PI / 2 + (R() - .5) * 2.1, l = r * (.55 + R() * .45);
+        ctx.strokeStyle = col; ctx.lineWidth = Math.max(.8, r * .034);
+        ctx.beginPath(); ctx.moveTo(0, -r * .02); ctx.quadraticCurveTo(Math.cos(a) * l * .45, -r * .02 + Math.sin(a) * l * .62, Math.cos(a) * l, -r * .02 + Math.sin(a) * l); ctx.stroke();
+      }
+      ctx.save(); ctx.translate(0, r * .32);
+      ctx.beginPath(); ctx.ellipse(0, 0, r * .4, r * .36, 0, 0, TAU); fillStroke(ctx, F.solid(1), P);
+      for (let row = 0; row < 5; row++) for (let i = 0; i < 7; i++) {
+        const x = (i - 3) * r * .12 + (row % 2) * r * .06, y = -r * .26 + row * r * .13;
+        if ((x * x) / ((.36 * r) ** 2) + (y * y) / ((.32 * r) ** 2) > 1) continue;
+        ctx.save(); ctx.translate(x, y + r * .08); pet(ctx, (R() - .5) * .6, 0, 'lance', r * .2, r * .07, F.solid(2), P); ctx.restore();
+      }
+      ctx.strokeStyle = col; ctx.lineWidth = Math.max(.7, r * .02);
+      for (let i = 0; i < 16; i++) { const a = Math.PI * (.05 + i / 15 * .9), x0 = Math.cos(a) * r * .4, y0 = Math.sin(a) * r * .36; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 * 1.45, y0 * 1.45); ctx.stroke(); }
+      ctx.restore();
+    },
+    bud(ctx, r, P, R, F) {
+      pet(ctx, -.22, 0, 'lance', r, r * .44, F(0, 0), P);
+      pet(ctx, .22, 0, 'lance', r * .94, r * .44, F(1, 1), P);
+      pet(ctx, -.9, 0, 'lance', r * .4, r * .16, F(2, 0), P); pet(ctx, .9, 0, 'lance', r * .4, r * .16, F(2, 1), P);
+    },
+  };
+  const LEAF = { sakura: 'serrate', peony: 'lobed', camellia: 'lance', chrysanthemum: 'lobed', lily: 'blade', daisy: 'lance', wisteria: 'pinnate', lotus: 'pad', rose: 'serrate', moonflower: 'heart', hibiscus: 'serrate', magnolia: 'lance', thistle: 'spiny', sunflower: 'heart', dandelion: 'toothed', iris: 'blade' };
+  const ALT = { sakura: 'bud', peony: 'camellia', camellia: 'sakura', chrysanthemum: 'daisy', lily: 'bud', daisy: 'sakura', wisteria: 'sakura', lotus: 'bud', rose: 'bud', moonflower: 'sakura', hibiscus: 'bud', magnolia: 'sakura', thistle: 'daisy', sunflower: 'daisy', dandelion: 'daisy', iris: 'bud' };
+  const FORM = { sakura: 'woody', peony: 'woody', camellia: 'woody', magnolia: 'woody', hibiscus: 'woody', rose: 'stalk', lily: 'stalk', daisy: 'stalk', chrysanthemum: 'stalk', sunflower: 'stalk', iris: 'stalk', thistle: 'stalk', dandelion: 'stalk', lotus: 'lotus', moonflower: 'vine', wisteria: 'hang' };
+
+  function leafPath(ctx, kind, L, W) {
+    ctx.beginPath();
+    if (kind === 'heart') {
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-W * .55, L * .16, -W * 1.15, -L * .12, -W * .82, -L * .48);
+      ctx.bezierCurveTo(-W * .55, -L * .78, -W * .12, -L * .86, 0, -L);
+      ctx.bezierCurveTo(W * .12, -L * .86, W * .55, -L * .78, W * .82, -L * .48);
+      ctx.bezierCurveTo(W * 1.15, -L * .12, W * .55, L * .16, 0, 0);
+    } else if (kind === 'pad') {
+      ctx.moveTo(0, -L * .5); ctx.arc(0, -L * .5, L * .5, Math.PI / 2 + .14, Math.PI / 2 - .14 + TAU);
+    } else if (kind === 'serrate' || kind === 'spiny' || kind === 'toothed') {
+      const n = kind === 'serrate' ? 9 : 6, amp = kind === 'serrate' ? .12 : kind === 'spiny' ? .45 : .3, pts = [];
+      for (let i = 0; i <= n * 2; i++) { const t = i / (n * 2), wv = Math.sin(Math.PI * Math.pow(t, .8)) * W, k = i % 2 ? 1 + amp : 1 - amp * .3; pts.push([wv * k, -L * t]); }
+      ctx.moveTo(0, 0); pts.forEach((p) => ctx.lineTo(p[0], p[1])); for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(-pts[i][0], pts[i][1]);
+    } else {
+      const w = kind === 'blade' ? W * .45 : W;
+      ctx.moveTo(0, 0); ctx.bezierCurveTo(w * 1.3, -L * .2, w * .8, -L * .75, 0, -L); ctx.bezierCurveTo(-w * .8, -L * .75, -w * 1.3, -L * .2, 0, 0);
+    }
+    ctx.closePath();
+  }
+  function midrib(ctx, L, W, P) { ctx.beginPath(); ctx.moveTo(0, -L * .04); ctx.quadraticCurveTo(W * .15, -L * .5, 0, -L * .86); ctx.strokeStyle = P.line || P.mark; ctx.lineWidth = Math.max(.6, P.lw * .8); ctx.stroke(); }
+  // leaf pointing in direction ang (radians, 0 = +x)
+  function drawLeaf(ctx, kind, x, y, ang, L, W, fill, P) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang + Math.PI / 2);
+    if (kind === 'lobed') {
+      [-.6, .6, 0].forEach((a, i) => { ctx.save(); ctx.rotate(a); leafPath(ctx, 'lance', L * (i === 2 ? 1 : .74), W * .62); fillStroke(ctx, fill, P); midrib(ctx, L * (i === 2 ? 1 : .74), W * .6, P); ctx.restore(); });
+    } else if (kind === 'pinnate') {
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -L); ctx.strokeStyle = fill; ctx.lineWidth = Math.max(1, W * .08); ctx.stroke();
+      for (let k = 0; k < 4; k++) { const y0 = -L * (.25 + k * .2); [-1, 1].forEach((s) => { ctx.save(); ctx.translate(0, y0); ctx.rotate(s * 1.0); leafPath(ctx, 'lance', L * .26, W * .2); fillStroke(ctx, fill, P); ctx.restore(); }); }
+      ctx.save(); ctx.translate(0, -L * .9); leafPath(ctx, 'lance', L * .26, W * .2); fillStroke(ctx, fill, P); ctx.restore();
+    } else {
+      leafPath(ctx, kind, L, W); fillStroke(ctx, fill, P); if (kind !== 'pad') midrib(ctx, L, W, P);
+      else { for (let i = 0; i < 9; i++) { const a = i / 9 * TAU; ctx.beginPath(); ctx.moveTo(0, -L * .5); ctx.lineTo(Math.cos(a) * L * .44, -L * .5 + Math.sin(a) * L * .44); ctx.strokeStyle = P.line || P.mark; ctx.lineWidth = P.lw * .7; ctx.stroke(); } }
+    }
+    ctx.restore();
+  }
+
+  // head wrapper: transform + paint provider
+  function drawHead(ctx, sp, x, y, r, rot, P, R, tilt) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot || 0); if (tilt && tilt !== 1) ctx.scale(1, tilt);
+    const Q = Object.assign({}, P, { lw: P.lw * clamp(r / 26, .55, 1.8) });
+    const F = P.headFill ? P.headFill(ctx, r, R) : SOLID_F;
+    (HEADS[sp] || HEADS.sakura)(ctx, r, Q, R, F);
+    ctx.restore();
+  }
+  const SOLID_F = Object.assign(() => '#fff', { solid: () => '#fff' });
+  function silhouette(scale) { return { petal: '#fff', line: '#000', lw: 1.35 * (scale || 1), leaf: '#fff', leaf2: '#fff', stem: '#fff', mark: '#000', anther: '#000', center: '#fff' }; }
+  function colourPaint(hex, R) {
+    const [h, s] = hexToHsl(hex);
+    const sat = clamp(s, .4, .9);
+    const tones = [[h, sat * .9, .6], [h + 16, sat * .8, .72], [h - 14, sat, .5], [h + 38, sat * .85, .66], [h + 180, sat * .5, .7], [h, sat * .32, .86]];
+    const lh = mixHue(h, 105, .72);
+    const P = { line: hsl(h, sat * .6, .07, .9), lw: 1, leaf: hsl(lh, .34, .27), leaf2: hsl(lh + 15, .3, .36), stem: hsl(mixHue(h, 28, .6), .28, .2), mark: hsl(h, .55, .13), anther: hsl(46, .92, .64), center: hsl(40, .7, .45), petal: hsl(h, sat, .7) };
+    P.headFill = (ctx, r, R2) => {
+      const T = tones[(R2() * tones.length) | 0], cache = {};
+      const F = (layer) => {
+        if (!cache[layer]) {
+          const d = (layer | 0) * .03, gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.05);
+          gr.addColorStop(0, hsl(T[0], T[1], T[2] * .42 + d)); gr.addColorStop(.5, hsl(T[0], T[1], T[2] + d)); gr.addColorStop(1, hsl(T[0] + 8, T[1] * .85, Math.min(.95, T[2] + .2 + d)));
+          cache[layer] = gr;
+        }
+        return cache[layer];
+      };
+      F.solid = (layer) => hsl(T[0], T[1], Math.min(.92, T[2] + (layer | 0) * .06));
+      return F;
+    };
+    return P;
+  }
+
+  // ---------- compositions ----------
+  function stemPoly(ctx, pts, fill) {
+    const A = [], B = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[Math.min(i + 1, pts.length - 1)], o = pts[Math.max(i - 1, 0)];
+      let dx = q[0] - o[0], dy = q[1] - o[1]; const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+      const hw = p[2] / 2; A.push([p[0] - dy * hw, p[1] + dx * hw]); B.push([p[0] + dy * hw, p[1] - dx * hw]);
+    }
+    ctx.beginPath(); ctx.moveTo(A[0][0], A[0][1]); A.forEach((p) => ctx.lineTo(p[0], p[1]));
+    for (let i = B.length - 1; i >= 0; i--) ctx.lineTo(B[i][0], B[i][1]);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  }
+  function angDiff(a, b) { return ((a - b + Math.PI * 3) % TAU) - Math.PI; }
+  // a woody flowering branch: o = {x,y,a,len,w,fr,sp,sp2,P,seed,depth,pull,petals,leafy,cluster}
+  function spray(ctx, o) {
+    const R = rng(o.seed || 'spray'), P = o.P, stems = [], tips = [], nodes = [];
+    function grow(x, y, a, len, w, d) {
+      const n = Math.max(6, Math.round(len / 6)), pts = [[x, y, w]], bend = (R() - .5) * .07 + (o.bend || 0);
+      for (let i = 1; i <= n; i++) {
+        a += bend + (R() - .5) * (d ? .32 : .2);
+        if (o.pull != null) a += angDiff(o.pull, a) * .035;
+        x += Math.cos(a) * len / n; y += Math.sin(a) * len / n;
+        const ww = Math.max(.8, w * (1 - .72 * i / n)); pts.push([x, y, ww]);
+        if (d < (o.depth || 3) && i > n * .22 && i < n - 1 && R() < (d ? .2 : .3)) grow(x, y, a + (R() < .5 ? -1 : 1) * (.5 + R() * .55), len * (.32 + R() * .3) * (1 - i / n * .45), ww * .78, d + 1);
+        if (R() < .24) nodes.push({ x, y, a, d, s: R() < .5 ? -1 : 1, k: R() });
+      }
+      stems.push(pts); tips.push({ x, y, a, d });
+    }
+    grow(o.x, o.y, o.a, o.len, o.w, 0);
+    stems.forEach((pts) => stemPoly(ctx, pts, P.stem));
+    const lk = LEAF[o.sp] || 'lance';
+    nodes.forEach((nd) => { if (nd.k < (o.leafy == null ? .5 : o.leafy)) drawLeaf(ctx, lk, nd.x, nd.y, nd.a + nd.s * (.7 + R() * .5), o.fr * (1 + R() * .5), o.fr * .4, R() < .5 ? P.leaf : P.leaf2, P); });
+    const heads = [];
+    tips.forEach((t) => {
+      const n = 1 + ((R() * (o.cluster || 2.6)) | 0);
+      for (let i = 0; i < n; i++) heads.push({ x: t.x + (i ? (R() - .5) * o.fr * 1.6 : 0), y: t.y + (i ? (R() - .5) * o.fr * 1.6 : 0), r: o.fr * (i ? .62 + R() * .3 : .85 + R() * .35), sp: o.sp2 && R() < .3 ? o.sp2 : o.sp, a: t.a });
+    });
+    nodes.forEach((nd) => { if (nd.k >= .8) heads.push({ x: nd.x, y: nd.y, r: o.fr * (.5 + R() * .3), sp: o.sp, a: nd.a }); });
+    nodes.forEach((nd) => { if (nd.k >= .5 && nd.k < .8) drawHead(ctx, 'bud', nd.x + Math.cos(nd.a + nd.s) * o.fr * .5, nd.y + Math.sin(nd.a + nd.s) * o.fr * .5, o.fr * .42, nd.a + nd.s * .8 + Math.PI / 2, P, R, 1); });
+    heads.forEach((hd) => { const side = FORM[hd.sp] === 'woody' || hd.sp === 'camellia' ? 1 : 0; drawHead(ctx, hd.sp, hd.x, hd.y, hd.r, side ? R() * TAU : hd.a + Math.PI / 2, P, R, side ? .78 + R() * .22 : 1); });
+    for (let i = 0; i < (o.petals || 0); i++) {
+      const px = o.px != null ? o.px + (R() - .5) * o.pw : R() * ctx.canvas.width, py = o.py != null ? o.py + (R() - .5) * o.ph : R() * ctx.canvas.height;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(R() * TAU); ctx.scale(1, .5 + R() * .5); petalPath(ctx, 'notch', o.fr * (.35 + R() * .25), o.fr * .22); ctx.restore(); fillStroke(ctx, P.petal || '#fff', P);
+    }
+  }
+  // tall stalks with heads at the top (lily, daisy, chrysanthemum, sunflower, iris, thistle, dandelion, rose)
+  function stalks(ctx, o) {
+    const R = rng(o.seed || 'stalks'), P = o.P, lk = LEAF[o.sp] || 'lance', heads = [];
+    for (let s = 0; s < o.n; s++) {
+      const a = -Math.PI / 2 + (s - (o.n - 1) / 2) * (o.spread || .28) + (R() - .5) * .12, len = o.len * (.72 + R() * .32);
+      const pts = []; let x = o.x + (s - (o.n - 1) / 2) * o.w * 2, y = o.y, ang = a; const bend = (R() - .5) * .02;
+      for (let i = 0; i <= 24; i++) { pts.push([x, y, o.w * (1 - i / 40)]); ang += bend; x += Math.cos(ang) * len / 24; y += Math.sin(ang) * len / 24; }
+      stemPoly(ctx, pts, P.stem);
+      for (let k = 0; k < (o.leaves || 2); k++) { const p = pts[6 + ((R() * 12) | 0)], side = k % 2 ? -1 : 1; drawLeaf(ctx, lk, p[0], p[1], ang + side * (.55 + R() * .4), o.fr * (lk === 'blade' ? 2.6 : 1.5), o.fr * .5, R() < .5 ? P.leaf : P.leaf2, P); }
+      heads.push({ x, y, ang, r: o.fr * (.85 + R() * .3) });
+    }
+    heads.forEach((hd) => drawHead(ctx, o.sp, hd.x, hd.y, hd.r, ['iris', 'lotus', 'magnolia', 'thistle'].includes(o.sp) ? hd.ang + Math.PI / 2 : R() * TAU, P, R, ['sunflower', 'daisy', 'chrysanthemum', 'rose'].includes(o.sp) ? .8 + R() * .2 : 1));
+  }
+  // a thin twining vine with heart leaves, trumpet flowers and buds (moonflower)
+  function vine(ctx, o) {
+    const R = rng(o.seed || 'vine'), P = o.P; let x = o.x, y = o.y, a = o.a; const pts = [];
+    for (let i = 0; i <= 80; i++) { pts.push([x, y, o.w]); a += Math.sin(i * .25 + R() * .3) * .06 + (o.bend || 0); x += Math.cos(a) * o.len / 80; y += Math.sin(a) * o.len / 80; }
+    stemPoly(ctx, pts, P.stem);
+    // tendrils
+    ctx.strokeStyle = P.stem; ctx.lineWidth = Math.max(.8, o.w * .5);
+    for (let k = 0; k < 4; k++) { const p = pts[10 + k * 17]; ctx.beginPath(); let tx = p[0], ty = p[1], ta = R() * TAU; ctx.moveTo(tx, ty); for (let t = 0; t < 30; t++) { ta += .22 + t * .01; const st = o.fr * .09 * (1 - t / 34); tx += Math.cos(ta) * st; ty += Math.sin(ta) * st; ctx.lineTo(tx, ty); } ctx.stroke(); }
+    for (let i = 6; i < pts.length - 2; i += 9) { const p = pts[i], q = pts[i + 1], da = Math.atan2(q[1] - p[1], q[0] - p[0]), s = (i / 9) % 2 ? 1 : -1; drawLeaf(ctx, 'heart', p[0], p[1], da + s * 1.1, o.fr * (.85 + R() * .25), o.fr * .7, R() < .5 ? P.leaf : P.leaf2, P); }
+    const fl = o.flowers || [.3, .62, .95];
+    fl.forEach((t, i) => { const p = pts[Math.min(pts.length - 1, Math.round(t * 80))]; const off = (i % 2 ? 1 : -1) * o.fr * .7; drawHead(ctx, 'moonflower', p[0] + off, p[1] + o.fr * .3, o.fr * (i === 1 ? 1.25 : 1), R() * TAU, P, R, .8 + R() * .2); });
+    for (let k = 0; k < 3; k++) { const p = pts[15 + k * 22]; drawHead(ctx, 'bud', p[0], p[1] - o.fr * .2, o.fr * .45, (R() - .5) * 1.2, P, R, 1); }
+  }
+  // wisteria hanging from a horizontal vine at the top
+  function hang(ctx, o) {
+    const R = rng(o.seed || 'hang'), P = o.P, pts = []; let x = o.x, y = o.y, a = o.a || 0;
+    for (let i = 0; i <= 50; i++) { pts.push([x, y, o.w * (1 - i / 80)]); a += (R() - .5) * .14; x += Math.cos(a) * o.len / 50; y += Math.sin(a) * o.len / 50; }
+    stemPoly(ctx, pts, P.stem);
+    for (let i = 4; i < 48; i += 7) { const p = pts[i]; drawLeaf(ctx, 'pinnate', p[0], p[1], -Math.PI / 2 + (R() - .5) * 1.6, o.fr * 1.6, o.fr * 1.2, P.leaf, P); }
+    for (let i = 2; i < 50; i += 5) { const p = pts[i]; drawHead(ctx, 'wisteria', p[0] + (R() - .5) * 6, p[1], o.fr * (.6 + R() * .5), (R() - .5) * .2, P, R, 1); }
+  }
+  function lotusScene(ctx, o) {
+    const R = rng(o.seed || 'lotus'), P = o.P;
+    drawLeaf(ctx, 'pad', o.x - o.fr * 1.1, o.y + o.fr * .2, -Math.PI / 2 - .25, o.fr * 2.2, o.fr, P.leaf, P);
+    const pts = []; let x = o.x + o.fr * .4, y = o.y; for (let i = 0; i <= 20; i++) { pts.push([x, y, o.w]); x += Math.sin(i * .2) * .6; y -= o.len / 20; }
+    stemPoly(ctx, pts, P.stem);
+    drawHead(ctx, 'lotus', x, y, o.fr * 1.2, 0, P, R, 1);
+    const p2 = []; x = o.x + o.fr * 1.4; y = o.y; for (let i = 0; i <= 20; i++) { p2.push([x, y, o.w * .8]); x += .5; y -= o.len * .55 / 20; }
+    stemPoly(ctx, p2, P.stem); drawHead(ctx, 'bud', x, y, o.fr * .7, .2, P, R, 1);
+  }
+  // one species as a small specimen (inventory, genre tiles)
+  function specimen(ctx, sp, W, H, P, seed, big) {
+    const m = Math.min(W, H), form = FORM[sp] || 'woody', k = big ? 1 : .8;
+    if (form === 'woody') spray(ctx, { x: W * .2, y: H * 1.0, a: -Math.PI / 2 + .45, len: H * .82, w: m * .045, fr: m * .105 * k * (sp === 'sakura' ? .8 : 1), sp: sp, P: P, seed: seed, depth: sp === 'sakura' ? 3 : 2, pull: -Math.PI / 2, cluster: sp === 'sakura' ? 2.2 : 1.6, leafy: .55, petals: 4, px: W * .55, py: H * .88, pw: W * .8, ph: H * .2 });
+    else if (form === 'stalk') stalks(ctx, { x: W * .5, y: H * 1.02, len: H * .66, w: m * .022, fr: m * .15 * k * (sp === 'sunflower' ? 1.2 : 1), sp: sp, n: sp === 'sunflower' || sp === 'thistle' ? 2 : 3, spread: .3, P: P, seed: seed, leaves: 2 });
+    else if (form === 'vine') vine(ctx, { x: W * .92, y: -H * .02, a: Math.PI * .62, len: H * 1.05, w: m * .016, fr: m * .14 * k, P: P, seed: seed, flowers: [.3, .72] });
+    else if (form === 'hang') hang(ctx, { x: -W * .05, y: H * .06, a: .05, len: W * 1.1, w: m * .03, fr: m * .2 * k, P: P, seed: seed });
+    else if (form === 'lotus') lotusScene(ctx, { x: W * .45, y: H * .92, len: H * .52, w: m * .02, fr: m * .17 * k, P: P, seed: seed });
+  }
+
+  // ---------- colour covers ----------
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  function ditherQ(ctx, w, h, levels, cell) {
+    const img = ctx.getImageData(0, 0, w, h), d = img.data, step = 255 / (levels - 1);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const t = (BAYER[(((y / cell) | 0) & 3) * 4 + (((x / cell) | 0) & 3)] + .5) / 16 - .5, i = (y * w + x) * 4;
+      for (let c = 0; c < 3; c++) d[i + c] = clamp(Math.round((d[i + c] + t * step) / step) * step, 0, 255);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  function ground(ctx, S, hex, R) {
+    const [h, s] = hexToHsl(hex), sat = clamp(s, .3, .85);
+    const gr = ctx.createLinearGradient(0, 0, S * (R() - .5) * .8, S);
+    gr.addColorStop(0, hsl(h + 10, sat * .75, .32)); gr.addColorStop(1, hsl(h - 10, sat * .7, .08));
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, S, S);
+    const cx = S * (.2 + R() * .6), cy = S * (.15 + R() * .5), rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S * .75);
+    rg.addColorStop(0, hsl(h, sat, .46, .55)); rg.addColorStop(1, hsl(h, sat, .2, 0)); ctx.fillStyle = rg; ctx.fillRect(0, 0, S, S);
+  }
+  function bouquet(ctx, S, sp, P, R, light) {
+    const alt = ALT[sp] || 'sakura', lk = LEAF[sp] || 'lance';
+    const cx = S * (.3 + R() * .4), cy = S * 1.08;
+    for (let i = 0; i < (light ? 4 : 10); i++) { const a = -Math.PI / 2 + (R() - .5) * 2.4; drawLeaf(ctx, lk, cx + (R() - .5) * S * .5, cy - R() * S * .45, a, S * (.28 + R() * .22), S * (.08 + R() * .05), i % 2 ? P.leaf : P.leaf2, P); }
+    if (sp === 'wisteria') { for (let i = 0; i < 6; i++) drawHead(ctx, 'wisteria', S * (.05 + i * .18 + R() * .06), -S * .04 + R() * S * .12, S * (.15 + R() * .06), (R() - .5) * .3, P, R, 1); for (let i = 0; i < 4; i++) drawHead(ctx, 'sakura', R() * S, S * (.55 + R() * .4), S * (.08 + R() * .06), R() * TAU, P, R, .8); return; }
+    const cells = []; for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) cells.push([gx, gy]);
+    shuffle(cells, R);
+    const n = light ? 3 + ((R() * 2) | 0) : 5 + ((R() * 3) | 0), heads = [];
+    for (let i = 0; i < n; i++) { const c = cells[i]; heads.push({ x: (c[0] + .15 + R() * .7) / 3 * S, y: (c[1] + .15 + R() * .7) / 3 * S, r: S * (.13 + R() * .13), sp: R() < .74 ? sp : alt }); }
+    heads.sort((a, b) => b.r - a.r);
+    heads.forEach((hd) => { const side = ['magnolia', 'lotus', 'iris', 'thistle'].includes(hd.sp); drawHead(ctx, hd.sp, hd.x, hd.y, hd.sp === 'bud' ? hd.r * .6 : hd.r, side ? (R() - .5) * .9 : R() * TAU, P, R, side ? 1 : .76 + R() * .24); });
+    for (let i = 0; i < 6; i++) drawHead(ctx, R() < .5 ? 'bud' : 'sakura', R() * S, R() * S, S * (.035 + R() * .03), R() * TAU, P, R, 1);
+  }
+  function portrait(ctx, S, sp, P, R) {
+    const lk = LEAF[sp] || 'lance';
+    for (let i = 0; i < 7; i++) drawLeaf(ctx, lk, S * (.2 + R() * .6), S * (.55 + R() * .4), -Math.PI / 2 + (R() - .5) * 2.6, S * (.3 + R() * .2), S * .1, i % 2 ? P.leaf : P.leaf2, P);
+    const side = ['magnolia', 'lotus', 'iris', 'thistle', 'wisteria'].includes(sp);
+    drawHead(ctx, sp, S * (.46 + R() * .08), S * (side ? (sp === 'wisteria' ? .02 : .38) : .48), S * (sp === 'wisteria' ? .3 : .4), side ? 0 : R() * TAU, P, R, side ? 1 : .9);
+    drawHead(ctx, ALT[sp] || 'bud', S * .15, S * .2, S * .1, R() * TAU, P, R, 1);
+  }
+  function scatterPetals(ctx, S, P, R, n) {
+    for (let i = 0; i < n; i++) { const F = P.headFill ? P.headFill(ctx, 10, R) : SOLID_F; ctx.save(); ctx.translate(R() * S, R() * S); ctx.rotate(R() * TAU); ctx.scale(1, .5 + R() * .5); petalPath(ctx, 'notch', S * (.03 + R() * .025), S * .018); ctx.restore(); fillStroke(ctx, F.solid(1), P); }
+  }
+  // every cover is composed in a fixed 300-unit space and scaled, so an entity looks the same at 34px and at 184px
+  const C0 = 300;
+  function cover(cv, o) {
+    const S = cv.width, ctx = cv.getContext('2d'), R = rng(o.seed + ':' + (o.kind || ''));
+    ctx.save(); ctx.scale(S / C0, S / C0);
+    if (o.kind === 'liked') { liked(ctx, C0, R); ctx.restore(); ditherQ(ctx, S, S, 7, 1); return; }
+    ground(ctx, C0, o.hex, R);
+    const P = colourPaint(o.hex, R); P.lw = 1.5;
+    const sp = o.sp || 'sakura';
+    if (o.kind === 'portrait') portrait(ctx, C0, sp, P, R);
+    else if (o.kind === 'chart') { drawHead(ctx, 'dandelion', C0 * .62, C0 * .42, C0 * .36, 0, P, R, 1); drawHead(ctx, 'dandelion', C0 * .2, C0 * .78, C0 * .16, 0, P, R, 1); drawHead(ctx, 'daisy', C0 * .86, C0 * .86, C0 * .12, 0, P, R, .8); }
+    else if (o.kind === 'spray') {
+      // albums: a branch or stalks behind, then a dense still-life on top (or one big bloom)
+      const form = FORM[sp];
+      if (R() < .3) portrait(ctx, C0, sp, P, R);
+      else {
+        if (form === 'woody' || form === 'vine') spray(ctx, { x: C0 * (R() < .5 ? -.05 : 1.05), y: C0 * 1.04, a: -Math.PI / 2 + (R() - .5) * .9, len: C0 * .9, w: C0 * .04, fr: C0 * .1, sp: form === 'vine' ? 'bud' : sp, P: P, seed: o.seed, depth: 2, pull: -Math.PI / 2, cluster: 1.5, leafy: .7 });
+        else stalks(ctx, { x: C0 * .5, y: C0 * 1.04, len: C0 * .7, w: C0 * .02, fr: C0 * .12, sp: sp, n: 3, spread: .38, P: P, seed: o.seed, leaves: 2 });
+        bouquet(ctx, C0, sp, P, R, true);
+      }
+    } else bouquet(ctx, C0, sp, P, R);
+    scatterPetals(ctx, C0, P, R, 4 + ((R() * 4) | 0));
+    ctx.restore();
+    ditherQ(ctx, S, S, 7, S > 260 ? 2 : 1);
+    if (o.label) {
+      const fs = Math.max(8, Math.round(S * .15));
+      ctx.font = fs + 'px VT323, monospace'; ctx.textBaseline = 'top';
+      const tw = ctx.measureText(o.label).width;
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, tw + fs * .55, fs * 1.02);
+      ctx.fillStyle = '#fff'; ctx.fillText(o.label, fs * .28, fs * .04);
+    }
+  }
+  // Liked Songs: the old violet-to-mint gradient (filtered like any colour) with a heart cut from white blossoms
+  function liked(ctx, S, R) {
+    const gr = ctx.createLinearGradient(0, 0, S, S); gr.addColorStop(0, '#450af5'); gr.addColorStop(1, '#c4efd9'); ctx.fillStyle = gr; ctx.fillRect(0, 0, S, S);
+    const heart = (k) => { ctx.beginPath(); for (let i = 0; i <= 120; i++) { const t = i / 120 * TAU, hx = 16 * Math.pow(Math.sin(t), 3), hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)); ctx.lineTo(S * .5 + hx * S * k, S * .53 + hy * S * k); } ctx.closePath(); };
+    heart(.025); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.save(); heart(.025); ctx.clip();
+    const P = silhouette(2.2);
+    for (let i = 0; i < 26; i++) drawHead(ctx, i % 7 ? 'sakura' : 'bud', S * (.12 + R() * .76), S * (.14 + R() * .72), S * (.07 + R() * .05), R() * TAU, P, R, .9);
+    ctx.restore();
+    heart(.025); ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
+  }
+
+  // ---------- canvas painter ----------
+  const DPR = () => Math.min(2, window.devicePixelRatio || 1);
+  const ART = {
+    cover(cv, d) { cover(cv, { seed: d.seed, hex: d.hex || '#777777', sp: d.sp, kind: d.kind, label: d.label }); },
+    spray(cv, d) {
+      const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, m = Math.min(W, H), P = silhouette(DPR() * (+d.lw || 1));
+      const pre = SPRAYS[d.preset] || SPRAYS.home;
+      pre(ctx, W, H, m, P, d);
+    },
+    spec(cv, d) { const ctx = cv.getContext('2d'); specimen(ctx, d.sp, cv.width, cv.height, silhouette(DPR() * .9), d.seed || d.sp, d.big === '1'); },
+    tile(cv, d) {
+      // the species grows in from the bottom-right corner, tilted like the old rotated cover
+      const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+      ctx.save(); ctx.translate(W * .3, H * .2); ctx.rotate(-.22);
+      specimen(ctx, d.sp, W * .86, H * .92, silhouette(DPR() * .85), d.sp + 'tile', true); ctx.restore();
+    },
+    // a single blossom: the logo mark and the toast mark (ink = petal colour, separations in the opposite colour)
+    mark(cv, d) {
+      const ctx = cv.getContext('2d'), W = cv.width, ink = d.ink || '#fff', bg = ink === '#fff' ? '#000' : '#fff';
+      const P = { petal: ink, line: bg, lw: Math.max(1, W / 22), leaf: ink, leaf2: ink, stem: ink, mark: bg, anther: bg, center: ink };
+      P.headFill = () => Object.assign(() => ink, { solid: () => ink });
+      drawHead(ctx, d.sp || 'sakura', W / 2, W / 2 + W * .02, W * .47, -.08, P, rng('mark'), 1);
+    },
+    sprout(cv, d) {
+      const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, P = silhouette(DPR());
+      const pts = []; let x = W * .5, y = H * .92; for (let i = 0; i <= 20; i++) { pts.push([x, y, W * .025 * (1 - i / 34)]); x += Math.sin(i * .25) * W * .006; y -= H * .022; }
+      stemPoly(ctx, pts, '#fff');
+      drawLeaf(ctx, 'lance', pts[9][0], pts[9][1], -Math.PI / 2 - .9, W * .22, W * .07, '#fff', P);
+      drawLeaf(ctx, 'lance', pts[13][0], pts[13][1], -Math.PI / 2 + .8, W * .18, W * .06, '#fff', P);
+      drawHead(ctx, 'bud', x, y + 4, W * .1, .15, P, rng('sprout'), 1);
+      ctx.fillStyle = '#fff'; ctx.fillRect(W * .18, H * .92, W * .64, Math.max(1, DPR()));
+    },
+  };
+  const SPRAYS = {
+    // the big branch on Home (the reference's flowering branch): woody, grows up-left from the bottom-right
+    home(ctx, W, H, m, P, d) {
+      const tall = W / H < .95, tilt = tall ? .4 : .62;   // narrower canvas on a phone: grow more upright so the blooms stay inside
+      spray(ctx, { x: W * (tall ? .82 : .9), y: H * 1.0, a: -Math.PI / 2 - tilt, len: H * (tall ? .86 : .92), w: m * .05, fr: m * .088, sp: 'camellia', sp2: 'peony', P: P, seed: d.seed || 'home-branch-3', depth: 2, pull: -Math.PI / 2 - tilt * .9, cluster: 1.9, petals: 6, px: W * .3, py: H * .82, pw: W * .4, ph: H * .3, leafy: .6 });
+    },
+    lib(ctx, W, H, m, P, d) {
+      spray(ctx, { x: W * .04, y: H * 1.01, a: -Math.PI / 2 + .62, len: Math.min(H * .95, W * .95), w: m * .05, fr: m * .062, sp: 'sakura', P: P, seed: d.seed || 'lib-branch-2', depth: 3, pull: -Math.PI / 2 + .5, cluster: 2, petals: 7, px: W * .72, py: H * .82, pw: W * .5, ph: H * .3, leafy: .45 });
+    },
+    corner(ctx, W, H, m, P, d) {
+      spray(ctx, { x: W * 1.02, y: H * 1.0, a: -Math.PI / 2 - .55, len: H * .8, w: m * .05, fr: m * .11, sp: d.sp || 'sakura', P: P, seed: d.seed || 'corner', depth: 2, pull: -Math.PI / 2 - .2, cluster: 2, petals: 3, px: W * .4, py: H * .7, pw: W * .5, ph: H * .3 });
+    },
+    hero(ctx, W, H, m, P, d) {
+      vine(ctx, { x: W * .82, y: -H * .02, a: Math.PI * .55, len: H * 1.0, w: Math.max(1.5, m * .012), fr: m * .15, P: P, seed: d.seed || 'hero-vine', flowers: [.22, .5, .82], bend: .002 });
+    },
+    hang(ctx, W, H, m, P, d) { hang(ctx, { x: -W * .05, y: H * .04, a: .04, len: W * 1.1, w: m * .04, fr: m * .16, P: P, seed: d.seed || 'hang' }); },
+    dialog(ctx, W, H, m, P, d) {
+      spray(ctx, { x: W * .97, y: H * .9, a: -Math.PI / 2 - .9, len: H * .82, w: m * .045, fr: m * .11, sp: 'peony', sp2: 'camellia', P: P, seed: d.seed || 'dialog-2', depth: 1, pull: -Math.PI / 2 - .7, cluster: 1.5, petals: 4, px: W * .4, py: H * .9, pw: W * .6, ph: H * .2, leafy: .7 });
+    },
+  };
+  function paint(cv) {
+    const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return;
+    const dpr = DPR(), w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    cv.width = w; cv.height = h;
+    const fn = ART[cv.dataset.art]; if (!fn) return;
+    try { fn(cv, cv.dataset); } catch (e) { console.error('flora ' + cv.dataset.art + ': ' + (e && e.message)); }
+    cv.dataset.painted = w + 'x' + h;
+  }
+  function paintAll(root) { (root || document).querySelectorAll('canvas[data-art]').forEach(paint); }
+
+  // ---------- falling petals ----------
+  function petalsLayer(cv) {
+    const ctx = cv.getContext('2d'), R = rng('petals'), reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    let W = 0, H = 0, dpr = 1; const ps = [];
+    function size() { dpr = DPR(); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; }
+    function spawn(p, top) { p.x = R() * W; p.y = top ? -12 - R() * 40 : R() * H; p.s = 3 + R() * 3.6; p.vx = .12 + R() * .3; p.vy = .22 + R() * .4; p.rot = R() * TAU; p.vr = (R() - .5) * .03; p.ph = R() * TAU; p.f = .6 + R() * .8; return p; }
+    size(); for (let i = 0; i < Math.round(Math.min(20, W / 60)); i++) ps.push(spawn({}, false));
+    addEventListener('resize', size);
+    let last = performance.now(), frames = 0, fpsT = last;
+    function draw(t) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      for (const p of ps) {
+        if (!reduce.matches) { p.x += p.vx + Math.sin(t / 900 * p.f + p.ph) * .35; p.y += p.vy; p.rot += p.vr; if (p.y > H + 14 || p.x > W + 14) spawn(p, true); }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(reduce.matches ? 1 : Math.max(.18, Math.abs(Math.cos(t / 700 * p.f + p.ph))), 1);
+        petalPath(ctx, 'notch', p.s * 2, p.s); ctx.restore(); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+      }
+      frames++; if (t - fpsT > 1000) { g.FPS = Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; document.querySelectorAll('[data-fps]').forEach((e) => { e.textContent = g.FPS; }); }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  g.Flora = { rng, hash, paint, paintAll, petalsLayer, HEADS: Object.keys(HEADS), FORM, LEAF };
+})(window);
+
+/* =====================================================================
+   B. CONTENT (real names from src/data.js)
+   ===================================================================== */
+const SP = { pop: 'sakura', hiphop: 'chrysanthemum', rock: 'rose', indie: 'wisteria', electronic: 'moonflower', lofi: 'camellia', jazz: 'magnolia', classical: 'lily', ambient: 'lotus', rnb: 'peony', folk: 'daisy', latin: 'hibiscus', funk: 'sunflower', metal: 'thistle', newreleases: 'iris', charts: 'dandelion' };
+const GENRES = [['pop', 'Pop', '#e13300'], ['hiphop', 'Hip-Hop', '#ba5d07'], ['rock', 'Rock', '#e91429'], ['indie', 'Indie', '#f037a5'], ['electronic', 'Electronic', '#0d73ec'], ['lofi', 'Lo-Fi', '#8d67ab'], ['jazz', 'Jazz', '#1e3264'], ['classical', 'Classical', '#777777'], ['ambient', 'Ambient', '#27856a'], ['rnb', 'R&B', '#dc148c'], ['folk', 'Folk', '#148a08'], ['latin', 'Latin', '#d84000'], ['funk', 'Funk', '#e8115b'], ['metal', 'Metal', '#503750'], ['newreleases', 'New Releases', '#8c1932'], ['charts', 'Charts', '#006450']];
+const PL = {
+  pl_dailymix1: ['Daily Mix 1', '#3f6fb6', 'pop', 'Ivy Marchetti, Marlow Vane, Juniper Hale and more', '01'],
+  pl_dailymix2: ['Daily Mix 2', '#b64d3f', 'hiphop', 'Vesper Ray, Nia Solace, Delta Vale and more', '02'],
+  pl_dailymix3: ['Daily Mix 3', '#4a8a4a', 'rock', 'Cass Ridley, Ghost Parade and The Hollow Lights', '03'],
+  pl_dailymix4: ['Daily Mix 4', '#8a4ab0', 'latin', 'Tomas Reyes, Amara Oyelaran and Rook Mendoza', '04'],
+  pl_freshfinds: ['Fresh Finds', '#2a9d8f', 'newreleases', 'The freshest finds from tomorrow’s favourites. Updated every Wednesday.'],
+  pl_newreleases: ['New Releases', '#c0392b', 'newreleases', 'The best new songs of the week, all in one place.'],
+  pl_chillvibes: ['Chill Vibes', '#5b8fb9', 'lofi', 'Chill beats, lo-fi vibes, new tracks every week. Kick back and let the day go.'],
+  pl_deepfocus: ['Deep Focus', '#2e4a62', 'ambient', 'Ambient, modern classical and slow electronics to help you think.'],
+  pl_latenightdrive: ['Late Night Drive', '#4a1d6a', 'electronic', 'Windows down, city lights on. Synths and slow jams for the long way home.'],
+  pl_rainydayjazz: ['Rainy Day Jazz', '#35506e', 'jazz', 'Smoky horns, brushed drums and a window to watch the rain through.'],
+  pl_indiegold: ['Indie Gold', '#c9962b', 'indie', 'The indie anthems you know every word to, plus a few you’ll learn.'],
+  pl_top50global: ['Top 50 Global', '#1d3a5f', 'charts', 'Your daily update of the most played tracks right now.'],
+};
+const AL = {
+  al_orbitalmechanics: ['Orbital Mechanics', 'DJ Orrery', '#9c640c', 'electronic', 2026],
+  al_motorwayhymns: ['Motorway Hymns', 'Saint Lumen', '#6e2c00', 'electronic', 2020],
+  al_punchline: ['Punchline', 'Delta Vale', '#ca6f1e', 'hiphop', 2022],
+  al_slowhours: ['Slow Hours', 'Saint Lumen', '#d4ac0d', 'ambient', 2024],
+  al_hobokennights: ['Hoboken Nights', 'Ivy Marchetti', '#d35400', 'pop', 2022],
+  al_aftertheparty: ['After the Party', 'Nia Solace', '#0b5345', 'pop', 2025],
+  al_groupchat: ['Group Chat', 'Nia Solace', '#2e86c1', 'rnb', 2022],
+  al_kitchentable: ['Kitchen Table', 'Juniper Hale', '#b7950b', 'pop', 2020],
+  al_lasttrainhome: ['Last Train Home', 'The Hollow Lights', '#bb8fce', 'rock', 2024],
+  al_nightshift: ['Night Shift', 'Vesper Ray', '#6c3483', 'rnb', 2025],
+  al_boathouse: ['Boathouse', 'Marlow Vane', '#1abc9c', 'indie', 2025],
+  al_mareaalta: ['Marea Alta', 'Tomas Reyes', '#b03a2e', 'latin', 2026],
+  al_porchlight: ['Porch Light', 'Juniper Hale', '#f39c12', 'folk', 2026],
+  al_radiatorsongs: ['Radiator Songs', 'Lune Noire', '#9b59b6', 'lofi', 2024],
+  al_baylights: ['Bay Lights', 'Harbor Street', '#f0b27a', 'jazz', 2017],
+  al_rosin: ['Rosin', 'Oriel Quartet', '#21618c', 'classical', 2025],
+  al_longdark: ['Long Dark', 'Ghost Parade', '#154360', 'metal', 2025],
+  al_blockparty: ['Block Party', 'Amara Oyelaran', '#7b241c', 'funk', 2026],
+};
+const AR = { ar_djorrery: ['DJ Orrery', '#1f3f8f', 'electronic'], ar_niasolace: ['Nia Solace', '#7a2e5a', 'rnb'], ar_ivymarchetti: ['Ivy Marchetti', '#c23a5c', 'pop'], ar_tomasreyes: ['Tomas Reyes', '#d1672b', 'latin'] };
+const TRACKS = [
+  ['tr_orbitalmechanics_08', 'Ultraviolet Telemetry', 'DJ Orrery', 'al_orbitalmechanics', '3:11', 'Aug 27, 2026', true],
+  ['tr_motorwayhymns_03', 'Northern Telemetry', 'Saint Lumen', 'al_motorwayhymns', '3:53', 'Aug 29, 2026', false],
+  ['tr_punchline_02', 'Letter', 'Delta Vale', 'al_punchline', '3:17', 'Jul 8, 2026', false],
+  ['tr_slowhours_05', 'Afterhours', 'Saint Lumen', 'al_slowhours', '3:38', 'Sep 4, 2026', false],
+  ['tr_hobokennights_04', 'Holding the Weekend', 'Ivy Marchetti', 'al_hobokennights', '3:51', 'Aug 17, 2026', false],
+  ['tr_aftertheparty_07', 'Late Engine', 'Nia Solace', 'al_aftertheparty', '3:50', 'Aug 14, 2026', true],
+  ['tr_groupchat_02', 'Heartbeat', 'Nia Solace', 'al_groupchat', '2:58', 'Aug 8, 2026', false],
+  ['tr_groupchat_04', 'Coffee, Sunday', 'Nia Solace', 'al_groupchat', '2:40', 'Aug 14, 2026', true],
+  ['tr_orbitalmechanics_03', 'Inside the Season', 'DJ Orrery', 'al_orbitalmechanics', '4:13', 'Jul 25, 2026', false],
+  ['tr_kitchentable_06', 'Midnight Afterglow (Interlude)', 'Juniper Hale', 'al_kitchentable', '2:42', 'Aug 1, 2026', true],
+];
+
+/* =====================================================================
+   C. MARKUP BUILDERS
+   ===================================================================== */
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const I = (n, cls) => '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+const CHROME = (cls, style, ctl) => '<div class="chrome' + (cls ? ' ' + cls : '') + '"' + (style ? ' style="' + style + '"' : '') + ' aria-hidden="true"><span class="chrome__rule"></span><span class="chrome__ctl">' + (ctl || '-&nbsp;×') + '</span></div>';
+const EQ = '<span class="equaliser" aria-hidden="true"><i></i><i></i><i></i></span>';
+const PX = (n, px, ink) => '<canvas class="mark" data-art="mark" data-ink="' + (ink || '#fff') + '" style="width:' + n * px + 'px;height:' + n * px + 'px" aria-hidden="true"></canvas>';
+function art(o) { // o: {id, hex, sp, kind, label, cls}
+  return '<canvas class="tone' + (o.cls ? ' ' + o.cls : '') + '" data-art="cover" data-seed="' + o.id + '" data-hex="' + o.hex + '" data-sp="' + o.sp + '" data-kind="' + (o.kind || '') + '" data-label="' + (o.label || '') + '" aria-hidden="true"></canvas>';
+}
+function ent(id) {
+  if (id === 'liked') return { id, name: 'Liked Songs', hex: '#5038a0', sp: 'sakura', kind: 'liked', sub: 'Playlist', type: 'playlist' };
+  if (PL[id]) { const p = PL[id]; return { id, name: p[0], hex: p[1], sp: SP[p[2]], kind: id === 'pl_top50global' ? 'chart' : 'bouquet', label: p[4] ? 'mix ' + p[4] : (id === 'pl_top50global' ? 'top 50' : ''), desc: p[3], sub: p[3], type: 'playlist' }; }
+  if (AL[id]) { const a = AL[id]; return { id, name: a[0], hex: a[2], sp: SP[a[3]], kind: 'spray', sub: a[1], artist: a[1], type: 'album', year: a[4] }; }
+  if (AR[id]) { const a = AR[id]; return { id, name: a[0], hex: a[1], sp: SP[a[2]], kind: 'portrait', sub: 'Artist', type: 'artist', round: true }; }
+  throw new Error('unknown ' + id);
+}
+const uri = (e) => e.id === 'liked' ? 'liked' : e.type + ':' + e.id;
+
+function topbar() {
+  return '<header class="topbar" role="banner">' +
+    '<div class="topbar__left"><button class="topbar__logo" aria-label="Wavelength">' + PX(12, 2) + '<span class="wordmark" aria-hidden="true">wavelength</span></button></div>' +
+    '<div class="topbar__center"><button class="nav-sq is-active" aria-label="Home">' + I('home-filled') + '</button>' +
+    '<div class="search-pill"><span class="search-pill__p" aria-hidden="true">&gt;</span><input class="search-pill__input" type="text" placeholder="What do you want to play?" aria-label="What do you want to play?"><span class="cursor" aria-hidden="true">_</span><span class="search-pill__divider" aria-hidden="true"></span><button class="search-pill__browse" aria-label="Browse">' + I('browse') + '</button></div></div>' +
+    '<div class="topbar__right">' + fxSwitch() + '<button class="avatar-btn" aria-label="Account" style="--avatar-bg:#e91e63"><span class="avatar" aria-hidden="true"></span><span class="avatar-n">N</span></button></div>' +
+    '</header>';
+}
+const FILTERS = [['mono', 'mono', 'grey tones, the default'], ['dither', 'dither', '1-bit ordered dither'], ['invert', 'invert', 'grey negative'], ['color', 'color', 'colour passes through'], ['cyano', 'cyano', 'cyanotype sun print']];
+function fxSwitch(big) {
+  return '<div class="fx" role="radiogroup" aria-label="Colour filter"><span class="fx__label" aria-hidden="true">filter:</span>' +
+    FILTERS.map((f, i) => '<button class="fx__opt" role="radio" data-filter="' + f[0] + '" aria-checked="' + (i === 0) + '" tabindex="' + (i === 0 ? 0 : -1) + '" title="' + f[2] + '">' + f[1] + '</button>').join('') + '</div>';
+}
+function libRow(id, st) {
+  const e = ent(id);
+  const sub = id === 'liked' ? I('pin') + '<span>Playlist • 0 songs</span>' : e.type === 'playlist' ? 'Playlist • Wavelength' : e.type === 'album' ? 'Album • ' + esc(e.artist) : 'Artist';
+  return '<div class="lib-row' + (st || '') + '" data-context-uri="' + uri(e) + '" title="' + esc(e.name) + '" aria-label="' + esc(e.name) + '" tabindex="0">' +
+    '<div class="lib-row__cover' + (e.round ? ' lib-row__cover--round' : '') + '">' + art(e) + '</div>' +
+    '<div class="lib-row__text"><div class="lib-row__name ellip">' + esc(e.name) + '</div><div class="lib-row__sub ellip">' + sub + '</div></div>' +
+    (/is-playing/.test(st || '') ? '<span class="lib-row__speaker" aria-hidden="true">' + I('speaker') + '</span>' : '<span></span>') + '</div>';
+}
+function sidebar(active) {
+  const rows = [['liked'], ['pl_latenightdrive', ' is-current is-playing'], ['pl_dailymix1'], ['pl_chillvibes'], ['al_lasttrainhome'], ['ar_djorrery'], ['pl_top50global']];
+  return '<aside class="sidebar win">' + CHROME() +
+    '<div class="lib-header"><button class="lib-title" aria-label="Collapse Your Library"><span class="wt__p" aria-hidden="true">&gt;</span><span class="t">Your Library</span></button><button class="icon-btn" aria-label="Create playlist or folder">' + I('plus') + '</button></div>' +
+    '<div class="lib-chips chips"><button class="chip">Playlists</button><button class="chip">Artists</button><button class="chip">Albums</button></div>' +
+    '<div class="lib-sortrow"><button class="icon-btn" aria-label="Search in Your Library">' + I('search') + '</button><button class="lib-sort">Recents ' + I('chevron-down', 'icon--sm') + '</button></div>' +
+    '<div class="lib-list">' + rows.map((r) => libRow(r[0], (r[1] || '') + (r[0] === active ? ' is-active' : ''))).join('') + '</div>' +
+    '<canvas class="lib-flora" data-art="spray" data-preset="lib" aria-hidden="true"></canvas>' +
+    '</aside>';
+}
+function player() {
+  const t = TRACKS[0];
+  return '<footer class="player-bar win" aria-label="Now playing">' + CHROME() +
+    '<div class="pb-grid">' +
+    '<div class="pb-left"><span class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span class="wt__path" aria-hidden="true">media</span></span>' +
+    '<div class="pb-cover">' + art({ id: 'al_orbitalmechanics', hex: '#9c640c', sp: 'moonflower', kind: 'spray' }) + '</div>' +
+    '<div class="pb-text"><div class="pb-line"><span class="pb-k" aria-hidden="true">Song:</span><a class="pb-title" href="#">' + t[1] + '</a></div><div class="pb-line"><span class="pb-k" aria-hidden="true">Author:</span><a class="pb-artist" href="#">' + t[2] + '</a></div></div>' +
+    '<button class="icon-btn" aria-label="Add to Liked Songs">' + I('add-circle') + '</button></div>' +
+    '<div class="pb-center"><div class="pb-controls">' +
+    '<button class="icon-btn icon-btn--dot" aria-label="Enable shuffle">' + I('shuffle') + '</button>' +
+    '<button class="icon-btn" aria-label="Previous">' + I('prev') + '</button>' +
+    '<button class="pb-play" aria-label="Pause">' + I('pause') + '</button>' +
+    '<button class="icon-btn" aria-label="Next">' + I('next') + '</button>' +
+    '<button class="icon-btn icon-btn--dot" aria-label="Enable repeat">' + I('repeat') + '</button></div>' +
+    '<div class="pb-progress"><span class="pb-time">1:07</span><input type="range" class="slider slider--progress" min="0" max="1000" value="350" aria-label="Seek" style="--fill:35%"><span class="pb-time pb-time--total">3:11</span></div></div>' +
+    '<div class="pb-right"><button class="icon-btn icon-btn--dot" aria-label="Now playing view">' + I('now-playing') + '</button><button class="icon-btn icon-btn--dot" aria-label="Queue">' + I('queue') + '</button><button class="icon-btn" aria-label="Mute">' + I('volume-high') + '</button><input type="range" class="slider slider--volume" min="0" max="100" value="72" aria-label="Volume" style="--fill:72%"></div>' +
+    '</div></footer>';
+}
+function mini() {
+  const t = TRACKS[0];
+  return '<div class="mini-player" style="--mini-color:#9c640c">' + CHROME('', '--stop:22px') +
+    '<div class="mini-player__inner">' + art({ id: 'al_orbitalmechanics', hex: '#9c640c', sp: 'moonflower', kind: 'spray' }) +
+    '<div class="mini-player__text"><div class="pb-line"><span class="pb-k" aria-hidden="true">Song:</span><span class="mini-player__title ellip">' + t[1] + '</span></div><div class="pb-line"><span class="pb-k" aria-hidden="true">Author:</span><span class="mini-player__artist ellip v">' + t[2] + '</span></div></div>' +
+    '<button class="icon-btn" aria-label="Add to Liked Songs">' + I('add-circle', 'icon--lg') + '</button>' +
+    '<button class="play-btn" aria-label="Pause">' + I('pause') + '</button></div>' +
+    '<div class="mini-player__progress" aria-hidden="true"></div></div>';
+}
+function bottomNav(active) {
+  const items = [['home', 'Home'], ['search', 'Search'], ['library', 'Your Library']];
+  return '<nav class="bottom-nav" aria-label="Primary">' + items.map(([k, n]) => '<a class="bottom-nav__item' + (k === active ? ' is-active' : '') + '" href="#">' + I(k + (k === active ? '-filled' : '')) + '<span>' + n + '</span></a>').join('') + '</nav>';
+}
+function card(id, st) {
+  const e = ent(id);
+  return '<div class="card' + (e.round ? ' card--round' : '') + (st || '') + '" data-context-uri="' + uri(e) + '">' +
+    '<div class="card__cover">' + art(e) + '<button class="play-btn" aria-label="Play ' + esc(e.name) + '">' + I('play') + '</button></div>' +
+    '<a class="card__title" href="#">' + esc(e.name) + '</a><div class="card__sub">' + esc(e.sub) + '</div></div>';
+}
+function shelf(title, ids, flora) {
+  return '<section class="shelf win">' + CHROME() +
+    '<div class="shelf__head"><h2 class="shelf__title"><span class="wt__p" aria-hidden="true">&gt;</span><a href="#">' + title + '</a></h2><a class="shelf__all" href="#">Show all</a></div>' +
+    '<div class="card-grid">' + ids.map((x) => card(x[0] || x, x[1])).join('') + '</div>' +
+    (flora ? '<canvas class="shelf-flora" data-art="spray" data-preset="corner" data-sp="' + flora + '" data-seed="shelf-' + flora + '" aria-hidden="true"></canvas>' : '') + '</section>';
+}
+function quickTile(id, st) {
+  const e = ent(id);
+  return '<div class="quick-tile' + (st || '') + '" data-context-uri="' + uri(e) + '" tabindex="0">' + art(e) + '<span class="quick-tile__name">' + esc(e.name) + '</span>' +
+    (/is-playing/.test(st || '') ? EQ : '') + '<button class="play-btn" aria-label="Play ' + esc(e.name) + '">' + I('play') + '</button></div>';
+}
+function homeMain() {
+  const qp = [['liked'], ['pl_latenightdrive', ' is-current is-playing'], ['pl_dailymix1'], ['pl_chillvibes', ' is-hover'], ['pl_deepfocus'], ['pl_top50global'], ['pl_dailymix2'], ['pl_dailymix3']];
+  return '<main class="main" tabindex="-1" aria-label="Home"><div class="main__scroll"><div class="home page--home">' +
+    '<div class="home-top">' +
+    '<div class="win win--home">' + CHROME() + '<div class="main-header"><button class="nav-btn" aria-label="Go back" disabled>' + I('chevron-left', 'icon--sm') + '</button><button class="nav-btn" aria-label="Go forward" disabled>' + I('chevron-right', 'icon--sm') + '</button>' +
+    '<span class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span class="wt__path" aria-hidden="true">home</span></span>' +
+    '<button class="avatar-btn phone-avatar only-phone" aria-label="Account" style="--avatar-bg:#e91e63"><span class="avatar" aria-hidden="true"></span><span class="avatar-n">N</span></button>' +
+    '<div class="chips chips--home"><button class="chip is-active">All</button><button class="chip">Music</button><button class="chip">Podcasts</button></div></div></div>' +
+    '<div class="win win--time">' + CHROME() + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span class="wt__path">time</span><time class="clock" data-clock></time></div></div>' +
+    '</div>' +
+    '<div class="home-mid">' +
+    '<div class="win look">' + CHROME('chrome--short', '--len:62%') + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span aria-hidden="true">look_in.txt</span><span class="cursor" aria-hidden="true">_</span></div>' +
+    '<div class="quick-grid">' + qp.map((q) => quickTile(q[0], q[1])).join('') + '</div><div class="dash" aria-hidden="true"></div></div>' +
+    '<div class="sys" aria-label="System">' +
+    '<canvas class="sys__flora" data-art="spray" data-preset="home" aria-hidden="true"></canvas>' +
+    '<div class="sys__lines">' +
+    '<div><span class="k">Host:</span> <span class="v">wavelength</span></div>' +
+    '<div><span class="k">Os:</span> <span class="v">Wavelength 26.10</span></div>' +
+    '<div><span class="k">Library:</span> <span class="v">7 items</span></div>' +
+    '<div><span class="k">Contact:</span> <span class="v cjk" lang="zh-Hant">花鳥風月</span></div>' +
+    '<div class="sys__gap"></div>' +
+    '<div><span class="k">FPS:</span> <span class="v" data-fps>60</span></div>' +
+    '<div><span class="k">Filter:</span> <span class="v" data-filter-name>mono</span></div>' +
+    '<div><span class="k">Connection:</span> <span class="v">ESTABLISHED</span></div>' +
+    '<div><span class="k">Session Number:</span> <span class="v">1207</span></div>' +
+    '</div></div>' +
+    '</div>' +
+    '<div class="win win--filter only-phone">' + CHROME() + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span class="wt__path" aria-hidden="true">filter</span></div><div style="padding:6px 0 0 6px">' + fxSwitch() + '</div></div>' +
+    shelf('Made For You', [['pl_dailymix1'], ['pl_dailymix2', ' is-hover'], ['pl_dailymix3'], ['pl_dailymix4'], ['pl_freshfinds'], ['pl_newreleases']], 'sakura') +
+    shelf('Recently played', [['pl_latenightdrive', ' is-current'], ['al_orbitalmechanics'], ['ar_djorrery'], ['pl_chillvibes'], ['al_lasttrainhome'], ['al_motorwayhymns'], ['al_nightshift']]) +
+    shelf('Jump back in', [['pl_deepfocus'], ['al_boathouse'], ['pl_rainydayjazz'], ['al_mareaalta'], ['al_porchlight'], ['al_radiatorsongs'], ['pl_indiegold']]) +
+    '</div></div></main>';
+}
+function trackRow(t, i, st) {
+  const al = AL[t[3]];
+  const playing = /is-playing/.test(st || '');
+  return '<div class="track-row' + (st || '') + '" data-track-id="' + t[0] + '" role="row" aria-selected="' + /is-selected/.test(st || '') + '">' +
+    '<div class="track-row__index"><span class="track-row__num">' + (i + 1) + '</span>' + (playing ? EQ : '') + '<button class="track-row__play" aria-label="' + (playing ? 'Pause ' : 'Play ') + esc(t[1]) + '">' + I(playing ? 'pause' : 'play', 'icon--sm') + '</button></div>' +
+    '<div class="track-row__main">' + art({ id: t[3], hex: al[2], sp: SP[al[3]], kind: 'spray', cls: 'track-row__cover' }) + '<div class="track-row__text"><div class="track-row__title">' + esc(t[1]) + '</div><div class="track-row__artist">' + (t[6] ? '<span class="badge-e" aria-label="Explicit">E</span>' : '') + '<a href="#">' + esc(t[2]) + '</a></div></div></div>' +
+    '<div class="track-row__album"><a href="#">' + esc(al[0]) + '</a></div><div class="track-row__date">' + t[5] + '</div>' +
+    '<div class="track-row__end"><button class="icon-btn track-row__like" aria-label="Save to your Liked Songs">' + I('add-circle') + '</button><span class="track-row__dur">' + t[4] + '</span><button class="icon-btn track-row__more" aria-label="More options for ' + esc(t[1]) + '">' + I('more') + '</button></div></div>';
+}
+function playlistMain(rows) {
+  const e = ent('pl_latenightdrive');
+  const states = { 0: ' is-current is-playing', 1: ' is-hover', 2: ' is-selected' };
+  return '<main class="main" tabindex="-1" aria-label="Late Night Drive"><div class="main__scroll"><div class="page page--hero">' +
+    '<div class="win">' + CHROME() + '<div class="main-header"><button class="nav-btn" aria-label="Go back">' + I('chevron-left', 'icon--sm') + '</button><button class="nav-btn" aria-label="Go forward" disabled>' + I('chevron-right', 'icon--sm') + '</button>' +
+    '<span class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span class="wt__path" aria-hidden="true">playlist/late_night_drive</span></span></div></div>' +
+    '<section class="hero" style="--hero-color:' + e.hex + '">' +
+    '<canvas class="hero-flora" data-art="spray" data-preset="hero" aria-hidden="true"></canvas>' +
+    '<div class="hero__cover">' + art(e) + '</div>' +
+    '<div class="hero__info"><span class="hero__type eyebrow">Playlist</span><h1 class="hero__title">' + e.name + '</h1><p class="hero__desc">' + esc(e.desc) + '</p>' +
+    '<div class="hero__meta"><span class="avatar--24" aria-hidden="true">W</span><b>Wavelength</b> • 6,400,000 saves • 40 songs, about 2 hr 16 min</div></div></section>' +
+    '<div class="actions"><button class="play-btn play-btn--lg" aria-label="Pause Late Night Drive" data-context-uri="playlist:pl_latenightdrive">' + I('pause') + '</button>' +
+    '<button class="icon-btn icon-btn--dot is-focus" aria-label="Enable shuffle">' + I('shuffle', 'icon--lg') + '</button>' +
+    '<button class="icon-btn is-active" aria-label="Remove from Your Library">' + I('check-circle', 'icon--lg') + '</button>' +
+    '<button class="icon-btn" aria-label="Download">' + I('download', 'icon--lg') + '</button>' +
+    '<button class="icon-btn" aria-label="More options for Late Night Drive">' + I('more', 'icon--lg') + '</button>' +
+    '<div class="actions__right"><button class="icon-btn" aria-label="Search in playlist">' + I('search') + '</button><button class="view-toggle">List ' + I('chevron-down', 'icon--sm') + '</button></div></div>' +
+    '<div class="track-table" role="grid"><div class="track-table__head" role="row"><span>#</span><span>Title</span><span>Album</span><span class="th-date">Date added</span><span class="th-dur">' + I('clock', 'icon--sm') + '</span></div>' +
+    TRACKS.slice(0, rows || 10).map((t, i) => trackRow(t, i, states[i])).join('') + '</div>' +
+    '</div></div></main>';
+}
+function appFrame(main, opts) {
+  return '<div class="app" data-view="' + opts.view + '" style="--avatar-bg:#e91e63">' + topbar() + sidebar(opts.active) + main + player() + mini() + bottomNav(opts.nav || 'home') + '</div>';
+}
+function contextMenu() {
+  return '<div class="context-menu" role="menu" data-anchor="selected" aria-label="Letter">' +
+    '<div class="menu-head" aria-hidden="true"><span>&gt;</span><b>letter</b><span>--opts</span></div>' +
+    '<button class="menu-item is-open" role="menuitem" aria-haspopup="menu" aria-expanded="true">' + I('plus') + '<span>Add to playlist</span><span class="menu-item__chev">' + I('chevron-right', 'icon--sm') + '</span></button>' +
+    '<button class="menu-item" role="menuitem">' + I('add-circle') + '<span>Save to your Liked Songs</span></button>' +
+    '<button class="menu-item" role="menuitem">' + I('queue') + '<span>Add to queue</span></button>' +
+    '<div class="menu-sep" role="separator"></div>' +
+    '<button class="menu-item" role="menuitem"><span style="width:16px"></span><span>Go to artist</span></button>' +
+    '<button class="menu-item" role="menuitem"><span style="width:16px"></span><span>Go to album</span></button>' +
+    '<div class="menu-sep" role="separator"></div>' +
+    '<button class="menu-item" role="menuitem" aria-haspopup="menu">' + I('share') + '<span>Share</span><span class="menu-item__chev">' + I('chevron-right', 'icon--sm') + '</span></button>' +
+    '</div>' +
+    '<div class="context-menu context-menu--sub" role="menu" aria-label="Add to playlist">' +
+    '<div class="menu-search"><span aria-hidden="true">&gt;</span><input type="text" placeholder="Find a playlist" aria-label="Find a playlist"></div>' +
+    '<button class="menu-item is-hover" role="menuitem">' + I('plus') + '<span>New playlist</span></button>' +
+    '<div class="menu-sep" role="separator"></div>' +
+    '<button class="menu-item" role="menuitem"><span style="width:16px"></span><span>My Playlist #2</span></button>' +
+    '<button class="menu-item" role="menuitem"><span style="width:16px"></span><span>My Playlist #1</span></button>' +
+    '</div>';
+}
+function toast(text) { return '<div class="toast-root" aria-live="polite"><div class="toast" role="status">' + PX(9, 2, '#000') + '<span>' + text + '</span></div></div>'; }
+function dialog() {
+  return '<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">' +
+    '<canvas class="dialog-flora" data-art="spray" data-preset="dialog" aria-hidden="true"></canvas>' +
+    CHROME('', '--stop:22px', '-') + '<button class="dialog__close" aria-label="Close">×</button>' +
+    '<h2 class="dialog__title" id="dlg-t"><span aria-hidden="true">&gt;</span><span>Already added</span></h2>' +
+    '<p class="dialog__body">This is already in your ‘My Playlist #1’ playlist.</p>' +
+    '<div class="dialog__actions"><button class="text-btn">Don’t add</button><button class="pill pill--primary is-focus">Add anyway</button></div>' +
+    '</div></div>';
+}
+
+/* filter strip + boards */
+function fxBoard() {
+  const items = [
+    ['al_mareaalta', 'cover'], ['al_porchlight', 'cover'], ['al_boathouse', 'cover'], ['ar_niasolace', 'artist'],
+  ];
+  const row = (f) => '<div class="fx-row f-' + f[0] + '">' +
+    '<div class="fx-row__label"><div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span>filter --' + f[0] + '</span></div><p>' + FX_NOTES[f[0]] + '</p></div>' +
+    '<div class="fx-row__items">' + items.map(([id]) => { const e = ent(id); return '<div class="fx-item' + (e.round ? ' fx-item--round' : '') + '">' + art(Object.assign({}, e, { kind: e.kind })) + '<small>' + esc(e.name) + '</small></div>'; }).join('') +
+    '<div class="fx-item"><div class="browse-card" style="--browse-color:#d84000"><canvas data-art="tile" data-sp="hibiscus" aria-hidden="true"></canvas><span class="browse-card__name">Latin</span><span class="browse-card__sp" aria-hidden="true">hibiscus.sp</span></div><small>genre tile</small></div>' +
+    '<div class="fx-item fx-item--wide"><div class="fx-hero" style="--hero-color:#4a1d6a"><span>Late Night Drive</span></div>' +
+    '<div class="fx-mini" style="--mini-color:#9c640c">' + art({ id: 'al_orbitalmechanics', hex: '#9c640c', sp: 'moonflower', kind: 'spray' }) + '<div><div class="t ellip">Ultraviolet Telemetry</div><div class="v ellip">DJ Orrery</div></div></div>' +
+    '<div class="fx-chiprow"><span class="dot"></span><span class="v">accent</span>' + EQ + '<span class="play-btn" style="width:26px;height:26px">' + I('play') + '</span></div></div>' +
+    '</div></div>';
+  return '<div class="board fx-board" id="board-filters">' +
+    '<p class="board__intro"><b>Anything that carries colour</b> (cover art, artist images, genre tiles, the hero and home tints, the mini player tint, the avatar disc and the old green accent) is drawn through <b>--tone-filter</b>. The interface itself never has colour. Pick a filter: the whole page follows, and each row below pins one filter so they can be compared.</p>' +
+    '<div class="fx-board__switch"><span class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span>set</span></span>' + fxSwitch() + '</div>' +
+    '<div class="fx-rows">' + FILTERS.map(row).join('') + '</div></div>';
+}
+const FX_NOTES = {
+  mono: 'grayscale(1) contrast(1.12). The default: the reference’s black and white world.',
+  dither: 'SVG filter: luminance minus a tiled 4×4 Bayer matrix, thresholded to two values. 1-bit, like an old Mac screen.',
+  invert: 'grayscale(1) invert(1). Covers become negatives: dark flowers on pale paper.',
+  color: 'none. Colour passes through and the accent turns green again; the chrome stays black and white.',
+  cyano: 'SVG filter: luminance mapped onto Prussian blue, like a sun-printed pressed flower (a cyanotype).',
+};
+function floraBoard() {
+  const tiles = GENRES.map(([k, n, c]) => '<div class="browse-card" style="--browse-color:' + c + '" tabindex="0"><canvas data-art="tile" data-sp="' + SP[k] + '" aria-hidden="true"></canvas><span class="browse-card__name">' + n + '</span><span class="browse-card__sp" aria-hidden="true">' + SP[k] + '.sp</span></div>').join('');
+  const specs = GENRES.map(([k, n], i) => '<div class="specimen"><span class="specimen__no" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><canvas data-art="spec" data-sp="' + SP[k] + '" data-big="1" aria-hidden="true"></canvas><span class="specimen__name">' + SP[k] + ' <span>/ ' + n.toLowerCase() + '</span></span></div>').join('');
+  return '<div class="board" id="board-flora"><p class="board__intro">Sixteen species, one per genre or browse category, all generated on canvas from the same petal, leaf and stem primitives. A browse tile keeps its genre colour (filtered like every colour) and grows its species in white from the bottom-right corner; the name sits on a black label so it reads under every filter.</p>' +
+    '<div class="browse-grid">' + tiles + '</div>' +
+    '<div class="band" style="border:0;padding-left:6px"><span class="band__no">></span><b>herbarium</b><span>white silhouettes, thin black separations between petals</span></div>' +
+    '<div class="specimens">' + specs + '</div></div>';
+}
+function statesBoard() {
+  return '<div class="board" id="board-states"><div class="states">' +
+    '<div class="state-card win">' + CHROME() + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span>buttons</span></div>' +
+    '<div class="state-row"><figure><button class="play-btn" aria-label="Play">' + I('play') + '</button><figcaption>rest</figcaption></figure><figure><button class="play-btn is-hover" aria-label="Play">' + I('play') + '</button><figcaption>hover</figcaption></figure><figure><button class="play-btn is-press" aria-label="Play">' + I('play') + '</button><figcaption>active</figcaption></figure><figure><button class="play-btn is-focus" aria-label="Play">' + I('play') + '</button><figcaption>focus</figcaption></figure><figure><button class="play-btn" aria-label="Pause">' + I('pause') + '</button><figcaption>playing</figcaption></figure></div>' +
+    '<div class="state-row"><figure><button class="pill pill--primary">Save</button><figcaption>primary</figcaption></figure><figure><button class="pill pill--primary is-hover">Save</button><figcaption>hover</figcaption></figure><figure><button class="pill pill--outline">Find songs</button><figcaption>outline</figcaption></figure><figure><button class="text-btn">Cancel</button><figcaption>text</figcaption></figure></div>' +
+    '<div class="state-row"><figure><span class="chips"><button class="chip">Albums</button></span><figcaption>chip</figcaption></figure><figure><span class="chips"><button class="chip is-hover">Albums</button></span><figcaption>hover</figcaption></figure><figure><span class="chips"><button class="chip is-active">Albums</button></span><figcaption>active</figcaption></figure><figure><span class="chips"><button class="chip is-focus">Albums</button></span><figcaption>focus</figcaption></figure></div>' +
+    '<div class="state-row"><figure><button class="icon-btn" aria-label="Enable shuffle">' + I('shuffle', 'icon--lg') + '</button><figcaption>off</figcaption></figure><figure><button class="icon-btn icon-btn--dot is-active" aria-label="Disable shuffle">' + I('shuffle', 'icon--lg') + '</button><figcaption>on</figcaption></figure><figure><button class="nav-sq">' + I('home') + '</button><figcaption>nav</figcaption></figure><figure><button class="nav-sq is-active">' + I('home-filled') + '</button><figcaption>current</figcaption></figure></div>' +
+    '</div>' +
+    '<div class="state-card win">' + CHROME() + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span>rows + sliders</span></div><div class="state-rows">' +
+    ['', ' is-hover', ' is-selected', ' is-current is-playing'].map((s, i) => { const t = TRACKS[[4, 5, 6, 8][i]]; return trackRow(t, [4, 5, 6, 8][i], s).replace('class="track-row__album"', 'class="track-row__album" hidden').replace('class="track-row__date"', 'class="track-row__date" hidden'); }).join('') +
+    '</div><div class="state-row" style="flex-direction:column;align-items:stretch;gap:10px;padding-top:14px"><div class="pb-progress" style="max-width:none"><span>0:42</span><input type="range" class="slider" value="22" min="0" max="100" style="--fill:22%" aria-label="Seek"><span>3:38</span></div><div class="pb-progress" style="max-width:none"><span>1:58</span><input type="range" class="slider is-hover" value="54" min="0" max="100" style="--fill:54%" aria-label="Seek"><span>3:38</span></div>' +
+    '<div class="search-pill" style="width:auto"><span class="search-pill__p" aria-hidden="true">&gt;</span><input class="search-pill__input" type="text" placeholder="Search in playlist" aria-label="Search in playlist"><span class="cursor" aria-hidden="true" style="left:calc(8px + 2ch + 18ch)">_</span></div></div></div>' +
+    '<div class="state-card win">' + CHROME() + '<div class="wt"><span class="wt__p" aria-hidden="true">&gt;</span><span>empty</span></div>' +
+    '<div class="empty"><canvas data-art="sprout" aria-hidden="true"></canvas><h2 class="empty__title">Songs you like will appear here</h2><p class="empty__text">Save songs by tapping the heart icon.</p><button class="pill pill--outline">Find songs</button></div>' +
+    '<div class="state-row" style="justify-content:center;padding-top:14px"><div class="toast" style="position:relative;left:auto;bottom:auto;transform:none">' + PX(9, 2, '#000') + '<span>Link copied to clipboard</span></div></div>' +
+    '</div>' +
+    '</div></div>';
+}
+
+/* =====================================================================
+   D. ASSEMBLE + BEHAVIOUR
+   ===================================================================== */
+function build() {
+  const band = (no, title, note) => '<div class="band"><span class="band__no">' + no + '</span><b>' + title + '</b><span>' + note + '</span></div>';
+  document.getElementById('page').innerHTML =
+    '<section class="scene scene--home" id="scene-home" aria-label="Home">' + appFrame(homeMain(), { view: 'home', nav: 'home' }) + '</section>' +
+    band('02', '/playlist', 'late night drive: one row playing, one hovered, one selected; track menu with its Add to playlist submenu; toast') +
+    '<section class="scene scene--playlist" id="scene-playlist" aria-label="Playlist">' + appFrame(playlistMain(), { view: 'playlist', active: 'pl_latenightdrive', nav: 'home' }) + contextMenu() + toast('Added to queue') + '</section>' +
+    '<div class="phone-only-block">' + band('02b', '/sheet', 'on a phone the track menu is a bottom sheet; its submenu opens inline') + '</div>' +
+    '<section class="scene scene--sheet phone-only-block" id="scene-sheet" aria-label="Track menu on a phone">' + appFrame(playlistMain(), { view: 'playlist', active: 'pl_latenightdrive', nav: 'home' }) + '<div class="sheet-dim" aria-hidden="true"></div>' + contextMenu() + '</section>' +
+    band('03', '/dialog', 'Add to playlist, track already there; a dithered backdrop instead of a flat dim') +
+    '<section class="scene scene--dialog" id="scene-dialog" aria-label="Dialog">' + appFrame(playlistMain(6), { view: 'playlist', active: 'pl_latenightdrive', nav: 'home' }) + dialog() + '</section>' +
+    band('04', '/filter', 'the filter switcher on colourful covers: mono (default), dither, invert, color, cyano') +
+    fxBoard() +
+    band('05', '/flora', 'one species per genre: browse tiles and the herbarium') +
+    floraBoard() +
+    band('06', '/states', 'rest, hover, active, selected, playing and focus-visible; empty state') +
+    statesBoard() +
+    '<div class="foot"><span>&gt; wavelength / garden mock</span><span>type: VT323 + DotGothic16 (CJK)</span><span class="cursor">_</span></div>';
+}
+function placeMenus() {
+  document.querySelectorAll('.scene--playlist, .scene--sheet').forEach((sc) => {
+    const menu = sc.querySelector('.context-menu:not(.context-menu--sub)'), sub = sc.querySelector('.context-menu--sub'), row = sc.querySelector('.track-row.is-selected');
+    if (!menu || !row || !sc.offsetParent) return;
+    const parent = menu.querySelector('.menu-item.is-open');
+    if (matchMedia('(max-width: 767px)').matches) {
+      // phone: bottom sheet, submenu inline under its parent item
+      [menu, sub].forEach((m) => { m.style.left = ''; m.style.top = ''; });
+      if (sub.parentNode !== menu) parent.after(sub);
+      return;
+    }
+    if (sub.parentNode === menu) sc.appendChild(sub);
+    // desktop: open at the pointer on the selected row, flip up when it would cross the player, submenu to the right
+    const s = sc.getBoundingClientRect(), r = row.getBoundingClientRect(), mh = menu.offsetHeight, mw = menu.offsetWidth;
+    const left = Math.min(r.left - s.left + r.width * .46, s.width - mw - sub.offsetWidth - 20);
+    let top = r.top - s.top + r.height * .55;
+    if (top + mh > s.height - 10) top = Math.max(8, r.top - s.top + r.height * .45 - mh);
+    menu.style.left = left + 'px'; menu.style.top = top + 'px';
+    const it = parent.getBoundingClientRect();
+    sub.style.left = (it.right - s.left + 4) + 'px'; sub.style.top = Math.min(it.top - s.top - 6, s.height - sub.offsetHeight - 10) + 'px';
+  });
+}
+function clock() {
+  const p = (n) => String(n).padStart(2, '0'), d = new Date(); let h = d.getHours(); const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12;
+  const s = p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear() + ' ' + p(h) + ':' + p(d.getMinutes()) + ' ' + ap;
+  document.querySelectorAll('[data-clock]').forEach((e) => { e.textContent = s; e.setAttribute('datetime', d.toISOString()); });
+}
+function setFilter(name, focus) {
+  if (!FILTERS.some((f) => f[0] === name)) name = 'mono';
+  document.documentElement.dataset.filter = name;
+  document.querySelectorAll('.fx').forEach((g) => g.querySelectorAll('.fx__opt').forEach((b) => { const on = b.dataset.filter === name; b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; if (on && focus === g) b.focus(); }));
+  document.querySelectorAll('[data-filter-name]').forEach((e) => { e.textContent = name; });
+  try { localStorage.setItem('wl-garden-filter', name); } catch (e) {}
+}
+function bayer() {
+  const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d'), img = x.createImageData(8, 8), B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (let y = 0; y < 8; y++) for (let i = 0; i < 8; i++) { const v = Math.round((B[((y >> 1) & 3) * 4 + ((i >> 1) & 3)] + .5) / 16 * 255), k = (y * 8 + i) * 4; img.data[k] = img.data[k + 1] = img.data[k + 2] = v; img.data[k + 3] = 255; }
+  x.putImageData(img, 0, 0); const url = c.toDataURL('image/png'), fe = document.getElementById('wl-bayer');
+  fe.setAttribute('href', url); fe.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+}
+function wire() {
+  document.addEventListener('click', (e) => {
+    const opt = e.target.closest('.fx__opt'); if (opt) { setFilter(opt.dataset.filter); return; }
+    const chip = e.target.closest('.chips--home .chip, .lib-chips .chip'); if (chip) { chip.parentNode.querySelectorAll('.chip').forEach((c) => c.classList.toggle('is-active', c === chip && !chip.classList.contains('is-active'))); return; }
+    const row = e.target.closest('.track-row'); if (row && !e.target.closest('button,a')) { row.parentNode.querySelectorAll('.track-row.is-selected').forEach((r) => { r.classList.remove('is-selected'); r.setAttribute('aria-selected', 'false'); }); row.classList.add('is-selected'); row.setAttribute('aria-selected', 'true'); return; }
+    const pb = e.target.closest('.play-btn, .pb-play'); if (pb && pb.querySelector('use')) { const u = pb.querySelector('use'), play = /i-play$/.test(u.getAttribute('href')); u.setAttribute('href', play ? '#i-pause' : '#i-play'); }
+  });
+  document.addEventListener('keydown', (e) => {
+    const opt = e.target.closest && e.target.closest('.fx__opt'); if (!opt) return;
+    const opts = [...opt.parentNode.querySelectorAll('.fx__opt')], i = opts.indexOf(opt);
+    let j = -1; if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % opts.length; if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + opts.length) % opts.length;
+    if (j >= 0) { e.preventDefault(); setFilter(opts[j].dataset.filter, opt.parentNode); }
+  });
+  // the class-based demo states (.is-hover etc.) stay; real :hover works everywhere too
+  document.querySelectorAll('.slider').forEach((s) => s.addEventListener('input', () => s.style.setProperty('--fill', (s.value - s.min) / (s.max - s.min) * 100 + '%')));
+}
+let paintTimer = 0;
+function repaint() { clearTimeout(paintTimer); paintTimer = setTimeout(() => { Flora.paintAll(); placeMenus(); }, 120); }
+build();
+bayer();
+let saved = null; try { saved = localStorage.getItem('wl-garden-filter'); } catch (e) {}
+setFilter(new URLSearchParams(location.search).get('filter') || saved || 'mono');
+clock(); setInterval(clock, 1000);
+wire();
+Flora.petalsLayer(document.getElementById('petals'));
+const ready = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('18px VT323'), document.fonts.load('14px DotGothic16')]).catch(() => {}) : Promise.resolve();
+Promise.race([ready, new Promise((r) => setTimeout(r, 1500))]).then(() => { Flora.paintAll(); placeMenus(); document.documentElement.dataset.painted = '1'; });
+addEventListener('resize', repaint);
+</script>
+</body>
+</html>
