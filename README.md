@@ -27,6 +27,20 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 - Answers are saved in the browser, with an option to clear each section
 - Optional Google sign-in to sync progress across devices (see below)
 
+## v2: achievements revamp (separate copy)
+
+`v2/index.html` is a full copy of the site with a new achievements system. On GitHub Pages it is at `/claude/v2/`. Both copies share the same saved progress (same browser storage and the same synced account document), so you can switch between them.
+
+What is different in v2:
+
+- 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze, Silver, Gold, Platinum and Diamond tiers: 98 tiers in total instead of 16 on/off badges.
+- Every achievement shows a progress bar toward its next tier, the tier dots, and the XP the next tier gives (20, 40, 80, 150, 250).
+- A "Closest to unlock" list and a "Recently earned" strip on the Today page, with filters (All, In progress, Earned, Locked) and category chips.
+- Achievement points give a title (Newcomer, Apprentice, Scholar, Expert, Master, Grandmaster) shown under the level emblem, and count as XP.
+- A celebration overlay with confetti for each new tier and each new title. It waits until a timed exam or round ends. It respects reduced-motion settings.
+- Five secret achievements that stay hidden until earned (night owl, early bird, comeback after a week away, a flawless exam, all four diagram maps perfect).
+- New counters: correct answers, numeric answers, review-bank answers, graph questions, study streak, perfect daily challenges, exams at 85 % or more, review tests finished.
+
 ## Note on Language Arts content
 
 The prose analysis unit is based on the Bentz / Lit & More prose lessons. The explanations are rewritten, and the quotations are short excerpts for study.
