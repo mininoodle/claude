@@ -176,6 +176,41 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .pm-n.boss{border-style:dashed}.pm-n.boss.won{border-style:solid;border-color:var(--a1);background:var(--a1);color:#fff}
 .pm-l{flex:1 0 10px;max-width:30px;height:3px;border-radius:2px;background:var(--hair)}.pm-l.on{background:var(--a1)}
 /* badges */
+/* ---------- achievements ---------- */
+.t1{--tier:#b5804f}.t2{--tier:#8f949c}.t3{--tier:#cf9d2a}.t4{--tier:#5f9fb8}.t5{--tier:#8f74cf}
+[data-mode="dark"] .t1{--tier:#c99466}[data-mode="dark"] .t2{--tier:#aeb3ba}[data-mode="dark"] .t3{--tier:#e0b347}[data-mode="dark"] .t4{--tier:#7cbcd4}[data-mode="dark"] .t5{--tier:#a892e2}
+.ach-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 22px;margin:.2em 0 .9em}
+.ach-title b{display:flex;align-items:center;gap:.35em;font:700 1.55rem/1.1 ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--at);margin:.15em 0}.ach-title .bar2{margin-top:.5em;height:8px}
+.ach-next .ach-n{display:flex;gap:.6em;align-items:center;margin-top:.5em}.ach-n>div{flex:1;min-width:0}.ach-n b{font-size:.82rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ach-n .bar2{height:6px;margin-top:.3em}.ach-n>.hint{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bic.sm{width:30px;height:30px}.ach-n .bic{background:var(--tier);border-color:var(--tier);color:#fff;display:grid}
+.ach-recent>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:.45em}.ach-recent .chip{cursor:default;border-color:var(--tier);color:var(--ink);display:inline-flex;align-items:center;gap:.35em}.ach-recent .chip .ic{color:var(--tier)}.ach-recent .chip small{color:var(--ink2);font-weight:500}
+.ach-f{display:flex;align-items:center;flex-wrap:wrap;gap:.6em 1em;margin-bottom:.6em}.ach-f .chipsrow{margin:0}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:8px}
+.ach{position:relative;display:flex;gap:11px;align-items:flex-start;padding:.7em .85em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);box-shadow:inset 0 1px 0 var(--hi);transition:border-color .3s,transform .3s var(--spring)}
+.ach>div{min-width:0;flex:1}.ach b{display:block;font-size:.9rem}.ach b em{font-style:normal;font-weight:700;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:var(--tier,var(--ink2));margin-left:.35em}
+.ach div>span{display:block;font-size:.78rem;color:var(--ink2)}.ach .bic{display:grid}
+.ach:not(.got){opacity:.78}.ach.secret{opacity:.6}.ach.secret b{color:var(--ink2)}
+.ach.got{border-color:color-mix(in srgb,var(--tier) 55%,var(--hair))}.ach.got .bic{background:var(--tier);border-color:var(--tier);color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--tier) 22%,transparent)}
+.ach.max::after{content:"complete";position:absolute;top:.75em;right:.85em;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tier)}
+.ach-p{margin-top:.4em}.ach-p .bar2{height:6px}.ach-p small{display:block;font-size:.72rem;color:var(--ink2);margin-top:.25em;font-variant-numeric:tabular-nums}
+.ach.got .ach-p .b2{background:var(--tier)}
+.tdots{display:flex;gap:4px;margin-top:.45em}.tdots i{width:8px;height:8px;border-radius:50%;background:var(--hair)}.tdots i.on{background:var(--tier)}
+.ach .bdate{color:var(--tier);font-weight:600;margin-top:.25em}
+/* the celebration */
+.cele{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(28,26,27,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fadein .25s}
+.cele.out{animation:fadeout .24s forwards}
+.cele-card{position:relative;overflow:hidden;width:min(26rem,100%);padding:26px 22px 20px;border-radius:26px;text-align:center;background:var(--fig);color:var(--ink);border:1px solid var(--hair);box-shadow:0 30px 70px var(--shadow);animation:celein .55s var(--spring)}
+.cele-k{margin:0;font-size:.74rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tier,var(--at))}
+.cele-medal{width:88px;height:88px;margin:14px auto 10px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--tier,var(--a1));box-shadow:0 0 0 9px color-mix(in srgb,var(--tier,var(--a1)) 20%,transparent),0 12px 32px color-mix(in srgb,var(--tier,var(--a1)) 45%,transparent);animation:medal .9s var(--spring)}
+.cele-card h3{margin:.2em 0 .3em;font-size:1.55rem}.cele-card p{margin:.3em 0}.cele-xp{font:800 1.2rem ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:var(--tier,var(--at));margin:.5em 0 .2em}.cele-card .row{justify-content:center;margin-top:1em}
+.confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-14px;left:var(--x);width:8px;height:13px;border-radius:2px;background:var(--tier,var(--a1));opacity:.95;transform:rotate(var(--r));animation:fall 1.9s var(--d) cubic-bezier(.3,.6,.6,1) forwards}
+.confetti i[style*="--c:1"]{background:var(--a2)}.confetti i[style*="--c:2"]{background:var(--ink2)}.confetti i[style*="--c:3"]{background:var(--at);border-radius:50%;width:9px;height:9px}
+@keyframes fall{to{transform:translateY(460px) rotate(calc(var(--r)*2));opacity:0}}
+@keyframes celein{from{opacity:0;transform:translateY(26px) scale(.9)}}
+@keyframes medal{0%{transform:scale(.3) rotate(-30deg)}60%{transform:scale(1.12)}}
+@keyframes fadein{from{opacity:0}}@keyframes fadeout{to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.cele,.cele-card,.cele-medal,.confetti i{animation:none}}
+@media(max-width:600px){.ach-grid{grid-template-columns:1fr}}
 .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:8px}
 .badge{display:flex;gap:11px;align-items:flex-start;padding:.65em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);box-shadow:inset 0 1px 0 var(--hi)}
 .badge b{display:block;font-size:.9rem}.badge div>span{display:block;font-size:.78rem;color:var(--ink2)}.badge .bic{display:grid}
@@ -756,7 +791,7 @@ function hotspot(host,svg,parts,opt={}){
     drop=(chip,pid)=>{if(!chip||chip.disabled)return;const p=byId[chip.dataset.id];
       if(pid===p.id){chip.disabled=true;chip.classList.remove('on');chip.classList.add('placed');$$(`[data-p="${pid}"]`,fig).forEach(e=>e.classList.add('got'));say(pid);left--;sel=null;fb.hidden=false;fb.className='fb ok';
         fb.innerHTML=left?`<b>${p.n}:</b> correct.`:`<b>All labels are in position.</b> Mistakes: ${miss}. <button type="button" class="btn sm">Start again</button>`;
-        if(!left){const bb=best();if(bb.d==null||miss<bb.d)Store.wSet(key,Object.assign({},bb,{d:miss}));$('button',fb).onclick=labels;markStudy();checkBadges();}}
+        if(!left){const bb=best();if(bb.d==null||miss<bb.d)Store.wSet(key,Object.assign({},bb,{d:miss}));$('button',fb).onclick=labels;markStudy();checkAch();}}
       else{miss++;fx(chip,'shake');fb.hidden=false;fb.className='fb bad';fb.innerHTML=`That part is not the ${p.n.toLowerCase()}. Try again.`;}};
     shuffle(parts).forEach(p=>{const c=el('button',{type:'button',class:'chip drag','data-id':p.id},p.n);pool.append(c);let g=null,sx=0,sy=0,moved=false;
       c.onclick=()=>{if(moved||c.disabled)return;sel=sel===c?null:c;$$('.chip',pool).forEach(x=>x.classList.toggle('on',x===sel));};
@@ -898,7 +933,7 @@ function reviewUI(g,sk,le){
   function results(o){o=o||{};const exam=o.used!=null,R=T.res,wr=o.wr,n=R.length+(wr?wr.max:0),c=R.filter(r=>r.ok).length+(wr?wr.got:0);if(!n){home();return;}view='res';host.innerHTML='';
     const by={};R.forEach(r=>{const b=by[r.x.L]||(by[r.x.L]=[0,0]);b[1]++;if(r.ok)b[0]++;if(r.x.id)srMark(r.x.id,!!r.ok);});
     const prev=Store.rev(sk)||{},f=c/n,better=(pb)=>!pb||f>pb.c/pb.n||(f===pb.c/pb.n&&n>pb.n)?{c,n}:pb,pl=exam?prev.ex:prev.last,best=better(exam?prev.exb:prev.best);
-    const ef=prev.exf;if(exam&&ef&&o.used<ef.ms&&f>=ef.f)award('examPB');
+    const ef=prev.exf;if(exam&&ef&&o.used<ef.ms&&f>=ef.f)inc('examPB');if(exam){if(f>=.85)inc('exam85');if(f>=1)inc('exam100');}else inc('tests');checkAch();
     Store.setRev(sk,Object.assign({},prev,exam?{ex:{c,n},exb:best,exf:f>=.6&&(!ef||(o.used<ef.ms&&f>=ef.f))?{ms:o.used,f}:ef}:{last:{c,n},best,k:(prev.k||0)+1}));
     const vd=f>=.85?['You are prepared for this section.','Take a mixed test from time to time to keep this level.']:f>=.6?['You know most of this section.','Study the lessons with the lowest results below. Then take the test again.']:['Study this section again.','Start with the lessons that have the lowest results below. Read the notes, use the interactive tools and do the lesson questions.'];
     const rows=Object.keys(by).map(L=>({L:+L,c:by[L][0],n:by[L][1]})).sort((a,b)=>a.c/a.n-b.c/b.n||a.L-b.L),miss=R.filter(r=>!r.ok);
@@ -1043,6 +1078,7 @@ function boot(){
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
   Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();refreshLive();homeDot();unitMarks();});
+  migrateBadges();Store.on(()=>{if(!gv('achMig'))migrateBadges();});
   Store.connect();
 }
 
@@ -1270,6 +1306,11 @@ const ICON={
   chem:'<path d="M9 3h6M10.3 3v6.2l-5.6 9.4A1.6 1.6 0 0 0 6.1 21h11.8a1.6 1.6 0 0 0 1.4-2.4l-5.6-9.4V3"/><path d="M7.2 15h9.6"/>',
   math:'<path d="M17.5 4.5h-11l6.2 7.5-6.2 7.5h11"/>',
   home:'<path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  flame:'<path d="M12 3c.5 3.5 4.5 5 4.5 9.5A4.5 4.5 0 0 1 12 17a4.5 4.5 0 0 1-4.5-4.5c0-1.8.8-3 1.8-4 .3 1.4 1 2.2 2 2.5C11 8 10.8 5.5 12 3Z"/><path d="M8.5 20.5h7"/>',
+  sparkle:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/>',
+  compass:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
+  map:'<path d="M3 6.5 9 4l6 2.5 6-2.5v13.5L15 20l-6-2.5-6 2.5Z"/><path d="M9 4v13.5M15 6.5V20"/>',
+  trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 5"/><path d="M12 14v3.5M8.5 20.5h7"/>',
   lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
   crown:'<path d="M3.5 8 7.5 12.5 12 5.5l4.5 7 4-4.5L19 18.5H5Z"/>',
   medal:'<circle cx="12" cy="14.5" r="5.5"/><path d="M8.6 10 6 3.5h4l2 4 2-4h4L15.4 10"/>',
@@ -5456,19 +5497,20 @@ function onAnswer(id,ok,o={}){
   const td=today(),has=o.sk&&SUBJ[o.sk]&&o.L!=null&&o.L>=0,before=has?lessonLevel(o.sk,o.L):null;
   if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice();if(ok&&!d.includes(td))d.push(td);Store.xs('h',id,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1)});}
   if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
+  if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
   markStudy();if(!o.nocombo)comboStep(ok);
   if(before){const a=lessonLevel(o.sk,o.L),t=SUBJ[o.sk].lessons[o.L].t;
     if(a.lv===3&&before.lv<3)toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');
     else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again on another day to master it.');}
   afterChange();}
-function afterChange(){chipProgress();refreshLive();checkBadges();homeDot();}
+function afterChange(){chipProgress();refreshLive();checkAch();homeDot();}
 
 /* ----- weekly goal: 4 study days in each week (Monday to Sunday) ----- */
 function weekStart(d){d=new Date(d);d.setHours(0,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return d;}
 function weekCount(ws){const days=new Set(gv('days')||[]);let n=0;for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);if(days.has(dayOf(d.getTime())))n++;}return n;}
 function weeksInRow(){const ws=weekStart(new Date());let k=0;if(weekCount(ws)<4)ws.setDate(ws.getDate()-7);while(k<300&&weekCount(ws)>=4){k++;ws.setDate(ws.getDate()-7);}return k;}
 function totalWeeksMet(){const m={};(gv('days')||[]).forEach(d=>{const [y,mo,da]=d.split('-').map(Number),k=dayOf(weekStart(new Date(y,mo-1,da)).getTime());m[k]=(m[k]||0)+1;});return Object.values(m).filter(n=>n>=4).length;}
-function markStudy(){const td=today(),d=gv('days')||[];if(d.includes(td))return;gset('days',d.concat(td).slice(-400));
+function markStudy(){const td=today(),d=gv('days')||[];if(d.includes(td))return;const last=d[d.length-1];if(last){const [y,m,da]=last.split('-').map(Number);if((Date.now()-new Date(y,m-1,da).getTime())/864e5>=7)inc('back');}gset('days',d.concat(td).slice(-400));
   if(weekCount(weekStart(new Date()))===4)toast(icon('cal',15)+' Weekly goal met: you studied on 4 days this week.');}
 
 /* ----- answer combo: correct answers in a row ----- */
@@ -5546,7 +5588,7 @@ function speed(host,name,o){const box=el('div',{class:'speed'});host.append(box)
     const tick=()=>{if(!box.isConnected)return;const t=$('[data-clock]',box);if(t)t.textContent=fmtS(performance.now()-t0);raf=requestAnimationFrame(tick);};
     const show=()=>{const x=its[i];box.innerHTML=`<div class="qh"><b>${o.title}: ${i+1} of ${its.length}</b><span class="score" data-clock>${fmtS(performance.now()-t0)}</span></div>${x.q}<div class="ops">${x.o.map((t,j)=>`<button type="button" class="op" data-j="${j}">${t}</button>`).join('')}</div><div class="row"><button type="button" class="btn sm ghost" data-stop>Stop</button></div>`;
       $$('.op',box).forEach(b=>b.onclick=()=>{if(+b.dataset.j===x.a){i++;i<its.length?show():done();}else{miss++;b.classList.add('bad');b.disabled=true;fx(b,'shake');}});$('[data-stop]',box).onclick=()=>{o.on&&o.on(null);idle('Stopped.');};o.on&&o.on(x);};
-    const done=()=>{cancelAnimationFrame(raf);o.on&&o.on(null);const ms=Math.round(performance.now()-t0),b=best(),nb=!b||ms<b;if(nb)Store.wSet(key,{s:ms});if(b&&ms<b)award('speed');markStudy();afterChange();
+    const done=()=>{cancelAnimationFrame(raf);o.on&&o.on(null);const ms=Math.round(performance.now()-t0),b=best(),nb=!b||ms<b;if(nb)Store.wSet(key,{s:ms});if(b&&ms<b)inc('speedPB');markStudy();afterChange();
       idle(`Time: <b>${fmtS(ms)}</b> with ${miss} ${miss===1?'mistake':'mistakes'}.${nb?(b?' This is a new best time.':''):''}`);};
     show();tick();}
   idle();}
@@ -5554,29 +5596,97 @@ function speed(host,name,o){const box=el('div',{class:'speed'});host.append(box)
 /* ----- badges: each one stands for something that you learned or practised ----- */
 const hsPerfect=(sk,t)=>{const v=Store.w('hs_'+sk+'-'+LX(sk,t));return !!v&&v.d===0;};
 const chCount=()=>Store.xk('g').filter(k=>k.startsWith('ch_')&&Store.x('g',k).ok).length;
-const BADGES=[
-  {id:'master1',ic:'check',n:'First mastery',d:'Master a lesson: answer all of its questions correctly on two different days.',test:()=>allLessons().some(x=>x.lv===3)},
-  {id:'prac5',ic:'target',n:'Five lessons practised',d:'Answer every question of 5 lessons correctly.',test:()=>allLessons().filter(x=>x.lv>=2).length>=5},
-  {id:'unitM',ic:'star',n:'Unit mastered',d:'Master every lesson of one unit.',test:()=>UORDER.some(sk=>unitLessons(sk).every(x=>x.lv===3))},
-  {id:'comp10',ic:'comp',n:'Component method',d:'Solve 10 problems in “2-D: components” with the component method.',test:()=>gN('cnt_mom_'+LX('mom','2-D: components'))>=10},
-  {id:'neuron0',ic:'ns',n:'Neuron map',d:'Place all parts of the neuron in “Drag labels” with no mistakes.',test:()=>hsPerfect('ns','The neuron')},
-  {id:'brain0',ic:'ns',n:'Brain map',d:'Place all regions of the brain with no mistakes.',test:()=>hsPerfect('ns','Brain and CNS')},
-  {id:'eye0',ic:'sn',n:'Eye map',d:'Place all parts of the eye with no mistakes.',test:()=>hsPerfect('sn','The eye')},
-  {id:'ear0',ic:'sn',n:'Ear map',d:'Place all parts of the ear with no mistakes.',test:()=>hsPerfect('sn','The ear')},
-  {id:'combo10',ic:'bolt',n:'Ten in a row',d:'Answer 10 questions correctly in a row.',test:()=>gN('comboBest')>=10},
-  {id:'stuck',ic:'reset',n:'It stuck',d:'Answer a missed question correctly after 1, 3 and 7 days, so it leaves spaced repetition.',test:()=>gN('srOut')>=1},
-  {id:'chall',ic:'star',n:'Challenge solved',d:'Solve a challenge problem.',test:()=>chCount()>=1},
-  {id:'boss',ic:'crown',n:'Boss beaten',d:'Beat the boss round of a unit.',test:()=>UORDER.some(bossWon)},
-  {id:'examPB',ic:'exam',n:'Faster exam',d:'Beat your best unit exam time with the same or a better score.',test:()=>false},
-  {id:'speed',ic:'bolt',n:'New best time',d:'Beat your own best time in a speed round.',test:()=>false},
-  {id:'daily5',ic:'cal',n:'Daily habit',d:'Finish 5 daily challenges.',test:()=>gN('dailyN')>=5},
-  {id:'week',ic:'cal',n:'Weekly goal',d:'Study on 4 days in one week.',test:()=>totalWeeksMet()>=1}];
-function award(id){const got=Object.assign({},gv('badges')||{});if(got[id])return;got[id]=today();gset('badges',got);const b=BADGES.find(x=>x.id===id);if(b)toast(icon('medal',15)+' Badge earned: '+b.n);}
-function checkBadges(){const got=gv('badges')||{};BADGES.forEach(b=>{if(!got[b.id]){let ok=false;try{ok=b.test();}catch(e){}if(ok)award(b.id);}});}
+/* ===================== achievements: tiered, with progress, points, titles and a celebration ===================== */
+const TIERS=[['Bronze','t1'],['Silver','t2'],['Gold','t3'],['Platinum','t4'],['Diamond','t5']],TIER_XP=[20,40,80,150,250];
+const ACH_CATS=[['mastery','Mastery','star'],['practice','Practice','target'],['habit','Consistency','flame'],['challenge','Challenge','crown'],['explore','Explorer','compass'],['secret','Secret','sparkle']];
+const TITLES=[[0,'Newcomer'],[100,'Apprentice'],[300,'Scholar'],[700,'Expert'],[1400,'Master'],[2500,'Grandmaster']];
+const MAPS=[['ns','The neuron'],['ns','Brain and CNS'],['sn','The eye'],['sn','The ear']];
+const pl=(n,s,p)=>n===1?s:(p||s+'s');
+const ACH=[
+  {id:'prac',cat:'mastery',ic:'target',n:'Practised',d:t=>`Answer every question of ${t} ${pl(t,'lesson')} correctly.`,tiers:[1,5,15,30,62],v:()=>allLessons().filter(x=>x.lv>=2).length},
+  {id:'master',cat:'mastery',ic:'check',n:'Mastered',d:t=>`Master ${t} ${pl(t,'lesson')}: every question correct on two different days.`,tiers:[1,5,15,30,62],v:()=>allLessons().filter(x=>x.lv===3).length},
+  {id:'unit',cat:'mastery',ic:'star',n:'Unit mastered',d:t=>`Master every lesson of ${t} ${pl(t,'unit')}.`,tiers:[1,3,5,8],v:()=>UORDER.filter(sk=>unitLessons(sk).every(x=>x.lv===3)).length},
+  {id:'maps',cat:'mastery',ic:'ns',n:'Map maker',d:t=>`Place every label with no mistakes in ${t} of the 4 diagrams (neuron, brain, eye, ear).`,tiers:[1,2,4],v:()=>MAPS.filter(x=>hsPerfect(x[0],x[1])).length},
+  {id:'ok',cat:'practice',ic:'check',n:'Correct answers',d:t=>`Answer ${t} questions correctly, in any mode.`,tiers:[25,100,300,1000,2500],v:()=>gN('n_ok')},
+  {id:'num',cat:'practice',ic:'exam',n:'Precision',d:t=>`Get ${t} numeric answers right.`,tiers:[10,50,150,400],v:()=>gN('n_num')},
+  {id:'bank',cat:'practice',ic:'book',n:'Review bank',d:t=>`Answer ${t} review-bank questions correctly.`,tiers:[10,50,150,400],v:()=>gN('n_rev')},
+  {id:'combo',cat:'practice',ic:'bolt',n:'Combo',d:t=>`Answer ${t} questions correctly in a row.`,tiers:[5,10,20,40],v:()=>gN('comboBest')},
+  {id:'sr',cat:'practice',ic:'reset',n:'It stuck',d:t=>`${t} missed ${pl(t,'question leaves','questions leave')} spaced repetition after 1, 3 and 7 days.`,tiers:[1,5,20,50],v:()=>gN('srOut')},
+  {id:'comp',cat:'practice',ic:'comp',n:'Component method',d:t=>`Solve ${t} problems in “2-D: components”.`,tiers:[10,30],v:()=>gN('cnt_mom_'+LX('mom','2-D: components'))},
+  {id:'streak',cat:'habit',ic:'flame',n:'Streak',d:t=>`Study on ${t} days in a row.`,tiers:[3,7,14,30,60],v:streakNow},
+  {id:'days',cat:'habit',ic:'cal',n:'Study days',d:t=>`Study on ${t} different days.`,tiers:[5,20,50,100,200],v:()=>(gv('days')||[]).length},
+  {id:'weeks',cat:'habit',ic:'cal',n:'Weekly goal',d:t=>`Meet the weekly goal of 4 days in ${t} ${pl(t,'week')}.`,tiers:[1,4,10,25],v:totalWeeksMet},
+  {id:'daily',cat:'habit',ic:'cal',n:'Daily habit',d:t=>`Finish ${t} daily ${pl(t,'challenge')}.`,tiers:[1,5,20,50,100],v:()=>gN('dailyN')},
+  {id:'daily5',cat:'habit',ic:'sparkle',n:'Perfect day',d:t=>`Get 5 of 5 in ${t} daily ${pl(t,'challenge')}.`,tiers:[1,5,15,40],v:()=>gN('daily5')},
+  {id:'chall',cat:'challenge',ic:'star',n:'Challenge solver',d:t=>`Solve ${t} challenge ${pl(t,'problem')}.`,tiers:[1,5,15,30],v:chCount},
+  {id:'boss',cat:'challenge',ic:'crown',n:'Boss beaten',d:t=>`Beat the boss round of ${t} ${pl(t,'unit')}.`,tiers:[1,3,5,8],v:()=>UORDER.filter(bossWon).length},
+  {id:'exam85',cat:'challenge',ic:'exam',n:'Exam ready',d:t=>`Score 85 % or more on ${t} timed ${pl(t,'exam')}.`,tiers:[1,5,15],v:()=>gN('exam85')},
+  {id:'examPB',cat:'challenge',ic:'timer',n:'Faster exam',d:t=>`Beat your best exam time with the same or a better score, ${t} ${pl(t,'time')}.`,tiers:[1,3,10],v:()=>gN('examPB')},
+  {id:'speed',cat:'challenge',ic:'bolt',n:'New best time',d:t=>`Beat your own best time in a speed round ${t} ${pl(t,'time')}.`,tiers:[1,5,15],v:()=>gN('speedPB')},
+  {id:'tests',cat:'challenge',ic:'target',n:'Review tests',d:t=>`Finish ${t} review ${pl(t,'test')}.`,tiers:[1,10,30,75],v:()=>gN('tests')},
+  {id:'subj',cat:'explore',ic:'compass',n:'Well rounded',d:t=>`Answer questions in ${t} different subjects.`,tiers:[2,4,6],v:()=>SUBJECTS.filter(s=>s.units.some(sk=>unitLessons(sk).some(x=>x.lv>=1))).length},
+  {id:'units',cat:'explore',ic:'map',n:'Explorer',d:t=>`Start a lesson in ${t} different units.`,tiers:[2,4,8],v:()=>UORDER.filter(sk=>unitLessons(sk).some(x=>x.lv>=1)).length},
+  {id:'figs',cat:'explore',ic:'exam',n:'Graph reader',d:t=>`Answer ${t} graph questions correctly.`,tiers:[5,20,50],v:()=>gN('n_fig')},
+  {id:'owl',cat:'secret',secret:1,ic:'moon',n:'Night owl',d:()=>'Answer a question between midnight and 5 am.',tiers:[1],v:()=>gN('owl')},
+  {id:'bird',cat:'secret',secret:1,ic:'sun',n:'Early bird',d:()=>'Answer a question between 5 am and 8 am.',tiers:[1],v:()=>gN('bird')},
+  {id:'back',cat:'secret',secret:1,ic:'reset',n:'Comeback',d:()=>'Return to study after a break of 7 days or more.',tiers:[1],v:()=>gN('back')},
+  {id:'exam100',cat:'secret',secret:1,ic:'crown',n:'Flawless',d:()=>'Score 100 % on a timed exam.',tiers:[1],v:()=>gN('exam100')},
+  {id:'allmaps',cat:'secret',secret:1,ic:'trophy',n:'Anatomist',d:()=>'Complete all four diagram maps with no mistakes.',tiers:[1],v:()=>MAPS.every(x=>hsPerfect(x[0],x[1]))?1:0}];
+const ACH_TOTAL=ACH.reduce((s,a)=>s+a.tiers.length,0);
+/* a silent counter; checkAch runs after each answer and after each round */
+const inc=(k,n=1)=>Store.xs('g',k,{n:gN(k)+n});
+function streakNow(){const days=new Set(gv('days')||[]);if(!days.size)return 0;const d=new Date();d.setHours(0,0,0,0);if(!days.has(dayOf(d.getTime())))d.setDate(d.getDate()-1);let n=0;while(n<2000&&days.has(dayOf(d.getTime()))){n++;d.setDate(d.getDate()-1);}return n;}
+const achState=()=>gv('ach')||{};
+function achPoints(st){st=st||achState();let p=0;ACH.forEach(a=>(st[a.id]||[]).forEach((_,k)=>p+=TIER_XP[k]));return p;}
+function achTitle(p){let t=TITLES[0],next=null;for(const x of TITLES){if(p>=x[0])t=x;else{next=x;break;}}return {name:t[1],from:t[0],next};}
+const achVal=a=>{try{return a.v()||0;}catch(e){return 0;}};
+let ACH_Q=[],ACH_BUSY=0;
+function checkAch(silent){const st=Object.assign({},achState()),p0=achPoints(st);let ch=false,n=0;
+  ACH.forEach(a=>{const have=(st[a.id]||[]).slice(),v=achVal(a);while(have.length<a.tiers.length&&v>=a.tiers[have.length]){have.push(today());st[a.id]=have;ch=true;n++;if(!silent)ACH_Q.push({a,k:have.length-1});}});
+  if(ch){gset('ach',st);const t0=achTitle(p0).name,t1=achTitle(achPoints(st)).name;if(t1!==t0&&!silent)ACH_Q.push({title:t1});}if(!silent)celebrateNext();return n;}
+/* one-time move from the old on/off badges: their dates are kept, exam and speed records are counted, and the tiers already earned from your history appear without a celebration for each one */
+function migrateBadges(){if(gv('achMig'))return;const old=gv('badges')||{};
+  if(old.examPB&&!gN('examPB'))inc('examPB');if(old.speed&&!gN('speedPB'))inc('speedPB');
+  const n=checkAch(true),st=Object.assign({},achState()),MAP={master1:['master',0],prac5:['prac',1],unitM:['unit',0],comp10:['comp',0],neuron0:['maps',0],brain0:['maps',0],eye0:['maps',0],ear0:['maps',0],combo10:['combo',1],stuck:['sr',0],chall:['chall',0],boss:['boss',0],examPB:['examPB',0],speed:['speed',0],daily5:['daily',1],week:['weeks',0]};
+  Object.keys(old).forEach(id=>{const m=MAP[id];if(!m||!st[m[0]]||st[m[0]].length<=m[1])return;const a=st[m[0]].slice();if(old[id]<a[m[1]])a[m[1]]=old[id];st[m[0]]=a;});
+  gset('ach',st);gset('achMig',today());if(n)toast(icon('trophy',15)+` Achievements updated: ${n} ${n===1?'tier':'tiers'} earned from your history so far.`);}
+/* a timed exam or round is running: the celebration waits until it ends */
+const timedRun=()=>$$('[data-t]').some(e=>e.isConnected&&e.closest('article.lesson:not([hidden])'));
+/* the celebration: one card for each new tier, queued */
+function celebrateNext(){if(ACH_BUSY||!ACH_Q.length||timedRun())return;ACH_BUSY=1;const x=ACH_Q.shift(),pts=achPoints(),tt=achTitle(pts),more=ACH_Q.length?`Next (${ACH_Q.length} more)`:'Continue';
+  const conf=RM?'':Array.from({length:40},(_,i)=>`<i style="--x:${(Math.random()*100).toFixed(0)}%;--d:${(Math.random()*.9).toFixed(2)}s;--r:${(Math.random()*720-360).toFixed(0)}deg;--c:${i%4}"></i>`).join('');
+  let body;
+  if(x.title)body=`<div class="cele-card t3"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">New title</p><div class="cele-medal">${icon('trophy',32)}</div><h3>${x.title}</h3><p>You have ${pts} achievement points.${tt.next?` The next title, ${tt.next[1]}, needs ${tt.next[0]}.`:' This is the highest title.'}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;
+  else{const {a,k}=x,T=TIERS[k],xp=TIER_XP[k],last=k+1>=a.tiers.length;
+    body=`<div class="cele-card ${a.secret?'t3':T[1]}"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">${a.tiers.length>1?T[0]+' tier':a.secret?'Secret achievement':'Achievement'} unlocked</p><div class="cele-medal">${icon(a.ic,32)}</div><h3>${a.n}</h3><p>${a.d(a.tiers[k])}</p>
+      <p class="cele-xp">+${xp} XP</p><p class="hint">${last?'Every tier of this achievement is complete.':'Next tier: '+a.d(a.tiers[k+1])}</p><p class="hint">${pts} points · ${tt.name}${tt.next?` · ${tt.next[0]-pts} to ${tt.next[1]}`:''}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;}
+  const d=el('div',{class:'cele',role:'dialog','aria-modal':'true','aria-label':'Achievement unlocked'},body),back=document.activeElement;document.body.append(d);
+  const close=()=>{if(!d.isConnected)return;d.classList.add('out');setTimeout(()=>{d.remove();ACH_BUSY=0;if(ACH_Q.length)celebrateNext();else if(back&&back.isConnected)back.focus();},RM?0:240);};
+  $('.btn',d).onclick=close;d.addEventListener('click',e=>{if(e.target===d)close();});d.addEventListener('keydown',e=>{if(e.key==='Escape')close();});$('.btn',d).focus();}
+/* the achievements card on the Today page */
+function achCard(g){const st=achState(),pts=achPoints(st),tt=achTitle(pts),earned=ACH.reduce((s,a)=>s+(st[a.id]||[]).length,0);
+  const rows=ACH.map(a=>{const k=(st[a.id]||[]).length,v=achVal(a),done=k>=a.tiers.length,t=done?a.tiers[k-1]:a.tiers[k],lo=k?a.tiers[k-1]:0,f=done?1:Math.min(1,Math.max(0,(v-lo)/(t-lo)));return {a,k,v,done,t,f,vis:!a.secret||k>0};});
+  const next=rows.filter(r=>!r.done&&r.vis&&r.f>0).sort((a,b)=>b.f-a.f||b.k-a.k).slice(0,3);
+  const recent=ACH.flatMap(a=>(st[a.id]||[]).map((d,k)=>({a,k,d}))).sort((x,y)=>y.d.localeCompare(x.d)).slice(0,4);
+  const c=card(g,`Achievements <span class="hint" style="font-weight:500">${earned} of ${ACH_TOTAL} tiers</span>`,`<div class="ach-top">
+    <div class="ach-title"><span class="hint">Your title</span><b>${icon('trophy',22)}${tt.name}</b><span class="hint">${pts} points${tt.next?` · ${tt.next[0]-pts} more for ${tt.next[1]}`:' · the highest title'}</span>${tt.next?`<div class="bar2"><i class="b2" data-w="${100*(pts-tt.from)/(tt.next[0]-tt.from)}"></i></div>`:''}</div>
+    <div class="ach-next"><span class="hint">Closest to unlock</span>${next.length?next.map(r=>`<div class="ach-n ${TIERS[r.k][1]}"><span class="bic sm">${icon(r.a.ic,15)}</span><div><b>${r.a.n}${r.a.tiers.length>1?' · '+TIERS[r.k][0]:''}</b><div class="bar2"><i class="b2" data-w="${100*r.f}"></i></div></div><span class="hint">${r.v} / ${r.t}</span></div>`).join(''):'<p class="hint">Answer a few questions to start the first ones.</p>'}</div>
+    ${recent.length?`<div class="ach-recent"><span class="hint">Recently earned</span><div>${recent.map(r=>`<span class="chip ${TIERS[r.k][1]}">${icon(r.a.ic,13)}${r.a.n}${r.a.tiers.length>1?' · '+TIERS[r.k][0]:''}<small>${fmtDay(r.d)}</small></span>`).join('')}</div></div>`:''}</div>
+    <div class="ach-f"><span data-f></span><span data-cat class="chipsrow"></span></div><div class="ach-grid"></div><p class="hint">Each tier gives XP: Bronze 20, Silver 40, Gold 80, Platinum 150, Diamond 250. Titles come from your total points.</p>`);
+  let filt=0,cat='all';const grid=$('.ach-grid',c);
+  const draw=()=>{const list=rows.filter(r=>(cat==='all'||r.a.cat===cat)&&(filt===0||(filt===1?!r.done&&(r.f>0||r.k>0):filt===2?r.k>0:r.k===0)));
+    grid.innerHTML=list.map(r=>{const k=r.k,tier=k?TIERS[k-1]:null,nx=r.done?null:TIERS[k];
+      if(!r.vis)return `<div class="ach secret"><span class="bic">${icon('lock',18)}</span><div><b>Secret achievement</b><span>Keep studying to reveal it.</span></div></div>`;
+      return `<div class="ach${k?' got '+tier[1]:''}${r.done?' max':''}"><span class="bic">${icon(k?r.a.ic:'lock',18)}</span><div><b>${r.a.n}${r.a.tiers.length>1?` <em>${k?tier[0]:'Locked'}</em>`:''}</b><span>${r.a.d(r.done?r.a.tiers[k-1]:r.a.tiers[k])}</span>
+        ${r.done?`<span class="bdate">Completed ${fmtDay(st[r.a.id][k-1])}</span>`:`<div class="ach-p"><div class="bar2"><i class="b2" style="width:${(100*r.f).toFixed(1)}%"></i></div><small>${r.v} / ${r.t}${nx?' · '+(r.a.tiers.length>1?nx[0]+' ':'')+'+'+TIER_XP[k]+' XP':''}</small></div>`}
+        <span class="tdots" role="img" aria-label="${k} of ${r.a.tiers.length} tiers">${r.a.tiers.map((_,i)=>`<i class="${i<k?'on '+TIERS[i][1]:''}"></i>`).join('')}</span></div></div>`;}).join('')||'<p class="hint">Nothing here yet.</p>';};
+  seg($('[data-f]',c),['All','In progress','Earned','Locked'],i=>{filt=i;draw();});
+  const cats=$('[data-cat]',c);[['all','All']].concat(ACH_CATS.map(x=>[x[0],x[1]])).forEach(([k,n])=>{const b=el('button',{type:'button',class:'chip'+(k==='all'?' on':''),'aria-pressed':String(k==='all')},n);b.onclick=()=>{cat=k;$$('.chip',cats).forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',String(x===b));});draw();};cats.append(b);});
+  draw();grow(c);}
 
 /* ----- experience points: most of them come from mastery ----- */
 function xpState(){const all=allLessons(),np=all.filter(x=>x.lv>=2).length,nm=all.filter(x=>x.lv===3).length,nc=chCount(),nb=UORDER.filter(bossWon).length,nd=gN('dailyN'),nw=totalWeeksMet();
-  const rows=[['Lessons practised',np+' × 20',np*20],['Lessons mastered',nm+' × 30',nm*30],['Challenge problems solved',nc+' × 25',nc*25],['Boss rounds beaten',nb+' × 50',nb*50],['Daily challenges done',nd+' × 10',nd*10],['Weeks with the goal met',nw+' × 15',nw*15]];
+  const ap=achPoints(),at=Object.values(achState()).reduce((s,a)=>s+a.length,0);const rows=[['Lessons practised',np+' × 20',np*20],['Lessons mastered',nm+' × 30',nm*30],['Challenge problems solved',nc+' × 25',nc*25],['Boss rounds beaten',nb+' × 50',nb*50],['Daily challenges done',nd+' × 10',nd*10],['Weeks with the goal met',nw+' × 15',nw*15],['Achievement tiers',at+' earned',ap]];
   return {rows,xp:rows.reduce((s,r)=>s+r[2],0)};}
 const lvFor=xp=>{let n=1;while(xp>=50*n*(n+1))n++;return n;};
 
@@ -5598,7 +5708,7 @@ function dailyCard(g){const c=card(g,'','','w7'),st=()=>{const d=Store.x('g','da
   function run(){let d=st();if(!d){d={day:today(),ids:pickDaily(),res:[]};Store.xs('g','daily',d);}
     const items=d.ids.slice(d.res.length).map(qItem).filter(Boolean);HOME_BUSY=1;c.innerHTML=`<h3>${icon('cal',18)} Daily challenge</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,offset:d.res.length,total:d.ids.length,step:res=>{const dd=st()||d;Store.xs('g','daily',{day:dd.day,ids:dd.ids,res:dd.res.concat(res[res.length-1].ok)});},
-      done:()=>{HOME_BUSY=0;const dd=st();if(dd&&dd.res.length>=dd.ids.length&&!dd.fin){Store.xs('g','daily',Object.assign({},dd,{fin:1}));Store.xs('g','dailyN',{n:gN('dailyN')+1});toast(icon('cal',15)+' Daily challenge done. See you tomorrow.');}afterChange();view();}});}
+      done:()=>{HOME_BUSY=0;const dd=st();if(dd&&dd.res.length>=dd.ids.length&&!dd.fin){Store.xs('g','daily',Object.assign({},dd,{fin:1}));Store.xs('g','dailyN',{n:gN('dailyN')+1});if(dd.res.every(Boolean))inc('daily5');toast(icon('cal',15)+' Daily challenge done. See you tomorrow.');}afterChange();view();}});}
   view();}
 function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily');if(b)b.classList.toggle('tdue',!(d&&d.day===today()&&d.fin));}
 
@@ -5608,8 +5718,8 @@ function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY)homeRender(L);});}
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
 function homeRender(L){HOME_BUSY=0;const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
-  L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);badgeCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));}
+  L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
@@ -5619,15 +5729,13 @@ function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt
     (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${LVN[x.lv]}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
   $$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,L]=b.dataset.go.split('_');goLesson(sk,+L);});}
 function levelCard(g,xs,lv,lo,hi){const c=card(g,'Level '+lv,`<div class="bar2" style="height:12px"><i class="b2" data-w="${100*(xs.xp-lo)/(hi-lo)}"></i></div><p><b>${xs.xp} XP</b> · ${hi-xs.xp} XP to level ${lv+1}</p>
-  <table class="xpt">${xs.rows.map(r=>`<tr><td>${r[0]}</td><td class="hint">${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('')}</table><p class="hint">Most XP comes from mastery, so your level shows what you know.</p>`,'half');grow(c);}
+  <table class="xpt">${xs.rows.map(r=>`<tr><td>${r[0]}</td><td class="hint">${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('')}</table><p class="hint">Most XP comes from mastery and achievements, so your level shows what you know and how you study.</p>`,'half');grow(c);}
 function mapCard(g){const c=card(g,'Progress map','<p class="hint">Each circle is a lesson. It fills in as you go from Learning to Practised to Mastered. The crown at the end is the boss round. Select a circle to open it.</p><div class="pmap"></div>'),pm=$('.pmap',c);
   UORDER.forEach(sk=>{const ls=unitLessons(sk),rv=SUBJ[sk].lessons.findIndex(l=>l.rv),row=el('div',{class:'pm-u'},`<div class="pm-h">${icon(sk,16)}${SUBJ[sk].name}<span class="hint">${ls.filter(x=>x.lv===3).length} of ${ls.length} mastered</span></div><div class="pm-path"></div>`),p=$('.pm-path',row);
     ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+LVN[x.lv];
       const n=el('button',{type:'button',class:'pm-n','data-lv':x.lv,style:'--p:'+(x.ok1/x.n),'aria-label':t,title:t},icon(x.lv===3?'check':lessonIcon(sk,x.L),16));n.onclick=()=>goLesson(sk,x.L);p.append(n);});
     p.append(el('i',{class:'pm-l'+(ls.every(x=>x.lv>=2)?' on':'')}));const b=bossWon(sk),bn=el('button',{type:'button',class:'pm-n boss'+(b?' won':''),'aria-label':'Boss round: '+(b?'beaten':'not beaten yet'),title:'Boss round'},icon('crown',17));
     bn.onclick=()=>goLesson(sk,rv);p.append(bn);pm.append(row);});}
-function badgeCard(g){const got=gv('badges')||{},n=BADGES.filter(b=>got[b.id]).length;
-  card(g,`Badges <span class="hint" style="font-weight:500">${n} of ${BADGES.length}</span>`,`<div class="badges">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bic">${icon(got[b.id]?b.ic:'lock',18)}</span><div><b>${b.n}</b><span>${b.d}</span>${got[b.id]?`<span class="bdate">Earned ${fmtDay(got[b.id])}</span>`:''}</div></div>`).join('')}</div>`);}
 function goLesson(sk,L){const ti=SUBJECTS.findIndex(s=>s.units.includes(sk));curU[SUBJECTS[ti].k]=sk;curL[sk]=L;tabSeg.set(ti);showTab(ti);}
 
 /* ----- challenge problems: one for each lesson, unlocked by mastery ----- */

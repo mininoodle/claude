@@ -8,7 +8,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 
 | Tab | Units |
 |---|---|
-| Today | Daily 5-question challenge, weekly goal, level, progress map, badges |
+| Today | Daily 5-question challenge, weekly goal, level, progress map, achievements |
 | Physics | Momentum, Forces and fields |
 | Biology | Nervous system, Senses |
 | Chemistry | Equilibrium |
@@ -23,23 +23,10 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
 - Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 541 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
 - Boss round, challenge problems, speed rounds and an answer combo
+- Achievements: 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze to Diamond tiers (98 tiers), each with a progress bar, XP for every tier, titles from Newcomer to Grandmaster, a closest-to-unlock list, and a celebration card for each new tier. Badges earned before the achievements update are carried over once (their dates are kept) and the tiers already earned from your history appear without a celebration for each one.
 - Light and dark mode
 - Answers are saved in the browser, with an option to clear each section
 - Optional Google sign-in to sync progress across devices (see below)
-
-## v2: achievements revamp (separate copy)
-
-`v2/index.html` is a full copy of the site with a new achievements system. On GitHub Pages it is at `/claude/v2/`. Both copies share the same saved progress (same browser storage and the same synced account document), so you can switch between them.
-
-What is different in v2:
-
-- 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze, Silver, Gold, Platinum and Diamond tiers: 98 tiers in total instead of 16 on/off badges.
-- Every achievement shows a progress bar toward its next tier, the tier dots, and the XP the next tier gives (20, 40, 80, 150, 250).
-- A "Closest to unlock" list and a "Recently earned" strip on the Today page, with filters (All, In progress, Earned, Locked) and category chips.
-- Achievement points give a title (Newcomer, Apprentice, Scholar, Expert, Master, Grandmaster) shown under the level emblem, and count as XP.
-- A celebration overlay with confetti for each new tier and each new title. It waits until a timed exam or round ends. It respects reduced-motion settings.
-- Five secret achievements that stay hidden until earned (night owl, early bird, comeback after a week away, a flawless exam, all four diagram maps perfect).
-- New counters: correct answers, numeric answers, review-bank answers, graph questions, study streak, perfect daily challenges, exams at 85 % or more, review tests finished.
 
 ## Note on Language Arts content
 
