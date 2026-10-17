@@ -1311,12 +1311,25 @@
     bindLibrary();
     bindApp();
     bindViewport();
+    bindFlora();
     document.addEventListener('keydown', onKeydown);
     setupMediaSession();
     renderAll();
     updateTitle();
     updateMediaMetadata(currentTrack());
     return Player;
+  }
+  // Flora composes its sprites from decoration bitmaps (IMAGERY 3): a floor sprig asked for before they had loaded
+  // came back empty, so it is painted again once Flora is ready (only while the view is open; opening repaints anyway)
+  function bindFlora() {
+    if (!floraReady()) return;
+    var F = window.Flora;
+    var again = function () { if (ui && ui.xp && ui.xp.flora && !ui.xp.flora.hasAttribute('src')) scheduleXpFlora(); };
+    try {
+      if (typeof F.onReady === 'function') F.onReady(again);
+      else if (F.ready && typeof F.ready.then === 'function') F.ready.then(again, again);
+      if (typeof F.onLoaded === 'function') F.onLoaded(again);   // per bitmap: the sprig's own file is enough
+    } catch (e) { /* a Flora without the loading API draws at once */ }
   }
 
   /* ------------------------------------------------------------------ public object */

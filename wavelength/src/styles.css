@@ -183,6 +183,9 @@ input, textarea { caret-color: var(--fg); caret-shape: block; }
 input[type="search"]::-webkit-search-decoration, input[type="search"]::-webkit-search-cancel-button { display: none; }
 svg { display: block; }
 .flora { pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+/* a flower image waits for its decoration bitmap (IMAGERY 3: no src until Flora is ready): it keeps its box, so nothing
+   shifts when the sprite arrives, but shows no placeholder frame meanwhile */
+img.flora:not([src]) { visibility: hidden; }
 :root[data-filter="invert"] .flora:not(canvas) { filter: invert(1); }   /* white silhouettes become black ink; the petal canvas draws black itself */
 .fx-defs { position: absolute; width: 0; height: 0; overflow: hidden; }   /* never display:none */
 @media (prefers-reduced-motion: reduce) {

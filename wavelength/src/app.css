@@ -153,12 +153,16 @@
 .lib-list li:hover .lib-row__more, .lib-list li:focus-within .lib-row__more, .lib-row__more:focus-visible { opacity: 1; }
 .lib-empty { display: var(--rail-hide, flex); flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; font-size: var(--fs-s); line-height: var(--lh-s); color: var(--fg-3); flex: none; }
 .lib-empty strong { display: block; font-size: var(--fs); line-height: var(--lh); color: var(--fg); }
-.lib-empty__flora { width: 96px; height: 72px; margin-bottom: 6px; }
+.lib-empty__flora { width: 96px; height: 72px; margin-bottom: 6px; object-fit: contain; object-position: center bottom; }
 /* the sprig shrinks (down to nothing) rather than overflow the library and add a scrollbar */
 .lib-sprig { display: var(--rail-hide, block); margin-top: auto; padding: 8px 0 4px 16px; flex: 0 1 162px; min-height: 0; overflow: hidden; pointer-events: none; }
 .lib-sprig img { display: block; width: 260px; height: 100%; max-height: 150px; max-width: 100%; object-fit: contain; object-position: left bottom; }
 
 /* ---------- 3. #main window head (.main-header, DESIGN 3.5) ------------- */
+/* scrolling something into view (keyboard focus, scrollIntoView) clears the sticky window head, so a focused tile in
+   the first row of a grid never sits under it with its ring and label covered (WCAG 2.2 2.4.11); the head is
+   --strip-h tall (44 / 40 px) */
+#main { scroll-padding-top: var(--strip-h); }
 .main-header, .hero, .actions, .readout, .home-side, .win--filter { --fg-3: var(--fg-2); --fg-muted: var(--fg-2); }   /* no --fg-3 over a band or tint (3.0a) */
 .main-header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px; height: var(--strip-h); padding: var(--win-bar-h) 16px 0;
   background: var(--bg); isolation: isolate; will-change: transform; min-width: 0; }
@@ -205,7 +209,7 @@
 @container (max-width: 819px) { .page--home { grid-template-columns: minmax(0, 1fr); } }
 /* readout band: a neofetch on black, no chrome */
 .readout { display: flex; align-items: center; gap: 22px; min-height: 210px; padding-left: 12px; min-width: 0; }
-.readout__flora { display: block; flex: none; width: 236px; height: 196px; }
+.readout__flora { display: block; flex: none; width: 236px; height: 196px; object-fit: contain; object-position: center; }
 .readout__info { margin: 0; min-width: 0; font-size: var(--fs); line-height: 20px; }
 .readout__row { display: flex; min-width: 0; white-space: nowrap; }
 .readout__row dt { color: var(--fg); text-shadow: var(--bold); flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -264,6 +268,13 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 .card:active .card__cover { transform: translate(1px, 1px); }
 .card__cover { position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 0; box-shadow: none; }
 .card__cover .cover { width: 100%; height: 100%; border-radius: 0; }
+/* a user playlist's 2x2 mosaic built in the DOM (app.js mosaicInDom: the page was opened from disk and the canvas
+   could not be read back, IMAGERY 3): the wrapper takes the cover's box, classes and ink frame, the quarters are the
+   album files, each filtered like a cover (the fine filter at row sizes, as .cover--24..48) */
+.cover--mosaic { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; overflow: hidden; filter: none; background: #161616; }
+.cover--mosaic .cover-mosaic__q { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; background: var(--cover-empty); filter: var(--fx); }
+.cover--mosaic.cover--24 .cover-mosaic__q, .cover--mosaic.cover--32 .cover-mosaic__q, .cover--mosaic.cover--40 .cover-mosaic__q, .cover--mosaic.cover--48 .cover-mosaic__q,
+.quick-tile .cover--mosaic .cover-mosaic__q, .song-row__cover .cover--mosaic .cover-mosaic__q, .menu-item .cover--mosaic .cover-mosaic__q { filter: var(--fx-fine); }
 .card:hover .card__cover, .card:focus-within .card__cover { outline: 1px solid var(--fg); outline-offset: 2px; }
 .card--round .card__cover, .card--round .card__cover .cover { border-radius: 50%; }
 .card .play-btn { position: absolute; right: 0; bottom: 0; width: 32px; height: 32px; visibility: hidden; box-shadow: none; transform: none; }
@@ -285,23 +296,17 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 /* ---------- 7. Search (DESIGN 3.8) --------------------------------------- */
 .browse-title { margin: 12px 0 8px; }
 .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; min-width: 0; }
-.browse-card { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1; padding: 0; border-radius: 0; overflow: hidden; isolation: isolate; background: none;
+/* a genre tile is the genre's flower photograph (Catalog.cover('ge_x'), IMAGERY 3): a filtered img.cover filling the
+   square (explicit box, so nothing shifts when the file loads; --cover-empty shows until then) under the name on its
+   own black label. The tile's ground is the image itself: no colour field, no sprite. */
+.browse-card { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1; padding: 0; border-radius: 0; overflow: hidden; isolation: isolate; background: var(--cover-empty);
   color: var(--fg); font-size: var(--fs); line-height: var(--lh); text-align: left; cursor: pointer; transition: none; }
-.browse-card::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--browse-color, #000); filter: var(--fx); }
 .browse-card:hover, .browse-card:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; transform: none; }
 .browse-card:active { transform: translate(1px, 1px); }
-.browse-card .cover { display: none; }
+.browse-card .cover { display: block; position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; }
 .browse-card__name { position: absolute; top: 10px; left: 10px; z-index: 1; max-width: calc(100% - 20px); padding: 2px 6px; background: var(--bg); color: var(--fg); overflow-wrap: anywhere; }
-.browse-card__flora { position: absolute; right: 0; bottom: 0; width: 75%; height: 75%; }
-/* the dark filters: the genre colour becomes a darkened field with a tonal falloff toward the corners (the reference's
-   black ground behind a white silhouette, not a flat mid-grey block); colour and invert keep the raw field, ink its own */
-:root:not([data-filter="color"]):not([data-filter="invert"]):not([data-filter="ink"]) .browse-card::before {
-  background: radial-gradient(120% 120% at 80% 85%, transparent 30%, rgba(0,0,0,.6)), var(--browse-color, #000);
-  filter: brightness(.55) var(--fx); }
-/* dither: darkened before the 1-bit pattern so the field is sparse dots, and the white flower gets a black edge */
-:root[data-filter="dither"] .browse-card::before { background: var(--browse-color, #000); filter: brightness(.45) var(--fx); }   /* flat: an even field of sparse dots */
-:root[data-filter="dither"] .browse-card__flora { filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000); }
 :root[data-filter="ink"] .browse-card { outline: 1px solid var(--rule); outline-offset: -1px; }   /* on the unfiltered button (4.5) */
+:root[data-filter="ink"] .browse-card .cover { outline: none; }   /* the button's frame above is the tile's one ink frame */
 :root[data-filter="ink"] .browse-card:hover, :root[data-filter="ink"] .browse-card:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
 .search-chips { margin: 10px 0 14px; }
 .search-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 24px; align-items: stretch; margin-bottom: 24px; min-width: 0; }
@@ -327,7 +332,7 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 .top-result:hover .play-btn, .top-result:focus-within .play-btn, .top-result.is-playing .play-btn { visibility: visible; animation: reveal 120ms steps(2); }
 .shelf--recent .shelf__head { align-items: center; }
 .no-results { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 40ch; margin: 0 auto; padding: 32px 0; text-align: center; }
-.no-results__flora { width: 120px; height: 132px; margin-bottom: 6px; }
+.no-results__flora { width: 120px; height: 132px; margin-bottom: 6px; object-fit: contain; object-position: center; }
 .no-results__title { font-size: var(--fs); line-height: var(--lh); color: var(--fg); }
 .no-results__text { font-size: var(--fs-s); line-height: var(--lh-s); color: var(--fg-3); }
 
@@ -374,7 +379,7 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 .hero__listeners { font-size: var(--fs); line-height: var(--lh); color: var(--fg); }
 .hero--genre, .page--hero:has(> .hero__sprig) > .hero--genre { min-height: 200px; padding-top: 32px; padding-bottom: 24px; align-items: flex-end; box-sizing: border-box; }
 .hero--genre ~ .hero-band { -webkit-mask-image: linear-gradient(#000 0, #000 45%, transparent 100%); mask-image: linear-gradient(#000 0, #000 45%, transparent 100%); }
-.hero__sprig { position: absolute; right: 0; top: 8px; width: 160px; height: 176px; pointer-events: none; }
+.hero__sprig { position: absolute; right: 0; top: 8px; width: 160px; height: 176px; pointer-events: none; object-fit: contain; object-position: right top; }
 .actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; row-gap: 12px; padding: 6px 0 12px; min-width: 0; }
 .actions .play-btn--lg { width: 40px; height: 40px; }
 .actions .icon-btn { width: 32px; height: 32px; }
@@ -527,7 +532,7 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 .playlist-finder__title::before { content: "> "; content: "> " / ""; }
 .playlist-finder--recommended .playlist-finder__title::after { content: "/"; content: "/" / ""; color: var(--fg-3); }
 .playlist-finder__sub { font-size: var(--fs-s); line-height: var(--lh-s); color: var(--fg-3); margin: -4px 0 8px; }
-.playlist-finder__flora { position: absolute; right: 0; top: calc(var(--win-bar-h) + 4px); width: 96px; height: 72px; }
+.playlist-finder__flora { position: absolute; right: 0; top: calc(var(--win-bar-h) + 4px); width: 96px; height: 72px; object-fit: contain; object-position: center bottom; }
 .finder-search { width: min(100%, 364px); padding: 0 2px; }
 .finder-search__clear { width: auto; min-width: 24px; height: 24px; padding: 0 2px; color: var(--fg-2); }
 .finder-search__clear::before { content: "["; content: "[" / ""; }
@@ -546,7 +551,7 @@ a.shelf__title:hover, button.shelf__title:hover { text-decoration: underline; te
 
 /* ---------- 11. Empty states (DESIGN 3.12) -------------------------------- */
 .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 32px 16px; text-align: center; color: var(--fg); }
-.empty__flora { width: 120px; height: 132px; margin-bottom: 4px; }
+.empty__flora { width: 120px; height: 132px; margin-bottom: 4px; object-fit: contain; object-position: center bottom; }
 .empty--sm .empty__flora { width: 96px; height: 104px; }
 .empty__icon { width: 32px; height: 32px; color: var(--fg-2); margin-bottom: 6px; }
 .empty__flora ~ .empty__icon { display: none; }
@@ -661,7 +666,7 @@ a.rp-card__name:hover { text-decoration: underline; text-underline-offset: 3px; 
 .dialog__actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 18px; }
 .dialog .pill { height: 28px; min-height: 0; padding: 0 10px; font-size: var(--fs); }
 .dialog .text-btn { font-size: var(--fs); }
-.dialog__flora { position: absolute; right: calc(100% + 12px); bottom: 0; width: 120px; height: 168px; }
+.dialog__flora { position: absolute; right: calc(100% + 12px); bottom: 0; width: 120px; height: 168px; object-fit: contain; object-position: right bottom; }
 @media (max-width: 1023px) { .dialog__flora { display: none; } }
 .edit-details { display: grid; grid-template-columns: 152px minmax(0, 1fr); gap: 16px; min-width: 0; }
 .edit-details__cover { position: relative; width: 152px; height: 152px; border-radius: 0; box-shadow: none; }
@@ -779,6 +784,7 @@ textarea.field__input { height: 88px; resize: none; }
   .card__sub { font-size: var(--fs-s); }
   /* search */
   .search-header { position: sticky; top: 0; z-index: 6; display: flex; flex-direction: column; gap: 4px; padding: 10px 16px 8px; background: var(--bg); will-change: transform; }
+  #app[data-view="search"] #main { scroll-padding-top: 88px; }   /* the sticky search header: 10 + 20 + 4 + 44 + 8 + 2 */
   .search-header__title { font-size: var(--fs); line-height: var(--lh); color: var(--fg); text-transform: lowercase; }
   .search-header__title::before { content: "> "; content: "> " / ""; }
   .search-field { display: flex; align-items: center; gap: 1ch; height: 44px; padding: 0 0 0 2px; border-radius: 0; color: var(--fg);

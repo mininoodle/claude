@@ -1,14 +1,12 @@
 /* data.js — window.Catalog
  * The fictional Wavelength catalogue: genres, artists, albums, tracks and editorial playlists,
- * deterministic Canvas cover art, search and the shared formatters.
+ * the cover files of window.Imagery (IMAGERY.md), search and the shared formatters.
  * Loads in the browser (window.Catalog) and in Node (globalThis.Catalog / module.exports).
  * Everything is seeded, so the catalogue is identical on every load.
  */
 (function () {
   'use strict';
 
-  const S = 300;                 // cover size in px
-  const TAU = Math.PI * 2;
   const TODAY = '2026-10-10';    // the catalogue's "now" (playlist dates are relative to it)
 
   // ---------------------------------------------------------------------------
@@ -44,68 +42,6 @@
       const t = a[i]; a[i] = a[j]; a[j] = t;
     }
     return a;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Colour helpers
-  // ---------------------------------------------------------------------------
-  function hexToRgb(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-  function rgbToHex(r, g, b) {
-    const c = (v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0');
-    return '#' + c(r) + c(g) + c(b);
-  }
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0;
-    const l = (max + min) / 2;
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
-      else if (max === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
-      h *= 60;
-    }
-    return [h, s, l];
-  }
-  function hslToRgb(h, s, l) {
-    h = ((h % 360) + 360) % 360;
-    s = clamp(s, 0, 1); l = clamp(l, 0, 1);
-    const c = (1 - Math.abs(2 * l - 1)) * s;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = l - c / 2;
-    let r = 0, g = 0, b = 0;
-    if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
-    else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
-    return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
-  }
-  const hexToHsl = (hex) => rgbToHsl.apply(null, hexToRgb(hex));
-  const hslHex = (h, s, l) => rgbToHex.apply(null, hslToRgb(h, s, l));
-  function rgba(hex, a) {
-    const [r, g, b] = hexToRgb(hex);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-  }
-
-  // A palette derived from one dominant colour; every cover is built from it.
-  function palette(hex) {
-    const [h, s, l] = hexToHsl(hex);
-    return {
-      base: hex,
-      dark: hslHex(h, s * 0.9, l * 0.33),
-      deep: hslHex(h, Math.min(1, s * 1.05), l * 0.62),
-      light: hslHex(h, Math.min(1, s * 1.02), l + (1 - l) * 0.34),
-      pale: hslHex(h, s * 0.7, l + (1 - l) * 0.72),
-      warm: hslHex(h + 38, Math.min(1, s * 1.12), Math.min(0.64, l + 0.14)),
-      cool: hslHex(h - 38, Math.min(1, s * 1.08), Math.max(0.3, l - 0.06)),
-      comp: hslHex(h + 180, Math.max(0.45, s * 0.85), 0.56),
-      cream: '#f5eee1',
-      ink: '#121212',
-      h: h, s: s, l: l,
-    };
   }
 
   // ---------------------------------------------------------------------------
@@ -992,25 +928,30 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Cover art (Canvas, lazy, cached)
+  // Cover art (the cover files of window.Imagery; IMAGERY.md section 3)
   // ---------------------------------------------------------------------------
-  let canvas = null, ctx = null, grainPattern = null, ctxFailed = false;
-  const coverCache = Object.create(null);
-  const mosaicCache = Object.create(null);
+  // Every cover is a shipped JPEG that src/imagery.js lists (window.Imagery.covers[id] = { src, thumb? }). cover()
+  // returns its path synchronously and draws nothing; the runtime media filter on img.cover makes it monochrome.
+  // Only a user playlist's 2x2 mosaic is composed on a canvas, from the album cover files, asynchronously.
+  const S = 300;                 // mosaic size in px
+  let canvas = null, ctx = null, ctxFailed = false;
+  const mosaicCache = Object.create(null);   // key (album ids) -> data URL (or a file path when the canvas is tainted)
+  const mosaicLoading = Object.create(null); // key -> true while its album covers load
+  const mosaicImages = Object.create(null);  // src -> { img, state: 1 loading | 2 loaded | 3 failed }
   let mosaicCount = 0;
-  const FONT = '"DotGothic16", "MS Gothic", "Helvetica Neue", Arial, sans-serif';
-  const TITLE_FONT = 'bold 34px ' + FONT;
-  const CHECK_FONT = '22px DotGothic16';
-  // the characters cover text uses (numerals, "> label" strips, the ellipsis). Google Fonts serves DotGothic16 as
-  // ~120 unicode-range slices and only a few ever load, so check() without a sample (= every slice) stays false.
-  const CHECK_TEXT = '0123456789> abcdefghijklmnopqrstuvwxyz…';
-  const fontPending = new Set();   // cache keys drawn with text before DotGothic16 was available
-  // window.Flora (flora.js, loaded before this file) paints the flower covers; without it the drawings below are used
+  let mosaicTainted = false;                 // the canvas could not be read back (file://): mosaics are file paths then
+  let readyBatch = [], readyTimer = 0;
+
+  // window.Imagery (imagery.js, loaded before this file): read at call time, never at evaluation time (Node has none)
+  function imageryLib() {
+    const M = typeof window !== 'undefined' ? window.Imagery : (typeof globalThis !== 'undefined' ? globalThis.Imagery : null);
+    return M && typeof M === 'object' && M.covers && typeof M.covers === 'object' ? M : null;
+  }
+  // window.Flora (flora.js, loaded before this file): only its species mapping is needed here
   function floraLib() {
     const F = typeof window !== 'undefined' ? window.Flora : (typeof globalThis !== 'undefined' ? globalThis.Flora : null);
-    return F && typeof F === 'object' && typeof F.paintCover === 'function' && typeof F.speciesFor === 'function' ? F : null;
+    return F && typeof F === 'object' && typeof F.speciesFor === 'function' ? F : null;
   }
-
   function hasDom() {
     return typeof document !== 'undefined' && document && typeof document.createElement === 'function';
   }
@@ -1020,498 +961,10 @@
     try {
       canvas = document.createElement('canvas');
       canvas.width = S; canvas.height = S;
-      // a software canvas: every cover is read back by toDataURL, and a GPU canvas readback cost ~55 ms on the first cover
-      ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx = canvas.getContext('2d', { willReadFrequently: true });   // read back by toDataURL: keep it off the GPU
       if (!ctx) ctxFailed = true;
     } catch (e) { ctxFailed = true; ctx = null; }
     return ctx;
-  }
-  // Film grain: one cached noise tile (built once, 96x96 random cells scaled to 2x2 px blocks) drawn as a
-  // repeating pattern, so a cover costs a single fillRect. The 2px cells keep the exported PNGs small.
-  function getGrain(c) {
-    if (grainPattern) return grainPattern;
-    try {
-      const n = 96;
-      const t = document.createElement('canvas');
-      t.width = t.height = n;
-      const tc = t.getContext('2d');
-      const img = tc.createImageData(n, n);
-      const d = img.data;
-      const r = seededRandom(7777);
-      for (let i = 0; i < d.length; i += 4) {
-        const v = 96 + Math.floor(r() * 64);
-        d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
-      }
-      tc.putImageData(img, 0, 0);
-      const big = document.createElement('canvas');
-      big.width = big.height = n * 2;
-      const bc = big.getContext('2d');
-      bc.imageSmoothingEnabled = false;
-      bc.drawImage(t, 0, 0, n * 2, n * 2);
-      grainPattern = c.createPattern(big, 'repeat');
-    } catch (e) { grainPattern = null; }
-    return grainPattern;
-  }
-  function grain(c, alpha) {
-    const p = getGrain(c);
-    if (!p) return;
-    c.save();
-    c.globalAlpha = alpha;
-    c.globalCompositeOperation = 'overlay';
-    c.fillStyle = p;
-    c.fillRect(0, 0, S, S);
-    c.restore();
-  }
-  // True once the DotGothic16 face exists and is loaded. Covers with text drawn before that are cached anyway
-  // (the fallback typeface is fine) and simply get redrawn on their next request after the font arrives.
-  function fontReady() {
-    try {
-      if (!hasDom() || !document.fonts || typeof document.fonts.check !== 'function') return true;
-      let has = false;
-      document.fonts.forEach((f) => { if (/dotgothic16/i.test(f.family)) has = true; });
-      return has && document.fonts.check(CHECK_FONT, CHECK_TEXT);
-    } catch (e) { return true; }
-  }
-  // Covers drawn with the fallback typeface are dropped from the cache once the face is ready, and the page is told
-  // ('catalog:coversstale' on window, detail.keys) so it can request the covers it already shows again (app.js does).
-  function watchFonts() {
-    try {
-      if (!hasDom() || !document.fonts) return;
-      let kicks = 0;
-      // load the slices the cover text needs now, instead of waiting for page text to request them
-      const kick = function () {
-        if (kicks++ >= 4 || typeof document.fonts.load !== 'function') return;
-        try { document.fonts.load(CHECK_FONT, CHECK_TEXT).then(flush, () => {}); } catch (e) { /* ignore */ }
-      };
-      const flush = function () {
-        if (!fontPending.size) return;
-        if (!fontReady()) { kick(); return; }
-        const keys = [];
-        fontPending.forEach((key) => { delete coverCache[key]; keys.push(key); });
-        fontPending.clear();
-        try {
-          if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
-            window.dispatchEvent(new CustomEvent('catalog:coversstale', { detail: { keys: keys } }));
-          }
-        } catch (e) { /* ignore */ }
-      };
-      kick();
-      if (document.fonts.ready && typeof document.fonts.ready.then === 'function') document.fonts.ready.then(flush, () => {});
-      if (typeof document.fonts.addEventListener === 'function') document.fonts.addEventListener('loadingdone', flush);
-    } catch (e) { /* no font events: covers keep the fallback typeface */ }
-  }
-
-  // --- album styles -------------------------------------------------------------
-  function fillBg(c, style) { c.fillStyle = style; c.fillRect(0, 0, S, S); }
-  function softCircle(c, x, y, rad, col, a0, a1) {
-    const g = c.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, rgba(col, a0));
-    g.addColorStop(0.55, rgba(col, a1));
-    g.addColorStop(1, rgba(col, 0));
-    c.fillStyle = g;
-    c.beginPath(); c.arc(x, y, rad, 0, TAU); c.fill();
-  }
-  function linear(c, ang, a, b) {
-    const dx = Math.cos(ang) * S / 2, dy = Math.sin(ang) * S / 2;
-    const g = c.createLinearGradient(S / 2 - dx, S / 2 - dy, S / 2 + dx, S / 2 + dy);
-    g.addColorStop(0, a); g.addColorStop(1, b);
-    return g;
-  }
-
-  function styleDuotone(c, p, r) {
-    const second = r() < 0.5 ? p.warm : p.cool;
-    fillBg(c, linear(c, r() * TAU, p.dark, second));
-    c.globalCompositeOperation = 'screen';
-    const n = 2 + Math.floor(r() * 2);
-    const cols = [p.light, p.pale, second, p.base];
-    for (let i = 0; i < n; i++) {
-      softCircle(c, S * (0.15 + r() * 0.7), S * (0.15 + r() * 0.7), S * (0.22 + r() * 0.3), cols[i % cols.length], 0.95, 0.4);
-    }
-    c.globalCompositeOperation = 'source-over';
-    // one crisp element so the composition has a focal point
-    const ex = S * (0.25 + r() * 0.5), ey = S * (0.25 + r() * 0.5), v = r();
-    if (v < 0.4) {
-      c.fillStyle = r() < 0.5 ? p.cream : p.ink;
-      c.beginPath(); c.arc(ex, ey, S * (0.06 + r() * 0.08), 0, TAU); c.fill();
-    } else if (v < 0.75) {
-      c.strokeStyle = rgba(p.cream, 0.9); c.lineWidth = 6 + r() * 8;
-      c.beginPath(); c.arc(ex, ey, S * (0.14 + r() * 0.14), 0, TAU); c.stroke();
-    } else {
-      c.fillStyle = rgba(p.cream, 0.9);
-      c.fillRect(S * 0.12, ey, S * 0.76, 5);
-    }
-    grain(c, 0.14, true);
-  }
-
-  function styleBands(c, p, r) {
-    fillBg(c, p.dark);
-    const sets = [[p.base, p.light, p.cream, p.deep], [p.base, p.warm, p.dark, p.pale], [p.deep, p.comp, p.base, p.cream], [p.light, p.base, p.ink, p.warm]];
-    const cols = sets[Math.floor(r() * sets.length)];
-    const angle = (r() < 0.5 ? -1 : 1) * (0.3 + r() * 0.55);
-    const n = 5 + Math.floor(r() * 5);
-    const widths = [];
-    let sum = 0;
-    for (let i = 0; i < n; i++) { const w = 0.35 + r() * 1.6; widths.push(w); sum += w; }
-    c.save();
-    c.translate(S / 2, S / 2); c.rotate(angle); c.translate(-S / 2, -S / 2);
-    let y = -S * 0.6;
-    const total = S * 2.2;
-    const shift = Math.floor(r() * cols.length);
-    for (let i = 0; i < n; i++) {
-      const w = total * widths[i] / sum;
-      c.fillStyle = cols[(i + shift) % cols.length];
-      c.fillRect(-S, y, S * 3, w + 1);
-      y += w;
-    }
-    c.restore();
-    if (r() < 0.5) {
-      c.fillStyle = r() < 0.5 ? p.cream : p.ink;
-      c.beginPath(); c.arc(S * (0.2 + r() * 0.6), S * (0.2 + r() * 0.6), S * 0.07, 0, TAU); c.fill();
-    }
-    grain(c, 0.08, true);
-  }
-
-  function styleRings(c, p, r) {
-    fillBg(c, r() < 0.5 ? p.dark : p.deep);
-    const pairs = [[p.light, p.dark], [p.cream, p.base], [p.warm, p.deep], [p.comp, p.dark], [p.pale, p.base]];
-    const pair = pairs[Math.floor(r() * pairs.length)];
-    const cx = S * (0.3 + r() * 0.4), cy = S * (0.3 + r() * 0.4);
-    const n = 6 + Math.floor(r() * 6);
-    const maxR = S * (0.55 + r() * 0.35);
-    const curve = 0.7 + r() * 0.7;
-    for (let i = n - 1; i >= 0; i--) {
-      const rad = maxR * Math.pow((i + 1) / n, curve);
-      c.fillStyle = i % 2 ? pair[0] : pair[1];
-      c.beginPath(); c.arc(cx, cy, rad, 0, TAU); c.fill();
-    }
-    grain(c, 0.08, true);
-  }
-
-  function styleFields(c, p, r) {
-    fillBg(c, linear(c, Math.PI / 2 + (r() - 0.5), p.deep, p.base));
-    const cols = [p.light, p.warm, p.pale, p.comp, p.cool, p.light, p.warm];
-    const n = 3 + Math.floor(r() * 3);
-    for (let i = 0; i < n; i++) {
-      const col = cols[Math.floor(r() * cols.length)];
-      const x = r() * S, y = r() * S, rad = S * (0.3 + r() * 0.45);
-      const g = c.createRadialGradient(x, y, 0, x, y, rad);
-      g.addColorStop(0, rgba(col, 0.95)); g.addColorStop(0.5, rgba(col, 0.55)); g.addColorStop(1, rgba(col, 0));
-      c.fillStyle = g; c.fillRect(0, 0, S, S);
-    }
-    if (r() < 0.65) {
-      const h = S * (0.55 + r() * 0.25);
-      c.fillStyle = rgba(p.dark, 0.72); c.fillRect(0, h, S, S - h);
-      c.fillStyle = rgba(p.cream, 0.6); c.fillRect(0, h, S, 2);
-    } else {
-      c.fillStyle = rgba(p.ink, 0.85);
-      c.beginPath(); c.arc(S * (0.25 + r() * 0.5), S * (0.3 + r() * 0.4), S * (0.08 + r() * 0.08), 0, TAU); c.fill();
-    }
-    grain(c, 0.22);
-  }
-
-  function styleGrid(c, p, r) {
-    fillBg(c, p.dark);
-    const n = 4 + Math.floor(r() * 4);
-    const gap = S * 0.028, pad = S * 0.08;
-    const cell = (S - 2 * pad - (n - 1) * gap) / n;
-    const hi = Math.floor(r() * n * n);
-    const shape = Math.floor(r() * 3);   // 0 squares, 1 rounded, 2 circles
-    const hiCol = r() < 0.5 ? p.cream : p.comp;
-    for (let i = 0; i < n * n; i++) {
-      const x = pad + (i % n) * (cell + gap), y = pad + Math.floor(i / n) * (cell + gap);
-      const t = r();
-      c.fillStyle = i === hi ? hiCol : hslHex(p.h, p.s, clamp(p.l * (0.5 + t * 0.95), 0.08, 0.82));
-      if (shape === 2) { c.beginPath(); c.arc(x + cell / 2, y + cell / 2, cell / 2, 0, TAU); c.fill(); }
-      else if (shape === 1) { roundRect(c, x, y, cell, cell, cell * 0.22); c.fill(); }
-      else c.fillRect(x, y, cell, cell);
-    }
-    grain(c, 0.08, true);
-  }
-
-  function styleInitial(c, p, r, letter) {
-    fillBg(c, p.base);
-    const v = r();
-    if (v < 0.4) { c.fillStyle = p.deep; c.beginPath(); c.moveTo(0, S); c.lineTo(S, 0); c.lineTo(S, S); c.closePath(); c.fill(); }
-    else if (v < 0.7) { c.fillStyle = p.dark; c.fillRect(0, S * 0.62, S, S * 0.38); }
-    else { c.fillStyle = p.warm; c.fillRect(0, 0, S * 0.5, S); }
-    c.fillStyle = rgba(r() < 0.5 ? p.light : p.pale, 0.55);
-    c.beginPath(); c.arc(S * (0.4 + r() * 0.2), S * (0.42 + r() * 0.16), S * (0.26 + r() * 0.12), 0, TAU); c.fill();
-    const size = S * (0.62 + r() * 0.2);
-    c.font = 'bold ' + Math.round(size) + 'px ' + FONT;
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = r() < 0.72 ? p.cream : p.ink;
-    c.fillText(letter, S * 0.5 + (r() - 0.5) * S * 0.08, S * 0.54);
-    grain(c, 0.08, true);
-  }
-
-  function roundRect(c, x, y, w, h, rad) {
-    c.beginPath();
-    c.moveTo(x + rad, y);
-    c.lineTo(x + w - rad, y); c.quadraticCurveTo(x + w, y, x + w, y + rad);
-    c.lineTo(x + w, y + h - rad); c.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
-    c.lineTo(x + rad, y + h); c.quadraticCurveTo(x, y + h, x, y + h - rad);
-    c.lineTo(x, y + rad); c.quadraticCurveTo(x, y, x + rad, y);
-    c.closePath();
-  }
-  function finish(c, p, r) {
-    const v = r();
-    if (v < 0.22) {
-      c.strokeStyle = rgba(p.cream, 0.7); c.lineWidth = 3;
-      c.strokeRect(12, 12, S - 24, S - 24);
-    } else if (v < 0.38) {
-      c.fillStyle = rgba(p.cream, 0.85); c.fillRect(S * 0.08, S * 0.86, S * 0.22, 6);
-    }
-  }
-
-  const ALBUM_STYLES = [styleDuotone, styleBands, styleRings, styleFields, styleGrid, styleInitial];
-
-  function drawAlbum(c, album) {
-    const r = seededRandom(album.coverSeed);
-    const p = palette(album.color);
-    const roll = r();   // still drawn, so the rest of the seeded sequence (shapes, grain) is unchanged
-    const style = ALBUM_STYLES[(album.coverStyle != null ? album.coverStyle : Math.floor(roll * ALBUM_STYLES.length)) % ALBUM_STYLES.length];
-    const letter = (String(album.title).match(/[A-Za-z0-9]/) || ['W'])[0].toUpperCase();
-    style(c, p, r, letter);
-    finish(c, p, r);
-    return style === styleInitial;
-  }
-
-  // --- artists --------------------------------------------------------------------
-  // Backlit silhouettes: head, neck and shoulders in front of an off-centre warm spotlight, with a dark vignette.
-  const ARTIST_FIGURES = { ar_hollowlights: 4, ar_kestrelfinch: 2, ar_orielquartet: 4, ar_harborstreet: 3, ar_ghostparade: 3, ar_amaraoyelaran: 3 };
-  function figure(c, x, hy, hr, col, hair) {
-    c.fillStyle = col;
-    c.beginPath(); c.arc(x, hy, hr, 0, TAU); c.fill();
-    if (hair) { c.beginPath(); c.arc(x + hair * hr * 0.35, hy - hr * 0.3, hr * 0.95, 0, TAU); c.fill(); }
-    c.beginPath();
-    c.moveTo(x - hr * 0.42, hy + hr * 0.7);
-    c.lineTo(x + hr * 0.42, hy + hr * 0.7);
-    c.lineTo(x + hr * 0.55, hy + hr * 1.55);
-    c.bezierCurveTo(x + hr * 2.3, hy + hr * 1.8, x + hr * 3.1, hy + hr * 2.6, x + hr * 3.4, S * 1.3);
-    c.lineTo(x - hr * 3.4, S * 1.3);
-    c.bezierCurveTo(x - hr * 3.1, hy + hr * 2.6, x - hr * 2.3, hy + hr * 1.8, x - hr * 0.55, hy + hr * 1.55);
-    c.closePath(); c.fill();
-  }
-  function drawArtist(c, artist) {
-    const r = seededRandom(artist.imageSeed);
-    const p = palette(artist.color);
-    const warmLight = hslHex(p.h + 24, Math.min(1, p.s * 1.15), 0.72);
-    const glow = hslHex(p.h + 10, Math.min(1, p.s * 1.1), 0.5);
-    fillBg(c, linear(c, Math.PI / 2 + (r() - 0.5) * 0.8, p.deep, p.dark));
-    if (r() < 0.35) {   // a hard two-tone backdrop for some acts
-      c.fillStyle = p.base;
-      c.beginPath(); c.moveTo(S * (0.3 + r() * 0.5), 0); c.lineTo(S, 0); c.lineTo(S, S); c.lineTo(S * (0.1 + r() * 0.4), S); c.closePath(); c.fill();
-    }
-    const n = ARTIST_FIGURES[artist.id] || 1;
-    const mainX = n === 1 ? S * (0.38 + r() * 0.24) : S * 0.5;
-    const sx = mainX + (r() < 0.5 ? -1 : 1) * S * (0.18 + r() * 0.14), sy = S * (0.18 + r() * 0.2);
-    const g = c.createRadialGradient(sx, sy, 0, sx, sy, S * (0.42 + r() * 0.4));
-    g.addColorStop(0, rgba(warmLight, 0.98));
-    g.addColorStop(0.35, rgba(glow, 0.7));
-    g.addColorStop(1, rgba(glow, 0));
-    c.fillStyle = g; c.fillRect(0, 0, S, S);
-    if (r() < 0.5) { c.fillStyle = rgba(p.light, 0.25); c.fillRect(0, S * (0.55 + r() * 0.2), S, S); }
-    const ink = hslHex(p.h, Math.min(1, p.s * 0.9), 0.07);
-    const far = hslHex(p.h, Math.min(1, p.s * 0.8), 0.16);
-    if (n === 1) {
-      const hr = S * (0.1 + r() * 0.035);
-      figure(c, mainX, S * (0.44 + r() * 0.06), hr, ink, r() < 0.4 ? (r() < 0.5 ? -1 : 1) : 0);
-    } else {
-      const spread = S * (0.2 + 0.05 * n);
-      const order = [];
-      for (let i = 0; i < n; i++) order.push(i);
-      const mid = (n - 1) / 2;
-      order.sort((a, b) => Math.abs(b - mid) - Math.abs(a - mid));   // outer figures first, the centre in front
-      order.forEach((i) => {
-        const back = Math.abs(i - mid) / Math.max(1, mid);
-        const x = S * 0.5 + (i - mid) * spread / Math.max(1, mid);
-        const hr = S * (0.1 - back * 0.02);
-        figure(c, x, S * (0.48 + back * 0.05 + (r() - 0.5) * 0.04), hr, back > 0.5 ? far : ink, r() < 0.35 ? 1 : 0);
-      });
-    }
-    // rim light on the lit edge of the main figure
-    c.save();
-    c.globalCompositeOperation = 'screen';
-    c.strokeStyle = rgba(warmLight, 0.5); c.lineWidth = 2.5;
-    const side = sx < mainX ? -1 : 1;
-    c.beginPath(); c.arc(mainX, S * 0.47, S * 0.112, side > 0 ? -1.3 : Math.PI - 0.2, side > 0 ? 0.2 : Math.PI + 1.3); c.stroke();
-    c.restore();
-    const vg = c.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.8);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)');
-    c.fillStyle = vg; c.fillRect(0, 0, S, S);
-    grain(c, 0.2);
-  }
-
-  // --- playlists ------------------------------------------------------------------
-  function wrapLines(c, text, maxW) {
-    const words = String(text).split(' ');
-    const lines = [];
-    let cur = '';
-    words.forEach((w) => {
-      const t = cur ? cur + ' ' + w : w;
-      if (cur && c.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
-    });
-    if (cur) lines.push(cur);
-    return lines;
-  }
-  function drawTitle(c, text, opts) {
-    const o = opts || {};
-    const x = o.x == null ? 24 : o.x, bottom = o.bottom == null ? S - 24 : o.bottom, maxW = o.maxW || S - 48;
-    c.font = TITLE_FONT;
-    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-    const lines = wrapLines(c, text, maxW);
-    const lh = 37;
-    c.fillStyle = o.color || '#ffffff';
-    lines.forEach((line, i) => { c.fillText(line, x, bottom - (lines.length - 1 - i) * lh); });
-    return lines.length;
-  }
-  function scrim(c, from, alpha) {
-    const g = c.createLinearGradient(0, S * from, 0, S);
-    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,' + alpha + ')');
-    c.fillStyle = g; c.fillRect(0, S * from, S, S * (1 - from));
-  }
-  function brandMark(c, x, y, col) {
-    const hs = [10, 20, 14, 24];
-    c.fillStyle = col || 'rgba(255,255,255,0.9)';
-    hs.forEach((h, i) => { c.fillRect(x + i * 7, y + 24 - h, 4, h); });
-  }
-
-  const PLAYLIST_ART = {
-    pl_freshfinds: 0, pl_newreleases: 2, pl_chillvibes: 5, pl_deepfocus: 1, pl_latenightdrive: 4,
-    pl_morningcoffee: 6, pl_workoutpulse: 3, pl_rainydayjazz: 0, pl_indiegold: 2, pl_electronicessentials: 6,
-  };
-  function drawPlaylist(c, pl) {
-    const r = seededRandom(pl.coverSeed);
-    const p = palette(pl.color);
-    if (pl.kind === 'mix') {
-      fillBg(c, linear(c, Math.PI * 0.25 + r() * 0.5, p.dark, p.warm));
-      c.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 3; i++) softCircle(c, r() * S, r() * S * 0.7, S * (0.25 + r() * 0.3), [p.light, p.base, p.pale][i], 0.9, 0.35);
-      c.globalCompositeOperation = 'source-over';
-      const num = (String(pl.name).match(/\d+/) || [''])[0];
-      c.font = 'bold 150px ' + FONT; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
-      c.fillStyle = 'rgba(255,255,255,0.28)';
-      c.fillText(num, S - 18, S * 0.62);
-      c.fillStyle = rgba(p.dark, 0.94); c.fillRect(0, S * 0.68, S, S * 0.32);
-      brandMark(c, 24, 18);
-      drawTitle(c, pl.name, { bottom: S - 30 });
-      grain(c, 0.1, true);
-      return;
-    }
-    if (pl.kind === 'chart') {
-      fillBg(c, linear(c, Math.PI * 0.5, p.deep, p.dark));
-      softCircle(c, S * 0.72, S * 0.2, S * 0.5, p.light, 0.5, 0.2);
-      c.fillStyle = '#e9c46a';
-      c.beginPath(); c.arc(S * 0.72, S * 0.32, S * 0.17, 0, TAU); c.fill();
-      c.font = 'bold 150px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-      c.fillStyle = '#ffffff';
-      c.fillText('50', 20, S * 0.6);
-      c.font = 'bold 20px ' + FONT;
-      c.fillStyle = 'rgba(255,255,255,0.8)';
-      c.fillText('T O P', 24, S * 0.2);
-      scrim(c, 0.55, 0.55);
-      brandMark(c, S - 52, 18);
-      drawTitle(c, pl.name);
-      grain(c, 0.1, true);
-      return;
-    }
-    // editorial: a fixed composition per list so the shelf shows variety; unknown ids pick one by seed
-    const variant = PLAYLIST_ART[pl.id] != null ? PLAYLIST_ART[pl.id] : Math.floor(r() * 7);
-    if (variant === 5) {
-      fillBg(c, p.deep);
-      c.fillStyle = p.light;
-      c.beginPath(); c.arc(S * 0.5, S * 0.78, S * 0.42, Math.PI, 0); c.closePath(); c.fill();
-      c.fillStyle = rgba(p.cream, 0.9); c.fillRect(S * 0.08, S * 0.3, S * 0.84, 3);
-      c.fillStyle = p.warm; c.beginPath(); c.arc(S * 0.5, S * 0.78, S * 0.2, Math.PI, 0); c.closePath(); c.fill();
-    } else if (variant === 6) {
-      fillBg(c, p.base);
-      c.save();
-      c.translate(S * 0.95, S * 0.05); c.rotate(Math.PI / 4);
-      [p.warm, p.light, p.cream].forEach((col, i) => { c.fillStyle = col; c.fillRect(-S, i * S * 0.13, S * 2, S * 0.09); });
-      c.restore();
-      c.fillStyle = p.dark; c.beginPath(); c.arc(S * 0.22, S * 0.3, S * 0.1, 0, TAU); c.fill();
-    } else if (variant === 0) {
-      fillBg(c, p.base);
-      c.fillStyle = p.light;
-      c.beginPath(); c.arc(S * (0.75 + r() * 0.15), S * (0.2 + r() * 0.2), S * (0.3 + r() * 0.15), 0, TAU); c.fill();
-      c.fillStyle = p.dark;
-      c.beginPath(); c.arc(S * (0.2 + r() * 0.2), S * (0.55 + r() * 0.2), S * 0.1, 0, TAU); c.fill();
-    } else if (variant === 1) {
-      fillBg(c, p.base);
-      c.fillStyle = p.deep; c.fillRect(0, S * 0.5, S, S * 0.5);
-      c.strokeStyle = rgba(p.cream, 0.85); c.lineWidth = 14;
-      c.beginPath(); c.arc(S * (0.65 + r() * 0.15), S * 0.5, S * 0.2, 0, TAU); c.stroke();
-    } else if (variant === 2) {
-      fillBg(c, p.deep);
-      c.fillStyle = p.warm; c.beginPath(); c.moveTo(0, 0); c.lineTo(S, 0); c.lineTo(0, S); c.closePath(); c.fill();
-      c.fillStyle = rgba(p.cream, 0.9);
-      for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(S * 0.72 + i * 10, S * 0.16 + i * 14, 5, 0, TAU); c.fill(); }
-    } else if (variant === 3) {
-      fillBg(c, p.dark);
-      const cols = [p.base, p.light, p.cream, p.warm];
-      for (let i = 0; i < 4; i++) { c.fillStyle = cols[i]; c.fillRect(0, S * (0.08 + i * 0.1), S, S * 0.075); }
-    } else {
-      fillBg(c, linear(c, Math.PI * 0.3, p.base, p.warm));
-      c.globalCompositeOperation = 'screen';
-      softCircle(c, S * 0.7, S * 0.3, S * 0.45, p.pale, 0.8, 0.3);
-      c.globalCompositeOperation = 'source-over';
-      c.fillStyle = p.dark; c.fillRect(S * 0.1, S * 0.1, S * 0.16, S * 0.16);
-    }
-    scrim(c, 0.45, 0.6);
-    brandMark(c, S - 52, 18);
-    drawTitle(c, pl.name);
-    grain(c, 0.1, true);
-  }
-
-  // --- liked songs, empty mosaic ----------------------------------------------------
-  function heartPath(c, cx, cy, w) {
-    const h = w * 0.92, x = cx - w / 2, t = cy - h / 2, b = t + h;
-    c.beginPath();
-    c.moveTo(cx, b);
-    c.bezierCurveTo(cx, b - h * 0.32, x, b - h * 0.48, x, t + h * 0.3);
-    c.bezierCurveTo(x, t - h * 0.04, x + w * 0.5, t - h * 0.04, cx, t + h * 0.26);
-    c.bezierCurveTo(cx, t - h * 0.04, x + w, t - h * 0.04, x + w, t + h * 0.3);
-    c.bezierCurveTo(x + w, b - h * 0.48, cx, b - h * 0.32, cx, b);
-    c.closePath();
-  }
-  function drawLiked(c) {
-    fillBg(c, linear(c, Math.PI * 0.25, '#450af5', '#c4efd9'));
-    c.fillStyle = '#ffffff';
-    heartPath(c, S / 2, S * 0.5, S * 0.42);
-    c.fill();
-  }
-  function drawEmptyMosaic(c) {
-    fillBg(c, '#282828');
-    c.fillStyle = '#b3b3b3';
-    // eighth note
-    c.save();
-    c.translate(S * 0.42, S * 0.62); c.rotate(-0.35);
-    c.beginPath(); c.scale(1, 0.72); c.arc(0, 0, S * 0.09, 0, TAU); c.fill();
-    c.restore();
-    c.fillRect(S * 0.42 + S * 0.075, S * 0.3, S * 0.035, S * 0.33);
-    c.beginPath();
-    c.moveTo(S * 0.42 + S * 0.075, S * 0.3);
-    c.bezierCurveTo(S * 0.6, S * 0.34, S * 0.64, S * 0.42, S * 0.58, S * 0.52);
-    c.bezierCurveTo(S * 0.62, S * 0.42, S * 0.56, S * 0.38, S * 0.42 + S * 0.075 + S * 0.035, S * 0.36);
-    c.closePath(); c.fill();
-  }
-
-  // --- rendering and cache -----------------------------------------------------------
-  function resetCtx(c) {
-    c.setTransform(1, 0, 0, 1, 0, 0);
-    c.globalAlpha = 1;
-    c.globalCompositeOperation = 'source-over';
-    c.clearRect(0, 0, S, S);
-  }
-  function exportPng() {
-    try { return canvas.toDataURL('image/png'); } catch (e) { return ''; }
-  }
-  function drawInto(c, x, y, size, fn) {
-    c.save();
-    c.translate(x, y); c.scale(size / S, size / S);
-    c.beginPath(); c.rect(0, 0, S, S); c.clip();
-    fn(c);
-    c.restore();
   }
   function kindOf(entity) {
     if (!entity) return null;
@@ -1521,40 +974,30 @@
     if (id.startsWith('al_')) return 'album';
     if (id.startsWith('ar_')) return 'artist';
     if (id.startsWith('pl_')) return 'playlist';
+    if (id.startsWith('ge_')) return 'genre';
     if (id.startsWith('plu_') || Array.isArray(entity.trackIds)) return 'user';
     return null;
   }
-
-  // --- flower covers (Flora.paintCover, DESIGN.md 5.6) ----------------------------------------
-  // entity object or id string ('liked' included) -> { entity, kind }; tracks resolve to their album
+  // entity object or id string ('liked' and 'ge_*' included) -> { entity, kind }; tracks resolve to their album
   function resolveCover(entityOrId) {
-    let entity = typeof entityOrId === 'string' ? (entityOrId === 'liked' ? { kind: 'liked' } : byId[entityOrId]) : entityOrId;
+    let entity = typeof entityOrId === 'string' ? (entityOrId === 'liked' ? { kind: 'liked', id: 'liked' } : byId[entityOrId]) : entityOrId;
     let kind = kindOf(entity);
     if (kind === 'track') { entity = byId[entity.albumId]; kind = entity ? 'album' : null; }
     return { entity: entity, kind: kind };
   }
-  const PLAYLIST_COMP = {
-    pl_dailymix1: 'field', pl_dailymix2: 'bloom', pl_dailymix3: 'wallpaper', pl_dailymix4: 'bouquet', pl_freshfinds: 'stalks',
-    pl_newreleases: 'bloom', pl_chillvibes: 'branch', pl_deepfocus: 'moon', pl_latenightdrive: 'moon', pl_morningcoffee: 'bouquet',
-    pl_workoutpulse: 'field', pl_rainydayjazz: 'branch', pl_indiegold: 'hanging', pl_electronicessentials: 'bloom', pl_top50global: 'field',
-  };
+  const coverId = (r) => (r.kind === 'liked' ? 'liked' : String(r.entity.id));
+  // the manifest entry of a resolved cover, or null (no manifest, not listed, user playlist)
+  function manifestEntry(r) {
+    const M = imageryLib();
+    if (!M || !r.kind || r.kind === 'user') return null;
+    const e = M.covers[coverId(r)];
+    return e && typeof e === 'object' && typeof e.src === 'string' && e.src ? e : null;
+  }
   const PLAYLIST_SPECIES = {
     pl_freshfinds: 'iris', pl_newreleases: 'iris', pl_chillvibes: 'camellia', pl_deepfocus: 'ume', pl_latenightdrive: 'moonflower',
     pl_morningcoffee: 'daisy', pl_workoutpulse: 'sunflower', pl_rainydayjazz: 'magnolia', pl_indiegold: 'wisteria',
     pl_electronicessentials: 'moonflower', pl_top50global: 'dandelion',
   };
-  const ALBUM_COMPS = [['bloom', 0.3], ['branch', 0.2], ['bouquet', 0.18], ['stalks', 0.12], ['wallpaper', 0.1], ['hanging', 0.1]];
-  const ALL_COMPS = ['bloom', 'branch', 'bouquet', 'stalks', 'field', 'wallpaper', 'hanging', 'moon'];
-  // by hash, then fitted to the plant: stalk flowers never hang from a bar or grow as a woody branch, and
-  // wisteria hangs instead of standing in a bouquet
-  function albumComp(album, species) {
-    let x = (hashString('comp:' + album.id) % 10000) / 10000, comp = 'bloom';
-    for (let i = 0; i < ALBUM_COMPS.length; i++) { x -= ALBUM_COMPS[i][1]; if (x < 0) { comp = ALBUM_COMPS[i][0]; break; } }
-    const F = floraLib(), form = F && F.SPECIES && F.SPECIES[species] ? F.SPECIES[species].form : '';
-    if (form === 'stalks' || form === 'pad') { if (comp === 'hanging') comp = 'stalks'; else if (comp === 'branch') comp = 'bouquet'; }
-    if (form === 'hanging' && (comp === 'bouquet' || comp === 'stalks' || comp === 'wallpaper')) comp = 'hanging';
-    return comp;
-  }
   function albumGenre(album) {
     const first = byId[(album.trackIds || [])[0]];
     if (first && first.genreId) return first.genreId;
@@ -1570,20 +1013,17 @@
     if (r.kind === 'liked') return 'sakura';
     if (r.kind === 'album') return F.speciesFor(albumGenre(e));
     if (r.kind === 'artist') return F.speciesFor((e.genreIds && e.genreIds[0]) || e.id);
+    if (r.kind === 'genre') return F.speciesFor(e.id);
     return PLAYLIST_SPECIES[e.id] || F.speciesFor(e.genreId || e.id);
   }
-  // Extra (not in the contract): the Flora.paintCover spec of a cover, or null (no Flora, user playlist, unknown id)
+  // Extra (not in the contract): what a cover shows, or null (no manifest / Flora, user playlist, unknown id)
   function coverSpec(entityOrId, opts) {
     const F = floraLib();
-    if (!F) return null;
     const r = resolveCover(entityOrId), e = r.entity, variant = opts && opts.variant === 'thumb' ? 'thumb' : 'full';
-    if (!r.kind || r.kind === 'user') return null;
-    if (r.kind === 'liked') return { kind: 'liked', seed: 'liked', color: '#450af5', species: 'sakura', variant: variant };
-    const spec = { kind: r.kind, seed: e.id, color: e.color || '#777777', species: coverSpecies(e), variant: variant };
-    if (r.kind === 'album') spec.comp = albumComp(e, spec.species);
-    else if (r.kind === 'artist') spec.comp = 'portrait';
-    else {
-      spec.comp = PLAYLIST_COMP[e.id] || ALL_COMPS[hashString('comp:' + e.id) % ALL_COMPS.length];
+    if (!F || !r.kind || r.kind === 'user') return null;
+    const m = manifestEntry(r);
+    const spec = { kind: r.kind, seed: coverId(r), color: (e && e.color) || '#777777', species: coverSpecies(e), variant: variant, src: m ? (variant === 'thumb' && m.thumb ? m.thumb : m.src) : '' };
+    if (r.kind === 'playlist') {
       spec.mark = true;
       if (e.kind === 'mix') spec.numeral = (String(e.name).match(/\d+/) || [''])[0] || undefined;
       else if (e.kind === 'chart') spec.numeral = (String(e.name).match(/\d+/) || ['50'])[0];
@@ -1591,53 +1031,26 @@
     }
     return spec;
   }
-  // cache key: the entity key, plus '#thumb' only for editorial playlists (the only covers whose variants differ)
-  function coverKey(r, opts) {
-    if (r.kind === 'liked') return 'liked';
-    const thumb = opts && opts.variant === 'thumb' && r.kind === 'playlist' && r.entity.kind !== 'mix' && r.entity.kind !== 'chart' && floraLib();
-    return r.entity.id + (thumb ? '#thumb' : '');
-  }
-  function drawLegacy(c, r) {
-    if (r.kind === 'liked') { drawLiked(c); return false; }
-    if (r.kind === 'album') return drawAlbum(c, r.entity);
-    if (r.kind === 'artist') { drawArtist(c, r.entity); return false; }
-    drawPlaylist(c, r.entity);
-    return true;
-  }
 
-  // cover(entityOrId, opts): 300x300 PNG data URL ('' in Node); opts.variant 'full' (default) | 'thumb'
+  // cover(entityOrId, opts): the cover file's path, synchronously ('' when it is not in the manifest, and in Node);
+  // opts.variant 'full' (default) | 'thumb' (the thumb file when one exists, else the full one). User playlists
+  // (plu_* / objects with trackIds) get their mosaic.
   function cover(entityOrId, opts) {
     const r = resolveCover(entityOrId);
     if (!r.kind) return '';
     if (r.kind === 'user') return playlistMosaic(r.entity.trackIds || []);
-    const key = coverKey(r, opts);
-    if (coverCache[key] != null) return coverCache[key];
-    const c = getCtx();
-    if (!c) return '';
-    let usesText = false;
-    const F = floraLib();
-    c.save();
-    try {
-      resetCtx(c);
-      if (F) usesText = !!F.paintCover(c, S, coverSpec(r.entity.kind === 'liked' ? 'liked' : r.entity, opts)).usesText;
-      else usesText = drawLegacy(c, r);
-    } catch (e) {
-      try { resetCtx(c); usesText = drawLegacy(c, r); } catch (e2) { /* a drawing failure leaves an empty cover rather than breaking the caller */ }
-    }
-    c.restore();
-    const url = exportPng();
-    coverCache[key] = url;
-    if (usesText && !fontReady()) fontPending.add(key);
-    return url;
+    const e = manifestEntry(r);
+    if (!e) return '';
+    return opts && opts.variant === 'thumb' && typeof e.thumb === 'string' && e.thumb ? e.thumb : e.src;
   }
   function artistImage(artist) { return cover(artist); }
-  // Extra (not in the contract): true when cover(entityOrId, opts) would return a cached image without drawing, so
-  // callers can paint cached covers at once and defer the rest (app.js draws off-screen covers lazily).
+  // hasCover(entityOrId, opts): true when cover(entityOrId, opts) returns an image at once (every manifest id; a user
+  // playlist once its mosaic is composed or when it needs none), so callers can paint it without waiting.
   function hasCover(entityOrId, opts) {
     const r = resolveCover(entityOrId);
-    if (!r.kind) return true;   // nothing to draw: cover() returns '' at once
-    if (r.kind === 'user') return mosaicCache[mosaicAlbums(r.entity.trackIds || []).map((a) => a.id).join(',')] != null;
-    return coverCache[coverKey(r, opts)] != null;
+    if (!r.kind) return true;   // nothing to show: cover() returns '' at once
+    if (r.kind === 'user') return mosaicReady(r.entity.trackIds || []);
+    return !!manifestEntry(r);
   }
   function mosaicAlbums(trackIds) {
     const seen = Object.create(null), als = [];
@@ -1648,40 +1061,102 @@
     });
     return als;
   }
-
-  function playlistMosaic(trackIds) {
-    const c = getCtx();
-    if (!c) return '';
+  const mosaicKey = (als) => als.map((a) => a.id).join(',');
+  function mosaicReady(trackIds) {
     const als = mosaicAlbums(trackIds);
-    const key = als.map((a) => a.id).join(',');
-    if (mosaicCache[key] != null) return mosaicCache[key];
-    const F = floraLib();
-    c.save();
+    if (als.length < 4) return !!imageryLib();   // the empty file or one album's file: no composition needed
+    return mosaicCache[mosaicKey(als)] != null;
+  }
+  function loadCoverImage(src) {
+    let m = mosaicImages[src];
+    if (m) return m;
+    m = mosaicImages[src] = { img: null, state: 1, waiters: [] };
     try {
-      resetCtx(c);
-      if (F) {
-        // the same flower compositions as the album covers (an empty playlist gets the pale seedling)
-        if (als.length === 0) F.paintCover(c, S, { kind: 'mosaic-empty', seed: 'mosaic-empty' });
-        else if (als.length < 4) F.paintCover(c, S, coverSpec(als[0]));
-        else {
-          const half = S / 2;
-          als.forEach((al, i) => { c.save(); c.translate((i % 2) * half, Math.floor(i / 2) * half); F.paintCover(c, half, coverSpec(al)); c.restore(); });
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => { m.state = 2; const w = m.waiters.splice(0); w.forEach((fn) => fn()); };
+      img.onerror = () => { m.state = 3; const w = m.waiters.splice(0); w.forEach((fn) => fn()); };
+      m.img = img;
+      img.src = src;
+    } catch (e) { m.state = 3; }
+    return m;
+  }
+  // one 'catalog:coverready' per batch of mosaics that became ready (detail.keys: their album-id keys)
+  function announceReady(key) {
+    readyBatch.push(key);
+    if (readyTimer) return;
+    readyTimer = setTimeout(() => {
+      readyTimer = 0;
+      const keys = readyBatch.splice(0);
+      try {
+        if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+          document.dispatchEvent(new CustomEvent('catalog:coverready', { detail: { keys: keys } }));
         }
-      } else if (als.length === 0) drawEmptyMosaic(c);
-      else if (als.length < 4) drawAlbum(c, als[0]);
-      else {
+      } catch (e) { /* ignore */ }
+    }, 0);
+  }
+  function composeMosaic(key, als, srcs) {
+    const c = getCtx();
+    let url = '';
+    if (c) {
+      c.save();
+      try {
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+        c.fillStyle = '#161616'; c.fillRect(0, 0, S, S);
+        c.imageSmoothingEnabled = true;
+        try { c.imageSmoothingQuality = 'high'; } catch (e) { /* ignore */ }
         const half = S / 2;
-        als.forEach((al, i) => { drawInto(c, (i % 2) * half, Math.floor(i / 2) * half, half, (cc) => { drawAlbum(cc, al); }); });
-      }
-    } catch (e) { /* see cover() */ }
-    c.restore();
-    const url = exportPng();
+        srcs.forEach((src, i) => {
+          const m = mosaicImages[src];
+          if (!m || m.state !== 2) return;
+          const img = m.img, iw = img.naturalWidth || 1, ih = img.naturalHeight || 1, k = Math.max(half / iw, half / ih);
+          const dw = iw * k, dh = ih * k;   // object-fit: cover, centred
+          c.save();
+          c.beginPath(); c.rect((i % 2) * half, Math.floor(i / 2) * half, half, half); c.clip();
+          c.drawImage(img, (i % 2) * half + (half - dw) / 2, Math.floor(i / 2) * half + (half - dh) / 2, dw, dh);
+          c.restore();
+        });
+      } catch (e) { /* a drawing failure leaves the ground */ }
+      c.restore();
+      try { url = canvas.toDataURL('image/jpeg', 0.85); }
+      catch (e) { url = ''; mosaicTainted = true; }   // a tainted canvas (file:// images): the first album's file, and app.js builds the 2x2 in the DOM from mosaicSources()
+    }
+    if (!url) url = srcs[0] || '';
     if (mosaicCount > 60) { Object.keys(mosaicCache).forEach((k) => { delete mosaicCache[k]; }); mosaicCount = 0; }
     mosaicCache[key] = url; mosaicCount++;
-    return url;
+    delete mosaicLoading[key];
+    announceReady(key);
   }
-
-  watchFonts();
+  // playlistMosaic(trackIds): the 2x2 mosaic of the first four albums' cover files, composed asynchronously and cached
+  // ('' until it is ready; document gets 'catalog:coverready' then); fewer than four albums: that album's own file;
+  // no albums: the mosaic-empty file. '' in Node and without a manifest.
+  function playlistMosaic(trackIds) {
+    const M = imageryLib();
+    if (!M) return '';
+    const als = mosaicAlbums(trackIds);
+    if (als.length === 0) { const e = M.covers['mosaic-empty']; return e && typeof e.src === 'string' ? e.src : ''; }
+    if (als.length < 4) return cover(als[0]);
+    const key = mosaicKey(als);
+    if (mosaicCache[key] != null) return mosaicCache[key];
+    if (!hasDom() || typeof Image !== 'function') return '';
+    if (mosaicLoading[key]) return '';
+    const srcs = als.map((a) => cover(a)).filter(Boolean);
+    if (!srcs.length) { mosaicCache[key] = ''; return ''; }
+    mosaicLoading[key] = true;
+    let left = srcs.length;
+    const step = () => { if (--left === 0) composeMosaic(key, als, srcs); };
+    srcs.forEach((src) => {
+      const m = loadCoverImage(src);
+      if (m.state === 1) m.waiters.push(step); else step();
+    });
+    return mosaicCache[key] != null ? mosaicCache[key] : '';
+  }
+  // mosaicSources(trackIds): the cover files of the (up to four) distinct albums a user playlist's mosaic is made of,
+  // in track order, synchronously; app.js composes the 2x2 in the DOM from them when the canvas is tainted (file://).
+  function mosaicSources(trackIds) {
+    return mosaicAlbums(trackIds).map((a) => cover(a)).filter(Boolean);
+  }
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -1699,6 +1174,7 @@
     seededRandom: seededRandom, pluralize: pluralize,
     // extras (not in the contract, safe to ignore)
     hashString: hashString, hasCover: hasCover, coverSpecies: coverSpecies, coverSpec: coverSpec,
+    mosaicSources: mosaicSources, mosaicTainted: function () { return mosaicTainted; },
     trackArtists: function (track) {
       const t = typeof track === 'string' ? byId[track] : track;
       if (!t) return [];
