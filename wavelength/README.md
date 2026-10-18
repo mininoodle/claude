@@ -74,3 +74,7 @@ node tools/cdp.js tools/tour.js --fresh --out=tools/shots/tour
 ```
 
 The Edge lookup in `tools/cdp.js` uses Windows install paths.
+
+## Desktop app
+
+`desktop/` holds an Electron shell that packages the page as a single portable Windows executable with the images and fonts bundled, so it runs offline. See `desktop/README.md` for the two commands that build it.
