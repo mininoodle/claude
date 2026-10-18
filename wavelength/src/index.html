@@ -88,6 +88,30 @@
     </feComponentTransfer>
     <feComposite in="bw" in2="SourceAlpha" operator="in"/>
   </filter>
+  <!-- vhs: the tape look every cover carries under every mode (applied before the mode filter, so mono stays colour-free):
+       a horizontal smear, red/blue fringing, tape grain, a 3 px scanline raster and a slight contrast crush -->
+  <filter id="fx-vhs" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0.6 0" result="soft"/>
+    <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feOffset in="r" dx="1.6" dy="0" result="rOff"/>
+    <feColorMatrix in="soft" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+    <feColorMatrix in="soft" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+    <feOffset in="b" dx="-1.6" dy="0" result="bOff"/>
+    <feComposite in="rOff" in2="g" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
+    <feComposite in="rg" in2="bOff" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="bled"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.7 0.95" numOctaves="2" seed="7" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  0 0 0 0 0.26" result="grain"/>
+    <feBlend in="grain" in2="bled" mode="overlay" result="grained"/>
+    <feImage x="0" y="0" width="1" height="3" preserveAspectRatio="none" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'1'%20height%3D'3'%20shape-rendering%3D'crispEdges'%3E%3Crect%20x%3D'0'%20y%3D'2'%20width%3D'1'%20height%3D'1'%20fill%3D'rgb(0%2C0%2C0)'%20fill-opacity%3D'0.3'%2F%3E%3C%2Fsvg%3E" result="cell"/>
+    <feTile in="cell" result="lines"/>
+    <feBlend in="lines" in2="grained" mode="multiply" result="lined"/>
+    <feComponentTransfer in="lined" result="crushed">
+      <feFuncR type="linear" slope="1.1" intercept="-0.03"/>
+      <feFuncG type="linear" slope="1.1" intercept="-0.03"/>
+      <feFuncB type="linear" slope="1.1" intercept="-0.03"/>
+    </feComponentTransfer>
+    <feComposite in="crushed" in2="SourceAlpha" operator="in"/>
+  </filter>
   <filter id="fx-cyano" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
     <feColorMatrix type="matrix" values=".2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  0 0 0 1 0"/>
     <feComponentTransfer>

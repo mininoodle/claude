@@ -14,7 +14,7 @@ Open `index.html` in a browser to use it. Press any play button to start sound, 
 
 ## The look
 
-- The interface is black, white and grey, set in DotGothic16 and VT323.
+- The interface is black, white and grey, set in DotGothic16 and VT323. Every cover carries a VHS tape look: a soft horizontal smear, red and blue fringing, tape grain and a scanline raster, applied before the mode filter so the monochrome modes stay colour-free.
 - Anything that carries colour, such as cover art, goes through a media filter. The switcher at the top right offers `mono` (the default), `dither`, `invert`, `color`, `cyano` and `ink`. Only `color` and `cyano` let any hue through.
 - Every cover, artist image, genre tile, branch, sprig and petal is a real image: monochrome flower photographs, white ink drawings on black, petals on dark water, painted ponds and embroidered garlands. Six were supplied by the user and 47 were generated with an AI image model in the same styles; `imagery/` holds the originals and the pipeline that cuts them into `src/img/`. Each genre has its own species.
 - Home has a system readout beside a flowering branch, a live clock and quick picks. Petals drift behind the interface. They can be switched off next to the filters and stop entirely when the system asks for reduced motion.
@@ -59,7 +59,7 @@ node src/test-data.js
 
 This checks the catalogue's integrity, the search and formatters, and that the data loads in Node.
 
-`tools/regress/` holds browser tests for each acceptance item in `SPEC.md`. They drive a headless Microsoft Edge through `tools/cdp.js` and print what they observe instead of asserting. Run `node serve.js` in another terminal, record a baseline from a known-good build, and compare later runs against it:
+`tools/regress/` holds browser tests for each acceptance item in `SPEC.md`. They drive a headless Microsoft Edge through `tools/cdp.js` and print what they observe instead of asserting. Run `node serve.js` in another terminal (set `PORT` and `WL_PORT` to use a port other than 8765), record a baseline from a known-good build, and compare later runs against it:
 
 ```bash
 node tools/regress/run-all.js baseline
