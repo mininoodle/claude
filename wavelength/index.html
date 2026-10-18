@@ -127,6 +127,9 @@
   --fx-fine: var(--fx);
   --fx-tint: grayscale(1) brightness(.4);
   --fx-band: grayscale(1) brightness(.22);
+  /* covers: the vhs tape look first, then the mode filter (color overrides these, since `none` cannot sit in a list) */
+  --fx-cover: url(#fx-vhs) var(--fx);
+  --fx-cover-fine: url(#fx-vhs) var(--fx-fine);
 }
 @media (max-width: 767px) { :root { --strip-h: 40px; --win-bar-h: 12px; } }   /* --mini-player-h already assumes the 12px bar */
 
@@ -154,7 +157,7 @@
 /* per-mode media filters (DESIGN 4.2); mono is the :root block above */
 :root[data-filter="dither"] { --fx: url(#fx-dither); --fx-fine: url(#fx-dither-fine);
   --fx-tint: grayscale(1) brightness(.4); --fx-band: grayscale(1) brightness(.22); }   /* no 1-bit pattern under text */
-:root[data-filter="color"]  { --fx: none; --fx-fine: none; --fx-tint: brightness(.4); --fx-band: brightness(.22);
+:root[data-filter="color"]  { --fx: none; --fx-fine: none; --fx-cover: url(#fx-vhs); --fx-cover-fine: url(#fx-vhs); --fx-tint: brightness(.4); --fx-band: brightness(.22);
   --accent: #1ed760; --accent-hover: #3be477; --accent-press: #1fdf64; --danger: #f15e6c; --verified: #3d91f4; }
 :root[data-filter="cyano"]  { --fx: url(#fx-cyano); --fx-fine: url(#fx-cyano);
   --fx-tint: url(#fx-cyano) brightness(.4); --fx-band: url(#fx-cyano) brightness(.22);
@@ -415,7 +418,7 @@ img.flora:not([src]) { visibility: hidden; }
 .chip--icon .icon { width: 16px; height: 16px; }
 
 /* Cover: every colour-carrying image goes through the filter variable */
-.cover { border-radius: 0; object-fit: cover; flex: none; display: block; background: var(--cover-empty); filter: var(--fx); }
+.cover { border-radius: 0; object-fit: cover; flex: none; display: block; background: var(--cover-empty); filter: var(--fx-cover); }
 .cover--round { border-radius: 50%; }
 .cover--24 { width: 24px; height: 24px; border-radius: 50%; }   /* the artist avatar in album hero meta: stays round */
 .cover--32 { width: 32px; height: 32px; }
@@ -424,7 +427,7 @@ img.flora:not([src]) { visibility: hidden; }
 .cover--56 { width: 56px; height: 56px; }
 .cover--64 { width: 64px; height: 64px; }
 .cover--92 { width: 92px; height: 92px; }
-.cover--24, .cover--32, .cover--40, .cover--48 { filter: var(--fx-fine); }
+.cover--24, .cover--32, .cover--40, .cover--48 { filter: var(--fx-cover-fine); }
 .cover--round.cover--40, .cover--round.cover--48, .cover--round.cover--56, .cover--round.cover--64, .cover--round.cover--92 { border-radius: 50%; }
 /* ink: the only frame ever drawn on a filtered cover (posterises to the 42% grey; DESIGN 4.5) */
 :root[data-filter="ink"] .cover { outline: 1px solid var(--rule); outline-offset: -1px; }
@@ -2248,6 +2251,30 @@ textarea.field__input { height: 88px; resize: none; }
       <feFuncB type="discrete" tableValues="0 1"/>
     </feComponentTransfer>
     <feComposite in="bw" in2="SourceAlpha" operator="in"/>
+  </filter>
+  <!-- vhs: the tape look every cover carries under every mode (applied before the mode filter, so mono stays colour-free):
+       a horizontal smear, red/blue fringing, tape grain, a 3 px scanline raster and a slight contrast crush -->
+  <filter id="fx-vhs" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0.6 0" result="soft"/>
+    <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feOffset in="r" dx="1.6" dy="0" result="rOff"/>
+    <feColorMatrix in="soft" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+    <feColorMatrix in="soft" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+    <feOffset in="b" dx="-1.6" dy="0" result="bOff"/>
+    <feComposite in="rOff" in2="g" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
+    <feComposite in="rg" in2="bOff" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="bled"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.7 0.95" numOctaves="2" seed="7" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  0 0 0 0 0.26" result="grain"/>
+    <feBlend in="grain" in2="bled" mode="overlay" result="grained"/>
+    <feImage x="0" y="0" width="1" height="3" preserveAspectRatio="none" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'1'%20height%3D'3'%20shape-rendering%3D'crispEdges'%3E%3Crect%20x%3D'0'%20y%3D'2'%20width%3D'1'%20height%3D'1'%20fill%3D'rgb(0%2C0%2C0)'%20fill-opacity%3D'0.3'%2F%3E%3C%2Fsvg%3E" result="cell"/>
+    <feTile in="cell" result="lines"/>
+    <feBlend in="lines" in2="grained" mode="multiply" result="lined"/>
+    <feComponentTransfer in="lined" result="crushed">
+      <feFuncR type="linear" slope="1.1" intercept="-0.03"/>
+      <feFuncG type="linear" slope="1.1" intercept="-0.03"/>
+      <feFuncB type="linear" slope="1.1" intercept="-0.03"/>
+    </feComponentTransfer>
+    <feComposite in="crushed" in2="SourceAlpha" operator="in"/>
   </filter>
   <filter id="fx-cyano" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
     <feColorMatrix type="matrix" values=".2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  0 0 0 1 0"/>
