@@ -672,7 +672,7 @@
     return '<span class="equaliser ' + cls + '" aria-hidden="true"><i></i><i></i><i></i></span>';
   }
   function floraReady() {
-    return typeof window.Flora === 'object' && window.Flora !== null && typeof window.Flora.sprite === 'function';
+    return false;   // flower decorations are switched off (see FLORA_ON in app.js); the expanded player shows no sprig
   }
   function barMarkup() {
     return '' +

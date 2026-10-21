@@ -75,7 +75,10 @@
   // ---------------------------------------------------------------------------
   // Terminal look helpers (DESIGN.md 2-6): windows, flower sprites, slugs
   // ---------------------------------------------------------------------------
-  const flora = () => (typeof W.Flora === 'object' && W.Flora && typeof W.Flora.sprite === 'function' ? W.Flora : null);
+  // Flower decorations are switched off (the user asked for the flowers to go): no branch, sprigs, sprays, empty-state
+  // art or petals are rendered. Covers are unaffected. Set FLORA_ON to true to bring the decorations back.
+  const FLORA_ON = false;
+  const flora = () => (FLORA_ON && typeof W.Flora === 'object' && W.Flora && typeof W.Flora.sprite === 'function' ? W.Flora : null);
   const FILTERS = ['mono', 'dither', 'invert', 'color', 'cyano', 'ink'];
   const reducedMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener: function () {} };
   const tabletMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(min-width: 768px) and (max-width: 1023px)') : { matches: false, addEventListener: function () {} };
@@ -2750,6 +2753,7 @@
       FILTERS.map((m) => '<button type="button" class="fx__opt" role="radio" aria-checked="' + (m === cur) + '" tabindex="' + (m === cur ? '0' : '-1') + '" data-filter-set="' + m + '">' + m + '</button>').join('') + '</div>';
   }
   function petalsBtnHTML() {
+    if (!FLORA_ON) return '';   // no petal layer, no toggle
     const rm = reducedMotion();
     return '<button type="button" class="fx-petals" aria-pressed="' + (state.petals && !rm) + '"' + (rm ? ' aria-disabled="true"' : '') + ' aria-label="Falling petals">' + icon('i-petal') + '</button>';
   }
