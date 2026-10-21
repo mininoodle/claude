@@ -301,6 +301,18 @@ details.ex summary::after{content:"";flex:none;width:20px;height:20px;align-self
 details.ex[open] summary::after{transform:rotate(45deg)}
 details.ex>div{padding-bottom:.8em}
 details.ex[open]>div{animation:rise .4s var(--ease)}
+.wk-how ol{margin:.4em 0 0;padding-left:1.3em}.wk-how li{margin:.15em 0}
+.wk-q{font-weight:600;margin:1em 0 .4em}
+.wk-tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--a1);border-radius:999px;padding:.15em .7em;margin-right:.6em;vertical-align:.12em}
+ol.wk-s{list-style:none;counter-reset:wk;padding:0;margin:.5em 0}
+ol.wk-s>li{counter-increment:wk;position:relative;padding:.55em .9em .6em 3em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:.5em 0;box-shadow:inset 0 1px 0 var(--hi);animation:rise .4s var(--ease)}
+ol.wk-s>li::before{content:counter(wk);position:absolute;left:.85em;top:.7em;width:1.55em;height:1.55em;border-radius:50%;background:var(--a1);color:#fff;font:700 .78rem/1.55em system-ui,sans-serif;text-align:center}
+.wk-m{font:500 1.06rem/1.8 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;overflow-x:auto}
+.wk-m table{margin:.2em 0}
+.wk-w{color:var(--ink2);font-size:.9rem;margin:.2em 0 0}
+.wk-try{border-top:1px solid var(--hair);margin-top:1.1em;padding-top:.2em}
+.wk-try .num input{width:8rem}
+@media(prefers-reduced-motion:reduce){ol.wk-s>li{animation:none}}
 
 /* controls */
 .btn{appearance:none;border:0;border-radius:999px;padding:.6em 1.15em;font:inherit;font-weight:600;color:#fff;background:var(--a1);cursor:pointer;
@@ -3995,6 +4007,232 @@ function samp(f,x0,x1,n=240,ylim=1e6){const pts=[],out=[];for(let i=0;i<=n;i++){
 const HS=[2,1,.5,.1,.01,.001];
 const gcd=(a,b)=>b?gcd(b,a%b):a;
 
+/* ---------- step-by-step worked examples: a method, an example to step through, then a question with new numbers ---------- */
+const IV=s=>`<i>${s}</i>`,wx=IV('x'),wy=IV('y'),wh=IV('h'),wn=IV('n'),wt=IV('t');
+const wmn=v=>String(+(+v).toFixed(6)).replace('-','−'),wpm=v=>v<0?' − '+wmn(-v):' + '+wmn(v),wpq=v=>v?wpm(v):'',wpn=v=>v<0?'('+wmn(v)+')':wmn(v);
+const wri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),wpick=a=>a[Math.floor(Math.random()*a.length)],wnz=(a,b)=>{let v;do v=wri(a,b);while(!v);return v;};
+/* terms [[coefficient, variable part]] to text: [[2,'x²'],[-1,'x'],[3,'']] gives 2x² − x + 3 */
+function wpoly(ts){let s='';ts.forEach(([c,v])=>{if(!c)return;const a=Math.abs(c),b=(a===1&&v?'':wmn(a))+v;s+=s?(c<0?' − ':' + ')+b:(c<0?'−':'')+b;});return s||'0';}
+/* a reduced fraction as text (3/11) or as a stacked fraction */
+function wrf(n,d){if(d<0){n=-n;d=-d;}const g=gcd(Math.abs(n),d)||1;n/=g;d/=g;return d===1?wmn(n):(n<0?'−':'')+Math.abs(n)+'/'+d;}
+function wrfH(n,d){if(d<0){n=-n;d=-d;}const g=gcd(Math.abs(n),d)||1;n/=g;d/=g;return d===1?wmn(n):(n<0?'−':'')+FR(Math.abs(n),d);}
+/* a def is {n:name, how:[method steps], trap:common mistake, p0:example numbers, rp():new numbers, make(p):{q, ask, s:[[work, why]], a:answer, n, tol}} */
+function wk(host,title,defs,cls){
+  const c=card(host,title,'<p class="hint">Read the method, then go through the example one step at a time. Each step shows the work and the reason for it. Then do one yourself with new numbers.</p>',cls),body=el('div');
+  if(defs.length>1){const sh=el('div');c.append(sh);seg(sh,defs.map(d=>d.n),i=>show(i));}
+  c.append(body);
+  const li=([m,w])=>`<li><div class="wk-m">${m}</div>${w?`<p class="wk-w">${w}</p>`:''}</li>`;
+  /* reveal the steps of X in ol one at a time; done() runs after the last one */
+  function steps(ol,X,done){let k=0;const next=()=>{if(k>=X.s.length)return;ol.insertAdjacentHTML('beforeend',li(X.s[k++]));if(k===X.s.length)done();};
+    return {next,all(){while(k<X.s.length)next();},reset(){k=0;ol.innerHTML='';},k:()=>k,n:X.s.length};}
+  function show(i){const D=defs[i],X=D.make(D.p0);let last=JSON.stringify(D.p0);
+    body.innerHTML=`<div class="note wk-how"><b>Method</b><ol>${D.how.map(s=>`<li>${s}</li>`).join('')}</ol></div>
+      <p class="wk-q"><span class="wk-tag">Example</span>${X.q}</p><ol class="wk-s"></ol><p class="fb ok" hidden></p><div class="row" data-b></div>
+      ${D.trap?`<p class="hint"><b>Common mistake:</b> ${D.trap}</p>`:''}<div class="wk-try"></div>`;
+    const ol=$('.wk-s',body),fa=$('.fb',body),tr=$('.wk-try',body);let st;
+    const br=btnRow($('[data-b]',body),[['Next step',()=>{st.next();lab();}],['Show all steps',()=>{st.all();lab();},'ghost'],['Hide steps',()=>{st.reset();fa.hidden=true;lab();},'ghost']]),[bn,ba]=br.children;
+    st=steps(ol,X,()=>{fa.hidden=false;fa.innerHTML='<b>Answer:</b> '+X.a;});
+    const lab=()=>{const k=st.k(),end=k>=st.n;bn.textContent=end?'All steps shown':`Next step (${k+1} of ${st.n})`;bn.disabled=end;ba.disabled=end;};lab();
+    function tryOne(){let p,s,j=0;do{p=D.rp();s=JSON.stringify(p);}while(s===last&&++j<20);last=s;const T=D.make(p);
+      tr.innerHTML=`<p class="wk-q"><span class="wk-tag">Your turn</span>${T.q}${T.ask?' '+T.ask:''}</p>
+        <div class="num"><input type="text" inputmode="decimal" autocomplete="off" placeholder="Your answer" aria-label="Your answer"><button type="button" class="btn sm">Check</button><button type="button" class="btn sm ghost" data-h>${icon('bulb',15)}Hint: next step</button><button type="button" class="btn sm ghost" data-s>Show solution</button><button type="button" class="btn sm ghost" data-n>New question</button></div>
+        <p class="fb" hidden aria-live="polite"></p><ol class="wk-s"></ol>`;
+      const inp=$('input',tr),fb=$('.fb',tr),row=$('.num',tr),hb=$('[data-h]',tr),sb=$('[data-s]',tr),say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
+      const ts=steps($('.wk-s',tr),T,()=>{hb.disabled=sb.disabled=true;});
+      const chk=()=>{const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. Fractions such as 3/4 are fine.');return;}
+        const ok=numOK(x,{n:T.n,tol:T.tol??.004,abs:1e-9});fx(row,ok?'pop':'shake');
+        if(ok){say('ok','Correct. '+(ts.k()<ts.n?'The full solution is below, so you can compare your steps.':''));ts.all();}
+        else if(ts.k()>=ts.n)say('bad',`Not correct. The answer is ${T.a}. Compare your work with the steps, then try a new question.`);
+        else say('bad',`Not correct. ${ts.k()?'Use the next hint, or':'Use a hint to see the first step, or'} check your work and try again.`);};
+      $('button',row).onclick=chk;inp.addEventListener('keydown',e=>{if(e.key==='Enter')chk();});
+      hb.onclick=()=>ts.next();sb.onclick=()=>{ts.all();say('info','<b>Answer:</b> '+T.a);};$('[data-n]',tr).onclick=()=>{tryOne();$('input',tr).focus();};}
+    tryOne();}
+  show(0);return c;
+}
+
+const WK={
+/* lesson 0 */
+line:{n:'Line through two points',how:['Find the slope: <i>m</i> = Δ<i>y</i>/Δ<i>x</i>.','Put the slope and one point into point-slope form.','Solve for <i>y</i> to get <i>y</i> = <i>mx</i> + <i>b</i>.','Check the answer with the other point.'],
+  trap:'Subtracting in a different order on the top and the bottom, i.e. (15 − 3)/(−2 − 4). This gives the wrong sign.',
+  p0:[-2,3,4,15],rp(){const x1=wri(-5,3),x2=x1+wri(1,5),m=wnz(-4,4),y1=wri(-6,8);return [x1,y1,x2,y1+m*(x2-x1)];},
+  make([x1,y1,x2,y2]){const m=(y2-y1)/(x2-x1),b=y1-m*x1,L=wpoly([[m,wx],[b,'']]);
+    return {q:`Find the equation of the line through (${wmn(x1)}, ${wmn(y1)}) and (${wmn(x2)}, ${wmn(y2)}).`,ask:'Write it as <i>y</i> = <i>mx</i> + <i>b</i> and type the value of <i>b</i>.',
+      s:[[`<i>m</i> = ${FR(`${wmn(y2)} − ${wpn(y1)}`,`${wmn(x2)} − ${wpn(x1)}`)} = ${FR(wmn(y2-y1),wmn(x2-x1))} = ${wmn(m)}`,'The slope is the change in <i>y</i> divided by the change in <i>x</i>. Use the same order on the top and the bottom.'],
+        [`${wy}${wpq(-y1)} = ${wmn(m)}(${wx}${wpq(-x1)})`,'Point-slope form <i>y</i> − <i>y</i><sub>1</sub> = <i>m</i>(<i>x</i> − <i>x</i><sub>1</sub>), with the first point. The other point gives the same line.'],
+        [`${wy}${wpq(-y1)} = ${wpoly([[m,wx],[-m*x1,'']])}`,'Expand the bracket.'],
+        [`${wy} = ${L}`,'Move the constant to the right side, so that <i>y</i> is alone.'],
+        [`${wmn(m)}(${wmn(x2)})${wpm(b)} = ${wmn(y2)} ✓`,`Check: put <i>x</i> = ${wmn(x2)} into the answer. It must give the <i>y</i>-value of the second point.`]],
+      a:`<i>f</i>(<i>x</i>) = ${L}, thus <i>b</i> = ${wmn(b)}`,n:b};}},
+sec:{n:'Tangent slope from secants',how:['Take a second point <i>Q</i> on the curve and write the slope of the secant <i>PQ</i>.','Simplify it, if you can.','Calculate the secant slope for <i>Q</i> closer and closer to <i>P</i>.','The number that the slopes approach is the slope of the tangent.'],
+  trap:'Stopping at one secant slope, i.e. 6.1. A secant slope is only an estimate; the tangent slope is the number the secant slopes approach.',
+  p0:[3],rp:()=>[wpick([1,2,4,5,-1,-2,-3])],
+  make([a]){const A=a*a,xs=[.1,.01,.001].map(d=>a+d);
+    return {q:`Find the slope of the tangent to <i>y</i> = <i>x</i>² at <i>P</i>(${wmn(a)}, ${A}), with secant lines.`,ask:'Type the slope of the tangent.',
+      s:[[`<i>m</i><sub><i>PQ</i></sub> = ${FR(`${wx}² − ${A}`,`${wx}${wpm(-a)}`)}`,`Use the point <i>Q</i>(<i>x</i>, <i>x</i>²) on the curve. The secant slope is Δ<i>y</i>/Δ<i>x</i>.`],
+        [`${FR(`(${wx}${wpm(-a)})(${wx}${wpm(a)})`,`${wx}${wpm(-a)}`)} = ${wx}${wpm(a)} &nbsp; for <i>x</i> ≠ ${wmn(a)}`,'Factor the difference of squares and cancel. This makes the next step easy.'],
+        [`<table><tr><th><i>x</i></th>${xs.map(x=>`<td>${fmtn(x)}</td>`).join('')}</tr><tr><th><i>m</i><sub><i>PQ</i></sub></th>${xs.map(x=>`<td>${fmtn(x+a)}</td>`).join('')}</tr></table>`,`Move <i>Q</i> toward <i>P</i>: take <i>x</i> closer and closer to ${wmn(a)}.`],
+        [`The slopes approach ${2*a}, thus <i>m</i> = ${wmn(2*a)}`,'The slope of the tangent is the limit of the secant slopes.'],
+        [`${wy} − ${A} = ${wmn(2*a)}(${wx}${wpm(-a)}), &nbsp; thus ${wy} = ${wpoly([[2*a,wx],[-A,'']])}`,'Point-slope form gives the equation of the tangent.']],
+      a:`<i>m</i> = ${wmn(2*a)}`,n:2*a};}},
+/* lesson 1 */
+fac:{n:'Factor and cancel',how:['Substitute <i>x</i> = <i>a</i>. If you get 0/0, continue.','Factor the top (and the bottom).','Cancel the common factor (<i>x</i> − <i>a</i>).','Substitute <i>x</i> = <i>a</i> into what is left.'],
+  trap:'Writing “the limit is 0/0” or “undefined”. 0/0 only tells you to simplify first.',
+  p0:[3,-3],rp(){const r=wnz(-4,5);let s;do s=wri(-5,5);while(s===r);return [r,s];},
+  make([r,s]){const b=-(r+s),c=r*s,top=wpoly([[1,wx+'²'],[b,wx],[c,'']]),bot=`${wx}${wpm(-r)}`,o=`(${wx}${wpq(-s)})`;
+    return {q:`Evaluate ${LIM(`${wx}→${wmn(r)}`)} ${FR(top,bot)}.`,ask:'Type the limit.',
+      s:[[`Substitute <i>x</i> = ${wmn(r)}: &nbsp; ${FR(`${wpn(r)}²${b?(b<0?' − ':' + ')+Math.abs(b)+'('+wmn(r)+')':''}${wpq(c)}`,`${wmn(r)}${wpm(-r)}`)} = ${FR('0','0')}`,'0/0 has no meaning. It tells you that the top and the bottom have a common factor.'],
+        [`${top} = (${bot})${o}`,`The top is 0 at <i>x</i> = ${wmn(r)}, thus (${bot}) is a factor. For the other factor, find two numbers that multiply to ${wmn(c)} and add to ${wmn(b)}.`],
+        [`${FR(`(${bot})${o}`,bot)} = ${wx}${wpq(-s)} &nbsp; for <i>x</i> ≠ ${wmn(r)}`,`Cancel (${bot}). This is allowed, because in a limit <i>x</i> is close to ${wmn(r)} but never equal to it.`],
+        [`${LIM(`${wx}→${wmn(r)}`)} ${o} = ${wmn(r)}${wpq(-s)} = ${wmn(r-s)}`,'Now direct substitution works.']],
+      a:wmn(r-s),n:r-s};}},
+exp:{n:'Expand and simplify',how:['Substitute <i>h</i> = 0. If you get 0/0, continue.','Expand the brackets on the top.','Cancel the terms without <i>h</i>, then factor <i>h</i> out of the top.','Cancel <i>h</i> and substitute <i>h</i> = 0.'],
+  trap:'Writing (3 + <i>h</i>)² as 9 + <i>h</i>². The middle term 2(3)(<i>h</i>) = 6<i>h</i> is missing.',
+  p0:[3],rp:()=>[wpick([1,2,4,5,-1,-2,-3,-4])],
+  make([a]){const A=a*a,ah=`(${wmn(a)} + ${wh})`,e=wpoly([[A,''],[2*a,wh],[1,wh+'²']]),r=wpoly([[2*a,''],[1,wh]]);
+    return {q:`Evaluate ${LIM(`${wh}→0`)} ${FR(`${ah}² − ${A}`,wh)}.`,ask:'Type the limit.',
+      s:[[`Substitute <i>h</i> = 0: &nbsp; ${FR(`${wpn(a)}² − ${A}`,'0')} = ${FR('0','0')}`,'0/0: simplify first.'],
+        [`${ah}² = ${e}`,'Expand with (<i>p</i> + <i>q</i>)² = <i>p</i>² + 2<i>pq</i> + <i>q</i>².'],
+        [`${FR(`${e} − ${A}`,wh)} = ${FR(wpoly([[2*a,wh],[1,wh+'²']]),wh)}`,`${A} and −${A} cancel. Each term that is left has a factor <i>h</i>.`],
+        [`${FR(`${wh}(${r})`,wh)} = ${r} &nbsp; for <i>h</i> ≠ 0`,'Factor out <i>h</i> and cancel it.'],
+        [`${LIM(`${wh}→0`)} (${r}) = ${wmn(2*a)}`,'Substitute <i>h</i> = 0.']],
+      a:wmn(2*a),n:2*a};}},
+rat:{n:'Rationalize',how:['Substitute. If you get 0/0 and there is a square root, continue.','Multiply the top and the bottom by the conjugate.','Simplify the top with (<i>A</i> − <i>B</i>)(<i>A</i> + <i>B</i>) = <i>A</i>² − <i>B</i>².','Cancel the common factor and substitute.'],
+  trap:'Multiplying only the top by the conjugate. Then the expression is not the same any more.',
+  p0:[2],rp:()=>[wpick([1,3,4,5])],
+  make([k]){const K=k*k,rt=`√(${wx} + ${K})`,cj=`${rt} + ${k}`;
+    return {q:`Evaluate ${LIM(`${wx}→0`)} ${FR(`${rt} − ${k}`,wx)}.`,ask:'Type the limit (a fraction is fine).',
+      s:[[`Substitute <i>x</i> = 0: &nbsp; ${FR(`√${K} − ${k}`,'0')} = ${FR('0','0')}`,'0/0, and there is a square root: rationalize.'],
+        [`${FR(`${rt} − ${k}`,wx)} × ${FR(cj,cj)}`,'Multiply the top and the bottom by the conjugate. This is a multiplication by 1, thus the value does not change.'],
+        [`= ${FR(`(${wx} + ${K}) − ${K}`,`${wx}(${cj})`)} = ${FR(wx,`${wx}(${cj})`)}`,'(<i>A</i> − <i>B</i>)(<i>A</i> + <i>B</i>) = <i>A</i>² − <i>B</i>²: the square root goes away on the top. Do not expand the bottom.'],
+        [`= ${FR('1',cj)} &nbsp; for <i>x</i> ≠ 0`,'Cancel <i>x</i>.'],
+        [`${LIM(`${wx}→0`)} ${FR('1',cj)} = ${FR('1',`√${K} + ${k}`)} = ${FR('1',2*k)}`,'Now substitute <i>x</i> = 0.']],
+      a:`1/${2*k}`,n:1/(2*k)};}},
+cd:{n:'Common denominator',how:['Substitute. If you get 0/0 and there are fractions inside the fraction, continue.','Combine the small fractions with a common denominator.','Write the top so that the factor (<i>x</i> − <i>a</i>) shows.','Cancel and substitute.'],
+  trap:'Cancelling (<i>a</i> − <i>x</i>) with (<i>x</i> − <i>a</i>) and losing the minus sign: <i>a</i> − <i>x</i> = −(<i>x</i> − <i>a</i>).',
+  p0:[1],rp:()=>[wpick([2,3,4,5])],
+  make([a]){const ia=a===1?'1':`1/${a}`,ax=a===1?wx:a+wx,d=`(${wx} − ${a})`;
+    return {q:`Evaluate ${LIM(`${wx}→${a}`)} ${FR(`1/${wx} − ${ia}`,`${wx} − ${a}`)}.`,ask:'Type the limit (a fraction is fine).',
+      s:[[`Substitute <i>x</i> = ${a}: &nbsp; ${FR(`${ia} − ${ia}`,`${a} − ${a}`)} = ${FR('0','0')}`,'0/0, with fractions inside the fraction: use a common denominator.'],
+        [`1/${wx} − ${ia} = ${FR(`${a} − ${wx}`,ax)}`,`The common denominator of 1/<i>x</i> and ${ia} is ${ax}.`],
+        [`${FR(`${a} − ${wx}`,`${ax}${d}`)} = ${FR(`−${d}`,`${ax}${d}`)}`,`Dividing by ${d} puts it in the denominator. Then write ${a} − <i>x</i> as −${d}.`],
+        [`= ${FR('−1',ax)} &nbsp; for <i>x</i> ≠ ${a}`,`Cancel ${d}.`],
+        [`${LIM(`${wx}→${a}`)} ${FR('−1',ax)} = ${wrfH(-1,a*a)}`,'Substitute <i>x</i> = '+a+'.']],
+      a:wrf(-1,a*a),n:-1/(a*a)};}},
+/* lesson 2 */
+pw:{n:'One-sided limits',how:['From the left (<i>x</i> &lt; <i>a</i>): use the formula for <i>x</i> &lt; <i>a</i> and substitute.','From the right (<i>x</i> &gt; <i>a</i>): use the formula for <i>x</i> &gt; <i>a</i> and substitute.','If the two are equal, the limit is that value. If not, the limit does not exist.','For continuity, compare the limit with <i>f</i>(<i>a</i>).'],
+  trap:'Using the same formula for both sides. Look at the inequality next to each formula.',
+  p0:[1,2,1,1],rp:()=>[wri(-2,3),wnz(-3,3),wri(-5,6),wpick([0,1])],
+  make([a,m,k,sd]){const L=a*a,R=m*a+k,F=wpoly([[m,wx],[k,'']]),A=wmn(a);
+    return {q:`<i>g</i>(<i>x</i>) = <i>x</i>² for <i>x</i> &lt; ${A}, and <i>g</i>(<i>x</i>) = ${F} for <i>x</i> ≥ ${A}. Find the one-sided limits at ${A}. Does ${LIM(`${wx}→${A}`)} <i>g</i>(<i>x</i>) exist?`,ask:`Type the limit from the ${sd?'right':'left'}.`,
+      s:[[`${LIM(`${wx}→${A}<sup>−</sup>`)} <i>x</i>² = ${wpn(a)}² = ${L}`,`From the left, <i>x</i> &lt; ${A}, thus use the first formula.`],
+        [`${LIM(`${wx}→${A}<sup>+</sup>`)} (${F}) = ${wmn(m)}(${A})${wpq(k)} = ${wmn(R)}`,`From the right, <i>x</i> &gt; ${A}, thus use the second formula.`],
+        [L===R?`Both are ${wmn(L)}, thus ${LIM(`${wx}→${A}`)} <i>g</i>(<i>x</i>) = ${wmn(L)}`:`${wmn(L)} ≠ ${wmn(R)}, thus ${LIM(`${wx}→${A}`)} <i>g</i>(<i>x</i>) does not exist`,'The two-sided limit exists only if the one-sided limits are equal.'],
+        [`<i>g</i>(${A}) = ${wmn(R)}`,L===R?`<i>g</i>(${A}) is equal to the limit, thus <i>g</i> is continuous at ${A}.`:`The graph has a jump at <i>x</i> = ${A}: a jump discontinuity.`]],
+      a:`left ${wmn(L)}, right ${wmn(R)}`+(L===R?`, thus the limit is ${wmn(L)}`:', thus the limit does not exist'),n:sd?R:L};}},
+cont:{n:'Make it continuous',how:['Each piece is a polynomial, thus it is continuous on its own interval. Only the point where the pieces join can be a problem.','Find the limit from the left and the limit from the right at that point, in terms of <i>c</i>.','Make them equal and solve for <i>c</i>.','Check: both pieces give the same value.'],
+  trap:'Solving for <i>x</i> instead of <i>c</i>. The value of <i>x</i> is fixed: it is the point where the pieces join.',
+  p0:[3,2],rp:()=>[wri(1,4),wnz(-3,5)],
+  make([a,c]){const p=a*a-c*(a+1),A=a*a,ac=a===1?IV('c'):a+IV('c');
+    return {q:`For which value of <i>c</i> is <i>f</i> continuous everywhere? <i>f</i>(<i>x</i>) = <i>cx</i>${wpq(p)} for <i>x</i> &lt; ${a}, and <i>f</i>(<i>x</i>) = <i>x</i>² − <i>c</i> for <i>x</i> ≥ ${a}.`,ask:'Type the value of <i>c</i>.',
+      s:[[`${LIM(`${wx}→${a}<sup>−</sup>`)} <i>f</i>(<i>x</i>) = ${LIM(`${wx}→${a}<sup>+</sup>`)} <i>f</i>(<i>x</i>) = <i>f</i>(${a})`,`The pieces are polynomials. They must meet at <i>x</i> = ${a}.`],
+        [`Left: ${ac}${wpq(p)} &nbsp;&nbsp; Right: ${a}² − <i>c</i> = ${A} − <i>c</i>`,`Substitute <i>x</i> = ${a} into each piece. The right piece also gives <i>f</i>(${a}).`],
+        [`${ac}${wpq(p)} = ${A} − <i>c</i>`,'Make the two limits equal.'],
+        [`${a+1}<i>c</i> = ${wmn(A-p)} &nbsp; thus &nbsp; <i>c</i> = ${wmn(c)}`,'Move the terms with <i>c</i> to the left side and the numbers to the right side, then divide.'],
+        [`Left: ${a}(${wmn(c)})${wpq(p)} = ${wmn(a*c+p)} &nbsp;&nbsp; Right: ${A} − ${wpn(c)} = ${wmn(A-c)} ✓`,'Both pieces give the same value at the join.']],
+      a:`<i>c</i> = ${wmn(c)}`,n:c};}},
+/* lesson 3 */
+tan:{n:'Tangent to a parabola',how:['Find the point: <i>f</i>(<i>a</i>).','Expand <i>f</i>(<i>a</i> + <i>h</i>).','Subtract <i>f</i>(<i>a</i>) and divide by <i>h</i>.','Let <i>h</i> → 0 to get the slope <i>m</i>.','Write the tangent with point-slope form.'],
+  trap:'Forgetting to subtract <i>f</i>(<i>a</i>) before you divide by <i>h</i>. If a term without <i>h</i> is left on the top, you cannot cancel <i>h</i>.',
+  p0:[2,-1,0,1],rp:()=>[wpick([1,2,3,-1,-2]),wri(-4,4),wri(-4,4),wri(-2,3)],
+  make([p,q,r,a]){const fa=p*a*a+q*a+r,m=2*p*a+q,b=fa-m*a,F=wpoly([[p,wx+'²'],[q,wx],[r,'']]),A=wmn(a),ah=`(${A} + ${wh})`;
+    return {q:`Find the equation of the tangent to <i>y</i> = ${F} at <i>x</i> = ${A}.`,ask:'Type the slope <i>m</i> of the tangent.',
+      s:[[`<i>f</i>(${A}) = ${wmn(fa)}`,`Substitute <i>x</i> = ${A}. The point of contact is (${A}, ${wmn(fa)}).`],
+        [`<i>f</i>${ah} = ${wpoly([[p,ah+'²'],[q,ah],[r,'']])} = ${wpoly([[fa,''],[m,wh],[p,wh+'²']])}`,`Replace <i>x</i> with ${ah}, expand, and collect the terms.`],
+        [`${FR(`<i>f</i>${ah} − <i>f</i>(${A})`,wh)} = ${FR(wpoly([[m,wh],[p,wh+'²']]),wh)} = ${wpoly([[m,''],[p,wh]])}`,`Subtract <i>f</i>(${A}) = ${wmn(fa)}: the terms without <i>h</i> cancel. Then divide each term by <i>h</i>.`],
+        [`<i>m</i> = ${LIM(`${wh}→0`)} (${wpoly([[m,''],[p,wh]])}) = ${wmn(m)}`,'Let <i>h</i> → 0.'],
+        [`${wy}${wpq(-fa)} = ${wmn(m)}(${wx}${wpq(-a)}), &nbsp; thus ${wy} = ${wpoly([[m,wx],[b,'']])}`,`Point-slope form with the point (${A}, ${wmn(fa)}).`]],
+      a:`<i>m</i> = ${wmn(m)}, and the tangent is <i>y</i> = ${wpoly([[m,wx],[b,'']])}`,n:m};}},
+rec:{n:'Slope of 1/x',how:['Write the difference quotient [<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)]/<i>h</i>.','Combine the fractions on the top with a common denominator.','Divide by <i>h</i>: the <i>h</i> on the top cancels.','Let <i>h</i> → 0.'],
+  trap:'Writing 1/(<i>a</i> + <i>h</i>) as 1/<i>a</i> + 1/<i>h</i>. A fraction cannot be split at the bottom.',
+  p0:[2],rp:()=>[wpick([1,3,4,5,-1,-2,-3])],
+  make([a]){const A=wmn(a),P=wpn(a),ah=`${A} + ${wh}`;
+    return {q:`Find the slope of the tangent to <i>y</i> = ${FR('1',wx)} at <i>x</i> = ${A}.`,ask:'Type the slope (a fraction is fine).',
+      s:[[`${FR(`1/(${ah}) − 1/${P}`,wh)}`,'The difference quotient for <i>f</i>(<i>x</i>) = 1/<i>x</i>.'],
+        [`1/(${ah}) − 1/${P} = ${FR(`${A} − (${ah})`,`${P}(${ah})`)} = ${FR(`−${wh}`,`${P}(${ah})`)}`,`The common denominator is ${P}(${ah}).`],
+        [`${FR(`−${wh}`,`${P}(${ah})`)} ÷ ${wh} = ${FR('−1',`${P}(${ah})`)}`,'Dividing by <i>h</i> cancels the <i>h</i> on the top.'],
+        [`<i>m</i> = ${LIM(`${wh}→0`)} ${FR('−1',`${P}(${ah})`)} = ${FR('−1',`${P}(${A})`)} = ${wrfH(-1,a*a)}`,'Let <i>h</i> → 0.']],
+      a:wrf(-1,a*a),n:-1/(a*a)};}},
+sq:{n:'Slope of √x',how:['Write the difference quotient.','Multiply the top and the bottom by the conjugate.','Simplify the top and cancel <i>h</i>.','Let <i>h</i> → 0.'],
+  trap:'Writing √(9 + <i>h</i>) as 3 + √<i>h</i>. A square root cannot be split over a sum.',
+  p0:[3],rp:()=>[wpick([1,2,4,5])],
+  make([k]){const K=k*k,rt=`√(${K} + ${wh})`,cj=`${rt} + ${k}`;
+    return {q:`Find the slope of the tangent to <i>y</i> = √<i>x</i> at <i>x</i> = ${K}.`,ask:'Type the slope (a fraction is fine).',
+      s:[[`${FR(`${rt} − √${K}`,wh)} = ${FR(`${rt} − ${k}`,wh)}`,`The difference quotient. √${K} = ${k}.`],
+        [`${FR(`${rt} − ${k}`,wh)} × ${FR(cj,cj)} = ${FR(`(${K} + ${wh}) − ${K}`,`${wh}(${cj})`)}`,'Multiply the top and the bottom by the conjugate. (<i>A</i> − <i>B</i>)(<i>A</i> + <i>B</i>) = <i>A</i>² − <i>B</i>².'],
+        [`= ${FR(wh,`${wh}(${cj})`)} = ${FR('1',cj)}`,`${K} and −${K} cancel. Then cancel <i>h</i>.`],
+        [`<i>m</i> = ${FR('1',`√${K} + ${k}`)} = ${FR('1',2*k)}`,'Let <i>h</i> → 0.']],
+      a:`1/${2*k}`,n:1/(2*k)};}},
+/* lesson 4 */
+vel:{n:'Instantaneous velocity',how:['Find <i>s</i>(<i>a</i>).','Expand <i>s</i>(<i>a</i> + <i>h</i>).','Average velocity on [<i>a</i>, <i>a</i> + <i>h</i>]: subtract and divide by <i>h</i>.','Let <i>h</i> → 0.'],
+  trap:'Dividing the position by the time, i.e. <i>s</i>(3)/3. That is not a velocity at an instant; you need the limit of Δ<i>s</i>/Δ<i>t</i>.',
+  p0:[4.9,0,3],rp:()=>[wpick([4.9,2,3,5]),wpick([0,0,1,2,4,-2]),wri(1,5)],
+  make([p,q,a]){const sa=p*a*a+q*a,v=2*p*a+q,S=wpoly([[p,wt+'²'],[q,wt]]),ah=`(${a} + ${wh})`;
+    return {q:`An object has position <i>s</i> = ${S} (in metres, with <i>t</i> in seconds). Find its velocity at <i>t</i> = ${a} s.`,ask:'Type the velocity in m/s.',
+      s:[[`<i>s</i>(${a}) = ${wmn(sa)}`,`Substitute <i>t</i> = ${a}.`],
+        [`<i>s</i>${ah} = ${wpoly([[p,ah+'²'],[q,ah]])} = ${wpoly([[sa,''],[v,wh],[p,wh+'²']])}`,`Replace <i>t</i> with ${ah} and expand.`],
+        [`${FR(`<i>s</i>${ah} − <i>s</i>(${a})`,wh)} = ${FR(wpoly([[v,wh],[p,wh+'²']]),wh)} = ${wpoly([[v,''],[p,wh]])}`,`The average velocity on [${a}, ${a} + <i>h</i>] is Δ<i>s</i>/Δ<i>t</i>.`],
+        [`<i>v</i>(${a}) = ${LIM(`${wh}→0`)} (${wpoly([[v,''],[p,wh]])}) = ${wmn(v)} m/s`,'Let <i>h</i> → 0: the average velocity becomes the instantaneous velocity.']],
+      a:`${wmn(v)} m/s`,n:v,tol:.002};}},
+avg:{n:'Average velocity',how:['Find the position at the start and at the end of the interval.','Average velocity = Δ<i>s</i>/Δ<i>t</i>.','Include the unit.'],
+  trap:'Using the time at the end, i.e. <i>s</i>(3)/3, instead of the change in time.',
+  p0:[4.9,0,1,3],rp(){const t1=wri(0,3);return [wri(1,5),wri(-2,6),t1,t1+wri(1,2)];},
+  make([p,q,t1,t2]){const s=t=>p*t*t+q*t,s1=s(t1),s2=s(t2),va=(s2-s1)/(t2-t1),S=wpoly([[p,wt+'²'],[q,wt]]);
+    return {q:`An object has position <i>s</i> = ${S} (in metres, with <i>t</i> in seconds). Find its average velocity from <i>t</i> = ${t1} s to <i>t</i> = ${t2} s.`,ask:'Type the average velocity in m/s.',
+      s:[[`<i>s</i>(${t1}) = ${wmn(s1)} m, &nbsp; <i>s</i>(${t2}) = ${wmn(s2)} m`,'Find the position at each end of the interval.'],
+        [`${FR('Δ<i>s</i>','Δ<i>t</i>')} = ${FR(`${wmn(s2)} − ${wpn(s1)}`,`${t2} − ${t1}`)} = ${FR(wmn(s2-s1),t2-t1)} = ${wmn(va)} m/s`,'The average velocity is the slope of the secant line on the position-time graph.']],
+      a:`${wmn(va)} m/s`,n:va,tol:.002};}},
+/* lesson 5 */
+seq:{n:'Limit of a sequence',how:['Find the highest power of <i>n</i> in the denominator.','Divide every term on the top and the bottom by it.','Use 1/<i>n</i> → 0 and 1/<i>n</i>² → 0.','Substitute these limits.'],
+  trap:'Dividing only the top by <i>n</i>². Divide the top and the bottom by the same power, or the value changes.',
+  p0:[0,3,-1,1,5],rp:()=>[wpick([0,0,1]),wri(1,9),wnz(-5,5),wri(1,6),wnz(-6,8)],
+  make([ty,p,q,r,s]){const top=ty?wpoly([[p,wn],[q,'']]):wpoly([[p,wn+'²'],[q,wn]]),bot=wpoly([[r,wn+'²'],[s,'']]),sg=v=>v<0?' − ':' + ';
+    const tD=ty?`${p}/${wn}${sg(q)}${Math.abs(q)}/${wn}²`:`${p}${sg(q)}${Math.abs(q)}/${wn}`,bD=`${r}${sg(s)}${Math.abs(s)}/${wn}²`;
+    return {q:`Find ${LIM(`${wn}→∞`)} ${FR(top,bot)}.`,ask:'Type the limit (a fraction is fine).',
+      s:[[`The highest power of <i>n</i> in the denominator is <i>n</i>².`,'Dividing the top and the bottom by the same thing does not change the value.'],
+        [FR(tD,bD),'Divide every term by <i>n</i>².'+(ty?'':' (<i>n</i>²/<i>n</i>² = 1 and <i>n</i>/<i>n</i>² = 1/<i>n</i>.)')],
+        ['As <i>n</i> → ∞: &nbsp; 1/<i>n</i> → 0 and 1/<i>n</i>² → 0','A fixed number divided by a very large number is very close to 0.'],
+        [`${FR(ty?'0 + 0':`${p} + 0`,`${r} + 0`)} = ${ty?'0':wrfH(p,r)}`,ty?'The top approaches 0 and the bottom approaches a number that is not 0.':'Substitute the limits of the parts.']],
+      a:ty?'0':wrf(p,r),n:ty?0:p/r,tol:.004};}},
+recur:{n:'Recursive sequence',how:['Start with the first term.','Put it into the rule to get the next term.','Repeat until you reach the term you need.'],
+  trap:'Using <i>n</i> in place of the term before, i.e. 3(2) − 1 for <i>t</i><sub>2</sub> when the rule needs 3<i>t</i><sub>1</sub> − 1.',
+  p0:[2,3,-1],rp:()=>[wri(-3,5),wpick([2,3,-2]),wnz(-4,4)],
+  make([a,m,k]){const t=[a];for(let i=0;i<3;i++)t.push(m*t[i]+k);const T=i=>`<i>t</i><sub>${i}</sub>`;
+    return {q:`A sequence has ${T(1)} = ${wmn(a)} and <i>t<sub>n</sub></i> = ${wmn(m)}<i>t</i><sub><i>n</i>−1</sub>${wpm(k)}. Find ${T(4)}.`,ask:`Type ${T(4)}.`,
+      s:[1,2,3].map(i=>[`${T(i+1)} = ${wmn(m)}(${wmn(t[i-1])})${wpm(k)} = ${wmn(t[i])}`,i===1?`Put <i>n</i> = 2 into the rule. The rule uses the term before, ${T(1)}.`:`Repeat with ${T(i)} = ${wmn(t[i-1])}.`]),
+      a:wmn(t[3]),n:t[3],tol:0};}},
+/* lesson 6 */
+geo:{n:'Sum of a geometric series',how:['Find the first term <i>a</i>.','Find the ratio <i>r</i>: divide a term by the term before it.','Check that |<i>r</i>| &lt; 1. If not, the series has no sum.','Use <i>S</i> = <i>a</i>/(1 − <i>r</i>).'],
+  trap:'Using <i>r</i> = 2 for 8 + 4 + 2 + … (the term before divided by the term). The ratio is 4/8 = 1/2.',
+  p0:[8,1,2],rp:()=>[wri(2,20),wpick([1,-1]),wri(2,5)],
+  make([a,sg,d]){const T=[[a,1],[a*sg,d],[a,d*d]],str=T.map(([n,dd],i)=>i?(n<0?' − ':' + ')+wrf(Math.abs(n),dd):wrf(n,dd)).join('')+(sg<0?' − …':' + …'),S=a*d/(d-sg);
+    return {q:`Find the sum of the series ${str}`,ask:'Type the sum (a fraction is fine).',
+      s:[[`<i>a</i> = ${a}`,'The first term.'],
+        [`<i>r</i> = (${wrf(a*sg,d)}) ÷ ${a} = ${wrf(sg,d)}`,'Divide the second term by the first term. (The third term divided by the second gives the same ratio.)'],
+        [`|<i>r</i>| = ${wrf(1,d)} &lt; 1`,'A geometric series has a sum only if |<i>r</i>| &lt; 1.'],
+        [`<i>S</i> = ${FR('<i>a</i>','1 − <i>r</i>')} = ${FR(a,`1 ${sg<0?'+':'−'} 1/${d}`)} = ${FR(a,`${d-sg}/${d}`)} = ${wrfH(a*d,d-sg)}`,'Use the formula. Dividing by a fraction is multiplying by its reciprocal.']],
+      a:wrf(a*d,d-sg)+(Number.isInteger(S)?'':` ≈ ${wmn(+S.toFixed(4))}`),n:S,tol:.002};}},
+rep:{n:'Repeating decimal',how:['Write the decimal as a sum: one term for each repeating block.','Find <i>a</i> and <i>r</i> of this geometric series.','Use <i>S</i> = <i>a</i>/(1 − <i>r</i>).','Simplify the fraction.'],
+  trap:'Using <i>r</i> = 1/10 when the block has two digits. For a block of two digits, each term is 100 times smaller: <i>r</i> = 1/100.',
+  p0:['27'],rp(){let s;do{s='';const L=wri(1,3);for(let i=0;i<L;i++)s+=wri(0,9);}while(/^0+$/.test(s)||/^9+$/.test(s));return [s];},
+  make([D]){const L=D.length,u=+D,b=10**L,n9=b-1,g=gcd(u,n9),ov=`0.<span style="text-decoration:overline">${D}</span>`;
+    return {q:`Write ${ov} as a fraction.`,ask:'Type the fraction, i.e. 3/11.',
+      s:[[`0.${D}${D}${D}… = ${FR(u,b)} + ${FR(u,b*b)} + ${FR(u,b**3)} + …`,`Each block of ${L===1?'one digit':L+' digits'} is one term. Each term is ${b} times smaller than the term before.`],
+        [`<i>a</i> = ${FR(u,b)}, &nbsp; <i>r</i> = ${FR(1,b)}`,'A geometric series with |<i>r</i>| &lt; 1, thus it has a sum.'],
+        [`<i>S</i> = ${FR(`${u}/${b}`,`1 − 1/${b}`)} = ${FR(`${u}/${b}`,`${n9}/${b}`)} = ${FR(u,n9)}`,`<i>S</i> = <i>a</i>/(1 − <i>r</i>). The ${b}s cancel.`],
+        [g>1?`${FR(u,n9)} = ${FR(u/g,n9/g)}`:`${FR(u,n9)} is already in lowest terms`,g>1?`Divide the top and the bottom by ${g}, their greatest common factor.`:'The top and the bottom have no common factor.']],
+      a:`${u/g}/${n9/g}`,n:u/n9,tol:1e-5};}}};
+
+
 const LML=[
 /* ---------------- 0: linear functions and the tangent problem ---------------- */
 {t:'Slopes and tangents',ic:'lslope',h:'Linear functions and the tangent problem',d:'The slope of a line is its rate of change. The slope of a tangent to a curve is the limit of the slopes of secant lines.',build(g){
@@ -4004,6 +4242,7 @@ const LML=[
   card(g,'The tangent problem',`<p>For a circle, a tangent touches the curve once. For other curves this idea does not work: a tangent can cross the curve somewhere else.</p>
     <p>A better idea: take the point <i>P</i> and a nearby point <i>Q</i> on the curve. The line <i>PQ</i> is a <b>secant line</b>. As <i>Q</i> moves toward <i>P</i>, the secant slopes approach a number <i>m</i>. The <b>tangent</b> is the line through <i>P</i> with this slope:</p>
     <div class="fx"><i>m</i> = ${LIM('<i>Q</i>→<i>P</i>')} <i>m</i><sub><i>PQ</i></sub></div><p class="hint">To find tangents, we must be able to find limits. That is the work of the next lessons.</p>`,'w5');
+  wk(g,'Worked examples',[WK.line,WK.sec]);
   const c=card(g,'Secant lines approach the tangent','<p>Choose a curve and a point <i>P</i>. Make <i>h</i> smaller: <i>Q</i> moves toward <i>P</i>, and the secant slope approaches the tangent slope (dashed).</p>');
   const F=[['y = x²',x=>x*x,[-1,4],[-2,14]],['y = x³ − x',x=>x**3-x,[-1,3.2],[-3,26]],['y = 1/x',x=>1/x,[0,4],[-.5,4]],['y = √x',x=>x>=0?Math.sqrt(x):NaN,[0,5],[-.5,2.6]]];
   let fi=0,side=1,K;const R=stats(c,['Q','Secant slope m<sub>PQ</sub>','Tangent slope (limit)']);const sh=el('div');c.insertBefore(sh,c.children[2]);
@@ -4015,9 +4254,6 @@ const LML=[
     R(0,isFinite(yq)?`(${fmtn(xq)}, ${fmtn(yq)})`:'outside the domain');R(1,isFinite(yq)?fmtn((yq-f(a))/hh):'—');R(2,fmtn(+mt.toFixed(5)));cv.draw();};
   const s2=el('div',{style:'margin-top:6px'});seg(sh,F.map(x=>x[0]),i=>{fi=i;upd();});sh.append(s2);seg(s2,['Q to the right','Q to the left'],i=>{side=i?-1:1;upd();});
   K=ctl(c,[{k:'a',l:'P: x =',min:.5,max:2.5,step:.5,v:1,dp:1},{k:'k',l:'h',min:0,max:5,step:1,v:0,f:i=>String(HS[i])}],upd);upd();
-  card(g,'Worked examples',ex('Find the linear function through (−2, 3) and (4, 15).','<p><i>m</i> = (15 − 3)/(4 − (−2)) = 12/6 = 2. Then <i>y</i> − 3 = 2(<i>x</i> + 2), thus <b><i>f</i>(<i>x</i>) = 2<i>x</i> + 7</b>.</p>')+
-    ex('y = 5 + 3x. How does y change if x increases by 4?','<p>Δ<i>y</i> = <i>m</i>Δ<i>x</i> = 3 × 4 = <b>12</b>: <i>y</i> increases by 12.</p>')+
-    ex('Estimate the slope of the tangent to y = x² at P(3, 9).','<p><i>m</i><sub><i>PQ</i></sub> = (<i>x</i>² − 9)/(<i>x</i> − 3) = <i>x</i> + 3 for <i>x</i> ≠ 3. For <i>x</i> = 3.1, 3.01, 3.001 the slopes are 6.1, 6.01, 6.001. They approach <b>6</b>. Tangent: <i>y</i> − 9 = 6(<i>x</i> − 3), thus <i>y</i> = 6<i>x</i> − 9.</p>'));
 },qz:[
   {q:'What is the slope of the line y = 7 − 2x?',n:-2,abs:.001,w:'In the form y = mx + b, m = −2.'},
   {q:'What is the slope of the line through (−2, 3) and (4, 15)?',n:2,abs:.001,w:'m = (15 − 3)/(4 + 2) = 2.'},
@@ -4036,6 +4272,7 @@ const LML=[
   card(g,'When substitution gives 0/0',`<p>0/0 has no meaning. Change the expression into one that is equal to it for <i>x</i> ≠ <i>a</i>, then substitute:</p>
     <ul><li><b>Factor and cancel:</b> ${FR('<i>x</i>² − 9','<i>x</i> − 3')} = <i>x</i> + 3 for <i>x</i> ≠ 3.</li><li><b>Expand and simplify:</b> ${FR('(3 + <i>h</i>)² − 9','<i>h</i>')} = 6 + <i>h</i> for <i>h</i> ≠ 0.</li><li><b>Rationalize:</b> multiply by the conjugate, for example √(<i>x</i> + 4) + 2.</li><li><b>Common denominator</b> for fractions inside fractions.</li></ul>
     <p class="hint">If the values grow without bound, or approach different numbers from the two sides, the limit <b>does not exist</b>. Example: 1/<i>x</i> as <i>x</i> → 0.</p>`,'w5');
+  wk(g,'Worked examples',[WK.fac,WK.exp,WK.rat,WK.cd]);
   const c=card(g,'Explore a limit with a table and a graph','<p>Each function is not defined at <i>x</i> = <i>a</i>. Watch the values as <i>x</i> approaches <i>a</i> from both sides.</p>');
   const F=[['(x² − 9)/(x − 3), a = 3',x=>(x*x-9)/(x-3),3,6,[0,6],[0,10]],['(x³ − 8)/(x − 2), a = 2',x=>(x**3-8)/(x-2),2,12,[0,4],[0,30]],['(√(x + 4) − 2)/x, a = 0',x=>(Math.sqrt(x+4)-2)/x,0,.25,[-3,4],[0,.6]],['(1/x − 1)/(x − 1), a = 1',x=>(1/x-1)/(x-1),1,-1,[.3,3],[-4,0]],['1/x², a = 0',x=>1/(x*x),0,null,[-2,2],[0,20]]];
   let fi=0;const tb=el('div',{class:'scroll'}),sh=el('div');c.append(sh);
@@ -4044,10 +4281,6 @@ const LML=[
   c.append(tb);
   const show=i=>{fi=i;const [,f,a,Lm]=F[i],hs=[.1,.01,.001,.0001];tb.innerHTML=`<table><tr><th><i>x</i> &lt; ${a}</th><th><i>f</i>(<i>x</i>)</th><th><i>x</i> &gt; ${a}</th><th><i>f</i>(<i>x</i>)</th></tr>${hs.map(d=>`<tr><td>${fmtn(a-d)}</td><td>${fmtn(f(a-d))}</td><td>${fmtn(a+d)}</td><td>${fmtn(f(a+d))}</td></tr>`).join('')}</table><p class="note">${Lm==null?'The values grow without bound, thus the limit <b>does not exist</b>.':`The values approach <b>${fmtn(Lm)}</b>, thus the limit is ${fmtn(Lm)}, although <i>f</i>(${a}) is not defined (open circle).`}</p>`;cv.draw();};
   seg(sh,F.map(x=>x[0].split(',')[0]),show);show(0);
-  card(g,'Worked examples',ex('lim (x→3) (x² − 9)/(x − 3)','<p>Substitution gives 0/0. Factor: (<i>x</i> − 3)(<i>x</i> + 3)/(<i>x</i> − 3) = <i>x</i> + 3 for <i>x</i> ≠ 3. The limit is 3 + 3 = <b>6</b>.</p>')+
-    ex('lim (h→0) ((3 + h)² − 9)/h','<p>Expand: (9 + 6<i>h</i> + <i>h</i>² − 9)/<i>h</i> = 6 + <i>h</i> for <i>h</i> ≠ 0. The limit is <b>6</b>.</p>')+
-    ex('lim (x→0) (√(x + 4) − 2)/x','<p>Multiply the top and the bottom by √(<i>x</i> + 4) + 2: the top becomes (<i>x</i> + 4) − 4 = <i>x</i>. Cancel <i>x</i>: 1/(√(<i>x</i> + 4) + 2) → 1/(2 + 2) = <b>1/4</b>.</p>')+
-    ex('lim (x→1) (1/x − 1)/(x − 1)','<p>Common denominator: 1/<i>x</i> − 1 = (1 − <i>x</i>)/<i>x</i>. Thus the expression is (1 − <i>x</i>)/(<i>x</i>(<i>x</i> − 1)) = −1/<i>x</i> → <b>−1</b>.</p>'));
   const sp=card(g,'Which method?','<p>A speed round: choose the first step for each limit.</p>');
   const MO=['Substitute directly','Factor and cancel','Expand and simplify','Rationalize','Does not exist'],MQ=[['lim (x→2) (x² + 3x − 1)',0],['lim (x→4) (x² − 16)/(x − 4)',1],['lim (h→0) ((1 + h)² − 1)/h',2],['lim (x→0) (√(x + 9) − 3)/x',3],['lim (x→0) 1/x',4],['lim (x→1) (x³ − 1)/(x − 1)',1],['lim (x→5) √(x + 4)',0],['lim (h→0) ((2 + h)³ − 8)/h',2]];
   speed(sp,'meth',{title:'Which method',intro:'Choose the method for 8 limits.',items:()=>shuffle(MQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:MO,a}))});
@@ -4067,6 +4300,7 @@ const LML=[
     <ul><li>Use one-sided limits for <b>piecewise functions</b> (different formulas on different intervals), for |<i>x</i>|, and at the end of a domain, for example ${LIM('<i>x</i>→0<sup>+</sup>')} √<i>x</i> = 0.</li><li>|<i>x</i>|/<i>x</i> is 1 for <i>x</i> &gt; 0 and −1 for <i>x</i> &lt; 0, thus ${LIM('<i>x</i>→0')} |<i>x</i>|/<i>x</i> does not exist.</li></ul>`,'w7');
   card(g,'Continuity',`<p><i>f</i> is <b>continuous at <i>a</i></b> if ${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) = <i>f</i>(<i>a</i>). This needs three things:</p><ol><li><i>f</i>(<i>a</i>) is defined;</li><li>${LIM('<i>x</i>→<i>a</i>')} <i>f</i>(<i>x</i>) exists;</li><li>the two are equal.</li></ol>
     <p>A continuous graph has no holes or breaks: you can draw it without lifting your pencil.</p><table><tr><td><b>Removable</b></td><td>The limit exists, but <i>f</i>(<i>a</i>) is missing or different (a hole).</td></tr><tr><td><b>Jump</b></td><td>The one-sided limits are different (step functions).</td></tr><tr><td><b>Infinite</b></td><td>The values grow without bound (a vertical asymptote).</td></tr></table>`,'w5');
+  wk(g,'Worked examples',[WK.pw,WK.cont]);
   const c=card(g,'Discontinuity explorer','<p>Choose a function. A filled dot is a point on the graph; an open dot is not.</p>');const sh=el('div'),R=stats(c,['Left limit','Right limit','f(a)','Verdict']);c.insertBefore(sh,c.children[2]);
   const F=[{n:'Jump',d:'f(x) = x² for x &lt; 1, 2x + 1 for x ≥ 1. a = 1',a:1,p:[[x=>x*x,-1.5,1,0,0],[x=>2*x+1,1,3,1,0]],L:1,Rr:3,fa:3,v:'Jump discontinuity: the one-sided limits are different.',xr:[-1.5,3],yr:[-1,7]},
     {n:'Removable',d:'f(x) = (x² − 4)/(x − 2) for x ≠ 2, and f(2) = 1. a = 2',a:2,p:[[x=>x+2,-1,2,0,0],[x=>x+2,2,4,0,0]],pt:[2,1],L:4,Rr:4,fa:1,v:'Removable discontinuity: the limit is 4, but f(2) = 1.',xr:[-1,4],yr:[-1,7]},
@@ -4079,8 +4313,6 @@ const LML=[
       if(o.n!=='Infinite'){if(x0>o.xr[0]){const y=f(x0);ci0?P.dot(x0,y,k.s1,4):odot(ctx,P,x0,y,k.s1);}if(x1<o.xr[1]){const y=f(x1);ci1?P.dot(x1,y,k.s1,4):odot(ctx,P,x1,y,k.s1);}}});
       if(o.pt)P.dot(o.pt[0],o.pt[1],k.s2,4);});});
   const show=i=>{fi=i;const o=F[i],t=v=>v===Infinity?'∞ (no limit)':fmtn(v);dsc.innerHTML=o.d;R(0,t(o.L));R(1,t(o.Rr));R(2,isNaN(o.fa)?'not defined':fmtn(o.fa));R(3,o.v);cv.draw();};seg(sh,F.map(x=>x.n),show);show(0);
-  card(g,'Worked examples',ex('g(x) = x² for x < 1 and 2x + 1 for x ≥ 1. Find the limits at 1.',`<p>Left: ${LIM('<i>x</i>→1<sup>−</sup>')} <i>x</i>² = 1. Right: ${LIM('<i>x</i>→1<sup>+</sup>')} (2<i>x</i> + 1) = 3. They are different, thus ${LIM('<i>x</i>→1')} <i>g</i>(<i>x</i>) <b>does not exist</b>.</p>`)+
-    ex('For which c is f continuous? f(x) = cx + 1 for x < 3, x² − c for x ≥ 3.','<p>Both pieces must meet at <i>x</i> = 3: 3<i>c</i> + 1 = 9 − <i>c</i>, thus 4<i>c</i> = 8 and <b><i>c</i> = 2</b>.</p>'));
 },qz:[
   {q:'g(x) = x² for x < 1 and 2x + 1 for x ≥ 1. What is lim (x→1⁻) g(x)?',n:1,abs:.001,w:'From the left use x²: 1² = 1.'},
   {q:'For the same g, what is lim (x→1⁺) g(x)?',n:3,abs:.001,w:'From the right use 2x + 1: 3.'},
@@ -4094,10 +4326,8 @@ const LML=[
 {t:'Tangents',ic:'ltan',h:'Using limits to find tangents',d:'The slope of the tangent to y = f(x) at x = a is the limit of the difference quotient.',build(g){
   card(g,'The slope of a tangent',`<div class="fx"><i>m</i> = ${LIM('<i>x</i>→<i>a</i>')} ${FR('<i>f</i>(<i>x</i>) − <i>f</i>(<i>a</i>)','<i>x</i> − <i>a</i>')} = ${LIM('<i>h</i>→0')} ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')}</div>
     <ol><li>Write the difference quotient.</li><li>Simplify it until you can cancel <i>h</i> (or <i>x</i> − <i>a</i>).</li><li>Take the limit.</li><li>Use point-slope form: <i>y</i> − <i>f</i>(<i>a</i>) = <i>m</i>(<i>x</i> − <i>a</i>).</li></ol>
-    <p class="hint">For a parabola, a horizontal tangent (slope 0) is at the vertex. Parallel lines have equal slopes; perpendicular lines have slopes whose product is −1.</p>`,'w7');
-  card(g,'Two worked examples',ex('Tangent to y = 2x² − x at (1, 1)','<p><i>f</i>(1 + <i>h</i>) − <i>f</i>(1) = 2(1 + <i>h</i>)² − (1 + <i>h</i>) − 1 = 3<i>h</i> + 2<i>h</i>². Divide by <i>h</i>: 3 + 2<i>h</i> → <b>3</b>. Tangent: <i>y</i> − 1 = 3(<i>x</i> − 1), thus <b><i>y</i> = 3<i>x</i> − 2</b>.</p>')+
-    ex('Slope of y = 1/x at x = 2','<p>(1/(2 + <i>h</i>) − 1/2)/<i>h</i> = (2 − (2 + <i>h</i>))/(2(2 + <i>h</i>)<i>h</i>) = −1/(2(2 + <i>h</i>)) → <b>−1/4</b>.</p>')+
-    ex('Slope of y = √x at x = 9','<p>(√(9 + <i>h</i>) − 3)/<i>h</i>. Rationalize: 1/(√(9 + <i>h</i>) + 3) → <b>1/6</b>.</p>'),'w5');
+    <p class="hint">For a parabola, a horizontal tangent (slope 0) is at the vertex. Parallel lines have equal slopes; perpendicular lines have slopes whose product is −1.</p>`);
+  wk(g,'Worked examples',[WK.tan,WK.rec,WK.sq]);
   const c=card(g,'Tangent finder','<p>Choose a parabola <i>y</i> = <i>px</i>² + <i>qx</i> + <i>r</i> and a point. The table shows the difference quotient as <i>h</i> shrinks.</p>');let K;
   const R=stats(c,['Point','Slope m','Tangent line']),tb=el('div',{class:'scroll'});
   const cv=canvas(c,300,(ctx,w,h)=>{if(!K)return;const {p,q,r,a}=K.v,f=x=>p*x*x+q*x+r,m=2*p*a+q,P=plot(ctx,w,h,{x0:-5,x1:5,y0:-10,y1:10,xt:10,yt:4,xd:0,yd:0,xl:'x',yl:'y'}),k=P.K;
@@ -4120,9 +4350,8 @@ const LML=[
   card(g,'Average and instantaneous velocity',`<p>An object moves along a line. Its position at time <i>t</i> is <i>s</i> = <i>f</i>(<i>t</i>) (the <b>position function</b>).</p>
     <div class="fx">average velocity = ${FR('Δ<i>s</i>','Δ<i>t</i>')} = ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')} &nbsp;&nbsp; <i>v</i>(<i>a</i>) = ${LIM('<i>h</i>→0')} ${FR('<i>f</i>(<i>a</i> + <i>h</i>) − <i>f</i>(<i>a</i>)','<i>h</i>')}</div>
     <p>On a position-time graph, the average velocity is the slope of a <b>secant</b>, and the instantaneous velocity is the slope of the <b>tangent</b>.</p>
-    <h4>Other rates of change</h4><p>For any <i>y</i> = <i>f</i>(<i>x</i>): the average rate of change on [<i>x</i><sub>1</sub>, <i>x</i><sub>2</sub>] is Δ<i>y</i>/Δ<i>x</i>, and the instantaneous rate of change is the limit as Δ<i>x</i> → 0. Examples: the rate of change of cost per item (marginal cost), of area with respect to radius, of a population with time.</p>`,'w7');
-  card(g,'Worked example: a falling ball',`<p>A ball falls <i>s</i> = 4.9<i>t</i>² metres in <i>t</i> seconds. Its velocity at <i>t</i> = 3:</p><p>Average on [3, 3 + <i>h</i>]: (4.9(3 + <i>h</i>)² − 4.9(9))/<i>h</i> = (29.4<i>h</i> + 4.9<i>h</i>²)/<i>h</i> = 29.4 + 4.9<i>h</i>.</p><p>As <i>h</i> → 0: <b><i>v</i>(3) = 29.4 m/s</b>.</p>
-    <p class="hint">In general, for <i>s</i> = 4.9<i>t</i>², <i>v</i>(<i>a</i>) = 9.8<i>a</i>.</p>`,'w5');
+    <h4>Other rates of change</h4><p>For any <i>y</i> = <i>f</i>(<i>x</i>): the average rate of change on [<i>x</i><sub>1</sub>, <i>x</i><sub>2</sub>] is Δ<i>y</i>/Δ<i>x</i>, and the instantaneous rate of change is the limit as Δ<i>x</i> → 0. Examples: the rate of change of cost per item (marginal cost), of area with respect to radius, of a population with time.</p>`);
+  wk(g,'Worked examples',[WK.vel,WK.avg]);
   const c=card(g,'Average velocity approaches instantaneous velocity','<p>A ball falls with <i>s</i> = 4.9<i>t</i>². Shrink the time interval [<i>t</i>, <i>t</i> + <i>h</i>].</p>');let K;const R=stats(c,['Interval','Average velocity','Instantaneous velocity']);
   const cv=canvas(c,280,(ctx,w,h)=>{if(!K)return;const f=t=>4.9*t*t,a=K.v.t,hh=HS[K.v.k],P=plot(ctx,w,h,{x0:0,x1:6,y0:0,y1:180,xt:6,yt:6,xd:0,yd:0,xl:'Time t (s)',yl:'Distance fallen s (m)'}),k=P.K,m=(f(a+hh)-f(a))/hh,v=9.8*a;
     P.clip(()=>{P.line(samp(f,0,6)[0],k.s1,{w:2.4});P.line([[0,f(a)-v*a],[6,f(a)+v*(6-a)]],k.mute,{w:1.6,dash:[6,5]});P.line([[0,f(a)-m*a],[6,f(a)+m*(6-a)]],k.s2,{w:2});P.dot(a+hh,f(a+hh),k.s2);P.dot(a,f(a),k.s4);});});
@@ -4140,10 +4369,8 @@ const LML=[
 {t:'Sequences',ic:'lseq',h:'Infinite sequences',d:'A sequence is an ordered list of numbers. Its limit is the number that the terms approach as n becomes very large.',build(g){
   card(g,'Sequences and their limits',`<p>A <b>sequence</b> <i>t</i><sub>1</sub>, <i>t</i><sub>2</sub>, <i>t</i><sub>3</sub>, … is a function of the positive integers <i>n</i>. It can be given by a formula, for example <i>t<sub>n</sub></i> = <i>n</i>/(<i>n</i> + 1), or <b>recursively</b>, from earlier terms (Fibonacci: <i>f<sub>n</sub></i> = <i>f</i><sub><i>n</i>−1</sub> + <i>f</i><sub><i>n</i>−2</sub>).</p>
     <div class="fx">${LIM('<i>n</i>→∞')} <i>t<sub>n</sub></i> = <i>L</i></div><p>means the terms are as close to <i>L</i> as we like for all large enough <i>n</i>. If no such <i>L</i> exists, the sequence has no limit (it <b>diverges</b>).</p>
-    <h4>Useful facts</h4><ul><li>${LIM('<i>n</i>→∞')} 1/<i>n<sup>r</sup></i> = 0 for <i>r</i> &gt; 0.</li><li>If |<i>r</i>| &lt; 1, ${LIM('<i>n</i>→∞')} <i>r<sup>n</sup></i> = 0. (−1)<sup><i>n</i></sup> has no limit.</li><li>For a rational expression, divide the top and the bottom by the highest power of <i>n</i> in the denominator.</li></ul>`,'w7');
-  card(g,'Worked examples',ex('lim (n→∞) (3n² − n)/(n² + 5)','<p>Divide by <i>n</i>²: (3 − 1/<i>n</i>)/(1 + 5/<i>n</i>²) → (3 − 0)/(1 + 0) = <b>3</b>.</p>')+
-    ex('lim (n→∞) (5n + 2)/(n² + 1)','<p>Divide by <i>n</i>²: (5/<i>n</i> + 2/<i>n</i>²)/(1 + 1/<i>n</i>²) → 0/1 = <b>0</b>.</p>')+
-    ex('A recursive sequence: t₁ = 2, tₙ = 3tₙ₋₁ − 1','<p><i>t</i><sub>2</sub> = 5, <i>t</i><sub>3</sub> = 14, <i>t</i><sub>4</sub> = <b>41</b>. The terms grow without bound: no limit.</p>'),'w5');
+    <h4>Useful facts</h4><ul><li>${LIM('<i>n</i>→∞')} 1/<i>n<sup>r</sup></i> = 0 for <i>r</i> &gt; 0.</li><li>If |<i>r</i>| &lt; 1, ${LIM('<i>n</i>→∞')} <i>r<sup>n</sup></i> = 0. (−1)<sup><i>n</i></sup> has no limit.</li><li>For a rational expression, divide the top and the bottom by the highest power of <i>n</i> in the denominator.</li></ul>`);
+  wk(g,'Worked examples',[WK.seq,WK.recur]);
   const c=card(g,'Sequence plotter','<p>The first 30 terms. The dashed line is the limit, if there is one.</p>');const sh=el('div'),R=stats(c,['First terms','t₃₀','Limit']);c.insertBefore(sh,c.children[2]);
   const S=[['n/(n + 1)',n=>n/(n+1),1],['1/n',n=>1/n,0],['(−1)ⁿ',n=>(-1)**n,null],['(1/2)ⁿ',n=>.5**n,0],['(2n² + 1)/(n² + n)',n=>(2*n*n+1)/(n*n+n),2],['(−1)ⁿ/n',n=>(-1)**n/n,0],['(1.1)ⁿ',n=>1.1**n,null]];
   let si=0;const cv=canvas(c,260,(ctx,w,h)=>{const [,f,L]=S[si],v=Array.from({length:30},(_,i)=>f(i+1)),lo=Math.min(0,...v),hi=Math.max(1,...v),P=plot(ctx,w,h,{x0:0,x1:31,y0:Math.floor(lo),y1:Math.ceil(hi*1.05*10)/10,xt:6,yt:4,xd:0,yd:1,xl:'n',yl:'tₙ'}),k=P.K;
@@ -4167,6 +4394,7 @@ const LML=[
   const rd=card(g,'Repeating decimals','<p>0.<span style="text-decoration:overline">27</span> = 27/100 + 27/10 000 + … is geometric with <i>a</i> = 27/100 and <i>r</i> = 1/100, thus it equals (27/100)/(99/100) = 27/99 = 3/11. Type a repeating block:</p>','w5');
   rd.insertAdjacentHTML('beforeend','<div class="row"><span>0.</span><input type="text" inputmode="numeric" maxlength="6" value="27" aria-label="Repeating digits" style="width:6rem"><span>repeating</span></div><p class="note" data-o></p>');
   const ri=$('input',rd),ro=$('[data-o]',rd),conv=()=>{const d=ri.value.replace(/\D/g,'');if(!d){ro.textContent='Type one to six digits.';return;}const num=+d,den=+'9'.repeat(d.length),g2=gcd(num,den);ro.innerHTML=`0.<span style="text-decoration:overline">${d}</span> = ${num}/${den}${g2>1?` = <b>${num/g2}/${den/g2}</b>`:''}${num===den?' = 1':''}`;};ri.oninput=conv;conv();
+  wk(g,'Worked examples',[WK.geo,WK.rep]);
   const c=card(g,'Geometric series explorer','<p>Change the first term <i>a</i> and the ratio <i>r</i>. The dots are the partial sums <i>S<sub>n</sub></i>.</p>');let K;const R=stats(c,['Series','S₁₀','Sum']);
   const cv=canvas(c,270,(ctx,w,h)=>{if(!K)return;const {a,r}=K.v,S=[];let s=0;for(let n=0;n<25;n++){s+=a*r**n;S.push(s);}const lo=Math.max(-60,Math.min(0,...S)),hi=Math.min(60,Math.max(1,...S)),P=plot(ctx,w,h,{x0:0,x1:26,y0:Math.floor(lo),y1:Math.ceil(hi*1.1),xt:5,yt:4,xd:0,yd:0,xl:'n',yl:'Sₙ'}),k=P.K;
     P.clip(()=>{if(Math.abs(r)<1)P.line([[0,a/(1-r)],[26,a/(1-r)]],k.mute,{w:1.6,dash:[6,5]});S.forEach((y,i)=>P.dot(i+1,y,k.s1,3.2));});});

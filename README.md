@@ -20,6 +20,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 ## Features
 
 - Lesson notes, interactive figures and quizzes with hints
+- Math: step-by-step worked examples in every lesson (17 question types). Each one gives the method, an example to go through one step at a time with the reason for each step, a common mistake, and a "Your turn" question with new numbers that you can check, with hints that show the solution one step at a time
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
 - Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 541 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
 - Boss round, challenge problems, speed rounds and an answer combo
