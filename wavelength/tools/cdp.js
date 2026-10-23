@@ -24,7 +24,7 @@ function findEdge() {
 const arg = (k, d) => { const a = process.argv.find((x) => x.startsWith('--' + k + '=')); return a ? a.slice(k.length + 3) : d; };
 const TOOLS = __dirname;
 const PROFILE = path.join(TOOLS, '.profiles', arg('profile', 'default'));
-const URL = arg('url', 'http://127.0.0.1:8765/local.html');
+const URL = arg('url', 'http://127.0.0.1:' + (process.env.WL_PORT || 8765) + '/local.html');
 const OUT = path.resolve(arg('out', path.join(TOOLS, 'shots')));
 fs.mkdirSync(OUT, { recursive: true });
 const testFile = path.resolve(process.argv[2]);

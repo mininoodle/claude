@@ -75,7 +75,10 @@
   // ---------------------------------------------------------------------------
   // Terminal look helpers (DESIGN.md 2-6): windows, flower sprites, slugs
   // ---------------------------------------------------------------------------
-  const flora = () => (typeof W.Flora === 'object' && W.Flora && typeof W.Flora.sprite === 'function' ? W.Flora : null);
+  // Flower decorations are switched off (the user asked for the flowers to go): no branch, sprigs, sprays, empty-state
+  // art or petals are rendered. Covers are unaffected. Set FLORA_ON to true to bring the decorations back.
+  const FLORA_ON = false;
+  const flora = () => (FLORA_ON && typeof W.Flora === 'object' && W.Flora && typeof W.Flora.sprite === 'function' ? W.Flora : null);
   const FILTERS = ['mono', 'dither', 'invert', 'color', 'cyano', 'ink'];
   const reducedMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener: function () {} };
   const tabletMQ = typeof W.matchMedia === 'function' ? W.matchMedia('(min-width: 768px) and (max-width: 1023px)') : { matches: false, addEventListener: function () {} };
@@ -97,6 +100,10 @@
     if (!flora()) return '';
     return '<img class="flora ' + cls + '" alt="" aria-hidden="true" width="' + opts.w + '" height="' + opts.h + '" data-flora="' + esc(JSON.stringify(opts)) + '">';
   }
+  // cover <img> attributes (IMAGERY 3: covers are image files): every cover decodes off the main thread; the ones in
+  // rows and grids that run below the first viewport also load lazily (the pump still sets src only near the view)
+  const ASYNC_IMG = ' decoding="async"';
+  const LAZY_IMG = ' loading="lazy" decoding="async"';
   // a decorative window bar (the hairline that stops short + "- ×"), always the first child of its window
   function winBar(w) { return '<div class="win__bar" aria-hidden="true" style="--rule-w:' + w + '%"></div>'; }
   function winTitle(path, meta) { return '<div class="win__title" aria-hidden="true" data-path="' + esc(path) + '"' + (meta != null ? ' data-meta="' + esc(meta) + '"' : '') + '></div>'; }
@@ -439,7 +446,42 @@
     img.removeAttribute('data-cover');
     if (key) img.setAttribute('data-cover-key', key);   // remembered so a stale cover can be requested again
     const src = key ? coverFor(key, img.getAttribute('data-cover-variant')) : '';
-    if (src) img.src = src;
+    if (!src) return;
+    if (key.indexOf('plu_') === 0 && src.indexOf('data:') !== 0 && mosaicInDom(img, key)) return;
+    img.src = src;
+  }
+  // A user playlist's mosaic that could not be composed on a canvas (opened from disk, the album files taint it,
+  // IMAGERY 3) comes back as one album's file path: the 2x2 of DESIGN 5.6 is built in the DOM instead, four quarter
+  // <img>s in a wrapper that takes the cover's classes and attributes (the box, the ink frame), each quarter
+  // filtered like a cover. False when the playlist has fewer than four albums (one file is right then).
+  function mosaicInDom(img, key) {
+    const c = cat();
+    const p = Library.playlist(key);
+    if (!p || !c || typeof c.mosaicSources !== 'function') return false;
+    let srcs = [];
+    try { srcs = c.mosaicSources(p.trackIds || []); } catch (e) { srcs = []; }
+    if (srcs.length < 4) return false;
+    const wrap = D.createElement('span');
+    wrap.className = img.className + ' cover--mosaic';
+    const skip = { class: 1, src: 1, alt: 1, loading: 1, decoding: 1, width: 1, height: 1 };
+    Array.prototype.forEach.call(img.attributes, (a) => { if (!skip[a.name]) wrap.setAttribute(a.name, a.value); });
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML = srcs.slice(0, 4).map((s) => '<img class="cover-mosaic__q" alt="" decoding="async" src="' + esc(s) + '">').join('');
+    img.replaceWith(wrap);
+    return true;
+  }
+  // A cover file that fails to load (a missing file, an offline reload, a host that does not serve img/) must not show
+  // the browser's broken-image glyph: an <img> that once errored keeps drawing the glyph even without src, so it gets
+  // a transparent pixel instead (the --cover-empty ground of .cover shows through), marked data-cover-failed with its
+  // key so refreshPendingCovers can ask for the file again; a decoration file that fails is removed like "no art".
+  const BLANK_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  function onImageError(e) {
+    const i = e.target;
+    if (!i || i.tagName !== 'IMG' || !i.hasAttribute('src') || i.getAttribute('src') === BLANK_PIXEL) return;
+    if (i.classList.contains('cover') || i.classList.contains('cover-mosaic__q')) {
+      i.setAttribute('data-cover-failed', i.getAttribute('data-cover-key') || '');
+      i.src = BLANK_PIXEL;
+    } else if (i.classList.contains('flora')) i.remove();
   }
   // Catalog dropped covers it had drawn before the pixel face loaded ('catalog:coversstale'): the painted <img>s
   // whose cover is no longer cached go back into the lazy pump and get the redrawn image.
@@ -454,18 +496,71 @@
     });
     if (any) scheduleCoverPump();
   }
-  // flower sprites share the pump (DESIGN 3.0a): one sprite per check, removed when Flora returns ''
+  // a cover file that was still loading when its <img> was painted (a user-playlist mosaic composed from the album
+  // files, IMAGERY 3) is ready ('catalog:coverready' on document): every cover <img> without a src goes through the
+  // pump again, both the ones painted with '' (data-cover-key only) and the ones still queued
+  function refreshPendingCovers() {
+    let any = false;
+    D.querySelectorAll('img[data-cover-key]:not([src]):not([data-cover])').forEach((img) => {
+      img.setAttribute('data-cover', img.getAttribute('data-cover-key'));
+      lazyCovers.pending.add(img);
+      any = true;
+    });
+    // covers whose file failed to load (onImageError): asked for again
+    D.querySelectorAll('img.cover[data-cover-failed][data-cover-key]:not([data-cover])').forEach((img) => {
+      img.removeAttribute('data-cover-failed');
+      img.removeAttribute('src');
+      img.setAttribute('data-cover', img.getAttribute('data-cover-key'));
+      lazyCovers.pending.add(img);
+      any = true;
+    });
+    D.querySelectorAll('img[data-cover]:not([src])').forEach((img) => { lazyCovers.pending.add(img); any = true; });
+    if (any) scheduleCoverPump();
+  }
+  // flower sprites share the pump (DESIGN 3.0a): one sprite per check. Flora composes them from the decoration
+  // bitmaps (IMAGERY 3): until those have loaded, sprite() returns '' and the <img> stays pending (it is painted on
+  // Flora.onReady); once Flora is ready a '' result means "no art for this" and the <img> is removed as before.
   // sprites this page has already drawn are in Flora's cache: a re-render paints them at once (no empty frame)
   const floraSeen = new Set();
+  let floraState = 0;   // 0 not asked yet, 1 loading (waiting for Flora.ready), 2 ready (or a Flora that draws synchronously)
+  function floraReadyNow() {
+    if (floraState === 2) return true;
+    const F = flora();
+    if (!F) return true;
+    if (floraState === 0) {
+      floraState = 1;
+      const done = () => { if (floraState === 2) return; floraState = 2; onFloraReady(); };
+      let hooked = false;
+      try {
+        if (typeof F.onReady === 'function') { F.onReady(done); hooked = true; }
+        else if (F.ready && typeof F.ready.then === 'function') { F.ready.then(done, done); hooked = true; }
+        // Flora loads each decoration on demand (IMAGERY 3): a waiting flower is painted as soon as its own bitmap
+        // lands, not after the last of them
+        if (hooked && typeof F.onLoaded === 'function') F.onLoaded(onFloraReady);
+      } catch (e) { hooked = false; }
+      if (!hooked) floraState = 2;   // no loading API: sprites are drawn at once, nothing ever waits
+    }
+    return floraState === 2;
+  }
+  // a decoration bitmap has loaded (or failed), or all of them have: the flower images that were waiting, in any
+  // panel or dialog, go through the pump again (near-view check and 8 ms slices as always; idempotent)
+  function onFloraReady() {
+    D.querySelectorAll('img[data-flora]:not([src])').forEach((img) => { lazyCovers.pending.add(img); });
+    scheduleCoverPump();
+  }
+  // true when the image is settled (painted, or removed because there is no art); false while it waits for Flora.ready
   function paintFlora(img) {
     const F = flora();
     const key = img.getAttribute('data-flora');
     let src = '';
     try { src = F ? F.sprite(JSON.parse(key)) : ''; } catch (e) { src = ''; }
-    if (src) { img.src = src; if (floraSeen.size < 200) floraSeen.add(key); } else img.remove();
+    if (src) { img.src = src; if (floraSeen.size < 200) floraSeen.add(key); return true; }
+    if (!floraReadyNow()) return false;
+    img.remove();
+    return true;
   }
   const floraDue = (img) => img.hasAttribute('data-flora') && !img.hasAttribute('src');
-  function paintLazy(img) { if (img.hasAttribute('data-cover')) paintCover(img); else paintFlora(img); }
+  function paintLazy(img) { if (img.hasAttribute('data-cover')) { paintCover(img); return true; } return paintFlora(img); }
   const COVER_MARGIN = 200;   // px around the viewport / panel that counts as "near"
   function coverNearView(img) {
     const r = img.getBoundingClientRect();
@@ -489,7 +584,7 @@
       if (!coverNearView(img)) continue;
       if (clock() - t0 > budget) { more = true; break; }
       lazyCovers.pending.delete(img);
-      paintLazy(img);
+      if (!paintLazy(img)) lazyCovers.pending.add(img);   // a flower waiting for Flora.ready: checked again by the next pump
     }
     if (more) scheduleCoverPump();
   }
@@ -503,6 +598,15 @@
     } else lazyCovers.timer = setTimeout(run, 0);
   }
   function fillCovers(root) {
+    // the flowers in view first: their one or two decoration files start loading (nothing is composed yet) before
+    // the covers below take every connection, so the Home branch or a hero sprig lands with the first covers
+    const F = flora();
+    if (F && typeof F.prefetch === 'function') {
+      root.querySelectorAll('img[data-flora]:not([src])').forEach((img) => {
+        if (floraSeen.has(img.getAttribute('data-flora')) || !coverNearView(img)) return;
+        try { F.prefetch(JSON.parse(img.getAttribute('data-flora'))); } catch (e) { /* ignore */ }
+      });
+    }
     root.querySelectorAll('img[data-cover]').forEach((img) => {
       const key = img.getAttribute('data-cover');
       if (!key || coverReady(key, img.getAttribute('data-cover-variant'))) { paintCover(img); return; }
@@ -661,7 +765,7 @@
     // the strip height is measured where it matters (hero title observer, sticky table head); fallback = --strip-h
     const stripEl = h1 || els.main.querySelector('.track-table__head') ? els.main.querySelector('.main-header') : null;
     state.stripHeight = (stripEl && stripEl.offsetHeight) || (isPhone() ? 40 : 44);
-    if (r.view === 'home') { refreshReadout(); prewarmGenreSprites(); }
+    if (r.view === 'home') refreshReadout();
     const ctx = els.main.querySelector('.main-header__ctx');
     if (h1 && ctx && typeof W.IntersectionObserver === 'function') {
       state.heroObserver = new W.IntersectionObserver((entries) => {
@@ -864,7 +968,7 @@
       ' data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-kind="' + esc(kindAttr) + '"' +
       (o.searchType ? ' data-search-type="' + esc(o.searchType) + '" data-search-id="' + esc(o.searchId) + '"' : '') + '>' +
       (o.removable ? '<button class="icon-btn card__close" aria-label="Remove ' + esc(e.name) + ' from recent searches">' + icon('i-close', 'icon--sm') + '</button>' : '') +
-      '<div class="card__cover"><img class="cover' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" alt="">' +
+      '<div class="card__cover"><img class="cover' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" alt=""' + LAZY_IMG + '>' +
       '<button class="play-btn" aria-label="Play ' + esc(e.name) + '" data-name="' + esc(e.name) + '" tabindex="-1">' + playIcons(false) + '</button></div>' +
       '<div class="card__text"><div class="card__title">' + esc(e.name) + '</div><div class="card__sub">' + esc(e.sub) + '</div></div></div>';
   }
@@ -880,7 +984,7 @@
   }
   function tileHTML(e) {
     return '<button class="quick-tile" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-color="' + esc(e.kind === 'liked' ? 'var(--liked-hero)' : e.color) + '">' +
-      '<img class="cover" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><span class="quick-tile__name">' + esc(e.name) + '</span>' +
+      '<img class="cover" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""' + ASYNC_IMG + '><span class="quick-tile__name">' + esc(e.name) + '</span>' +
       '<span class="play-btn" aria-hidden="true">' + playIcons(false) + '</span></button>';
   }
   function artistLinks(t) {
@@ -896,7 +1000,7 @@
     const al = c.album(t.albumId);
     const liked = Library.isLiked(t.id);
     const links = artistLinks(t);
-    const cover = o.showCover ? '<img class="cover track-row__cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt="">' : '';
+    const cover = o.showCover ? '<img class="cover track-row__cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""' + LAZY_IMG + '>' : '';
     // ARIA table semantics: the table is not a 2-D keyboard grid, so role=table/row/columnheader/cell
     const middle = (o.variant === 'album' || o.variant === 'popular')
       ? '<span class="track-row__plays" role="cell">' + esc(c.formatPlays(t.plays)) + '</span>'
@@ -947,7 +1051,7 @@
     const liked = Library.isLiked(t.id);
     const oo = o || {};
     return '<div class="song-row" data-track-id="' + esc(t.id) + '"' + (oo.qid ? ' data-qid="' + esc(oo.qid) + '"' : '') + (oo.pos != null ? ' data-pos="' + oo.pos + '"' : '') + ' tabindex="0">' +
-      '<span class="song-row__cover"><img class="cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""><button class="song-row__play" aria-label="Play" tabindex="-1">' + playIcons(false, 'icon--sm') + '</button></span>' +
+      '<span class="song-row__cover"><img class="cover" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""' + LAZY_IMG + '><button class="song-row__play" aria-label="Play" tabindex="-1">' + playIcons(false, 'icon--sm') + '</button></span>' +
       '<span class="song-row__text"><span class="song-row__title">' + esc(t.title) + '</span><span class="song-row__artist">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '</span></span>' +
       '<span class="song-row__end"><button class="icon-btn song-row__like' + (liked ? ' is-liked' : '') + '" aria-label="' + (liked ? 'Remove from Liked Songs' : 'Add to Liked Songs') + '" tabindex="-1">' + icon(liked ? 'i-check-circle' : 'i-add-circle', 'icon--sm') + '</button>' +
       '<span class="song-row__dur">' + esc(c.formatDuration(t.durationMs)) + '</span>' +
@@ -1003,7 +1107,7 @@
     }
     const editAttr = h.editable ? ' role="button" tabindex="0"' : '';
     return '<div class="' + cls + '">' +
-      '<div class="hero__cover' + (h.round ? ' hero__cover--round' : '') + '"' + (h.editable ? ' role="button" tabindex="0" aria-label="Edit details"' : '') + '><img class="cover" data-cover="' + esc(h.coverKey) + '" alt="">' +
+      '<div class="hero__cover' + (h.round ? ' hero__cover--round' : '') + '"' + (h.editable ? ' role="button" tabindex="0" aria-label="Edit details"' : '') + '><img class="cover" data-cover="' + esc(h.coverKey) + '" alt=""' + ASYNC_IMG + '>' +
       // hover hint only (the cover itself is the button): it names what the click does, the Edit details dialog
       (h.editable ? '<span class="hero__cover-edit" aria-hidden="true">' + icon('i-edit') + 'Edit details</span>' : '') + '</div>' +
       '<div class="hero__info"><span class="hero__type">' + h.type + '</span>' +
@@ -1041,7 +1145,7 @@
   function finderRowHTML(t) {
     const c = cat();
     const al = c.album(t.albumId);
-    return '<div class="finder-row" data-track-id="' + esc(t.id) + '"><img class="cover cover--40" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt="">' +
+    return '<div class="finder-row" data-track-id="' + esc(t.id) + '"><img class="cover cover--40" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""' + LAZY_IMG + '>' +
       '<span class="finder-row__text"><span class="finder-row__title">' + esc(t.title) + '</span><span class="finder-row__artist">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '</span></span>' +
       '<span class="finder-row__album"><a href="#" data-route="album" data-id="' + esc(al.id) + '">' + esc(al.title) + '</a></span>' +
       '<button class="pill pill--outline finder-row__add">Add</button></div>';
@@ -1194,12 +1298,11 @@
         const cards = recent.map((p) => cardHTML(p.e, { removable: true, searchType: p.x.type, searchId: p.x.id })).join('');
         html += shelfHTML('Recent searches', null, cards, { cls: 'shelf--recent', end: '<button class="pill pill--outline search-clear-recent">Clear recent searches</button>' });
       }
-      html += '<h2 class="section-title browse-title">Browse all</h2><div class="browse-grid">' + c.genres.map((g) => {
-        const gc = c.genreContent(g.id);
-        const first = gc.playlists[0] || gc.albums[0];
-        // the name sits on its own black label; the genre species grows from the corner (DESIGN 3.8)
-        return '<button class="browse-card" style="--browse-color:' + esc(g.color) + '" data-route="genre" data-id="' + esc(g.id) + '"><span class="browse-card__name">' + esc(g.name) + '</span>' + (first ? '<img class="cover" data-cover="' + esc(first.id) + '" alt="">' : '') + floraImg('browse-card__flora', tileOpts(g.id)) + '</button>';
-      }).join('') + '</div>';
+      html += '<h2 class="section-title browse-title">Browse all</h2><div class="browse-grid">' + c.genres.map((g) =>
+        // the genre's flower photograph (Catalog.cover('ge_x'): a filtered cover like any other, IMAGERY 3) under the
+        // name on its own black label; the grid sits below the first viewport on phones, so the files load lazily
+        '<button class="browse-card" style="--browse-color:' + esc(g.color) + '" data-route="genre" data-id="' + esc(g.id) + '"><img class="cover browse-card__cover" data-cover="' + esc(g.id) + '" alt=""' + LAZY_IMG + '><span class="browse-card__name">' + esc(g.name) + '</span></button>'
+      ).join('') + '</div>';
       return html;
     }
     const res = c.search(q);
@@ -1228,14 +1331,14 @@
           const t = top.item;
           const al = c.album(t.albumId);
           topHtml = '<div class="top-result" role="button" tabindex="0" data-track-id="' + esc(t.id) + '" data-route="album" data-id="' + esc(al.id) + '" data-search-type="track" data-search-id="' + esc(t.id) + '">' +
-            '<img class="cover cover--92" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""><div class="top-result__name">' + esc(t.title) + '</div>' +
+            '<img class="cover cover--92" data-cover="' + esc(al.id) + '" data-cover-variant="thumb" alt=""' + ASYNC_IMG + '><div class="top-result__name">' + esc(t.title) + '</div>' +
             '<div class="top-result__meta">' + (t.explicit ? icon('i-explicit', 'icon--sm badge-e') : '') + artistLinks(t) + '<span class="type-pill">Song</span></div>' +
             '<button class="play-btn" aria-label="Play ' + esc(t.title) + '" tabindex="-1">' + playIcons(false) + '</button></div>';
         } else {
           const e = ent(kind, top.item.id, 'year');
           const label = kind === 'artist' ? 'Artist' : kind === 'album' ? 'Album' : 'Playlist';
           topHtml = '<div class="top-result" role="button" tabindex="0" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-search-type="' + kind + '" data-search-id="' + esc(e.id) + '">' +
-            '<img class="cover cover--92' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><div class="top-result__name">' + esc(e.name) + '</div>' +
+            '<img class="cover cover--92' + (e.round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""' + ASYNC_IMG + '><div class="top-result__name">' + esc(e.name) + '</div>' +
             '<div class="top-result__meta">' + (kind === 'album' ? '<span>' + esc(e.owner) + '</span>' : '') + '<span class="type-pill">' + label + '</span></div>' +
             '<button class="play-btn" aria-label="Play ' + esc(e.name) + '" tabindex="-1">' + playIcons(false) + '</button></div>';
         }
@@ -1304,7 +1407,7 @@
     const e = ent('album', al.id);
     const ctx = contextOf(e);
     const saved = Library.isSavedAlbum(al.id);
-    const meta = '<img class="cover cover--24" data-cover="' + esc(ar.id) + '" data-cover-variant="thumb" alt=""><a href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><span>•</span><span>' + al.year + '</span><span>•</span>' + metaCount(al.trackIds);
+    const meta = '<img class="cover cover--24" data-cover="' + esc(ar.id) + '" data-cover-variant="thumb" alt=""' + ASYNC_IMG + '><a href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><span>•</span><span>' + al.year + '</span><span>•</span>' + metaCount(al.trackIds);
     const tracks = c.tracksOf(al.id);
     const more = c.albumsOf(ar.id).filter((a) => a.id !== al.id).map((a) => cardHTML(ent('album', a.id, 'year'))).join('');
     return stripHTML({ tint: shade(al.color, 0.3), title: al.title, ctx: ctx }) + heroPage(al.color,
@@ -1338,7 +1441,7 @@
       shelfHTML('Discography', null, discoList.map((a) => cardHTML(ent('album', a.id, 'year'))).join('') || '<div class="section-sub disco-empty">No releases of this kind.</div>', { cls: 'shelf--disco', between: '<div class="disco-chips">' + discoChips + '</div>' }) +
       (fans ? shelfHTML('Fans also like', null, fans) : '') +
       '<section class="shelf shelf--about"><div class="shelf__head"><h2 class="shelf__title">About</h2></div>' +
-      '<div class="about-card"><img class="cover about-card__img" data-cover="' + esc(ar.id) + '" alt=""><div class="about-card__body"><div class="about-card__listeners">' + esc(c.formatPlays(ar.monthlyListeners)) + ' monthly listeners</div><p class="about-card__bio">' + esc(ar.bio) + '</p></div></div></section>');
+      '<div class="about-card"><img class="cover about-card__img" data-cover="' + esc(ar.id) + '" alt=""' + LAZY_IMG + '><div class="about-card__body"><div class="about-card__listeners">' + esc(c.formatPlays(ar.monthlyListeners)) + ' monthly listeners</div><p class="about-card__bio">' + esc(ar.bio) + '</p></div></div></section>');
   };
   views.liked = function () {
     const c = cat();
@@ -1406,7 +1509,7 @@
     const active = isActiveEntity(e);
     const sub = e.kind === 'liked' ? icon('i-pin', 'icon--xs') + 'Playlist • ' + esc(cat().pluralize(Library.likedTrackIds().length, 'song')) : esc(e.sub);
     return '<li><button class="lib-row' + (active ? ' is-active' : '') + '" data-context-uri="' + esc(e.uri) + '" data-route="' + esc(e.route) + '" data-id="' + esc(e.id) + '" data-kind="' + esc(e.kind) + '" title="' + esc(e.name) + '" aria-label="' + esc(e.name) + '">' +
-      '<span class="lib-row__cover' + (round ? ' lib-row__cover--round' : '') + '"><img class="cover cover--48' + (round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""><span class="lib-row__play" aria-hidden="true">' + playIcons(false) + '</span></span>' +
+      '<span class="lib-row__cover' + (round ? ' lib-row__cover--round' : '') + '"><img class="cover cover--48' + (round ? ' cover--round' : '') + '" data-cover="' + esc(e.coverKey) + '" data-cover-variant="thumb" alt=""' + LAZY_IMG + '><span class="lib-row__play" aria-hidden="true">' + playIcons(false) + '</span></span>' +
       '<span class="lib-row__text"><span class="name">' + esc(e.name) + '</span><span class="sub">' + sub + '</span></span>' +
       '<span class="lib-row__end">' + icon('i-speaker', 'icon--sm lib-row__speaker') + '</span></button>' +
       (e.kind === 'liked' ? '' : '<button class="icon-btn lib-row__more" aria-label="More options for ' + esc(e.name) + '" data-kind="' + esc(e.kind) + '" data-id="' + esc(e.id) + '">' + icon('i-more', 'icon--sm') + '</button>') + '</li>';
@@ -1532,10 +1635,10 @@
       const liked = Library.isLiked(cur.id);
       const up = arr(pcall('upcoming', 1));
       const nextT = up.length ? c.track(up[0].trackId) : null;
-      html += '<div class="rp__cover-frame"><img class="cover rp__cover" data-cover="' + esc(al.id) + '" alt=""></div>' +
+      html += '<div class="rp__cover-frame"><img class="cover rp__cover" data-cover="' + esc(al.id) + '" alt=""' + ASYNC_IMG + '></div>' +
         '<div class="rp__track" data-track-id="' + esc(cur.id) + '"><div class="rp__track-text"><div class="rp__track-title"><a href="#" data-route="album" data-id="' + esc(al.id) + '">' + esc(cur.title) + '</a></div><div class="rp__track-artist">' + artistLinks(cur) + '</div></div>' +
         '<button class="icon-btn rp__like' + (liked ? ' is-active' : '') + '" aria-label="' + (liked ? 'Remove from Liked Songs' : 'Add to Liked Songs') + '">' + icon(liked ? 'i-check-circle' : 'i-add-circle') + '</button></div>' +
-        '<div class="rp-card rp-card--artist win">' + winBar(70) + '<div class="rp-card__img"><img class="cover" data-cover="' + esc(ar.id) + '" alt=""><span class="rp-card__img-label">About the artist</span></div>' +
+        '<div class="rp-card rp-card--artist win">' + winBar(70) + '<div class="rp-card__img"><img class="cover" data-cover="' + esc(ar.id) + '" alt=""' + LAZY_IMG + '><span class="rp-card__img-label">About the artist</span></div>' +
         '<div class="rp-card__body"><div class="rp-card__row"><div><a class="rp-card__name" href="#" data-route="artist" data-id="' + esc(ar.id) + '">' + esc(ar.name) + '</a><div class="rp-card__sub">' + esc(c.formatPlays(ar.monthlyListeners)) + ' monthly listeners</div></div>' +
         '<button class="pill rp__follow' + (Library.isFollowing(ar.id) ? ' is-active' : '') + '" data-id="' + esc(ar.id) + '">' + (Library.isFollowing(ar.id) ? 'Following' : 'Follow') + '</button></div><p class="rp-card__bio">' + esc(ar.bio) + '</p></div></div>';
       html += '<div class="rp-card rp-card--queue win">' + winBar(70) + '<div class="rp-card__head"><span class="rp-card__name">Next in queue</span><a class="text-link" href="#" data-route="queue">Open queue</a></div>' +
@@ -2128,7 +2231,7 @@
       '<label class="field"><span class="field__label">Description</span><textarea class="field__input edit-details__desc" placeholder="Add an optional description" maxlength="300"></textarea></label></div>';
     const img = body.querySelector('img');
     const src = coverFor(p.id);
-    if (src) img.src = src;
+    if (src && !(src.indexOf('data:') !== 0 && mosaicInDom(img, p.id))) img.src = src;
     const name = body.querySelector('.edit-details__name');
     const desc = body.querySelector('.edit-details__desc');
     name.value = p.name;
@@ -2650,6 +2753,7 @@
       FILTERS.map((m) => '<button type="button" class="fx__opt" role="radio" aria-checked="' + (m === cur) + '" tabindex="' + (m === cur ? '0' : '-1') + '" data-filter-set="' + m + '">' + m + '</button>').join('') + '</div>';
   }
   function petalsBtnHTML() {
+    if (!FLORA_ON) return '';   // no petal layer, no toggle
     const rm = reducedMotion();
     return '<button type="button" class="fx-petals" aria-pressed="' + (state.petals && !rm) + '"' + (rm ? ' aria-disabled="true"' : '') + ' aria-label="Falling petals">' + icon('i-petal') + '</button>';
   }
@@ -2890,27 +2994,7 @@
     arm();
     on(D, 'visibilitychange', () => { if (!D.hidden) tickClock(); });
   }
-  // genre tile sprites: drawn in idle time after Home's first paint, one per idle callback, so Browse finds them cached
-  function tileOpts(genreId) {
-    const F = flora();
-    let sp = 'sakura';
-    try { sp = (F && typeof F.speciesFor === 'function' && F.speciesFor(genreId)) || 'sakura'; } catch (e) { /* default */ }
-    return { kind: 'tile', species: sp, seed: genreId, w: 120, h: 120 };
-  }
-  let genrePrewarmed = false;
-  function prewarmGenreSprites() {
-    const F = flora(), c = cat();
-    if (genrePrewarmed || !F || !c || !Array.isArray(c.genres)) return;
-    genrePrewarmed = true;
-    const list = c.genres.map((g) => tileOpts(g.id));
-    const idle = typeof W.requestIdleCallback === 'function' ? (fn) => W.requestIdleCallback(fn, { timeout: 3000 }) : (fn) => setTimeout(fn, 200);
-    const next = () => {
-      const o = list.shift();
-      if (o) { try { F.sprite(o); } catch (e) { /* drawn on demand later */ } }
-      if (list.length) idle(next);
-    };
-    idle(next);
-  }
+  // (the genre tiles are cover files now, IMAGERY 3: nothing to pre-warm after Home's first paint)
 
   // ---------------------------------------------------------------------------
   // Subscriptions and init
@@ -2996,6 +3080,11 @@
     on(D, 'scroll', scheduleCoverPump, { capture: true, passive: true });
     on(D, 'visibilitychange', () => { if (lazyCovers.timer === -1) lazyCovers.timer = 0; scheduleCoverPump(); });
     on(W, 'catalog:coversstale', refreshStaleCovers);
+    // a cover file composed asynchronously (user-playlist mosaic) is ready: data.js dispatches it on document (IMAGERY 3)
+    on(D, 'catalog:coverready', refreshPendingCovers);
+    on(W, 'catalog:coverready', refreshPendingCovers);
+    // a cover or decoration file that fails to load: no broken-image glyph (the error event does not bubble: capture)
+    on(D, 'error', onImageError, true);
     // skip links (index.html, first in #app, shown only while focused): jump past long track tables
     on(D, 'click', (e) => {
       const s = e.target && e.target.closest ? e.target.closest('.skip[data-skip]') : null;

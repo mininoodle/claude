@@ -116,6 +116,9 @@
   --fx-fine: var(--fx);
   --fx-tint: grayscale(1) brightness(.4);
   --fx-band: grayscale(1) brightness(.22);
+  /* covers: the vhs tape look first, then the mode filter (color overrides these, since `none` cannot sit in a list) */
+  --fx-cover: url(#fx-vhs) var(--fx);
+  --fx-cover-fine: url(#fx-vhs) var(--fx-fine);
 }
 @media (max-width: 767px) { :root { --strip-h: 40px; --win-bar-h: 12px; } }   /* --mini-player-h already assumes the 12px bar */
 
@@ -143,7 +146,7 @@
 /* per-mode media filters (DESIGN 4.2); mono is the :root block above */
 :root[data-filter="dither"] { --fx: url(#fx-dither); --fx-fine: url(#fx-dither-fine);
   --fx-tint: grayscale(1) brightness(.4); --fx-band: grayscale(1) brightness(.22); }   /* no 1-bit pattern under text */
-:root[data-filter="color"]  { --fx: none; --fx-fine: none; --fx-tint: brightness(.4); --fx-band: brightness(.22);
+:root[data-filter="color"]  { --fx: none; --fx-fine: none; --fx-cover: url(#fx-vhs); --fx-cover-fine: url(#fx-vhs); --fx-tint: brightness(.4); --fx-band: brightness(.22);
   --accent: #1ed760; --accent-hover: #3be477; --accent-press: #1fdf64; --danger: #f15e6c; --verified: #3d91f4; }
 :root[data-filter="cyano"]  { --fx: url(#fx-cyano); --fx-fine: url(#fx-cyano);
   --fx-tint: url(#fx-cyano) brightness(.4); --fx-band: url(#fx-cyano) brightness(.22);
@@ -183,6 +186,9 @@ input, textarea { caret-color: var(--fg); caret-shape: block; }
 input[type="search"]::-webkit-search-decoration, input[type="search"]::-webkit-search-cancel-button { display: none; }
 svg { display: block; }
 .flora { pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+/* a flower image waits for its decoration bitmap (IMAGERY 3: no src until Flora is ready): it keeps its box, so nothing
+   shifts when the sprite arrives, but shows no placeholder frame meanwhile */
+img.flora:not([src]) { visibility: hidden; }
 :root[data-filter="invert"] .flora:not(canvas) { filter: invert(1); }   /* white silhouettes become black ink; the petal canvas draws black itself */
 .fx-defs { position: absolute; width: 0; height: 0; overflow: hidden; }   /* never display:none */
 @media (prefers-reduced-motion: reduce) {
@@ -401,7 +407,7 @@ svg { display: block; }
 .chip--icon .icon { width: 16px; height: 16px; }
 
 /* Cover: every colour-carrying image goes through the filter variable */
-.cover { border-radius: 0; object-fit: cover; flex: none; display: block; background: var(--cover-empty); filter: var(--fx); }
+.cover { border-radius: 0; object-fit: cover; flex: none; display: block; background: var(--cover-empty); filter: var(--fx-cover); }
 .cover--round { border-radius: 50%; }
 .cover--24 { width: 24px; height: 24px; border-radius: 50%; }   /* the artist avatar in album hero meta: stays round */
 .cover--32 { width: 32px; height: 32px; }
@@ -410,7 +416,7 @@ svg { display: block; }
 .cover--56 { width: 56px; height: 56px; }
 .cover--64 { width: 64px; height: 64px; }
 .cover--92 { width: 92px; height: 92px; }
-.cover--24, .cover--32, .cover--40, .cover--48 { filter: var(--fx-fine); }
+.cover--24, .cover--32, .cover--40, .cover--48 { filter: var(--fx-cover-fine); }
 .cover--round.cover--40, .cover--round.cover--48, .cover--round.cover--56, .cover--round.cover--64, .cover--round.cover--92 { border-radius: 50%; }
 /* ink: the only frame ever drawn on a filtered cover (posterises to the 42% grey; DESIGN 4.5) */
 :root[data-filter="ink"] .cover { outline: 1px solid var(--rule); outline-offset: -1px; }

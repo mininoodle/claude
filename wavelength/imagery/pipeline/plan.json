@@ -1,0 +1,3620 @@
+{
+ "generated": "2026-10-15T07:55:08.751Z",
+ "fonts": {
+  "fontOk": true
+ },
+ "sizes": {
+  "covers": 4143521,
+  "deco": 1795592,
+  "petals": 10941
+ },
+ "log": {
+  "deco": [
+   {
+    "id": "branch-flash-1",
+    "w": 292,
+    "h": 512,
+    "kb": 87,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 127,
+    "box": {
+     "x": 21,
+     "y": 0,
+     "w": 774,
+     "h": 1358
+    },
+    "comps": 1195,
+    "kept": 1
+   },
+   {
+    "id": "branch-ink-1",
+    "w": 490,
+    "h": 512,
+    "kb": 88,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 155,
+     "y": 111,
+     "w": 741,
+     "h": 775
+    },
+    "comps": 138,
+    "kept": 54
+   },
+   {
+    "id": "branch-home-1",
+    "w": 483,
+    "h": 512,
+    "kb": 76,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 58,
+     "y": 0,
+     "w": 966,
+     "h": 1024
+    },
+    "comps": 91,
+    "kept": 10
+   },
+   {
+    "id": "branch-home-2",
+    "w": 512,
+    "h": 368,
+    "kb": 82,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 0,
+    "box": {
+     "x": 0,
+     "y": 281,
+     "w": 703,
+     "h": 505
+    },
+    "comps": 217,
+    "kept": 5
+   },
+   {
+    "id": "sprig-sakura-hang",
+    "w": 423,
+    "h": 512,
+    "kb": 84,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 505,
+     "y": 0,
+     "w": 447,
+     "h": 541
+    },
+    "comps": 295,
+    "kept": 23
+   },
+   {
+    "id": "sprig-ume-rise",
+    "w": 433,
+    "h": 512,
+    "kb": 91,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 220,
+     "y": 128,
+     "w": 629,
+     "h": 743
+    },
+    "comps": 467,
+    "kept": 1
+   },
+   {
+    "id": "sprig-peony-hang",
+    "w": 448,
+    "h": 427,
+    "kb": 91,
+    "frame": {
+     "l": 82,
+     "t": 82,
+     "r": 82,
+     "b": 82
+    },
+    "bg": 1,
+    "box": {
+     "x": 404,
+     "y": 82,
+     "w": 538,
+     "h": 513
+    },
+    "comps": 23,
+    "kept": 1
+   },
+   {
+    "id": "sprig-peony-rise",
+    "w": 430,
+    "h": 448,
+    "kb": 125,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 103,
+     "y": 85,
+     "w": 828,
+     "h": 863
+    },
+    "comps": 459,
+    "kept": 103
+   },
+   {
+    "id": "sprig-rose-rise",
+    "w": 448,
+    "h": 439,
+    "kb": 96,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 0,
+     "y": 871,
+     "w": 583,
+     "h": 571
+    },
+    "comps": 379,
+    "kept": 25
+   },
+   {
+    "id": "sprig-rose-hang",
+    "w": 257,
+    "h": 448,
+    "kb": 52,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 308,
+     "y": 0,
+     "w": 428,
+     "h": 745
+    },
+    "comps": 689,
+    "kept": 86
+   },
+   {
+    "id": "sprig-kiku-hang",
+    "w": 295,
+    "h": 448,
+    "kb": 70,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 432,
+     "y": 0,
+     "w": 461,
+     "h": 701
+    },
+    "comps": 110,
+    "kept": 3
+   },
+   {
+    "id": "sprig-kiku-rise",
+    "w": 295,
+    "h": 448,
+    "kb": 70,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 432,
+     "y": 0,
+     "w": 461,
+     "h": 701
+    },
+    "comps": 110,
+    "kept": 3
+   },
+   {
+    "id": "sprig-wisteria-hang",
+    "w": 191,
+    "h": 448,
+    "kb": 40,
+    "frame": {
+     "l": 137,
+     "t": 137,
+     "r": 137,
+     "b": 137
+    },
+    "bg": 0,
+    "box": {
+     "x": 534,
+     "y": 137,
+     "w": 276,
+     "h": 649
+    },
+    "comps": 17,
+    "kept": 1
+   },
+   {
+    "id": "sprig-wisteria-right",
+    "w": 222,
+    "h": 431,
+    "kb": 31,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 802,
+     "y": 287,
+     "w": 222,
+     "h": 431
+    },
+    "comps": 46,
+    "kept": 23
+   },
+   {
+    "id": "sprig-wisteria-rise",
+    "w": 191,
+    "h": 448,
+    "kb": 40,
+    "frame": {
+     "l": 137,
+     "t": 137,
+     "r": 137,
+     "b": 137
+    },
+    "bg": 0,
+    "box": {
+     "x": 534,
+     "y": 137,
+     "w": 276,
+     "h": 649
+    },
+    "comps": 17,
+    "kept": 1
+   },
+   {
+    "id": "sprig-lily-rise",
+    "w": 427,
+    "h": 448,
+    "kb": 66,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 14,
+     "y": 280,
+     "w": 709,
+     "h": 744
+    },
+    "comps": 207,
+    "kept": 20
+   },
+   {
+    "id": "sprig-lily-hang",
+    "w": 427,
+    "h": 448,
+    "kb": 65,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 14,
+     "y": 280,
+     "w": 709,
+     "h": 744
+    },
+    "comps": 207,
+    "kept": 20
+   },
+   {
+    "id": "sprig-daisy-rise",
+    "w": 246,
+    "h": 448,
+    "kb": 52,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 16,
+     "y": 170,
+     "w": 469,
+     "h": 854
+    },
+    "comps": 96,
+    "kept": 6
+   },
+   {
+    "id": "sprig-daisy-hang",
+    "w": 246,
+    "h": 448,
+    "kb": 52,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 16,
+     "y": 170,
+     "w": 469,
+     "h": 854
+    },
+    "comps": 96,
+    "kept": 6
+   },
+   {
+    "id": "sprig-cosmos-rise",
+    "w": 324,
+    "h": 448,
+    "kb": 88,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 191,
+     "y": 77,
+     "w": 640,
+     "h": 884
+    },
+    "comps": 200,
+    "kept": 62
+   },
+   {
+    "id": "spray-blossom-1",
+    "w": 400,
+    "h": 393,
+    "kb": 50,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 78,
+     "y": 86,
+     "w": 868,
+     "h": 853
+    },
+    "comps": 179,
+    "kept": 90
+   },
+   {
+    "id": "spray-hydrangea-1",
+    "w": 380,
+    "h": 400,
+    "kb": 101,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 124,
+     "y": 104,
+     "w": 775,
+     "h": 816
+    },
+    "comps": 47,
+    "kept": 16
+   },
+   {
+    "id": "spray-sakura-2",
+    "w": 396,
+    "h": 400,
+    "kb": 129,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 113,
+     "y": 105,
+     "w": 804,
+     "h": 813
+    },
+    "comps": 643,
+    "kept": 121
+   },
+   {
+    "id": "bud-1",
+    "w": 129,
+    "h": 230,
+    "kb": 11,
+    "frame": {
+     "l": 79,
+     "t": 77,
+     "r": 79,
+     "b": 81
+    },
+    "bg": 0,
+    "box": {
+     "x": 458,
+     "y": 397,
+     "w": 129,
+     "h": 230
+    },
+    "comps": 16,
+    "kept": 1
+   },
+   {
+    "id": "twig-1",
+    "w": 203,
+    "h": 271,
+    "kb": 12,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 1,
+    "box": {
+     "x": 410,
+     "y": 377,
+     "w": 203,
+     "h": 271
+    },
+    "comps": 68,
+    "kept": 3
+   },
+   {
+    "id": "seedling-1",
+    "w": 187,
+    "h": 128,
+    "kb": 6,
+    "frame": {
+     "l": 0,
+     "t": 0,
+     "r": 0,
+     "b": 0
+    },
+    "bg": 0,
+    "box": {
+     "x": 424,
+     "y": 447,
+     "w": 187,
+     "h": 128
+    },
+    "comps": 8,
+    "kept": 3
+   }
+  ],
+  "petals": [
+   {
+    "n": 1,
+    "w": 28,
+    "h": 32,
+    "bytes": 700,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 2,
+    "w": 32,
+    "h": 27,
+    "bytes": 688,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 3,
+    "w": 25,
+    "h": 32,
+    "bytes": 622,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 4,
+    "w": 32,
+    "h": 31,
+    "bytes": 683,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 5,
+    "w": 32,
+    "h": 28,
+    "bytes": 652,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 6,
+    "w": 31,
+    "h": 32,
+    "bytes": 729,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 7,
+    "w": 32,
+    "h": 28,
+    "bytes": 680,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 8,
+    "w": 32,
+    "h": 31,
+    "bytes": 780,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 9,
+    "w": 32,
+    "h": 30,
+    "bytes": 733,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 10,
+    "w": 31,
+    "h": 32,
+    "bytes": 721,
+    "source": "generated/petals_sheet1.jpg"
+   },
+   {
+    "n": 11,
+    "w": 27,
+    "h": 32,
+    "bytes": 670,
+    "source": "generated/petals_sheet2.jpg"
+   },
+   {
+    "n": 12,
+    "w": 24,
+    "h": 32,
+    "bytes": 653,
+    "source": "generated/petals_sheet2.jpg"
+   },
+   {
+    "n": 13,
+    "w": 31,
+    "h": 32,
+    "bytes": 639,
+    "source": "generated/petals_sheet2.jpg"
+   },
+   {
+    "n": 14,
+    "w": 32,
+    "h": 32,
+    "bytes": 675,
+    "source": "generated/petals_sheet2.jpg"
+   },
+   {
+    "n": 15,
+    "w": 31,
+    "h": 32,
+    "bytes": 694,
+    "source": "generated/petals_sheet2.jpg"
+   },
+   {
+    "n": 16,
+    "w": 23,
+    "h": 32,
+    "bytes": 622,
+    "source": "generated/petals_sheet2.jpg"
+   }
+  ],
+  "covers": [
+   {
+    "id": "mosaic-empty",
+    "kind": "mosaic-empty",
+    "species": "sakura",
+    "source": "lace",
+    "crop": {
+     "x": 167,
+     "y": 112,
+     "side": 602,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 45,
+     "std": 42
+    },
+    "kb": 51
+   },
+   {
+    "id": "liked",
+    "kind": "liked",
+    "species": "lotus",
+    "source": "lotus_photo",
+    "crop": {
+     "x": 147,
+     "y": 140,
+     "side": 489,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 100,
+     "std": 52
+    },
+    "centring": {
+     "off": 0.02,
+     "halves": [
+      51,
+      49,
+      49,
+      51
+     ]
+    },
+    "kb": 28
+   },
+   {
+    "id": "ar_marlowvane",
+    "kind": "artist",
+    "species": "wisteria",
+    "source": "wisteria_colour",
+    "crop": {
+     "x": 268,
+     "y": 0,
+     "side": 716,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 83,
+     "std": 49
+    },
+    "centring": {
+     "off": 0.02,
+     "halves": [
+      42,
+      58,
+      51,
+      49
+     ]
+    },
+    "kb": 46
+   },
+   {
+    "id": "ar_hollowlights",
+    "kind": "artist",
+    "species": "wisteria",
+    "source": "wisteria_ink",
+    "crop": {
+     "x": 10,
+     "y": 0,
+     "side": 622,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 95,
+     "std": 76
+    },
+    "centring": {
+     "off": 0.08,
+     "halves": [
+      56,
+      44,
+      52,
+      48
+     ]
+    },
+    "kb": 66
+   },
+   {
+    "id": "ar_niasolace",
+    "kind": "artist",
+    "species": "peony",
+    "source": "peony_bw",
+    "crop": {
+     "x": 77,
+     "y": 106,
+     "side": 642,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 130,
+     "std": 69
+    },
+    "centring": {
+     "off": 0.09,
+     "halves": [
+      54,
+      46,
+      57,
+      43
+     ]
+    },
+    "kb": 51
+   },
+   {
+    "id": "ar_kestrelfinch",
+    "kind": "artist",
+    "species": "daisy",
+    "source": "daisy_ink",
+    "crop": {
+     "x": 52,
+     "y": 57,
+     "side": 900,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 67,
+     "std": 71
+    },
+    "centring": {
+     "off": 0.03,
+     "halves": [
+      49,
+      51,
+      53,
+      47
+     ]
+    },
+    "kb": 49
+   },
+   {
+    "id": "ar_djorrery",
+    "kind": "artist",
+    "species": "moonflower",
+    "source": "moonflower_ink",
+    "crop": {
+     "x": 87,
+     "y": 98,
+     "side": 838,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 58,
+     "std": 82
+    },
+    "centring": {
+     "off": 0.03,
+     "halves": [
+      51,
+      49,
+      46,
+      54
+     ]
+    },
+    "kb": 34
+   },
+   {
+    "id": "ar_ivymarchetti",
+    "kind": "artist",
+    "species": "sakura",
+    "source": "petals_blue_left",
+    "crop": {
+     "x": 37,
+     "y": 344,
+     "side": 360,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 126,
+     "std": 60
+    },
+    "centring": {
+     "off": 0.2,
+     "halves": [
+      53,
+      47,
+      29,
+      71
+     ]
+    },
+    "kb": 28
+   },
+   {
+    "id": "ar_saintlumen",
+    "kind": "artist",
+    "species": "lotus",
+    "source": "lilies_colour",
+    "crop": {
+     "x": 397,
+     "y": 177,
+     "side": 618,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 127,
+     "std": 55
+    },
+    "centring": {
+     "off": 0.04,
+     "halves": [
+      55,
+      45,
+      56,
+      44
+     ]
+    },
+    "kb": 29
+   },
+   {
+    "id": "ar_orielquartet",
+    "kind": "artist",
+    "species": "lily",
+    "source": "lilies_pink_right",
+    "crop": {
+     "x": 429,
+     "y": 137,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 111,
+     "std": 40
+    },
+    "centring": {
+     "off": 0.08,
+     "halves": [
+      51,
+      49,
+      50,
+      50
+     ]
+    },
+    "kb": 22
+   },
+   {
+    "id": "ar_tomasreyes",
+    "kind": "artist",
+    "species": "hibiscus",
+    "source": "hibiscus_bw",
+    "crop": {
+     "x": 55,
+     "y": 39,
+     "side": 910,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 62,
+     "std": 77
+    },
+    "centring": {
+     "off": 0.02,
+     "halves": [
+      47,
+      53,
+      48,
+      52
+     ]
+    },
+    "kb": 24
+   },
+   {
+    "id": "ar_lunenoire",
+    "kind": "artist",
+    "species": "camellia",
+    "source": "camellia_bw",
+    "crop": {
+     "x": 101,
+     "y": 102,
+     "side": 674,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 72,
+     "std": 87
+    },
+    "centring": {
+     "off": 0.01,
+     "halves": [
+      52,
+      48,
+      50,
+      50
+     ]
+    },
+    "kb": 20
+   },
+   {
+    "id": "ar_harborstreet",
+    "kind": "artist",
+    "species": "magnolia",
+    "source": "magnolia_bw",
+    "crop": {
+     "x": 556,
+     "y": 406,
+     "side": 468,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 108,
+     "std": 90
+    },
+    "centring": {
+     "off": 0.09,
+     "halves": [
+      45,
+      55,
+      48,
+      52
+     ]
+    },
+    "kb": 33
+   },
+   {
+    "id": "ar_vesperray",
+    "kind": "artist",
+    "species": "peony",
+    "source": "peony_ink",
+    "crop": {
+     "x": 114,
+     "y": 116,
+     "side": 794,
+     "flip": true,
+     "salt": 8
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 98,
+     "std": 79
+    },
+    "centring": {
+     "off": 0.01,
+     "halves": [
+      50,
+      50,
+      50,
+      50
+     ]
+    },
+    "kb": 54
+   },
+   {
+    "id": "ar_cassridley",
+    "kind": "artist",
+    "species": "rose",
+    "source": "rose_bw",
+    "crop": {
+     "x": 259,
+     "y": 152,
+     "side": 512,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 174,
+     "std": 61
+    },
+    "centring": {
+     "off": 0.15,
+     "halves": [
+      39,
+      61,
+      38,
+      62
+     ]
+    },
+    "kb": 25
+   },
+   {
+    "id": "ar_amaraoyelaran",
+    "kind": "artist",
+    "species": "sunflower",
+    "source": "sunflower_bw",
+    "crop": {
+     "x": 66,
+     "y": 83,
+     "side": 868,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 131,
+     "std": 104
+    },
+    "kb": 37
+   },
+   {
+    "id": "ar_ghostparade",
+    "kind": "artist",
+    "species": "thistle",
+    "source": "thistle_bw",
+    "crop": {
+     "x": 46,
+     "y": 2,
+     "side": 842,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 100,
+     "std": 85
+    },
+    "centring": {
+     "off": 0.06,
+     "halves": [
+      51,
+      49,
+      58,
+      42
+     ]
+    },
+    "kb": 43
+   },
+   {
+    "id": "ar_deltavale",
+    "kind": "artist",
+    "species": "chrysanthemum",
+    "source": "garland2_bloom",
+    "crop": {
+     "x": 338,
+     "y": 0,
+     "side": 368,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 112,
+     "std": 81
+    },
+    "centring": {
+     "off": 0.05,
+     "halves": [
+      44,
+      56,
+      50,
+      50
+     ]
+    },
+    "kb": 34
+   },
+   {
+    "id": "ar_juniperhale",
+    "kind": "artist",
+    "species": "daisy",
+    "source": "cosmos_ink",
+    "crop": {
+     "x": 219,
+     "y": 108,
+     "side": 604,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 102,
+     "std": 78
+    },
+    "centring": {
+     "off": 0.04,
+     "halves": [
+      49,
+      51,
+      46,
+      54
+     ]
+    },
+    "kb": 60
+   },
+   {
+    "id": "ar_rookmendoza",
+    "kind": "artist",
+    "species": "sunflower",
+    "source": "chrysanthemum_ink",
+    "crop": {
+     "x": 62,
+     "y": 62,
+     "side": 918,
+     "flip": false,
+     "salt": 16
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 143,
+     "std": 64
+    },
+    "centring": {
+     "off": 0.02,
+     "halves": [
+      53,
+      47,
+      50,
+      50
+     ]
+    },
+    "kb": 72
+   },
+   {
+    "id": "pl_dailymix1",
+    "kind": "playlist",
+    "species": "sakura",
+    "source": "petals_blue_top",
+    "crop": {
+     "x": 23,
+     "y": 63,
+     "side": 400,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0.17,
+    "kin": [
+     "ar_tomasreyes",
+     "ar_marlowvane",
+     "ar_juniperhale",
+     "ar_kestrelfinch"
+    ],
+    "stats48": {
+     "mean": 112,
+     "std": 55
+    },
+    "kb": 34
+   },
+   {
+    "id": "pl_dailymix2",
+    "kind": "playlist",
+    "species": "chrysanthemum",
+    "source": "lace",
+    "crop": {
+     "x": 67,
+     "y": 64,
+     "side": 898,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0.45,
+    "kin": [
+     "ar_niasolace",
+     "ar_vesperray",
+     "ar_deltavale",
+     "ar_amaraoyelaran"
+    ],
+    "stats48": {
+     "mean": 75,
+     "std": 62
+    },
+    "kb": 65
+   },
+   {
+    "id": "pl_dailymix3",
+    "kind": "playlist",
+    "species": "rose",
+    "source": "garland_embroidery",
+    "crop": {
+     "x": 67,
+     "y": 407,
+     "side": 536,
+     "flip": true,
+     "salt": 301
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_hollowlights",
+     "ar_ghostparade",
+     "ar_cassridley"
+    ],
+    "stats48": {
+     "mean": 40,
+     "std": 65
+    },
+    "kb": 32
+   },
+   {
+    "id": "pl_dailymix4",
+    "kind": "playlist",
+    "species": "hibiscus",
+    "source": "lilies_pink_right",
+    "crop": {
+     "x": 425,
+     "y": 96,
+     "side": 775,
+     "flip": false,
+     "salt": 1
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_amaraoyelaran",
+     "ar_tomasreyes",
+     "ar_rookmendoza"
+    ],
+    "stats48": {
+     "mean": 99,
+     "std": 47
+    },
+    "kb": 25
+   },
+   {
+    "id": "pl_freshfinds",
+    "kind": "playlist",
+    "species": "iris",
+    "source": "iris_ink",
+    "crop": {
+     "x": 122,
+     "y": 160,
+     "side": 736,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_juniperhale",
+     "ar_djorrery",
+     "ar_orielquartet",
+     "ar_amaraoyelaran"
+    ],
+    "stats48": {
+     "mean": 128,
+     "std": 74
+    },
+    "kb": 59,
+    "thumbKb": 61
+   },
+   {
+    "id": "pl_newreleases",
+    "kind": "playlist",
+    "species": "iris",
+    "source": "wisteria_colour",
+    "crop": {
+     "x": 42,
+     "y": 247,
+     "side": 777,
+     "flip": false,
+     "salt": 2
+    },
+    "overlap": 0.3,
+    "kin": [
+     "ar_niasolace",
+     "ar_amaraoyelaran",
+     "ar_ivymarchetti",
+     "ar_djorrery"
+    ],
+    "stats48": {
+     "mean": 65,
+     "std": 46
+    },
+    "kb": 36,
+    "thumbKb": 35
+   },
+   {
+    "id": "pl_chillvibes",
+    "kind": "playlist",
+    "species": "camellia",
+    "source": "petals_water3",
+    "crop": {
+     "x": 211,
+     "y": 351,
+     "side": 641,
+     "flip": true,
+     "salt": 8
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_lunenoire",
+     "ar_saintlumen",
+     "ar_niasolace",
+     "ar_vesperray"
+    ],
+    "stats48": {
+     "mean": 88,
+     "std": 68
+    },
+    "kb": 35,
+    "thumbKb": 34
+   },
+   {
+    "id": "pl_deepfocus",
+    "kind": "playlist",
+    "species": "ume",
+    "source": "ume_ink",
+    "crop": {
+     "x": 309,
+     "y": 278,
+     "side": 532,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_saintlumen",
+     "ar_orielquartet",
+     "ar_djorrery",
+     "ar_lunenoire"
+    ],
+    "stats48": {
+     "mean": 72,
+     "std": 81
+    },
+    "kb": 41,
+    "thumbKb": 39
+   },
+   {
+    "id": "pl_latenightdrive",
+    "kind": "playlist",
+    "species": "moonflower",
+    "source": "pond_paint1",
+    "crop": {
+     "x": 109,
+     "y": 233,
+     "side": 791,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_djorrery",
+     "ar_saintlumen",
+     "ar_deltavale",
+     "ar_ivymarchetti"
+    ],
+    "stats48": {
+     "mean": 105,
+     "std": 38
+    },
+    "kb": 37,
+    "thumbKb": 36
+   },
+   {
+    "id": "pl_morningcoffee",
+    "kind": "playlist",
+    "species": "daisy",
+    "source": "petals_water3",
+    "crop": {
+     "x": 354,
+     "y": 95,
+     "side": 670,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0.32,
+    "kin": [
+     "ar_juniperhale",
+     "ar_kestrelfinch",
+     "ar_marlowvane",
+     "ar_tomasreyes"
+    ],
+    "stats48": {
+     "mean": 117,
+     "std": 62
+    },
+    "kb": 38,
+    "thumbKb": 37
+   },
+   {
+    "id": "pl_workoutpulse",
+    "kind": "playlist",
+    "species": "sunflower",
+    "source": "garland2",
+    "crop": {
+     "x": 253,
+     "y": 160,
+     "side": 541,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0.22,
+    "kin": [
+     "ar_djorrery",
+     "ar_saintlumen",
+     "ar_niasolace",
+     "ar_rookmendoza"
+    ],
+    "stats48": {
+     "mean": 123,
+     "std": 77
+    },
+    "kb": 43,
+    "thumbKb": 45
+   },
+   {
+    "id": "pl_rainydayjazz",
+    "kind": "playlist",
+    "species": "magnolia",
+    "source": "sakura_ink",
+    "crop": {
+     "x": 122,
+     "y": 113,
+     "side": 729,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_harborstreet",
+     "ar_orielquartet",
+     "ar_lunenoire"
+    ],
+    "stats48": {
+     "mean": 97,
+     "std": 66
+    },
+    "kb": 64,
+    "thumbKb": 68
+   },
+   {
+    "id": "pl_indiegold",
+    "kind": "playlist",
+    "species": "wisteria",
+    "source": "pond_paint2",
+    "crop": {
+     "x": 0,
+     "y": 306,
+     "side": 718,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_hollowlights",
+     "ar_kestrelfinch",
+     "ar_marlowvane",
+     "ar_ivymarchetti"
+    ],
+    "stats48": {
+     "mean": 91,
+     "std": 51
+    },
+    "kb": 38,
+    "thumbKb": 37
+   },
+   {
+    "id": "pl_electronicessentials",
+    "kind": "playlist",
+    "species": "moonflower",
+    "source": "petals_water2",
+    "crop": {
+     "x": 26,
+     "y": 51,
+     "side": 738,
+     "flip": false,
+     "salt": 204
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_saintlumen",
+     "ar_djorrery",
+     "ar_marlowvane",
+     "ar_juniperhale"
+    ],
+    "stats48": {
+     "mean": 40,
+     "std": 63
+    },
+    "kb": 29,
+    "thumbKb": 29
+   },
+   {
+    "id": "pl_top50global",
+    "kind": "playlist",
+    "species": "dandelion",
+    "source": "petals_water1",
+    "crop": {
+     "x": 34,
+     "y": 275,
+     "side": 658,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_tomasreyes",
+     "ar_ivymarchetti",
+     "ar_vesperray",
+     "ar_saintlumen"
+    ],
+    "stats48": {
+     "mean": 104,
+     "std": 45
+    },
+    "kb": 31
+   },
+   {
+    "id": "ge_pop",
+    "kind": "genre",
+    "species": "sakura",
+    "source": "petals_blue_top",
+    "crop": {
+     "x": 241,
+     "y": 36,
+     "side": 400,
+     "flip": false,
+     "salt": 1
+    },
+    "overlap": 0.27,
+    "stats48": {
+     "mean": 149,
+     "std": 40
+    },
+    "kb": 30
+   },
+   {
+    "id": "ge_hiphop",
+    "kind": "genre",
+    "species": "chrysanthemum",
+    "source": "chrysanthemum_ink",
+    "crop": {
+     "x": 370,
+     "y": 320,
+     "side": 602,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0.43,
+    "stats48": {
+     "mean": 153,
+     "std": 65
+    },
+    "kb": 67
+   },
+   {
+    "id": "ge_rock",
+    "kind": "genre",
+    "species": "rose",
+    "source": "garland1",
+    "crop": {
+     "x": 286,
+     "y": 55,
+     "side": 636,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 53,
+     "std": 83
+    },
+    "kb": 24
+   },
+   {
+    "id": "ge_indie",
+    "kind": "genre",
+    "species": "wisteria",
+    "source": "garland_embroidery",
+    "crop": {
+     "x": 118,
+     "y": 577,
+     "side": 560,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0.31,
+    "stats48": {
+     "mean": 61,
+     "std": 75
+    },
+    "kb": 39
+   },
+   {
+    "id": "ge_electronic",
+    "kind": "genre",
+    "species": "moonflower",
+    "source": "petals_water2",
+    "crop": {
+     "x": 268,
+     "y": 268,
+     "side": 756,
+     "flip": false,
+     "salt": 2
+    },
+    "overlap": 0.42,
+    "stats48": {
+     "mean": 37,
+     "std": 61
+    },
+    "kb": 26
+   },
+   {
+    "id": "ge_lofi",
+    "kind": "genre",
+    "species": "camellia",
+    "source": "camellia_bw",
+    "crop": {
+     "x": 330,
+     "y": 260,
+     "side": 544,
+     "flip": false,
+     "salt": 3
+    },
+    "overlap": 0.44,
+    "stats48": {
+     "mean": 81,
+     "std": 91
+    },
+    "kb": 18
+   },
+   {
+    "id": "ge_jazz",
+    "kind": "genre",
+    "species": "magnolia",
+    "source": "sakura_ink",
+    "crop": {
+     "x": 187,
+     "y": 368,
+     "side": 513,
+     "flip": false,
+     "salt": 14
+    },
+    "overlap": 0.44,
+    "stats48": {
+     "mean": 118,
+     "std": 62
+    },
+    "kb": 69
+   },
+   {
+    "id": "ge_classical",
+    "kind": "genre",
+    "species": "lily",
+    "source": "lily_bw2",
+    "crop": {
+     "x": 150,
+     "y": 200,
+     "side": 529,
+     "flip": true,
+     "salt": 8
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 52,
+     "std": 79
+    },
+    "kb": 32
+   },
+   {
+    "id": "ge_ambient",
+    "kind": "genre",
+    "species": "lotus",
+    "source": "lotus_photo",
+    "crop": {
+     "x": 0,
+     "y": 220,
+     "side": 519,
+     "flip": true,
+     "salt": 3
+    },
+    "overlap": 0.43,
+    "stats48": {
+     "mean": 77,
+     "std": 64
+    },
+    "kb": 25
+   },
+   {
+    "id": "ge_rnb",
+    "kind": "genre",
+    "species": "peony",
+    "source": "pond_paint2",
+    "crop": {
+     "x": 305,
+     "y": 305,
+     "side": 719,
+     "flip": false,
+     "salt": 11
+    },
+    "overlap": 0.4,
+    "stats48": {
+     "mean": 95,
+     "std": 47
+    },
+    "kb": 38
+   },
+   {
+    "id": "ge_folk",
+    "kind": "genre",
+    "species": "daisy",
+    "source": "daisy_ink",
+    "crop": {
+     "x": 57,
+     "y": 52,
+     "side": 597,
+     "flip": false,
+     "salt": 18
+    },
+    "overlap": 0.43,
+    "stats48": {
+     "mean": 75,
+     "std": 83
+    },
+    "kb": 43
+   },
+   {
+    "id": "ge_latin",
+    "kind": "genre",
+    "species": "hibiscus",
+    "source": "lace",
+    "crop": {
+     "x": 331,
+     "y": 222,
+     "side": 576,
+     "flip": true,
+     "salt": 9
+    },
+    "overlap": 0.45,
+    "stats48": {
+     "mean": 75,
+     "std": 70
+    },
+    "kb": 61
+   },
+   {
+    "id": "ge_funk",
+    "kind": "genre",
+    "species": "sunflower",
+    "source": "petals_water1",
+    "crop": {
+     "x": 10,
+     "y": 2,
+     "side": 1013,
+     "flip": true,
+     "salt": 18
+    },
+    "overlap": 0.42,
+    "stats48": {
+     "mean": 94,
+     "std": 42
+    },
+    "kb": 34
+   },
+   {
+    "id": "ge_metal",
+    "kind": "genre",
+    "species": "thistle",
+    "source": "dandelion_bw",
+    "crop": {
+     "x": 190,
+     "y": 84,
+     "side": 660,
+     "flip": false,
+     "salt": 24
+    },
+    "overlap": 0,
+    "stats48": {
+     "mean": 96,
+     "std": 90
+    },
+    "kb": 42
+   },
+   {
+    "id": "ge_newreleases",
+    "kind": "genre",
+    "species": "iris",
+    "source": "iris_ink",
+    "crop": {
+     "x": 330,
+     "y": 364,
+     "side": 493,
+     "flip": false,
+     "salt": 12
+    },
+    "overlap": 0.45,
+    "stats48": {
+     "mean": 140,
+     "std": 70
+    },
+    "kb": 57
+   },
+   {
+    "id": "ge_charts",
+    "kind": "genre",
+    "species": "dandelion",
+    "source": "thistle_bw",
+    "crop": {
+     "x": 268,
+     "y": 151,
+     "side": 658,
+     "flip": false,
+     "salt": 14
+    },
+    "overlap": 0.56,
+    "stats48": {
+     "mean": 111,
+     "std": 81
+    },
+    "kb": 44
+   },
+   {
+    "id": "al_boathouse",
+    "kind": "album",
+    "species": "wisteria",
+    "source": "wisteria_ink",
+    "crop": {
+     "x": 193,
+     "y": 160,
+     "side": 583,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0.39,
+    "kin": [
+     "ar_marlowvane"
+    ],
+    "stats48": {
+     "mean": 68,
+     "std": 76
+    },
+    "kb": 50
+   },
+   {
+    "id": "al_everyharbour",
+    "kind": "album",
+    "species": "sakura",
+    "source": "sakura_colour",
+    "crop": {
+     "x": 0,
+     "y": 160,
+     "side": 864,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_marlowvane"
+    ],
+    "stats48": {
+     "mean": 89,
+     "std": 43
+    },
+    "kb": 40
+   },
+   {
+    "id": "al_lasttrainhome",
+    "kind": "album",
+    "species": "rose",
+    "source": "garland1",
+    "crop": {
+     "x": 348,
+     "y": 300,
+     "side": 615,
+     "flip": true,
+     "salt": 11
+    },
+    "overlap": 0.4,
+    "kin": [
+     "ar_hollowlights"
+    ],
+    "stats48": {
+     "mean": 71,
+     "std": 87
+    },
+    "kb": 32
+   },
+   {
+    "id": "al_cellartapes",
+    "kind": "album",
+    "species": "wisteria",
+    "source": "pond_paint2",
+    "crop": {
+     "x": 0,
+     "y": 12,
+     "side": 1012,
+     "flip": false,
+     "salt": 2
+    },
+    "overlap": 0.5,
+    "kin": [
+     "ar_hollowlights"
+    ],
+    "stats48": {
+     "mean": 118,
+     "std": 59
+    },
+    "kb": 43
+   },
+   {
+    "id": "al_aftertheparty",
+    "kind": "album",
+    "species": "sakura",
+    "source": "probe_branch",
+    "crop": {
+     "x": 270,
+     "y": 283,
+     "side": 595,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_niasolace"
+    ],
+    "stats48": {
+     "mean": 70,
+     "std": 90
+    },
+    "kb": 36
+   },
+   {
+    "id": "al_groupchat",
+    "kind": "album",
+    "species": "peony",
+    "source": "peony_ink",
+    "crop": {
+     "x": 406,
+     "y": 161,
+     "side": 511,
+     "flip": true,
+     "salt": 2
+    },
+    "overlap": 0.4,
+    "kin": [
+     "ar_niasolace"
+    ],
+    "stats48": {
+     "mean": 107,
+     "std": 80
+    },
+    "kb": 53
+   },
+   {
+    "id": "al_lowlight",
+    "kind": "album",
+    "species": "peony",
+    "source": "garland1",
+    "crop": {
+     "x": 31,
+     "y": 169,
+     "side": 654,
+     "flip": false,
+     "salt": 2
+    },
+    "overlap": 0.33,
+    "kin": [
+     "ar_niasolace"
+    ],
+    "stats48": {
+     "mean": 50,
+     "std": 81
+    },
+    "kb": 23
+   },
+   {
+    "id": "al_chapelsessions",
+    "kind": "album",
+    "species": "daisy",
+    "source": "cosmos_ink",
+    "crop": {
+     "x": 363,
+     "y": 383,
+     "side": 460,
+     "flip": true,
+     "salt": 2
+    },
+    "overlap": 0.36,
+    "kin": [
+     "ar_kestrelfinch"
+    ],
+    "stats48": {
+     "mean": 84,
+     "std": 76
+    },
+    "kb": 49
+   },
+   {
+    "id": "al_hedgerow",
+    "kind": "album",
+    "species": "daisy",
+    "source": "cosmos_ink",
+    "crop": {
+     "x": 361,
+     "y": 251,
+     "side": 400,
+     "flip": false,
+     "salt": 5
+    },
+    "overlap": 0.44,
+    "kin": [
+     "ar_kestrelfinch"
+    ],
+    "stats48": {
+     "mean": 123,
+     "std": 77
+    },
+    "kb": 60
+   },
+   {
+    "id": "al_orbitalmechanics",
+    "kind": "album",
+    "species": "moonflower",
+    "source": "petals_water2",
+    "crop": {
+     "x": 96,
+     "y": 350,
+     "side": 648,
+     "flip": false,
+     "salt": 6
+    },
+    "overlap": 0.45,
+    "kin": [
+     "ar_djorrery"
+    ],
+    "stats48": {
+     "mean": 42,
+     "std": 68
+    },
+    "kb": 27
+   },
+   {
+    "id": "al_perihelion",
+    "kind": "album",
+    "species": "moonflower",
+    "source": "petals_blue_top",
+    "crop": {
+     "x": 123,
+     "y": 15,
+     "side": 411,
+     "flip": false,
+     "salt": 18
+    },
+    "overlap": 0.53,
+    "kin": [
+     "ar_djorrery"
+    ],
+    "stats48": {
+     "mean": 127,
+     "std": 48
+    },
+    "kb": 31
+   },
+   {
+    "id": "al_frontrow",
+    "kind": "album",
+    "species": "sakura",
+    "source": "sakura_colour",
+    "crop": {
+     "x": 241,
+     "y": 70,
+     "side": 701,
+     "flip": true,
+     "salt": 6
+    },
+    "overlap": 0.44,
+    "kin": [
+     "ar_ivymarchetti"
+    ],
+    "stats48": {
+     "mean": 108,
+     "std": 41
+    },
+    "kb": 32
+   },
+   {
+    "id": "al_hobokennights",
+    "kind": "album",
+    "species": "sakura",
+    "source": "probe_branch",
+    "crop": {
+     "x": 377,
+     "y": 145,
+     "side": 510,
+     "flip": false,
+     "salt": 11
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_ivymarchetti"
+    ],
+    "stats48": {
+     "mean": 76,
+     "std": 91
+    },
+    "kb": 38
+   },
+   {
+    "id": "al_loudheart",
+    "kind": "album",
+    "species": "sakura",
+    "source": "probe_branch",
+    "crop": {
+     "x": 164,
+     "y": 267,
+     "side": 479,
+     "flip": false,
+     "salt": 1
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_ivymarchetti"
+    ],
+    "stats48": {
+     "mean": 90,
+     "std": 96
+    },
+    "kb": 39
+   },
+   {
+    "id": "al_slowhours",
+    "kind": "album",
+    "species": "lotus",
+    "source": "lilies_pink_left",
+    "crop": {
+     "x": 0,
+     "y": 136,
+     "side": 595,
+     "flip": true,
+     "salt": 8
+    },
+    "overlap": 0.16,
+    "kin": [
+     "ar_saintlumen"
+    ],
+    "stats48": {
+     "mean": 131,
+     "std": 42
+    },
+    "kb": 23
+   },
+   {
+    "id": "al_motorwayhymns",
+    "kind": "album",
+    "species": "moonflower",
+    "source": "moonflower_ink",
+    "crop": {
+     "x": 176,
+     "y": 84,
+     "side": 569,
+     "flip": false,
+     "salt": 25
+    },
+    "overlap": 0.44,
+    "kin": [
+     "ar_saintlumen"
+    ],
+    "stats48": {
+     "mean": 81,
+     "std": 89
+    },
+    "kb": 42
+   },
+   {
+    "id": "al_rosin",
+    "kind": "album",
+    "species": "lily",
+    "source": "lily_bw2",
+    "crop": {
+     "x": 320,
+     "y": 244,
+     "side": 574,
+     "flip": false,
+     "salt": 4
+    },
+    "overlap": 0.4,
+    "kin": [
+     "ar_orielquartet"
+    ],
+    "stats48": {
+     "mean": 52,
+     "std": 73
+    },
+    "kb": 36
+   },
+   {
+    "id": "al_wintercommissions",
+    "kind": "album",
+    "species": "lily",
+    "source": "probe_lily",
+    "crop": {
+     "x": 349,
+     "y": 373,
+     "side": 605,
+     "flip": false,
+     "salt": 200
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_orielquartet"
+    ],
+    "stats48": {
+     "mean": 45,
+     "std": 77
+    },
+    "kb": 24
+   },
+   {
+    "id": "al_mareaalta",
+    "kind": "album",
+    "species": "sakura",
+    "source": "petals_water1",
+    "crop": {
+     "x": 350,
+     "y": 278,
+     "side": 669,
+     "flip": true,
+     "salt": 12
+    },
+    "overlap": 0.44,
+    "kin": [
+     "ar_tomasreyes"
+    ],
+    "stats48": {
+     "mean": 108,
+     "std": 43
+    },
+    "kb": 30
+   },
+   {
+    "id": "al_cartagena",
+    "kind": "album",
+    "species": "sakura",
+    "source": "petals_blue_left",
+    "crop": {
+     "x": 0,
+     "y": 195,
+     "side": 397,
+     "flip": true,
+     "salt": 46
+    },
+    "overlap": 0.46,
+    "kin": [
+     "ar_tomasreyes"
+    ],
+    "stats48": {
+     "mean": 111,
+     "std": 57
+    },
+    "kb": 31
+   },
+   {
+    "id": "al_radiatorsongs",
+    "kind": "album",
+    "species": "camellia",
+    "source": "garland2",
+    "crop": {
+     "x": 118,
+     "y": 111,
+     "side": 790,
+     "flip": true,
+     "salt": 19
+    },
+    "overlap": 0.47,
+    "kin": [
+     "ar_lunenoire"
+    ],
+    "stats48": {
+     "mean": 134,
+     "std": 67
+    },
+    "kb": 52
+   },
+   {
+    "id": "al_nightwindow",
+    "kind": "album",
+    "species": "camellia",
+    "source": "petals_water3",
+    "crop": {
+     "x": 46,
+     "y": 86,
+     "side": 741,
+     "flip": true,
+     "salt": 21
+    },
+    "overlap": 0.41,
+    "kin": [
+     "ar_lunenoire"
+    ],
+    "stats48": {
+     "mean": 96,
+     "std": 66
+    },
+    "kb": 36
+   },
+   {
+    "id": "al_secondlineswing",
+    "kind": "album",
+    "species": "magnolia",
+    "source": "pond_painting",
+    "crop": {
+     "x": 29,
+     "y": 595,
+     "side": 543,
+     "flip": true,
+     "salt": 0
+    },
+    "overlap": 0,
+    "kin": [
+     "ar_harborstreet"
+    ],
+    "stats48": {
+     "mean": 84,
+     "std": 61
+    },
+    "kb": 40
+   },
+   {
+    "id": "al_baylights",
+    "kind": "album",
+    "species": "magnolia",
+    "source": "pond_painting",
+    "crop": {
+     "x": 232,
+     "y": 549,
+     "side": 475,
+     "flip": true,
+     "salt": 18
+    },
+    "overlap": 0.39,
+    "kin": [
+     "ar_harborstreet"
+    ],
+    "stats48": {
+     "mean": 78,
+     "std": 49
+    },
+    "kb": 41
+   },
+   {
+    "id": "al_nightshift",
+    "kind": "album",
+    "species": "peony",
+    "source": "peony_bw",
+    "crop": {
+     "x": 83,
+     "y": 349,
+     "side": 587,
+     "flip": false,
+     "salt": 22
+    },
+    "overlap": 0.45,
+    "kin": [
+     "ar_vesperray"
+    ],
+    "stats48": {
+     "mean": 116,
+     "std": 72
+    },
+    "kb": 50
+   },
+   {
+    "id": "al_neondiaries",
+    "kind": "album",
+    "species": "chrysanthemum",
+    "source": "garland2_bloom",
+    "crop": {
+     "x": 48,
+     "y": 0,
+     "side": 663,
+     "flip": true,
+     "salt": 27
+    },
+    "overlap": 0.46,
+    "kin": [
+     "ar_vesperray"
+    ],
+    "stats48": {
+     "mean": 94,
+     "std": 83
+    },
+    "kb": 36
+   },
+   {
+    "id": "al_rentday",
+    "kind": "album",
+    "species": "rose",
+    "source": "petals_water1",
+    "crop": {
+     "x": 171,
+     "y": 0,
+     "side": 641,
+     "flip": false,
+     "salt": 16
+    },
+    "overlap": 0.4,
+    "kin": [
+     "ar_cassridley"
+    ],
+    "stats48": {
+     "mean": 115,
+     "std": 38
+    },
+    "kb": 27
+   },
+   {
+    "id": "al_doorslam",
+    "kind": "album",
+    "species": "thistle",
+    "source": "petals_blue_bottom",
+    "crop": {
+     "x": 221,
+     "y": 556,
+     "side": 371,
+     "flip": false,
+     "salt": 16
+    },
+    "overlap": 0.11,
+    "kin": [
+     "ar_cassridley"
+    ],
+    "stats48": {
+     "mean": 131,
+     "std": 58
+    },
+    "kb": 25
+   },
+   {
+    "id": "al_blockparty",
+    "kind": "album",
+    "species": "sunflower",
+    "source": "daisy_ink",
+    "crop": {
+     "x": 265,
+     "y": 221,
+     "side": 582,
+     "flip": true,
+     "salt": 19
+    },
+    "overlap": 0.42,
+    "kin": [
+     "ar_amaraoyelaran"
+    ],
+    "stats48": {
+     "mean": 75,
+     "std": 81
+    },
+    "kb": 44
+   },
+   {
+    "id": "al_peckhamnine",
+    "kind": "album",
+    "species": "sunflower",
+    "source": "chrysanthemum_ink",
+    "crop": {
+     "x": 238,
+     "y": 132,
+     "side": 627,
+     "flip": true,
+     "salt": 12
+    },
+    "overlap": 0.47,
+    "kin": [
+     "ar_amaraoyelaran"
+    ],
+    "stats48": {
+     "mean": 154,
+     "std": 60
+    },
+    "kb": 69
+   },
+   {
+    "id": "al_longdark",
+    "kind": "album",
+    "species": "thistle",
+    "source": "petals_blue_bottom",
+    "crop": {
+     "x": 74,
+     "y": 556,
+     "side": 371,
+     "flip": false,
+     "salt": 8
+    },
+    "overlap": 0.43,
+    "kin": [
+     "ar_ghostparade"
+    ],
+    "stats48": {
+     "mean": 126,
+     "std": 62
+    },
+    "kb": 28
+   },
+   {
+    "id": "al_candlelight",
+    "kind": "album",
+    "species": "thistle",
+    "source": "dandelion_bw",
+    "crop": {
+     "x": 246,
+     "y": 253,
+     "side": 735,
+     "flip": true,
+     "salt": 5
+    },
+    "overlap": 0.44,
+    "kin": [
+     "ar_ghostparade"
+    ],
+    "stats48": {
+     "mean": 108,
+     "std": 86
+    },
+    "kb": 44
+   },
+   {
+    "id": "al_gospelcrates",
+    "kind": "album",
+    "species": "chrysanthemum",
+    "source": "lace",
+    "crop": {
+     "x": 119,
+     "y": 368,
+     "side": 586,
+     "flip": true,
+     "salt": 13
+    },
+    "overlap": 0.43,
+    "kin": [
+     "ar_deltavale"
+    ],
+    "stats48": {
+     "mean": 75,
+     "std": 69
+    },
+    "kb": 62
+   },
+   {
+    "id": "al_punchline",
+    "kind": "album",
+    "species": "chrysanthemum",
+    "source": "chrysanthemum_ink",
+    "crop": {
+     "x": 46,
+     "y": 263,
+     "side": 696,
+     "flip": true,
+     "salt": 18
+    },
+    "overlap": 0.55,
+    "kin": [
+     "ar_deltavale"
+    ],
+    "stats48": {
+     "mean": 153,
+     "std": 61
+    },
+    "kb": 69
+   },
+   {
+    "id": "al_porchlight",
+    "kind": "album",
+    "species": "daisy",
+    "source": "daisy_ink",
+    "crop": {
+     "x": 353,
+     "y": 337,
+     "side": 595,
+     "flip": false,
+     "salt": 0
+    },
+    "overlap": 0.5,
+    "kin": [
+     "ar_juniperhale"
+    ],
+    "stats48": {
+     "mean": 76,
+     "std": 77
+    },
+    "kb": 46
+   },
+   {
+    "id": "al_kitchentable",
+    "kind": "album",
+    "species": "sakura",
+    "source": "sakura_ink",
+    "crop": {
+     "x": 348,
+     "y": 270,
+     "side": 504,
+     "flip": false,
+     "salt": 2
+    },
+    "overlap": 0.48,
+    "kin": [
+     "ar_juniperhale"
+    ],
+    "stats48": {
+     "mean": 117,
+     "std": 62
+    },
+    "kb": 69
+   },
+   {
+    "id": "al_basslines",
+    "kind": "album",
+    "species": "sunflower",
+    "source": "sunflower_bw",
+    "crop": {
+     "x": 365,
+     "y": 74,
+     "side": 593,
+     "flip": true,
+     "salt": 26
+    },
+    "overlap": 0.43,
+    "kin": [
+     "ar_rookmendoza"
+    ],
+    "stats48": {
+     "mean": 124,
+     "std": 99
+    },
+    "kb": 47
+   },
+   {
+    "id": "al_eastsidegroove",
+    "kind": "album",
+    "species": "chrysanthemum",
+    "source": "garland2",
+    "crop": {
+     "x": 254,
+     "y": 357,
+     "side": 502,
+     "flip": true,
+     "salt": 8
+    },
+    "overlap": 0.46,
+    "kin": [
+     "ar_rookmendoza"
+    ],
+    "stats48": {
+     "mean": 116,
+     "std": 79
+    },
+    "kb": 42
+   }
+  ],
+  "centring": [
+   {
+    "round": 0,
+    "id": "ar_marlowvane",
+    "source": "wisteria_colour",
+    "off": 0.19,
+    "from": {
+     "x": 234,
+     "y": 102,
+     "side": 790,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 240,
+     "y": 44,
+     "side": 784,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_hollowlights",
+    "source": "wisteria_ink",
+    "off": 0.11,
+    "from": {
+     "x": 0,
+     "y": 11,
+     "side": 654,
+     "flip": false,
+     "salt": 8
+    },
+    "to": {
+     "x": 10,
+     "y": 0,
+     "side": 622,
+     "flip": false,
+     "salt": 8
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_niasolace",
+    "source": "peony_bw",
+    "off": 0.11,
+    "from": {
+     "x": 77,
+     "y": 99,
+     "side": 692,
+     "flip": false,
+     "salt": 0
+    },
+    "to": {
+     "x": 77,
+     "y": 106,
+     "side": 642,
+     "flip": false,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_ivymarchetti",
+    "source": "petals_blue_left",
+    "off": 0.2,
+    "from": {
+     "x": 37,
+     "y": 344,
+     "side": 360,
+     "flip": false,
+     "salt": 0
+    },
+    "to": {
+     "x": 37,
+     "y": 342,
+     "side": 360,
+     "flip": false,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_saintlumen",
+    "source": "lilies_colour",
+    "off": 0.1,
+    "from": {
+     "x": 406,
+     "y": 201,
+     "side": 618,
+     "flip": false,
+     "salt": 0
+    },
+    "to": {
+     "x": 397,
+     "y": 177,
+     "side": 618,
+     "flip": false,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_orielquartet",
+    "source": "lilies_pink_right",
+    "off": 0.16,
+    "from": {
+     "x": 503,
+     "y": 151,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 476,
+     "y": 135,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_harborstreet",
+    "source": "magnolia_bw",
+    "off": 0.1,
+    "from": {
+     "x": 532,
+     "y": 377,
+     "side": 492,
+     "flip": false,
+     "salt": 0
+    },
+    "to": {
+     "x": 556,
+     "y": 406,
+     "side": 468,
+     "flip": false,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_cassridley",
+    "source": "rose_bw",
+    "off": 0.15,
+    "from": {
+     "x": 259,
+     "y": 152,
+     "side": 512,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 271,
+     "y": 179,
+     "side": 512,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 0,
+    "id": "ar_ghostparade",
+    "source": "thistle_bw",
+    "off": 0.11,
+    "from": {
+     "x": 53,
+     "y": 38,
+     "side": 842,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 46,
+     "y": 2,
+     "side": 842,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 1,
+    "id": "ar_marlowvane",
+    "source": "wisteria_colour",
+    "off": 0.15,
+    "from": {
+     "x": 240,
+     "y": 44,
+     "side": 784,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 240,
+     "y": 0,
+     "side": 778,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 1,
+    "id": "ar_ivymarchetti",
+    "revert": true,
+    "off": 0.2,
+    "to": {
+     "x": 37,
+     "y": 344,
+     "side": 360,
+     "flip": false,
+     "salt": 0
+    }
+   },
+   {
+    "round": 1,
+    "id": "ar_orielquartet",
+    "source": "lilies_pink_right",
+    "off": 0.12,
+    "from": {
+     "x": 476,
+     "y": 135,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 451,
+     "y": 134,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 1,
+    "id": "ar_cassridley",
+    "revert": true,
+    "off": 0.15,
+    "to": {
+     "x": 259,
+     "y": 152,
+     "side": 512,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 2,
+    "id": "ar_marlowvane",
+    "source": "wisteria_colour",
+    "off": 0.1,
+    "from": {
+     "x": 240,
+     "y": 0,
+     "side": 778,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 268,
+     "y": 0,
+     "side": 716,
+     "flip": true,
+     "salt": 0
+    }
+   },
+   {
+    "round": 2,
+    "id": "ar_orielquartet",
+    "source": "lilies_pink_right",
+    "off": 0.11,
+    "from": {
+     "x": 451,
+     "y": 134,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    },
+    "to": {
+     "x": 429,
+     "y": 137,
+     "side": 504,
+     "flip": true,
+     "salt": 0
+    }
+   }
+  ],
+  "rerolls": [
+   {
+    "id": "pl_dailymix3",
+    "from": {
+     "source": "garland_embroidery",
+     "crop": {
+      "x": 96,
+      "y": 244,
+      "side": 640,
+      "flip": false,
+      "salt": 0
+     },
+     "stats": {
+      "mean": 39,
+      "std": 61
+     }
+    },
+    "to": {
+     "source": "garland_embroidery",
+     "crop": {
+      "x": 67,
+      "y": 407,
+      "side": 536,
+      "flip": true,
+      "salt": 301
+     },
+     "stats": {
+      "mean": 40,
+      "std": 65
+     }
+    }
+   },
+   {
+    "id": "pl_electronicessentials",
+    "from": {
+     "source": "petals_water2",
+     "crop": {
+      "x": 54,
+      "y": 7,
+      "side": 864,
+      "flip": false,
+      "salt": 0
+     },
+     "stats": {
+      "mean": 33,
+      "std": 57
+     }
+    },
+    "to": {
+     "source": "petals_water2",
+     "crop": {
+      "x": 26,
+      "y": 51,
+      "side": 738,
+      "flip": false,
+      "salt": 204
+     },
+     "stats": {
+      "mean": 40,
+      "std": 63
+     }
+    }
+   },
+   {
+    "id": "al_wintercommissions",
+    "from": {
+     "source": "probe_lily",
+     "crop": {
+      "x": 243,
+      "y": 243,
+      "side": 741,
+      "flip": false,
+      "salt": 0
+     },
+     "stats": {
+      "mean": 34,
+      "std": 65
+     }
+    },
+    "to": {
+     "source": "probe_lily",
+     "crop": {
+      "x": 349,
+      "y": 373,
+      "side": 605,
+      "flip": false,
+      "salt": 200
+     },
+     "stats": {
+      "mean": 45,
+      "std": 77
+     }
+    }
+   }
+  ],
+  "mass": {
+   "camellia_bw": {
+    "cx": 446,
+    "cy": 439,
+    "r": 202,
+    "thr": 124,
+    "n": 131019,
+    "halves": [
+     50,
+     50,
+     65,
+     35
+    ]
+   },
+   "chrysanthemum_ink": {
+    "cx": 511,
+    "cy": 521,
+    "r": 467,
+    "thr": 202,
+    "n": 361293,
+    "halves": [
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   "cosmos_ink": {
+    "cx": 521,
+    "cy": 431,
+    "r": 345,
+    "thr": 117,
+    "n": 174443,
+    "halves": [
+     61,
+     39,
+     47,
+     53
+    ]
+   },
+   "daisy_ink": {
+    "cx": 502,
+    "cy": 510,
+    "r": 503,
+    "thr": 129,
+    "n": 292628,
+    "halves": [
+     50,
+     50,
+     52,
+     48
+    ]
+   },
+   "dandelion_bw": {
+    "cx": 637,
+    "cy": 511,
+    "r": 329,
+    "thr": 130,
+    "n": 241768,
+    "halves": [
+     55,
+     45,
+     24,
+     76
+    ]
+   },
+   "garland2_bloom": {
+    "cx": 508,
+    "cy": 184,
+    "r": 118,
+    "thr": 219,
+    "n": 11921,
+    "halves": [
+     74,
+     26,
+     51,
+     49
+    ]
+   },
+   "hibiscus_bw": {
+    "cx": 514,
+    "cy": 511,
+    "r": 366,
+    "thr": 108,
+    "n": 268876,
+    "halves": [
+     50,
+     50,
+     49,
+     51
+    ]
+   },
+   "hydrangea_colour": {
+    "cx": 407,
+    "cy": 450,
+    "r": 373,
+    "thr": 109,
+    "n": 194603,
+    "halves": [
+     54,
+     46,
+     53,
+     47
+    ]
+   },
+   "hydrangea_ink": {
+    "cx": 517,
+    "cy": 491,
+    "r": 357,
+    "thr": 97,
+    "n": 144807,
+    "halves": [
+     54,
+     46,
+     50,
+     50
+    ]
+   },
+   "iris_ink": {
+    "cx": 515,
+    "cy": 516,
+    "r": 388,
+    "thr": 117,
+    "n": 314380,
+    "halves": [
+     48,
+     52,
+     48,
+     52
+    ]
+   },
+   "lilies_colour": {
+    "cx": 715,
+    "cy": 488,
+    "r": 188,
+    "thr": 188,
+    "n": 46457,
+    "halves": [
+     60,
+     40,
+     65,
+     35
+    ]
+   },
+   "lily_bw2": {
+    "cx": 511,
+    "cy": 484,
+    "r": 299,
+    "thr": 102,
+    "n": 69872,
+    "halves": [
+     70,
+     30,
+     55,
+     45
+    ]
+   },
+   "lotus_bw": {
+    "cx": 512,
+    "cy": 516,
+    "r": 132,
+    "thr": 117,
+    "n": 53488,
+    "halves": [
+     72,
+     28,
+     50,
+     50
+    ]
+   },
+   "magnolia_bw": {
+    "cx": 778,
+    "cy": 644,
+    "r": 312,
+    "thr": 116,
+    "n": 151003,
+    "halves": [
+     25,
+     75,
+     33,
+     67
+    ]
+   },
+   "moonflower_ink": {
+    "cx": 516,
+    "cy": 517,
+    "r": 505,
+    "thr": 129,
+    "n": 314824,
+    "halves": [
+     49,
+     51,
+     48,
+     52
+    ]
+   },
+   "peony_bw": {
+    "cx": 423,
+    "cy": 452,
+    "r": 343,
+    "thr": 139,
+    "n": 251556,
+    "halves": [
+     64,
+     36,
+     69,
+     31
+    ]
+   },
+   "peony_ink": {
+    "cx": 526,
+    "cy": 524,
+    "r": 362,
+    "thr": 118,
+    "n": 260709,
+    "halves": [
+     48,
+     52,
+     48,
+     52
+    ]
+   },
+   "petals_water2": {
+    "cx": 564,
+    "cy": 539,
+    "r": 291,
+    "thr": 63,
+    "n": 76011,
+    "halves": [
+     50,
+     50,
+     47,
+     53
+    ]
+   },
+   "petals_water3": {
+    "cx": 653,
+    "cy": 544,
+    "r": 275,
+    "thr": 138,
+    "n": 66978,
+    "halves": [
+     50,
+     50,
+     37,
+     63
+    ]
+   },
+   "pond_paint1": {
+    "cx": 565,
+    "cy": 623,
+    "r": 251,
+    "thr": 131,
+    "n": 41453,
+    "halves": [
+     82,
+     18,
+     37,
+     63
+    ]
+   },
+   "pond_paint2": {
+    "cx": 565,
+    "cy": 652,
+    "r": 206,
+    "thr": 96,
+    "n": 44272,
+    "halves": [
+     86,
+     14,
+     27,
+     73
+    ]
+   },
+   "rose_bw": {
+    "cx": 503,
+    "cy": 397,
+    "r": 294,
+    "thr": 205,
+    "n": 128202,
+    "halves": [
+     56,
+     44,
+     52,
+     48
+    ]
+   },
+   "sakura_colour": {
+    "cx": 496,
+    "cy": 482,
+    "r": 259,
+    "thr": 132,
+    "n": 95853,
+    "halves": [
+     74,
+     26,
+     41,
+     59
+    ]
+   },
+   "sakura_ink": {
+    "cx": 504,
+    "cy": 511,
+    "r": 366,
+    "thr": 116,
+    "n": 233654,
+    "halves": [
+     49,
+     51,
+     52,
+     48
+    ]
+   },
+   "sunflower_bw": {
+    "cx": 512,
+    "cy": 508,
+    "r": 396,
+    "thr": 191,
+    "n": 351827,
+    "halves": [
+     51,
+     49,
+     50,
+     50
+    ]
+   },
+   "thistle_bw": {
+    "cx": 474,
+    "cy": 421,
+    "r": 421,
+    "thr": 138,
+    "n": 317186,
+    "halves": [
+     53,
+     47,
+     61,
+     39
+    ]
+   },
+   "ume_ink": {
+    "cx": 525,
+    "cy": 531,
+    "r": 298,
+    "thr": 113,
+    "n": 112613,
+    "halves": [
+     44,
+     56,
+     45,
+     55
+    ]
+   },
+   "wisteria_colour": {
+    "cx": 629,
+    "cy": 471,
+    "r": 213,
+    "thr": 124,
+    "n": 79876,
+    "halves": [
+     66,
+     34,
+     45,
+     55
+    ]
+   },
+   "wisteria_ink": {
+    "cx": 327,
+    "cy": 359,
+    "r": 300,
+    "thr": 129,
+    "n": 120530,
+    "halves": [
+     70,
+     30,
+     52,
+     48
+    ]
+   },
+   "probe_lily": {
+    "cx": 527,
+    "cy": 507,
+    "r": 210,
+    "thr": 101,
+    "n": 68442,
+    "halves": [
+     51,
+     49,
+     46,
+     54
+    ]
+   },
+   "probe_branch": {
+    "cx": 519,
+    "cy": 488,
+    "r": 331,
+    "thr": 123,
+    "n": 135433,
+    "halves": [
+     56,
+     44,
+     47,
+     53
+    ]
+   },
+   "pond_painting": {
+    "cx": 367,
+    "cy": 829,
+    "r": 170,
+    "thr": 124,
+    "n": 30876,
+    "halves": [
+     53,
+     47,
+     45,
+     55
+    ]
+   },
+   "lotus_photo": {
+    "cx": 391,
+    "cy": 384,
+    "r": 171,
+    "thr": 150,
+    "n": 61655,
+    "halves": [
+     56,
+     44,
+     43,
+     57
+    ]
+   },
+   "petals_blue_left": {
+    "cx": 301,
+    "cy": 507,
+    "r": 203,
+    "thr": 179,
+    "n": 58085,
+    "halves": [
+     48,
+     52,
+     24,
+     76
+    ]
+   },
+   "petals_blue_bottom": {
+    "cx": 328,
+    "cy": 715,
+    "r": 143,
+    "thr": 174,
+    "n": 44423,
+    "halves": [
+     67,
+     33,
+     38,
+     62
+    ]
+   },
+   "lilies_pink_left": {
+    "cx": 301,
+    "cy": 553,
+    "r": 230,
+    "thr": 169,
+    "n": 66120,
+    "halves": [
+     36,
+     64,
+     79,
+     21
+    ]
+   },
+   "lilies_pink_right": {
+    "cx": 767,
+    "cy": 381,
+    "r": 161,
+    "thr": 152,
+    "n": 31339,
+    "halves": [
+     71,
+     29,
+     70,
+     30
+    ]
+   },
+   "garland_embroidery": {
+    "cx": 486,
+    "cy": 779,
+    "r": 189,
+    "thr": 102,
+    "n": 55672,
+    "halves": [
+     40,
+     60,
+     16,
+     84
+    ]
+   }
+  }
+ }
+}

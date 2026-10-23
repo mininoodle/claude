@@ -5,7 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 const label = process.argv[2];
-const base = path.join(__dirname, 'logs', 'baseline');
+// --base=<label> compares against another recorded run instead of logs/baseline (for example --base=final1, the restyled build)
+const baseLabel = (process.argv.find((a) => a.startsWith('--base=')) || '--base=baseline').slice(7);
+const base = path.join(__dirname, 'logs', baseLabel);
 const cur = path.join(__dirname, 'logs', label);
 const mask = (s) => s.replace(/-?\d+(\.\d+)?/g, '#').replace(/screenshot .*/, 'screenshot');
 for (const f of fs.readdirSync(base).filter((x) => x.endsWith('.log')).sort()) {
