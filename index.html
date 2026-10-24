@@ -83,14 +83,14 @@ body[data-s="pr"]{--a1:#6f6a6d;--a2:#c3baba;--a3:#9a8f97}
 body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
 [data-mode="dark"] body[data-s="math"],[data-mode="dark"] body[data-s="home"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
 
-/* one gradient layer, moved with transform only */
+/* one gradient layer, moved with transform only; stepped at ~10 Hz so idle frames are not re-blurred; keyframes = ease-in-out sampled at 12.5% */
 .bg{position:fixed;inset:-16%;z-index:-1;pointer-events:none;will-change:transform;
   background:
     radial-gradient(38% 42% at 18% 22%,color-mix(in srgb,var(--a2) var(--b1),transparent),transparent 72%),
     radial-gradient(34% 40% at 84% 30%,color-mix(in srgb,var(--a3) var(--b2),transparent),transparent 72%),
     radial-gradient(46% 44% at 52% 88%,color-mix(in srgb,var(--a1) var(--b3),transparent),transparent 72%);
-  animation:drift 46s ease-in-out infinite alternate}
-@keyframes drift{to{transform:translate3d(3%,-4%,0) rotate(5deg) scale(1.07)}}
+  animation:drift 46s infinite alternate}
+@keyframes drift{0%{transform:translate3d(0%,0%,0) rotate(0deg) scale(1);animation-timing-function:steps(58)}12.5%{transform:translate3d(0.0933%,-0.1245%,0) rotate(0.1556deg) scale(1.0022);animation-timing-function:steps(58)}25%{transform:translate3d(0.3875%,-0.5166%,0) rotate(0.6458deg) scale(1.009);animation-timing-function:steps(58)}37.5%{transform:translate3d(0.8783%,-1.1711%,0) rotate(1.4639deg) scale(1.0205);animation-timing-function:steps(58)}50%{transform:translate3d(1.5%,-2%,0) rotate(2.5deg) scale(1.035);animation-timing-function:steps(58)}62.5%{transform:translate3d(2.1217%,-2.8289%,0) rotate(3.5361deg) scale(1.0495);animation-timing-function:steps(58)}75%{transform:translate3d(2.6125%,-3.4834%,0) rotate(4.3542deg) scale(1.061);animation-timing-function:steps(58)}87.5%{transform:translate3d(2.9067%,-3.8755%,0) rotate(4.8444deg) scale(1.0678);animation-timing-function:steps(58)}100%{transform:translate3d(3%,-4%,0) rotate(5deg) scale(1.07)}}
 
 .glass{
   background:linear-gradient(var(--glass),var(--glass)) padding-box,
