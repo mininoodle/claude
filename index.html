@@ -274,8 +274,8 @@ h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.05;letter-spacing:-.025em;fo
 .card::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;transition:opacity .5s;
   background:radial-gradient(520px circle at var(--mx,50%) var(--my,0%),var(--sheen),transparent 62%)}
 .card:hover::before{opacity:1}
-/* sheen: one painted gradient moved by its offset instead of repainting the card per pointer frame */
-@media(hover:hover){@supports(overflow:clip){.card{overflow:clip}
+/* sheen: one painted gradient moved by its offset instead of repainting the card per pointer frame (not below 480px, where a hotspot card can overflow and the clip would cut it) */
+@media(hover:hover) and (min-width:480px){@supports(overflow:clip){.card{overflow:clip}
 .card::before{inset:auto;left:var(--mx,50%);top:var(--my,0%);width:1040px;height:1040px;margin:-520px;background:radial-gradient(520px circle,var(--sheen),transparent 62%)}
 .card:hover::before{will-change:transform}}}
 .grid>.card:nth-child(n+3){content-visibility:auto;contain-intrinsic-size:auto 520px}
@@ -689,7 +689,7 @@ function ctl(host,defs,on){
 }
 function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
 /* placements that wait for a ResizeObserver; run them before a print, which lays out the skipped cards without firing it */
-const PRINTFIX=new Set();addEventListener('beforeprint',()=>PRINTFIX.forEach(f=>f()));
+const PRINTFIX=new Set(),printSweep=()=>PRINTFIX.forEach(f=>{if(!f.el.isConnected)PRINTFIX.delete(f);});addEventListener('beforeprint',()=>{printSweep();PRINTFIX.forEach(f=>f());});
 /* segmented control: the glass thumb stretches while it moves */
 function seg(host,labels,on,cls='in'){
   const s=el('div',{class:'seg '+cls,role:'tablist'}),th=el('i',{class:'thumb'});s.append(th);let cur=0,px=null;
@@ -699,7 +699,7 @@ function seg(host,labels,on,cls='in'){
     th.style.transform=`translateX(${x}px)`;px=x;
     if(anim&&s.scrollWidth>s.clientWidth+2)s.scrollTo({left:x-s.clientWidth/2+b.offsetWidth/2,behavior:'smooth'});}
   function set(i,anim){cur=i;btns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});place(anim);}
-  new ResizeObserver(()=>place(false)).observe(s);PRINTFIX.add(function p(){if(!s.isConnected)PRINTFIX.delete(p);else place(false);});arrowKeys(s,()=>btns,()=>cur);host.append(s);set(0);
+  new ResizeObserver(()=>place(false)).observe(s);PRINTFIX.add(Object.assign(()=>place(false),{el:s}));arrowKeys(s,()=>btns,()=>cur);host.append(s);set(0);
   return {set:i=>set(i,true),get:()=>cur,el:s};
 }
 function stats(host,labels){
@@ -1000,7 +1000,7 @@ function showLesson(i,o={}){
     $$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));
     const pg=$('.pager',L);[[i-1,'Previous: '],[i+1,'Next: ']].forEach(([j,t])=>{if(j<0||j>=S.lessons.length){pg.append(el('span'));return;}const b=el('button',{type:'button',class:'btn ghost'},j<i?icon('left',15)+t+S.lessons[j].t:t+S.lessons[j].t+icon('right',15,'r'));b.onclick=()=>showLesson(j);pg.append(b);});
   }else le._refresh&&le._refresh();
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
+  printSweep();L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   const cb=chipBtns[i],nav=$('#chips');if(cb)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:o.first||RM?'auto':'smooth'});
   if(!o.first)window.scrollTo({top:0});savePos();if(chipBtns.length===S.lessons.length)chipProgress();
@@ -1014,7 +1014,7 @@ function showUnit(k,first){
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
 function showTab(i,first){
-  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';if(S.home){showHome();return;}if(S.test){showTest();return;}
+  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';printSweep();if(S.home){showHome();return;}if(S.test){showTest();return;}
   if(!S.units.length){emptySubject(S);return;}
   host.append(el('span',{class:'ulabel'},S.name+(S.units.length>1?' units':' unit')));
   const us=seg(host,S.units.map(unitLabel),j=>{curU[S.k]=S.units[j];showUnit(S.units[j]);});
@@ -1461,7 +1461,7 @@ const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}" x="${x}" y="${y}" text-
 /* keep the labels of a scaled figure readable: --k is the number of drawing units in one screen pixel */
 function figFit(fig){
   const f=()=>$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,w=s.getBoundingClientRect().width;if(!w||!vb||!vb.width)return;const k=vb.width/w;s.style.setProperty('--k',clamp(k,1,2.1).toFixed(3));s.classList.toggle('compact',k>1.5);});
-  new ResizeObserver(f).observe(fig);PRINTFIX.add(function p(){if(!fig.isConnected)PRINTFIX.delete(p);else f();});f();
+  new ResizeObserver(f).observe(fig);PRINTFIX.add(Object.assign(f,{el:fig}));f();
 }
 
 /* ---------- neuron ---------- */
