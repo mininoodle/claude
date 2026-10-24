@@ -5718,9 +5718,10 @@ const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
 function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t)s.add(dayOf(a.t));return s;}
-function lessonLevel(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
+let _LVC=null; /* per-render memo of lessonLevel: the Today page and checkAch walk every lesson several times. Valid only because both are synchronous and never write the 'a' or 'h' maps; reset it after any such write */
+function lessonLevel(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;const ck=_LVC&&sk+'_'+L;if(ck&&_LVC[ck])return _LVC[ck];let ans=0,ok1=0,ok2=0;
   le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(d.size>=2)ok2++;});
-  const n=le.qz.length;return {n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+  const n=le.qz.length,r={n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};if(ck)_LVC[ck]=r;return r;}
 /* questions that still need a correct answer today to move toward Mastered */
 function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id);return d.size<2&&!d.has(td);});}
 const allLessons=()=>UORDER.flatMap(unitLessons);
@@ -5877,8 +5878,8 @@ function achPoints(st){st=st||achState();let p=0;ACH.forEach(a=>(st[a.id]||[]).f
 function achTitle(p){let t=TITLES[0],next=null;for(const x of TITLES){if(p>=x[0])t=x;else{next=x;break;}}return {name:t[1],from:t[0],next};}
 const achVal=a=>{try{return a.v()||0;}catch(e){return 0;}};
 let ACH_Q=[],ACH_BUSY=0;
-function checkAch(silent){const st=Object.assign({},achState()),p0=achPoints(st);let ch=false,n=0;
-  ACH.forEach(a=>{const have=(st[a.id]||[]).slice(),v=achVal(a);while(have.length<a.tiers.length&&v>=a.tiers[have.length]){have.push(today());st[a.id]=have;ch=true;n++;if(!silent)ACH_Q.push({a,k:have.length-1});}});
+function checkAch(silent){const st=Object.assign({},achState()),p0=achPoints(st);let ch=false,n=0;_LVC={};
+  try{ACH.forEach(a=>{const have=(st[a.id]||[]).slice(),v=achVal(a);while(have.length<a.tiers.length&&v>=a.tiers[have.length]){have.push(today());st[a.id]=have;ch=true;n++;if(!silent)ACH_Q.push({a,k:have.length-1});}});}finally{_LVC=null;}
   if(ch){gset('ach',st);const t0=achTitle(p0).name,t1=achTitle(achPoints(st)).name;if(t1!==t0&&!silent)ACH_Q.push({title:t1});}if(!silent)celebrateNext();return n;}
 /* one-time move from the old on/off badges: their dates are kept, exam and speed records are counted, and the tiers already earned from your history appear without a celebration for each one */
 function migrateBadges(){if(gv('achMig'))return;const old=gv('badges')||{};
@@ -5953,9 +5954,9 @@ function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY)homeRender(L);});}
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
-function homeRender(L){HOME_BUSY=0;const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
+function homeRender(L){HOME_BUSY=0;_LVC={};try{const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));}finally{_LVC=null;}}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
