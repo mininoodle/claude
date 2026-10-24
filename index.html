@@ -631,7 +631,9 @@ const Store=(()=>{
   try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&typeof o==='object'){MAPS.forEach(m=>{D[m]=o[m]||{};});D.pos=o.pos||null;}}}catch(e){}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,mode='device',lastPull=0;
   const emit=()=>subs.forEach(f=>{try{f();}catch(e){}});
-  const local=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
+  let lq=false;const flush=()=>{lq=false;try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
+  /* one answer writes several maps; the state is serialised once, at the end of the current task */
+  const local=()=>{if(!lq){lq=true;queueMicrotask(flush);}};
   async function push(){if(!ref||busy||!dirty)return;busy=true;dirty=false;
     try{await ref.set(JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w,h:D.h,g:D.g})));}
     catch(e){const c=e&&e.code;if(c==='unavailable'||c==='resource_exhausted')dirty=true;else{ref=null;label='';mode='device';emit();}}
