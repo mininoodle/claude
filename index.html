@@ -964,7 +964,7 @@ function reviewUI(g,sk,le){
       miss.forEach((r,i)=>{const it=r.x.it;P.push({t:(i+1)+'. '+plain(it.q),g:6},{t:'Your answer: '+plain(r.va)},{t:'Correct answer: '+plain(ansText(it)),b:1},{t:plain(it.w||''),s:10});});return P;};
     [['Start a new mixed test',()=>start('mix',10)],miss.length?['Test the questions that I missed again',()=>start('',0,shuffle(miss.map(r=>({it:r.x.it,L:r.x.L,id:r.x.id,gen:r.x.gen})))),'ghost']:null,['Save these results as a PDF',async b=>{b.disabled=true;msg.textContent=await savePDF(S.name.replace(/\s+/g,'-')+'-results.pdf',pdf());b.disabled=false;},'ghost'],['Go to the progress screen',home,'ghost']].filter(Boolean).forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=()=>fn(b);br.append(b);});
     c3.append(br,msg);host.append(c3);chipProgress();window.scrollTo({top:0,behavior:RM?'auto':'smooth'});}
-  le._refresh=()=>{if(view==='home')home();};Store.on(()=>{if(view==='home'&&host.offsetParent)home();});home();
+  le._refresh=()=>{if(view==='home')home();};le._live=()=>{if(view==='home'&&host.offsetParent)home();};if(!le._sub)Store.on(le._sub=()=>le._live());home();
 }
 /* formulas, key values and a glossary with search */
 function refUI(g,R){const c=card(g,'Search',`<input type="text" placeholder="Type a term, for example: impulse" aria-label="Search the formulas and terms" style="width:100%">`),inp=$('input',c);
@@ -1025,6 +1025,7 @@ function clearUnit(sk){
   Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
   $$('.lesson').forEach(L=>{if(L.id.startsWith(sk+'-'))L.remove();});
   for(let i=CANV.length-1;i>=0;i--)if(!CANV[i].c.isConnected){IO.unobserve(CANV[i].c);CANV.splice(i,1);}
+  for(let i=LOOPS.length-1;i>=0;i--)if(!LOOPS[i].cv.c.isConnected)LOOPS.splice(i,1);refreshLive();
   tipHide();unitMarks();if(curS===sk)showLesson(curL[sk]);else afterChange();
 }
 const TQ=[];let tBusy=0;function toast(m){TQ.push(m);if(!tBusy)nextToast();}
