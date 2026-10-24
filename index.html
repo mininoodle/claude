@@ -1131,7 +1131,7 @@ function canvas(host,h,draw){
     draw(){if(!o.w)return;if(!o.on&&o.once){o.stale=true;return;}o.once=true;o.stale=false;ctx.setTransform(o.d,0,0,o.d,0,0);ctx.clearRect(0,0,o.w,o.h);o.hov=null;CUR=o;try{draw(ctx,o.w,o.h);}finally{CUR=null;}if(o.hov&&o.hp)cross(o);},
     vis:()=>o.on&&c.offsetParent!==null};
   c._o=o;IO.observe(c);
-  new ResizeObserver(()=>{if(rs)return;rs=requestAnimationFrame(()=>{rs=0;const r=c.getBoundingClientRect();if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();});}).observe(c);
+  new ResizeObserver(()=>{if(rs)return;rs=requestAnimationFrame(()=>{rs=0;const r=c.getBoundingClientRect();if(!r.width){if(o.once){c.width=c.height=0;o.w=0;o.once=false;}return;} /* hidden (display:none lesson): free the bitmap; it is sized and drawn again when shown */const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();});}).observe(c);
   CANV.push(o);return o;
 }
 const redrawAll=()=>CANV.forEach(o=>o.draw());
