@@ -683,6 +683,8 @@ function ctl(host,defs,on){
   return {v,box,set(o){for(const k in o)sets[k]&&sets[k](o[k]);on&&on(v);}};
 }
 function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
+/* placements that wait for a ResizeObserver; run them before a print, which lays out the skipped cards without firing it */
+const PRINTFIX=new Set();addEventListener('beforeprint',()=>PRINTFIX.forEach(f=>f()));
 /* segmented control: the glass thumb stretches while it moves */
 function seg(host,labels,on,cls='in'){
   const s=el('div',{class:'seg '+cls,role:'tablist'}),th=el('i',{class:'thumb'});s.append(th);let cur=0,px=null;
@@ -692,7 +694,7 @@ function seg(host,labels,on,cls='in'){
     th.style.transform=`translateX(${x}px)`;px=x;
     if(anim&&s.scrollWidth>s.clientWidth+2)s.scrollTo({left:x-s.clientWidth/2+b.offsetWidth/2,behavior:'smooth'});}
   function set(i,anim){cur=i;btns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});place(anim);}
-  new ResizeObserver(()=>place(false)).observe(s);arrowKeys(s,()=>btns,()=>cur);host.append(s);set(0);
+  new ResizeObserver(()=>place(false)).observe(s);PRINTFIX.add(function p(){if(!s.isConnected)PRINTFIX.delete(p);else place(false);});arrowKeys(s,()=>btns,()=>cur);host.append(s);set(0);
   return {set:i=>set(i,true),get:()=>cur,el:s};
 }
 function stats(host,labels){
@@ -989,7 +991,7 @@ function showLesson(i,o={}){
   const id=curS+'-'+i;let L=document.getElementById(id);
   if(!L){L=el('article',{class:'lesson',id,role:'tabpanel'});
     L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<p class="lvl" data-lvl></p>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
-    $('#main').append(L);const g=$('.grid',L);le.build(g,le);$$('figure.cf',g).forEach(figFit);if(le.qz){quiz(g,le.qz,le.qt,curS+'_'+i);masteryCard(g,curS,i);challengeCard(g,curS,i);}
+    const g=$('.grid',L);le.build(g,le);$$('figure.cf',g).forEach(figFit);$('#main').append(L);if(le.qz){quiz(g,le.qz,le.qt,curS+'_'+i);masteryCard(g,curS,i);challengeCard(g,curS,i);}
     $$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));
     const pg=$('.pager',L);[[i-1,'Previous: '],[i+1,'Next: ']].forEach(([j,t])=>{if(j<0||j>=S.lessons.length){pg.append(el('span'));return;}const b=el('button',{type:'button',class:'btn ghost'},j<i?icon('left',15)+t+S.lessons[j].t:t+S.lessons[j].t+icon('right',15,'r'));b.onclick=()=>showLesson(j);pg.append(b);});
   }else le._refresh&&le._refresh();
@@ -1453,7 +1455,7 @@ const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}" x="${x}" y="${y}" text-
 /* keep the labels of a scaled figure readable: --k is the number of drawing units in one screen pixel */
 function figFit(fig){
   const f=()=>$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,w=s.getBoundingClientRect().width;if(!w||!vb||!vb.width)return;const k=vb.width/w;s.style.setProperty('--k',clamp(k,1,2.1).toFixed(3));s.classList.toggle('compact',k>1.5);});
-  new ResizeObserver(f).observe(fig);f();
+  new ResizeObserver(f).observe(fig);PRINTFIX.add(function p(){if(!fig.isConnected)PRINTFIX.delete(p);else f();});f();
 }
 
 /* ---------- neuron ---------- */
