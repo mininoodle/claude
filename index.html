@@ -1044,7 +1044,7 @@ function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeEl
   $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
   d.showModal();$('[data-x]',d).focus();}
 /* the account dialog: sign in, sign out, or an explanation when sync is not set up */
-function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',ready=!!(window.SYNC&&window.SYNC.ready);
+function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',ready=!!(window.SYNC&&(window.SYNC.ready||(window.SYNC.load&&!window.SYNC.error)));
   const when=t=>{if(!t)return 'not yet';const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';};
   let body,row;
   if(on){body=`<h3 id="ac-h">Signed in</h3><p>Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device. Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.</p>`;
@@ -1057,7 +1057,7 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
   document.body.append(d);const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus();};
   d.addEventListener('cancel',e=>{e.preventDefault();close();});d.addEventListener('click',e=>{if(e.target===d)close();});
   const x=$('[data-x]',d);if(x)x.onclick=close;
-  const i=$('[data-in]',d);if(i)i.onclick=async()=>{i.disabled=true;try{await window.SYNC.signIn();close();}catch(e){i.disabled=false;toast('Sign-in did not complete: '+((e&&e.message)||'try again'));}};
+  const i=$('[data-in]',d);if(i)i.onclick=async()=>{i.disabled=true;try{if(window.SYNC.load)await window.SYNC.load();if(!window.SYNC.ready)throw new Error(window.SYNC.error||'sync could not start');await window.SYNC.signIn();close();}catch(e){i.disabled=false;toast('Sign-in did not complete: '+((e&&e.message)||'try again'));}};
   const o=$('[data-out]',d);if(o)o.onclick=async()=>{close();try{if(window.SYNC&&window.SYNC.signOut)await window.SYNC.signOut();}catch(e){}Store.detach();toast('Signed out. Progress stays on this device.');};
   const y=$('[data-sync]',d);if(y)y.onclick=async()=>{y.disabled=true;const ok=await Store.sync();close();toast(ok?'Synced.':'Not connected.');};
   d.showModal();(x||i||y).focus();}
@@ -1086,7 +1086,7 @@ function boot(){
   const ab=el('button',{type:'button',class:'modebtn acct',id:'acct'});$('.bar').append(ab);
   const acctState=()=>{const on=Store.mode()==='account';ab.classList.toggle('on',on);ab.innerHTML=icon(on?'cloud':'user',17);
     const t=on?'Synced with '+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
-  acctState();Store.on(acctState);ab.onclick=accountDialog;
+  acctState();Store.on(acctState);ab.onclick=()=>{if(window.SYNC&&window.SYNC.load)window.SYNC.load();accountDialog();};
   const p=Store.pos();if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
   if(p&&p.u)SUBJECTS.forEach(s=>{if(s.units.includes(p.u[s.k]))curU[s.k]=p.u[s.k];});
   const t0=Math.max(0,SUBJECTS.findIndex(s=>p&&(s.k===p.s||s.units.includes(p.s))));
@@ -6097,22 +6097,26 @@ boot();
 <script type="module">
 /* Google sign-in and cross-device sync. This runs only when FIREBASE_CONFIG above is filled in.
    Progress is stored in Firestore at users/{uid}/progress/main, and merged with the data on this device. */
-window.SYNC={ready:false,error:''};
+window.SYNC={ready:false,error:'',load:null};
 if(FIREBASE_CONFIG){
-  try{
+  /* the SDK (three modules from gstatic) is loaded only when this device has signed in before, or when the account button is used.
+     The flag is written on every auth change: '1' signed in, '0' signed out, absent = unknown (load once). A second tab open on a device
+     that had never signed in does not see a sign-in made in another tab until its next load. */
+  const AK='unit-study-site.auth',flag=v=>{try{localStorage.setItem(AK,v);}catch(e){}};let p=null;
+  window.SYNC.load=()=>p||(p=(async()=>{try{
     const V='10.12.0',U=n=>`https://www.gstatic.com/firebasejs/${V}/firebase-${n}.js`;
     const [{initializeApp},A,F]=await Promise.all([import(U('app')),import(U('auth')),import(U('firestore'))]);
     const app=initializeApp(FIREBASE_CONFIG),auth=A.getAuth(app),db=F.getFirestore(app),provider=new A.GoogleAuthProvider();
     provider.setCustomParameters({prompt:'select_account'});
     let unsub=null;
     const popupBlocked=e=>e&&['auth/popup-blocked','auth/operation-not-supported-in-this-environment','auth/cancelled-popup-request'].includes(e.code);
-    window.SYNC={ready:true,error:'',
-      async signIn(){try{await A.signInWithPopup(auth,provider);}catch(e){if(popupBlocked(e))await A.signInWithRedirect(auth,provider);else throw e;}},
+    window.SYNC={ready:true,error:'',load:window.SYNC.load,
+      async signIn(){try{await A.signInWithPopup(auth,provider);}catch(e){if(popupBlocked(e)){flag('1');await A.signInWithRedirect(auth,provider);}else throw e;}},
       async signOut(){await A.signOut(auth);}};
     try{await A.getRedirectResult(auth);}catch(e){window.SYNC.error=e.message||String(e);}
     A.onAuthStateChanged(auth,async user=>{
       if(unsub){unsub();unsub=null;}
-      if(!user){Store.detach();return;}
+      flag(user?'1':'0');if(!user){Store.detach();return;}
       const ref=F.doc(db,'users',user.uid,'progress','main');
       await Store.attach({
         async get(){const s=await F.getDoc(ref);return {exists:s.exists(),data:()=>s.data()};},
@@ -6120,7 +6124,9 @@ if(FIREBASE_CONFIG){
       },{label:user.email||user.displayName||'Google account'});
       unsub=F.onSnapshot(ref,s=>{if(s.exists()&&!s.metadata.hasPendingWrites)Store.remote(s.data());},()=>{});
     });
-  }catch(e){window.SYNC={ready:false,error:(e&&e.message)||String(e)};}
+  }catch(e){window.SYNC={ready:false,error:(e&&e.message)||String(e),load:window.SYNC.load};}})());
+  let f=null;try{f=localStorage.getItem(AK);}catch(e){}
+  if(f!=='0')window.SYNC.load();
 }
 </script>
 
