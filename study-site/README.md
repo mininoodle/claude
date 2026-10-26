@@ -1,6 +1,6 @@
 # Study site
 
-A single-page study site with subject tabs (Today, Physics, Biology, Chemistry, Math, Language Arts).
+A single-page study site with subject tabs (Today, Physics, Biology, Chemistry, Math, Language Arts, Social Studies, Test).
 
 Open `index.html` in a browser. Everything is in that one file: styles, scripts and lesson content.
 
@@ -10,7 +10,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 |---|---|
 | Today | Daily 5-question challenge, weekly goal, level, progress map, achievements |
 | Physics | Momentum, Forces and fields |
-| Biology | Nervous system, Senses |
+| Biology | Nervous system, Senses, Endocrine system: homeostasis and feedback, hormones and receptors, glands and the pituitary, blood sugar and diabetes, stress and the adrenal glands, thyroid and growth, calcium balance, water and salt balance |
 | Chemistry | Equilibrium |
 | Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
@@ -22,9 +22,9 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 - Lesson notes, interactive figures and quizzes with hints
 - Math: step-by-step worked examples in every lesson (17 question types). Each one gives the method, an example to go through one step at a time with the reason for each step, a common mistake, and a "Your turn" question with new numbers that you can check, with hints that show the solution one step at a time
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
-- Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 541 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
+- Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 621 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
 - Boss round, challenge problems, speed rounds and an answer combo
-- Achievements: 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze to Diamond tiers (98 tiers), each with a progress bar, XP for every tier, titles from Newcomer to Grandmaster, a closest-to-unlock list, and a celebration card for each new tier. Badges earned before the achievements update are carried over once (their dates are kept) and the tiers already earned from your history appear without a celebration for each one.
+- Achievements: 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze to Diamond tiers (99 tiers), each with a progress bar, XP for every tier, titles from Newcomer to Grandmaster, a closest-to-unlock list, and a celebration card for each new tier. Badges earned before the achievements update are carried over once (their dates are kept) and the tiers already earned from your history appear without a celebration for each one.
 - Light and dark mode
 - Answers are saved in the browser, with an option to clear each section
 - Optional Google sign-in to sync progress across devices (see below)
@@ -65,4 +65,4 @@ By default all progress stays in the browser of one device. To sync progress acr
    The config values are not secrets. The rules above are what protect the data.
 8. Commit and push. Open the site, select the account button at the right end of the top bar, and sign in with Google. Do the same on each other device.
 
-How it works: progress is kept on the device as before and also written to `users/{uid}/progress/main` in Firestore. On sign-in the two are merged and the newest entry for each answer wins. Changes from another device arrive live. Signing out keeps the progress that is already on the device. The site must be opened over `https://` (or `localhost`) for the sign-in popup to work. If the popup is blocked, the site falls back to a redirect sign-in.
+How it works: progress is kept on the device as before and also written to `users/{uid}/progress/main` in Firestore. On sign-in the two are merged: the newest entry for each answer wins, while study days, the days each question was answered correctly, best test results, achievements and counters are combined, so neither copy loses progress. Each upload first reads and merges the copy in Firestore, so two devices never erase each other's work. Changes from another device arrive live, and tabs of the site in one browser share their progress. Clearing a section also clears older answers that arrive later from another device. Signing out first uploads any changes that are waiting, and keeps the progress that is already on the device. If a different Google account then signs in on the same browser, the progress of the previous account is not merged into it. If the browser cannot save progress (site storage is blocked or full), the site says so. The site must be opened over `https://` (or `localhost`) for the sign-in popup to work. If the popup is blocked, the site falls back to a redirect sign-in.
