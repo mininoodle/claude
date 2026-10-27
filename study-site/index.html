@@ -142,10 +142,6 @@ dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;ba
 .chips button .ic{margin-right:.4em;vertical-align:-.16em}
 .chips button{appearance:none;flex:none;border:0;background:none;color:var(--ink);font:inherit;font-size:.86rem;font-weight:550;padding:.42em .95em;border-radius:999px;cursor:pointer;transition:background .3s var(--ease),color .3s,transform .2s var(--spring),box-shadow .3s}
 .chips button:hover{background:var(--hov)}
-.chips .csec{flex:none;align-self:center;font-size:.68rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:0 .2em 0 .9em;white-space:nowrap}
-.chips .csec:first-child{padding-left:.5em}
-.chips .csec-b{background:var(--hov);color:var(--ink2);font-weight:650}
-.chips .csec-b .ic.r{margin:0 0 0 .3em}
 .chips button:active{transform:scale(.95)}
 .chips button[aria-selected="true"]{background:var(--a1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 14px color-mix(in srgb,var(--a1) 38%,transparent)}
 /* with a mouse or on a wide screen the lesson row wraps, so every chip (and the Review due count) is visible */
@@ -157,9 +153,11 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 /* unit switcher: the units of the selected subject */
 .units{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 6px 6px}
 .ulabel{font-size:.76rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
-:root:not([data-mode="dark"]) .ulabel,:root:not([data-mode="dark"]) .chips .csec,:root:not([data-mode="dark"]) .chips .csec-b{color:var(--ink)}
+:root:not([data-mode="dark"]) .ulabel{color:var(--ink)}
 .units .seg button{display:flex;align-items:center;gap:.45em}
 .units .uclear{margin-left:auto}
+/* section bar: the sections of a grouped unit, on a row of their own under the unit */
+.units .usec{flex-basis:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* mastery levels */
 .lvl{display:inline-flex;align-items:center;gap:.6em;margin:.8em 0 0;padding:.32em .85em .32em .5em;border-radius:999px;background:var(--glass2);border:1px solid var(--hair);font-size:.84rem;color:var(--ink2);max-width:100%;box-shadow:inset 0 1px 0 var(--hi)}
 .lvl b{color:var(--at)}
@@ -1204,21 +1202,19 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" aria-label="Sear
   inp.addEventListener('input',draw);draw();}
 
 /* ---------- app shell ---------- */
-const SUBJ={},ORDER=['mom','ff','eq','ns','sn','en','lim','pr','ri1'],curL={mom:0,ff:0,eq:0,ns:0,sn:0,en:0,lim:0,pr:0,ri1:0};let curS='mom',chipBtns=[],tabSeg=null,SECT={};
+const SUBJ={},ORDER=['mom','ff','eq','ns','sn','en','lim','pr','ri1'],curL={mom:0,ff:0,eq:0,ns:0,sn:0,en:0,lim:0,pr:0,ri1:0};let curS='mom',chipBtns=[],tabSeg=null,secSeg=null;
 /* the top tabs are subjects. Each unit (mom, eq, ns, sn) keeps its own lessons and saved answers. */
 const SUBJECTS=[{k:'home',name:'Today',units:[],home:1},{k:'phy',name:'Physics',units:['mom','ff']},{k:'bio',name:'Biology',short:'Bio',units:['ns','sn','en']},{k:'chem',name:'Chemistry',short:'Chem',units:['eq']},{k:'math',name:'Math',units:['lim']},{k:'la',name:'Language Arts',short:'LA',units:['pr']},{k:'ss',name:'Social Studies',short:'Social',units:['ri1']},{k:'test',name:'Test',units:[],test:1}];
-/* a unit can group several sections: one entry in the unit bar, one row of lesson chips. Each section keeps its own lessons, reference sheet, Review and saved answers. */
+/* a unit can group several sections: one entry in the unit bar, then a section bar of its own under it. Each section keeps its own lessons, reference sheet, Review and saved answers. */
 const UGROUPS=[{name:'Unit 1: Nervous and endocrine systems',units:['ns','sn','en']}],ugOf=k=>UGROUPS.find(g=>g.units.includes(k));
 const dispUnits=S=>S.units.reduce((D,u)=>{const g=ugOf(u);if(!g)D.push(u);else if(!D.includes(g))D.push(g);return D;},[]);
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
-/* lesson chips: level rings and the due count on Review, for every section shown in the chip row */
-function chipProgress(){const ks=Object.keys(SECT);(ks.length?ks:[curS]).forEach(chipProg1);}
-function chipProg1(sk){const S=SUBJ[sk],cb=SECT[sk]||(sk===curS?chipBtns:[]);if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&cb[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(sk+'_')&&e.d<=Date.now()&&qItem(k)).length;cb[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=cb[i]&&$('.pr',cb[i]);if(!r||!le.qz)return;const v=lessonLevel(sk,i);
-    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon('check',13):'';cb[i].dataset.lv=v.lv;
-    cb[i].title=LVN[v.lv]+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two different days':'')+'.';
-    const em=$('#'+sk+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=LVN[v.lv]+' · '+v.ok1+' / '+v.n;}
-    const lp=$('#'+sk+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+LVN[v.lv]+'</b> · '+lvHint(v)+'</span>';});}
+function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()&&qItem(k)).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
+    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon('check',13):'';chipBtns[i].dataset.lv=v.lv;
+    chipBtns[i].title=LVN[v.lv]+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two different days':'')+'.';
+    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=LVN[v.lv]+' · '+v.ok1+' / '+v.n;}
+    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+LVN[v.lv]+'</b> · '+lvHint(v)+'</span>';});}
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
 function centreChip(smooth){const cb=chipBtns[curL[curS]],nav=$('#chips');if(cb&&!nav.hidden)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:smooth&&!RM?'smooth':'instant'});}
 function showLesson(i,o={}){
@@ -1245,16 +1241,18 @@ function showLesson(i,o={}){
 }
 function showUnit(k,first){
   $('#units').hidden=false;$('#chips').hidden=false;
-  /* a grouped unit shows the lessons of the current section; the other sections stay in their place in the row as one button each */
-  const ug=ugOf(k),mem=ug?ug.units:[k],nav=$('#chips'),back=nav.contains(document.activeElement);nav.innerHTML='';SECT={};
-  mem.forEach(m=>{
-    if(m!==k){const b=el('button',{type:'button',class:'csec-b','aria-label':'Open the '+SUBJ[m].name+' section'},icon(m,14)+SUBJ[m].name+icon('right',13,'r'));b.onclick=()=>goSection(m);nav.append(b);return;}
-    if(ug)nav.append(el('span',{class:'csec','aria-hidden':'true'},SUBJ[m].name));
-    SECT[m]=SUBJ[m].lessons.map((le,i)=>{const b=el('button',{type:'button',role:'tab',id:'tab-'+m+'-'+i,'aria-controls':m+'-'+i},icon(le.ic||LIC[le.t]||m,14)+le.t+(le.qz?'<i class="pr"></i>':''));b.onclick=()=>showLesson(i);nav.append(b);return b;});});
-  curS=k;document.body.dataset.s=k;_col=null;chipBtns=SECT[k];
-  showLesson(curL[k],{first});chipProgress();if(back&&chipBtns[curL[k]])chipBtns[curL[k]].focus();
+  curS=k;document.body.dataset.s=k;_col=null;const nav=$('#chips');nav.innerHTML='';
+  chipBtns=SUBJ[k].lessons.map((le,i)=>{const b=el('button',{type:'button',role:'tab',id:'tab-'+k+'-'+i,'aria-controls':k+'-'+i},icon(le.ic||LIC[le.t]||k,14)+le.t+(le.qz?'<i class="pr"></i>':''));b.onclick=()=>showLesson(i);nav.append(b);return b;});
+  sectBar(k);showLesson(curL[k],{first});chipProgress();
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
+/* section bar: a grouped unit gets a row of its own for its sections, under the unit bar.
+   Clear answers moves into this row, because it clears the open section only. */
+function sectBar(k){const host=$('#units'),ug=ugOf(k),cb=$('.uclear',host);let row=$('.usec',host);
+  if(row&&(!ug||!secSeg||secSeg.g!==ug)){if(cb)host.append(cb);row.remove();row=null;}
+  if(!ug){secSeg=null;return;}
+  if(!row){row=el('div',{class:'usec'},'<span class="ulabel">Sections</span>');secSeg={g:ug,s:seg(row,ug.units.map(unitLabel),i=>goSection(ug.units[i]))};host.append(row);}
+  if(cb)row.append(cb);secSeg.s.set(ug.units.indexOf(k));}
 /* open section k of a grouped unit (at lesson i, or where it was left) */
 function goSection(k,i){if(i!=null)curL[k]=i;const S=SUBJECTS.find(s=>s.units.includes(k));if(S)curU[S.k]=k;showUnit(k);}
 function showTab(i,first){
@@ -1325,7 +1323,7 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
   d.showModal();(x||i||y||cb).focus();}
 /* a subject with no units yet: an empty page, no lesson chips */
 function emptySubject(S){
-  curS=S.k;document.body.dataset.s=S.k;chipBtns=[];SECT={};const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+  curS=S.k;document.body.dataset.s=S.k;chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
   const id=S.k+'-empty';let L=document.getElementById(id);
   if(!L){const n=S.name.toLowerCase();
@@ -1359,7 +1357,7 @@ function boot(){
   if(p&&SUBJ[p.s])curU[SUBJECTS[t0].k]=p.s;
   tabSeg=seg($('#tabs'),SUBJECTS.map(s=>`${icon(s.k,17)}<span class="lg">${s.name}</span><span class="sm">${s.short||s.name}</span>`),i=>showTab(i),'main');homeDot();
   if(t0)tabSeg.set(t0);
-  arrowKeys($('#chips'),()=>$$('#chips button'),()=>$$('#chips button').indexOf(chipBtns[curL[curS]]));new ResizeObserver(()=>centreChip(false)).observe($('#chips'));
+  arrowKeys($('#chips'),()=>chipBtns,()=>curL[curS]);new ResizeObserver(()=>centreChip(false)).observe($('#chips'));
   showTab(t0,true);
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',$('#top').offsetHeight+'px')).observe($('#top'));
@@ -8510,7 +8508,8 @@ function bossCard(host,sk){const c=el('section',{class:'card glass boss-c',tabin
   view();}
 const unitLabel=u=>icon(u,15)+SUBJ[u].name+(bossWon(u)?`<span class="bossmk" title="Boss round beaten">${icon('crown',14)}</span>`:'');
 const groupLabel=g=>icon(g.units[0],15)+g.name+(g.units.every(bossWon)?`<span class="bossmk" title="Boss rounds beaten">${icon('crown',14)}</span>`:'');
-function unitMarks(){const S=SUBJECTS.find(s=>s.units.includes(curS));if(!S)return;const D=dispUnits(S);$$('#units [role=tab]').forEach((b,i)=>{const d=D[i];if(d)b.innerHTML=typeof d==='string'?unitLabel(d):groupLabel(d);});}
+function unitMarks(){const S=SUBJECTS.find(s=>s.units.includes(curS));if(!S)return;const D=dispUnits(S);$$('#units>.seg>[role=tab]').forEach((b,i)=>{const d=D[i];if(d)b.innerHTML=typeof d==='string'?unitLabel(d):groupLabel(d);});
+  if(secSeg)$$('[role=tab]',secSeg.s.el).forEach((b,i)=>b.innerHTML=unitLabel(secSeg.g.units[i]));}
 
 /* ----- speed rounds: race your own best time ----- */
 function speed(host,name,o){const box=el('div',{class:'speed'});host.append(box);const key='spd_'+((host.closest('.lesson')||{}).id||'x')+'_'+name;let raf=0;
@@ -8661,7 +8660,7 @@ function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x
   if(due)b.setAttribute('aria-label',SUBJECTS[0].name+', daily challenge due');else b.removeAttribute('aria-label');}
 
 /* ----- the Today page ----- */
-function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];SECT={};const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY){L.classList.remove('enter');homeRender(L);}});}
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
@@ -8746,7 +8745,7 @@ function testPool(units){const pool=[];units.forEach(sk=>{SUBJ[sk].lessons.forEa
 function testPick(units,n){const groups=shuffle(units.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>{const a=lessonItems(sk,le,L);return a?shuffle(a):null;}).filter(Boolean))),out=[];let k=0;
   while(out.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)out.push(a.pop());}return shuffle(out);}
 
-function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];SECT={};const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#test-0');
   if(!L){L=el('article',{class:'lesson',id:'test-0',role:'tabpanel'});$('#main').append(L);testSetupPage(L);}
   else if(!TBUSY)testSetupPage(L);
