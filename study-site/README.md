@@ -10,7 +10,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 |---|---|
 | Today | Daily 5-question challenge, weekly goal, level, progress map, achievements |
 | Physics | Momentum, Forces and fields |
-| Biology | Nervous system, Senses, Endocrine system: homeostasis and feedback, hormones and receptors, glands and the pituitary, blood sugar and diabetes, stress and the adrenal glands, thyroid and growth, calcium balance, water and salt balance |
+| Biology | Unit 1: Nervous and endocrine systems, in three sections that each keep their own lessons, reference sheet and review: Nervous system; Senses; Endocrine system (homeostasis and feedback, hormones and receptors, glands and the pituitary, blood sugar and diabetes, stress and the adrenal glands, thyroid and growth, calcium balance, water and salt balance) |
 | Chemistry | Equilibrium |
 | Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
