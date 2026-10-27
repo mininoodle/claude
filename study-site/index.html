@@ -404,7 +404,7 @@ select{padding-right:1.6em;max-width:100%}
 @keyframes pop{45%{transform:scale(1.04)}}
 @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 @keyframes bump{40%{transform:scale(1.3)}}
-@keyframes pulse{50%{opacity:.55}}
+
 .lesson.enter .lhead{animation:rise .5s var(--ease) backwards}
 .lesson.enter .card,.lesson.enter .pager{animation:rise .62s var(--ease) backwards;animation-delay:calc(50ms + var(--i,0)*55ms)}
 
@@ -454,7 +454,7 @@ select{padding-right:1.6em;max-width:100%}
 .tile small{display:block;color:var(--ink2)}
 .two{display:grid;gap:14px}
 @media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
-.swatch{width:100%;height:46px;border-radius:12px;border:1px solid var(--hair);transition:background .25s}
+
 .ice input{width:5.6rem;text-align:center;font-size:1rem}
 .ice td,.ice th{text-align:center}
 .ice input.ok,input[data-r=K].ok{border-color:var(--ok);background:var(--okb)}.ice input.bad,input[data-r=K].bad{border-color:var(--bad);background:var(--badb)}
@@ -808,7 +808,7 @@ const Store=(()=>{
   addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;
     const [ch,up]=adopt(o);if(ch)emit();if(up)local();}catch(_){}});
   const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});touch();};
-  return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),del(id){if(g('a',id))p('a',id,{x:1});},
+  return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
     sr:id=>g('s',id),srSet:(id,o)=>p('s',id,o),srAll:()=>Object.keys(D.s).filter(k=>!D.s[k].x).map(k=>[k,D.s[k]]),
     w:k=>{const e=g('w',k);return e?e.v:null;},wSet:(k,v)=>p('w',k,{v}),
@@ -848,7 +848,7 @@ function seg(host,labels,on,cls='in'){
     if(anim&&s.scrollWidth>s.clientWidth+2)s.scrollTo({left:x-s.clientWidth/2+b.offsetWidth/2,behavior:'smooth'});}
   function set(i,anim){cur=i;btns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});place(anim);}
   new ResizeObserver(()=>place(false)).observe(s);arrowKeys(s,()=>btns,()=>cur);host.append(s);set(0);
-  return {set:i=>set(i,true),get:()=>cur,el:s};
+  return {set:i=>set(i,true),el:s};
 }
 function stats(host,labels){
   const box=el('div',{class:'stats'});
@@ -988,7 +988,7 @@ function hotspot(host,svg,parts,opt={}){
       c.addEventListener('pointerdown',e=>{if(c.disabled)return;sx=e.clientX;sy=e.clientY;moved=false;c.setPointerCapture(e.pointerId);});
       c.addEventListener('pointermove',e=>{if(!c.hasPointerCapture(e.pointerId))return;if(!g&&Math.hypot(e.clientX-sx,e.clientY-sy)>7){moved=true;g=c.cloneNode(true);g.className='chip ghost';document.body.append(g);}
         if(g){g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';}});
-      const end=e=>{if(g){g.remove();g=null;const t=document.elementFromPoint(e.clientX,e.clientY),pt=t&&t.closest&&t.closest('[data-p]');if(pt&&fig.contains(pt))drop(c,pt.dataset.p);setTimeout(()=>{moved=false;},0);}};
+      const end=e=>{if(g){g.remove();g=null;const t=document.elementFromPoint(e.clientX,e.clientY),pt=t&&t.closest('[data-p]');if(pt&&fig.contains(pt))drop(c,pt.dataset.p);setTimeout(()=>{moved=false;},0);}};
       c.addEventListener('pointerup',end);c.addEventListener('pointercancel',()=>{if(g){g.remove();g=null;}moved=false;});});if(back)focusTo(pool,'.chip');}
   function race(){mark(null);clearGot();say(null);info.innerHTML='';speed(info,'hs',{title:'Speed round',intro:'Name each highlighted part as fast as you can.',
     items:()=>shuffle(parts).map(p=>{const o=shuffle([p,...shuffle(parts.filter(x=>x.id!==p.id)).slice(0,3)]);return {q:'<p class="hint" style="margin:.2em 0">What is the highlighted part?</p>',o:o.map(x=>x.n),a:o.indexOf(p),p:p.id};}),on:x=>mark(x?x.p:null)});}
@@ -997,8 +997,8 @@ function hotspot(host,svg,parts,opt={}){
   tgt.forEach(e=>{e.setAttribute('tabindex','-1');e.setAttribute('role','button');e.setAttribute('aria-label','Diagram part');});
   seg(mh,['Explore','Test me','Drag labels','Speed round'],i=>{mode=i;clearGot();fig.classList.toggle('explore',i===0);tgt.forEach(e=>e.setAttribute('tabindex',i===2?'0':'-1'));i===1?start():i===2?labels():i===3?race():explore(null);});
   fig.addEventListener('click',e=>{const t=e.target.closest('[data-p]');if(!t)return;if(mode===0)explore(t.dataset.p);else if(mode===2&&sel&&drop)drop(sel,t.dataset.p);});
-  fig.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest&&e.target.closest('[data-p]');if(!t)return;e.preventDefault();t.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
-  fig.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('[data-p]');if(t&&mode===2&&t.matches(':focus-visible'))mark(t.dataset.p);});
+  fig.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest('[data-p]');if(!t)return;e.preventDefault();t.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
+  fig.addEventListener('focusin',e=>{const t=e.target.closest('[data-p]');if(t&&mode===2&&t.matches(':focus-visible'))mark(t.dataset.p);});
   fig.addEventListener('focusout',()=>{if(mode===2)mark(null);});
   explore(null);
   /* a newer synced result updates the 'Fewest mistakes' hint of Drag labels */
@@ -1006,7 +1006,7 @@ function hotspot(host,svg,parts,opt={}){
 }
 /* slot: the index of this ordering task in its lesson, so that each task keeps its own saved order */
 function ordering(host,items,intro,slot){
-  const box=el('div',{class:'ord'});host.append(box);const key='ord_'+((host.closest('.lesson')||{}).id||'x')+(slot?'_'+slot:''),sv=Store.w(key),uid='ord'+(ordering.n=(ordering.n||0)+1);
+  const box=el('div');host.append(box);const key='ord_'+((host.closest('.lesson')||{}).id||'x')+(slot?'_'+slot:''),sv=Store.w(key),uid='ord'+(ordering.n=(ordering.n||0)+1);
   const ok=Array.isArray(sv)&&sv.length===items.length&&new Set(sv).size===sv.length&&sv.every(i=>items[i]!==undefined);
   const mixed=()=>{const a=shuffle(items);return a.every((x,i)=>x===items[i])?a.reverse():a;};
   let arr=ok?sv.map(i=>items[i]):mixed();
@@ -1197,7 +1197,7 @@ function refUI(g,R){const c=card(g,'Search',`<input type="text" aria-label="Sear
   const fold=s=>s.normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'").replace(/ø/g,'o').replace(/⁄/g,'/');
   const draw=()=>{const k=fold(inp.value.trim()),hit=a=>!k||fold(plain(a[0]+' '+a[1])).includes(k);
     if(cf)$('[data-f]',cf).innerHTML=R.f.filter(hit).map(a=>`<div class="refrow"><span>${a[0]}</span><div class="fx">${a[1]}</div></div>`).join('')||'<p class="hint">No formula has this text.</p>';
-    if(ch){const hh=R.hh||['Hormone','Gland','Target','Main effects'],rows=R.h.filter(a=>!k||fold(plain(a.join(' '))).includes(k));$('[data-h]',ch).innerHTML=rows.length?'<tr>'+hh.map(x=>`<th>${x}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(x=>`<td>${x}</td>`).join('')+'</tr>').join(''):'<tr><td class="hint">No hormone has this text.</td></tr>';}
+    if(ch){const hh=['Hormone','Gland','Target','Main effects'],rows=R.h.filter(a=>!k||fold(plain(a.join(' '))).includes(k));$('[data-h]',ch).innerHTML=rows.length?'<tr>'+hh.map(x=>`<th>${x}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(x=>`<td>${x}</td>`).join('')+'</tr>').join(''):'<tr><td class="hint">No hormone has this text.</td></tr>';}
     const t=R.t.filter(hit);$('[data-t]',ct).innerHTML=t.map(a=>`<div><dt>${a[0]}</dt><dd>${a[1]}</dd></div>`).join('');$('[data-n]',ct).textContent=t.length+' of '+R.t.length+' terms are shown.';};
   inp.addEventListener('input',draw);draw();}
 
@@ -1257,7 +1257,7 @@ function sectBar(k){const host=$('#units'),ug=ugOf(k),cb=$('.uclear',host);let r
 function goSection(k,i){if(i!=null)curL[k]=i;const S=SUBJECTS.find(s=>s.units.includes(k));if(S)curU[S.k]=k;showUnit(k);}
 function showTab(i,first){
   const S=SUBJECTS[i],host=$('#units');host.innerHTML='';document.title=S.name+' · Study site';if(S.home){showHome();return;}if(S.test){showTest();return;}
-  if(!S.units.length){emptySubject(S);return;}
+  
   const D=dispUnits(S),pick=d=>typeof d==='string'?d:d.units.includes(curU[S.k])?curU[S.k]:d.units[0];
   host.append(el('span',{class:'ulabel'},S.name+(D.length>1?' units':' unit')));
   const us=seg(host,D.map(d=>typeof d==='string'?unitLabel(d):groupLabel(d)),j=>{const u=pick(D[j]);curU[S.k]=u;showUnit(u);});
@@ -1274,7 +1274,7 @@ function clearUnit(sk){
   Store.clear(unitKey(sk),'u:'+sk);try{sessionStorage.removeItem(EXK(sk));}catch(e){}
   Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
   $$('.lesson').forEach(L=>{if(L.id.startsWith(sk+'-'))L.remove();});
-  for(let i=CANV.length-1;i>=0;i--)if(!CANV[i].c.isConnected){IO.unobserve(CANV[i].c);CANV.splice(i,1);}
+  for(let i=CANV.length-1;i>=0;i--)if(!CANV[i].c.isConnected){IO.unobserve(CANV[i].c);CANV.splice(i,1);}for(let i=LOOPS.length-1;i>=0;i--){const c=LOOPS[i].cv.c;if(c&&!c.isConnected)LOOPS.splice(i,1);}
   tipHide();unitMarks();if(curS===sk)showLesson(curL[sk]);else afterChange();
 }
 const TQ=[];let tBusy=0;function toast(m){TQ.push(m);if(!tBusy)nextToast();}
@@ -1321,21 +1321,9 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
     toast(ok?'Signed out. Progress stays on this device.':'Signed out. Some changes had not uploaded yet. They stay on this device and upload the next time you sign in here.');};
   const y=$('[data-sync]',d);if(y)y.onclick=async()=>{y.disabled=true;const ok=await Store.sync();close();toast(ok?'Synced.':Store.mode()==='account'?'Could not sync. Your progress is saved on this device and uploads when the connection works.':'Sync is off. Sign in again to sync across devices.');};
   d.showModal();(x||i||y||cb).focus();}
-/* a subject with no units yet: an empty page, no lesson chips */
-function emptySubject(S){
-  curS=S.k;document.body.dataset.s=S.k;chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
-  $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
-  const id=S.k+'-empty';let L=document.getElementById(id);
-  if(!L){const n=S.name.toLowerCase();
-    L=el('article',{class:'lesson',id,role:'tabpanel'},`<header class="lhead"><div><h1>${S.name}</h1><p class="lede">There are no ${n} units yet.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(S.k,36)}</div></div><small></small></div></header><div class="grid"></div>`);
-    card($('.grid',L),'Units will show here',`<p>When you add a ${n} unit, its lessons, questions, formulas and review show in this tab.</p><p class="hint">To study now, select Physics, Biology or Chemistry at the top of the page.</p>`);
-    $('#main').append(L);}
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
-  window.scrollTo({top:0});savePos();
-}
 function boot(){
   document.documentElement.lang='en';
-  ORDER.forEach(k=>{const S=SUBJ[k];if(typeof EXTRA!=='undefined'&&EXTRA[k])S.lessons.forEach((le,i)=>{if(le.qz&&EXTRA[k][i])le.qz.push(...EXTRA[k][i]);});
+  ORDER.forEach(k=>{const S=SUBJ[k];if(EXTRA[k])S.lessons.forEach((le,i)=>{if(le.qz&&EXTRA[k][i])le.qz.push(...EXTRA[k][i]);});
     S.lessons.forEach((le,i)=>{if(le.qz&&METHOD[k]&&METHOD[k][i])le.qz.forEach(it=>{if(!it.o&&!it.m)it.m=METHOD[k][i];});});
     if(RQ[k])S.lessons.forEach((le,i)=>{if(le.qz&&RQ[k][i]&&RQ[k][i].length)le.rq=RQ[k][i];});
     /* Math, Language Arts and Social Studies items get feedback without the science-only advice */
@@ -1373,19 +1361,19 @@ function boot(){
 /* ===================== graphics kit: theme colours, canvas, charts, shapes, icons ===================== */
 const FONT='-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",system-ui,sans-serif';
 const TOK=['ink','ink2','mute','gridc','axis','fig','fig2','ol','s1','s2','s3','s4','s5','s6','ok','bad','a1','a2','a3',
-  'steel','steel2','wood','wood2','brass','gl','liq','rubber','t-nerve','t-nerve2','t-nerve0','t-myelin','t-myelin2','t-schwann','t-nuc','t-skin','t-skin2','t-bone','t-bone2',
-  't-muscle','t-muscle2','t-grey','t-white','t-cavity','t-membrane','t-sclera','t-choroid','t-retina','t-iris','t-cornea','t-lens','t-humour','t-vitreous','t-body','t-organ','t-gland','t-gland2','t-blood','t-blood2','t-kidney','t-liver','t-fat'];
+  'steel','steel2','wood','wood2','brass','gl','liq','rubber','t-nerve','t-nerve2','t-nerve0','t-myelin','t-myelin2','t-skin','t-bone2',
+  't-sclera','t-retina','t-cornea','t-lens','t-humour','t-vitreous'];
 let _col=null;
 function col(){
   if(_col)return _col;const cs=getComputedStyle(document.body),o={};
   TOK.forEach(t=>{o[t.replace('t-','')]=cs.getPropertyValue('--'+t).trim();});
-  o.grid=o.gridc;o.at=o.ink;o.dark=document.documentElement.dataset.mode==='dark';
+  o.dark=document.documentElement.dataset.mode==='dark';
   return _col=o;
 }
-/* colour helpers: accept #hex, rgb(), rgba() and color(srgb ...) */
+/* colour helpers: accept #hex, rgb() and rgba() */
 function cparse(c){
   c=String(c).trim();
-  if(c[0]==='#'){let h=c.slice(1);if(h.length===3)h=h.replace(/./g,'$&$&');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),h.length===8?parseInt(h.slice(6,8),16)/255:1];}
+  if(c[0]==='#'){let h=c.slice(1);if(h.length===3)h=h.replace(/./g,'$&$&');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),1];}
   let m=c.match(/^rgba?\(([^)]+)\)/);if(m){const p=m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);return [p[0],p[1],p[2],p[3]==null?1:p[3]];}
   m=c.match(/^color\(srgb ([^)]+)\)/);if(m){const p=m[1].split(/[\s\/]+/).filter(Boolean).map(parseFloat);return [p[0]*255,p[1]*255,p[2]*255,p[3]==null?1:p[3]];}
   return [128,128,128,1];
@@ -1396,7 +1384,7 @@ const ctint=(c,t)=>cmix(c,'#ffffff',t),cshade=(c,t)=>cmix(c,'#000000',t);
 
 /* ---------- canvas: capped pixel ratio, coalesced resize, no drawing while off screen ---------- */
 const CANV=[];let CUR=null;
-const IO=new IntersectionObserver(es=>es.forEach(e=>{const o=e.target._o;if(!o)return;o.on=e.isIntersecting;if(o.on){if(o.stale)o.draw();kick();}}),{rootMargin:'150px'});
+const IO=new IntersectionObserver(es=>es.forEach(e=>{const o=e.target._o;o.on=e.isIntersecting;if(o.on){if(o.stale)o.draw();kick();}}),{rootMargin:'150px'});
 function canvas(host,h,draw){
   const c=el('canvas',{class:'cv'});c.style.height=h+'px';host.append(c);
   const cd=host.closest&&host.closest('.card'),h3=cd&&cd.querySelector('h3');c.setAttribute('role','img');c.setAttribute('aria-label','Interactive diagram'+(h3?': '+h3.textContent:'')+'. The values are in the text below the diagram.');
@@ -1417,7 +1405,7 @@ const redrawAll=()=>CANV.forEach(o=>o.draw());
 const LOOPS=[];let _raf=0,_last=0;
 function loop(cv,fn){LOOPS.push({cv,fn});kick();}
 function kick(){if(_raf||document.hidden||!LOOPS.some(l=>l.cv.vis()))return;_last=performance.now();_raf=requestAnimationFrame(frame);}
-function frame(now){_raf=0;const dt=Math.min(.05,(now-_last)/1000);_last=now;for(const l of LOOPS)if(l.cv.vis())l.fn(dt);kick();}
+function frame(now){_raf=0;const dt=Math.min(.05,Math.max(0,(now-_last)/1000));for(const l of LOOPS)if(l.cv.vis())l.fn(dt);kick();_last=now;/* after kick(): it stamps performance.now(), later than this frame's timestamp */}
 document.addEventListener('visibilitychange',kick);
 function dragOn(o,hit,move){
   let h=null;const pos=e=>{const r=o.c.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
@@ -1466,7 +1454,7 @@ function gshadow(ctx,x,y,rx,ry=5,a=.2){ctx.save();ctx.translate(x,y);ctx.scale(1
 function ball(ctx,x,y,r,color,opt={}){
   const g=ctx.createRadialGradient(x-r*.36,y-r*.42,r*.08,x,y,r);g.addColorStop(0,ctint(color,opt.gloss==null?.5:opt.gloss));g.addColorStop(.6,color);g.addColorStop(1,cshade(color,.2));
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
-  if(opt.ring){ctx.strokeStyle=calpha(col().fig,.9);ctx.lineWidth=opt.ring;ctx.stroke();}
+  
   if(opt.t){ctx.font=`700 ${opt.ts||Math.max(8,Math.round(r*.92))}px ${FONT}`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(opt.t,x,y+.5);}
 }
 /* lab cart on wheels. x is the left side, yg is the top of the track. Returns the top of the body and the centre */
@@ -1487,7 +1475,7 @@ function cart(ctx,x,yg,w,h,color,text){
 function track(ctx,x0,x1,y,ppm,opt={}){
   const K=col(),g=ctx.createLinearGradient(0,y,0,y+6);g.addColorStop(0,ctint(K.steel,.35));g.addColorStop(1,K.steel);
   ctx.fillStyle=g;rr(ctx,x0,y,x1-x0,6,3);ctx.fill();
-  if(ppm){ctx.strokeStyle=K.axis;ctx.lineWidth=1;ctx.beginPath();const o=opt.origin==null?x0:opt.origin;let n=0;
+  if(ppm){ctx.strokeStyle=K.axis;ctx.lineWidth=1;ctx.beginPath();const o=opt.origin;let n=0;
     for(let x=o;x<=x1-4;x+=ppm,n++){ctx.moveTo(Math.round(x)+.5,y+9);ctx.lineTo(Math.round(x)+.5,y+(n%5===0?17:13));}
     n=1;for(let x=o-ppm;x>=x0+4;x-=ppm,n++){ctx.moveTo(Math.round(x)+.5,y+9);ctx.lineTo(Math.round(x)+.5,y+(n%5===0?17:13));}ctx.stroke();}
 }
@@ -1527,12 +1515,12 @@ function legRows(ctx,it,x0,x1){ctx.font='500 12px '+FONT;const rows=[[]];let x=x
 /* chart frame. Returns scale functions and mark methods. Named series get a legend entry and a hover readout */
 function plot(ctx,w,h,o){
   /* o.leg reserves one legend row; an array of the names reserves as many rows as they need */
-  const K=col(),L=o.L==null?52:o.L,R=o.R==null?18:o.R,T=(o.T==null?16:o.T)+(o.leg?6+16*(Array.isArray(o.leg)?legRows(ctx,o.leg.map(n=>({n})),L,w-R).length:1):0),B=o.B==null?40:o.B;
+  const K=col(),L=o.L==null?52:o.L,R=18,T=(o.T==null?16:o.T)+(o.leg?6+16*(Array.isArray(o.leg)?legRows(ctx,o.leg.map(n=>({n})),L,w-R).length:1):0),B=o.B==null?40:o.B;
   const X=x=>L+(x-o.x0)/(o.x1-o.x0)*(w-L-R),Y=y=>h-B-(y-o.y0)/(o.y1-o.y0)*(h-T-B);
   const tf='500 11.5px '+FONT,[yv,ydp]=axTicks(o.y0,o.y1,o.yt||5,o.yd==null?1:o.yd,h-T-B,18),[xv,xdp]=axTicks(o.x0,o.x1,o.xt||5,o.xd==null?1:o.xd,w-L-R,40);ctx.lineWidth=1;
   ctx.strokeStyle=K.gridc;ctx.beginPath();
   yv.forEach(v=>{const y=Math.round(Y(v))+.5;ctx.moveTo(L,y);ctx.lineTo(w-R,y);});
-  if(o.vgrid!==false)xv.forEach(v=>{const x=Math.round(X(v))+.5;ctx.moveTo(x,T);ctx.lineTo(x,h-B);});
+  xv.forEach(v=>{const x=Math.round(X(v))+.5;ctx.moveTo(x,T);ctx.lineTo(x,h-B);});
   ctx.stroke();
   ctx.font=tf;ctx.fillStyle=K.mute;ctx.textAlign='right';ctx.textBaseline='middle';
   yv.forEach(v=>ctx.fillText(String(+v.toFixed(ydp)).replace('-','−'),L-8,Y(v)));
@@ -1543,13 +1531,13 @@ function plot(ctx,w,h,o){
   if(o.yl){ctx.save();ctx.translate(13,(T+h-B)/2);ctx.rotate(-Math.PI/2);ctx.textBaseline='middle';ctx.fillText(o.yl,0,0);ctx.restore();}
   const P={X,Y,K,L,R,T,B,w,h,o,series:[],
     clip(f){ctx.save();ctx.beginPath();ctx.rect(L,T-2,w-L-R,h-T-B+4);ctx.clip();f();ctx.restore();},
-    line(pts,color,q={}){if(!pts.length)return P;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=q.w||2.2;ctx.lineJoin='round';ctx.lineCap='round';if(q.dash)ctx.setLineDash(q.dash);if(q.alpha)ctx.globalAlpha=q.alpha;
+    line(pts,color,q={}){if(!pts.length)return P;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=q.w||2.2;ctx.lineJoin='round';ctx.lineCap='round';if(q.dash)ctx.setLineDash(q.dash);
       ctx.beginPath();for(let i=0;i<pts.length;i++){const x=X(pts[i][0]),y=Y(pts[i][1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.restore();
       if(q.n)P.series.push({n:q.n,c:color,pts,dash:q.dash,f:q.f});if(q.end){const e=pts[pts.length-1];P.dot(e[0],e[1],color);}return P;},
     /* lines that share their x samples. Where two or more of them coincide, that span is drawn as dashes that alternate between their colours, thus no line is hidden */
-    braid(sets,q={}){const m=sets.length,n=m?sets[0].pts.length:0,D=q.d||9,tol=q.tol||1.5,xz=X(0);if(m<2||n<1)return P;
+    braid(sets,q={}){const m=sets.length,n=m?sets[0].pts.length:0,D=9,tol=1.5,xz=X(0);if(m<2||n<1)return P;
       const grp=(ya,yb,a)=>{const G=[];for(let b=0;b<m;b++)if(Math.abs(ya[a]-ya[b])<tol&&Math.abs(yb[a]-yb[b])<tol)G.push(b);return G;},mean=(v,G)=>G.reduce((t,i)=>t+v[i],0)/G.length;
-      ctx.save();ctx.lineWidth=(q.w||2.2)+.6;ctx.lineCap='butt';ctx.lineJoin='round';let open=false,pc='',pxe=NaN;const end=()=>{if(open){ctx.stroke();open=false;}};
+      ctx.save();ctx.lineWidth=2.8;ctx.lineCap='butt';ctx.lineJoin='round';let open=false,pc='',pxe=NaN;const end=()=>{if(open){ctx.stroke();open=false;}};
       for(let i=1;i<n;i++){const xa=X(sets[0].pts[i-1][0]),xb=X(sets[0].pts[i][0]);if(!(xb-xa>1e-6))continue;
         const ya=sets.map(s=>Y(s.pts[i-1][1])),yb=sets.map(s=>Y(s.pts[i][1]));
         for(let a=0;a<m;a++){const G=grp(ya,yb,a);if(G.length<2||G[0]!==a)continue;const y0=mean(ya,G),y1=mean(yb,G);let x=xa;
@@ -1567,7 +1555,7 @@ function plot(ctx,w,h,o){
     hline(y,color,text,q={}){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.3;ctx.setLineDash(q.dash||[5,4]);ctx.beginPath();ctx.moveTo(L,Y(y));ctx.lineTo(w-R,Y(y));ctx.stroke();ctx.restore();
       if(text)tag(ctx,text,q.left?L+6:w-R-6,Y(y)+(q.below?12:-12),{align:q.left?'left':'right',size:11,w:500,color:K.ink2});return P;},
     vline(x,color,text,q={}){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.setLineDash(q.dash||[4,4]);ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),h-B);ctx.stroke();ctx.restore();
-      if(text)tag(ctx,text,X(x)+(q.left?-5:5),T+11,{align:q.left?'right':'left',size:11,w:600,w0:L,w1:w-R});return P;},
+      if(text)tag(ctx,text,X(x)+5,T+11,{align:'left',size:11,w:600,w0:L,w1:w-R});return P;},
     band(x0,x1,color,a=.12,text){ctx.save();ctx.globalAlpha=a;ctx.fillStyle=color;ctx.fillRect(X(x0),T,X(x1)-X(x0),h-T-B);ctx.restore();if(text)label(ctx,text,(X(x0)+X(x1))/2,T+11,K.ink2,'center','500 11px '+FONT);return P;},
     hband(y0,y1,color,a=.14){ctx.save();ctx.globalAlpha=a;ctx.fillStyle=color;ctx.fillRect(L,Y(y1),w-L-R,Y(y0)-Y(y1));ctx.restore();return P;},
     /* legend in the band above the plot: a line key and the name in ink. Rows wrap upward, the last row stays at T-15 */
@@ -1581,7 +1569,7 @@ function plot(ctx,w,h,o){
   return P;
 }
 /* compatibility for simple callers */
-function line(ctx,pts,X,Y,color,lw=2.2){if(!pts.length)return;ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1])));ctx.stroke();}
+
 
 /* hover and keyboard readout: a hairline that follows the pointer and one readout with every series */
 /* the floating tip is visual only. A hidden status region speaks the readout once per arrow key (TIPSAY), not every frame */
@@ -1639,7 +1627,7 @@ const ICON={
   trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 5"/><path d="M12 14v3.5M8.5 20.5h7"/>',
   lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
   crown:'<path d="M3.5 8 7.5 12.5 12 5.5l4.5 7 4-4.5L19 18.5H5Z"/>',
-  medal:'<circle cx="12" cy="14.5" r="5.5"/><path d="M8.6 10 6 3.5h4l2 4 2-4h4L15.4 10"/>',
+
   bolt:'<path d="M13.2 2.5 5 13.5h6.2L10.6 21.5 19 10.5h-6.4Z"/>',
   cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   star:'<path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.6l6.1-.8Z"/>',
@@ -1919,7 +1907,7 @@ ${svgText('light',60,166,{f:'mute',s:12.5})}</svg>`;
 /* ---------- ear: the pinna from the side, then a section through the canal, the middle ear and the inner ear ---------- */
 const SVG_EAR=(()=>{
   const thin='stroke="var(--ol)" stroke-width="1.1" stroke-linejoin="round"';
-  const two=(d,w,c1,c2,ex='')=>`<path d="${d}" fill="none" stroke="${c2}" stroke-width="${w+2.6}" stroke-linecap="round" ${ex}/><path d="${d}" fill="none" stroke="${c1}" stroke-width="${w}" stroke-linecap="round" ${ex}/>`;
+  const two=(d,w,c1,c2)=>`<path d="${d}" fill="none" stroke="${c2}" stroke-width="${w+2.6}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${c1}" stroke-width="${w}" stroke-linecap="round"/>`;
   const coch='M470,210C500,198 566,196 588,232C606,264 584,300 546,300C512,300 494,270 508,246C520,226 552,224 562,244C570,260 558,276 544,274C532,272 528,258 536,252';
   const pores=[[282,84,7,5],[306,112,5,4],[276,300,8,5],[304,332,6,4],[640,96,8,6],[664,140,6,5],[622,334,8,5],[580,344,5,4],[530,62,6,4],[672,300,7,5],[356,96,5,4],[300,270,5,4],[610,70,5,4]];
   const parts=`<g data-p="pinna"><path d="M170,98C150,50 82,44 54,96C32,138 40,208 64,258C80,292 106,324 136,318C158,313 168,290 164,262C162,246 168,238 174,230L174,150C174,130 178,116 170,98Z" fill="var(--t-skin)" stroke="var(--t-skin2)" stroke-width="1.6"/><path d="M152,158C134,152 120,168 124,188C128,208 146,216 160,208L160,170Z" fill="var(--t-skin2)" opacity=".6"/><path d="M156,108C138,74 92,72 72,110C56,142 62,202 82,246C94,272 110,292 130,290M150,136C128,122 100,140 100,172C100,206 120,232 148,230" fill="none" stroke="var(--t-skin2)" stroke-width="3" stroke-linecap="round"/></g>
@@ -2007,9 +1995,9 @@ ${ins}
 const ORGAN=[
   `<svg viewBox="0 0 72 56" aria-hidden="true"><path class="o-heart" d="M36,48C20,35 12,26 16,16.5C19,9 30,8 36,17.500C42,8 53,9 56,16.500C60,26 52,35 36,48Z" fill="var(--t-muscle)" stroke="var(--t-muscle2)" stroke-width="1.4"/></svg>`,
   `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M7,13H50C61,13 61,28 50,28H22C11,28 11,43 22,43H65" fill="none" stroke="var(--t-muscle2)" stroke-width="11.6" stroke-linecap="round"/><path d="M7,13H50C61,13 61,28 50,28H22C11,28 11,43 22,43H65" fill="none" stroke="var(--t-organ)" stroke-width="9" stroke-linecap="round"/><path class="o-gut" d="M7,13H50C61,13 61,28 50,28H22C11,28 11,43 22,43H65" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="7 12"/></svg>`,
-  `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M6,24C18,10 48,9 60,19C60,33 44,46 24,46C12,44 5,35 6,24Z" fill="var(--t-membrane)" stroke="var(--t-muscle2)" stroke-width="1.4"/><g fill="var(--s4)" stroke="var(--fig)" stroke-width="1"><circle class="o-glu g1" cx="42" cy="22" r="3.4"/><circle class="o-glu g2" cx="46" cy="30" r="3.4"/><circle class="o-glu g3" cx="38" cy="32" r="3.4"/></g></svg>`,
+  `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M6,24C18,10 48,9 60,19C60,33 44,46 24,46C12,44 5,35 6,24Z" fill="var(--t-membrane)" stroke="var(--t-muscle2)" stroke-width="1.4"/><g fill="var(--s4)" stroke="var(--fig)" stroke-width="1"><circle class="o-glu" cx="42" cy="22" r="3.4"/><circle class="o-glu g2" cx="46" cy="30" r="3.4"/><circle class="o-glu g3" cx="38" cy="32" r="3.4"/></g></svg>`,
   `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M4,28C16,10 56,10 68,28C56,46 16,46 4,28Z" fill="var(--t-sclera)" stroke="var(--t-bone2)" stroke-width="1.4"/><circle cx="36" cy="28" r="13.5" fill="var(--t-iris)"/><circle class="o-pupil" cx="36" cy="28" r="10" fill="#15171c"/><circle cx="31.5" cy="23.5" r="2.2" fill="#fff" opacity=".7"/></svg>`,
-  `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M22,26C22,14 40,12 46,22C52,32 46,52 32,52C22,52 22,40 27,36C22,34 22,30 22,26Z" fill="var(--t-organ)" stroke="var(--t-muscle2)" stroke-width="1.3"/><path d="M22,22C22,10 42,8 48,20C40,14 30,14 22,22Z" fill="var(--s4)" stroke="var(--t-nerve2)" stroke-width="1"/><g fill="var(--s4)"><circle class="o-epi g1" cx="50" cy="12" r="2.6"/><circle class="o-epi g2" cx="56" cy="18" r="2.6"/><circle class="o-epi g3" cx="44" cy="7" r="2.6"/></g></svg>`];
+  `<svg viewBox="0 0 72 56" aria-hidden="true"><path d="M22,26C22,14 40,12 46,22C52,32 46,52 32,52C22,52 22,40 27,36C22,34 22,30 22,26Z" fill="var(--t-organ)" stroke="var(--t-muscle2)" stroke-width="1.3"/><path d="M22,22C22,10 42,8 48,20C40,14 30,14 22,22Z" fill="var(--s4)" stroke="var(--t-nerve2)" stroke-width="1"/><g fill="var(--s4)"><circle class="o-epi" cx="50" cy="12" r="2.6"/><circle class="o-epi g2" cx="56" cy="18" r="2.6"/><circle class="o-epi g3" cx="44" cy="7" r="2.6"/></g></svg>`];
 
 /* ---------- outdoor scene for the vision demonstrations. The colours are fixed: they are the subject of the demonstration ---------- */
 function sceneSVG(id){
@@ -2066,7 +2054,7 @@ function sArrow(x1,y1,x2,y2,c,w=2.4,o={}){const L=Math.hypot(x2-x1,y2-y1);if(L<2
 function sCart(x,yt,w,h,c,t){const wr=4.6,by=yt-wr*1.5-h,wx=Math.max(8,w*.24);
   return `<rect x="${x}" y="${f1(by)}" width="${w}" height="${h}" rx="5.5" fill="${c}"/><path d="M${x+6},${f1(by+1.5)}H${x+w-6}" stroke="#fff" stroke-opacity=".4" stroke-width="1.2" stroke-linecap="round"/>`+
     [x+wx,x+w-wx].map(cx=>`<circle cx="${f1(cx)}" cy="${f1(yt-wr)}" r="${wr}" fill="var(--rubber)"/><circle cx="${f1(cx)}" cy="${f1(yt-wr)}" r="1.9" fill="var(--steel)"/>`).join('')+
-    (t?`<text x="${x+w/2}" y="${f1(by+h/2+3.8)}" text-anchor="middle" font-size="10.5" font-weight="650" fill="#fff">${t}</text>`:'');}
+    `<text x="${x+w/2}" y="${f1(by+h/2+3.8)}" text-anchor="middle" font-size="10.5" font-weight="650" fill="#fff">${t}</text>`;}
 const sTrack=(x0,x1,y)=>`<rect x="${x0}" y="${y}" width="${x1-x0}" height="4" rx="2" fill="var(--steel)"/>`;
 const FIG={};
 
@@ -2164,7 +2152,7 @@ FIG.tcurve=(si,vm,alt)=>{const sys=TS[si],X=v=>16+v/vm*100,Y=p=>58-p/14*52,pts=[
 
 /* ---------- nervous system and senses ---------- */
 /* text on a tissue colour: the tissue is light in the two themes, thus the text is always dark */
-const sOn=(t,x,y,o={})=>`<text class="lb" x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||10.5}" font-weight="${o.w||600}" fill="#3b3a44">${t}</text>`;
+const sOn=(t,x,y,o={})=>`<text class="lb" x="${x}" y="${y}" text-anchor="middle" font-size="${o.s||10.5}" font-weight="600" fill="#3b3a44">${t}</text>`;
 FIG.ntypes=()=>{const y=78,ln=(d,c,w=3.2)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   return `<svg viewBox="0 0 360 160" role="img" aria-label="Three neurons in a line. The sensory neuron goes from a receptor to the central nervous system. Its cell body is outside the central nervous system. The interneuron is inside the central nervous system. The motor neuron goes from the central nervous system to an effector, here a muscle.">
 <rect x="142" y="24" width="114" height="100" rx="13" fill="var(--t-white)" stroke="var(--t-bone2)" stroke-width="1.4"/>${sOn('CNS',199,115,{s:10})}
@@ -2272,7 +2260,7 @@ function collisionLab(host,mode){
   function place(){const {v1,v2}=K.v,a=wA(),b=wB();if(!(v1>v2))return {xa:8.5-a,xb:11.5};
     const f=v1/(v1-v2),gap=Math.min(6.5,(X1-X0-a-b)/(Math.max(0,-f)+Math.max(1,f))),dA=f*gap,lo=X0+Math.max(0,-dA),hi=X1-a-b-Math.max(gap,dA),xa=clamp(10-a-dA,lo,Math.max(lo,hi));
     return {xa,xb:xa+a+gap};}
-  function reset(){cancelAnimationFrame(raf);raf=0;const p0=place();S={xa:p0.xa,xb:p0.xb,va:K.v.v1,vb:K.v.v2,done:false,t:0};show();cv.draw();}
+  function reset(){cancelAnimationFrame(raf);raf=0;const p0=place();S={xa:p0.xa,xb:p0.xb,va:K.v.v1,vb:K.v.v2,done:false};show();cv.draw();}
   function show(){const {m1,v1,m2,v2,e}=K.v,r=res();
     if(mode==='p'){const J=m1*(r.va-v1),sc=Math.abs(m1*v1)+Math.abs(m2*v2);R(0,sig(r.pt)+' '+U);R(1,sig(snap(m1*r.va+m2*r.vb,r.pt,sc))+' '+U);R(2,sig(r.va)+' m/s');R(3,sig(r.vb)+' m/s');R(4,sig(J)+' N·s');R(5,sig(snap(m2*(r.vb-v2),-J,sc))+' N·s');}
     else{const ei=.5*m1*v1*v1+.5*m2*v2*v2,ef=snap(.5*m1*r.va**2+.5*m2*r.vb**2,ei),lost=ei-ef<1e-9*ei?0:ei-ef;R(0,sig(ei)+' J');R(1,sig(ef)+' J');R(2,sig(lost)+' J ('+(ei?(100*lost/ei).toFixed(0):0)+'%)');
@@ -2280,7 +2268,7 @@ function collisionLab(host,mode){
   function run(){reset();const r=res(),gap=S.xb-(S.xa+wA()),sc=r.hit?gap/(K.v.v1-K.v.v2)/1.1:1;let last=performance.now(),after=0;
     const step=now=>{const dt=Math.min(.05,(now-last)/1000)*sc;last=now;S.xa+=S.va*dt;S.xb+=S.vb*dt;
       if(r.hit&&!S.done&&S.xa+wA()>=S.xb){S.xa=S.xb-wA();S.va=r.va;S.vb=r.vb;S.done=true;S.flash=1;}
-      if(S.done||!r.hit)after+=dt/sc;if(S.flash)S.flash=Math.max(0,S.flash-.04);
+      if(S.done||!r.hit)after+=dt/sc;if(S.flash)S.flash=Math.max(0,S.flash-2.4*dt/sc);
       /* the animation stops when a cart is at an end of the track */
       const end=(S.done||!r.hit)&&(S.xa<X0-.2||S.xb+wB()>X1+.2);if(end){S.xa=Math.max(S.xa,X0-.2);S.xb=Math.min(S.xb,X1+.2-wB());S.flash=0;}
       cv.draw();if(!end&&after<(r.hit?1.9:2.6))raf=requestAnimationFrame(step);};
@@ -2507,7 +2495,7 @@ SUBJ.mom={name:'Momentum',short:'Momentum',lessons:[
   collisionLab(g,'E');
   const c=card(g,'Ballistic pendulum',`<p class="hint">A bullet hits a block and stays in it. Use two conservation laws in sequence. Collision: momentum is conserved (the collision is inelastic). Swing: mechanical energy is conserved.</p>
     <div class="fx"><i>mv</i><sub>0</sub> = (<i>m</i> + <i>M</i>)<i>v</i>′ &nbsp; then &nbsp; ½(<i>m</i> + <i>M</i>)<i>v</i>′² = (<i>m</i> + <i>M</i>)<i>gh</i></div>`);
-  let K,ph=0,raf=0;const calc=()=>{const m=K.v.m/1000,M=K.v.M,v=K.v.v,vp=m*v/(m+M),h=vp*vp/(2*9.81);return {m,M,v,vp,h,ei:.5*m*v*v,ef:.5*(m+M)*vp*vp};};
+  let K,ph=0,raf=0;const calc=()=>{const m=K.v.m/1000,M=K.v.M,v=K.v.v,vp=m*v/(m+M),h=vp*vp/(2*9.81);return {vp,h,ei:.5*m*v*v,ef:.5*(m+M)*vp*vp};};
   const cv=canvas(c,320,(ctx,w,h)=>{if(!K)return;const k=col(),r=calc(),L=Math.min(190,(w*.44-47)/.9962),px=w*.56,py=36+(190-L)/2,th0=Math.min(Math.acos(clamp(1-r.h/2,-1,1)),85*Math.PI/180),th=th0*(ph<2?sm(clamp(ph-1,0,1)):Math.cos((ph-2)*2.6)*Math.exp(-(ph-2)*.55));
     const bx=px+L*Math.sin(th),by=py+L*Math.cos(th),bw=78,bh=50,base=py+L+bh;
     /* support with hatch marks */
@@ -2585,7 +2573,7 @@ EQL.push({t:'Dynamic equilibrium',d:'At equilibrium, the forward reaction and th
     <p>The symbol ⇌ in an equation shows an equilibrium.</p>
     ${CF(FIG.sys(),'Green: particles of matter. Orange: energy. Equilibrium is possible only in the closed system.')}`,'half');
   const c=card(g,C('Watch a system reach equilibrium: N2O4(g) <=> 2NO2(g)'),`<p class="hint">${C('N2O4')} is colourless and ${C('NO2')} is brown. Set the initial concentrations and start the reaction. The forward rate decreases and the reverse rate increases until they are equal. In the flask, particles continue to split and to join after the concentrations stop changing.</p>`);
-  const kf=.25,kr=.5,NP=10;let S={t:0,a:1,b:0,h:[]},raf=0,K;
+  const kf=.25,kr=.5,NP=10;let S,raf=0,K;
   /* equal rates: within 2.5 % of each other (a fixed difference is too loose at low concentrations) */
   const atEq=(f,r)=>f+r>0&&Math.abs(f-r)<=.025*Math.max(f,r);
   const row=el('div',{class:'figrow'}),left=el('div'),right=el('div');c.append(row);row.append(left,right);
@@ -2621,7 +2609,7 @@ EQL.push({t:'Dynamic equilibrium',d:'At equilibrium, the forward reaction and th
     R(3,S.t===0?'Not started':S.a+S.b<1e-9?'Empty flask: no reaction':atEq(rf,rr)?'Equilibrium: equal rates':rf>rr?'Net change to products':'Net change to reactants');cv.draw();};
   const reset=()=>{cancelAnimationFrame(raf);S={t:0,a:K.v.a,b:K.v.b,h:[[0,K.v.a,K.v.b]]};seed();show();};
   K=ctl(c,[{k:'a',l:C('Initial [N2O4]'),min:0,max:1.5,step:.05,v:1,dp:2,u:'mol/L'},{k:'b',l:C('Initial [NO2]'),min:0,max:1.5,step:.05,v:0,dp:2,u:'mol/L'}],reset);
-  const start=()=>{reset();let last=performance.now();const st=now=>{const n=Math.max(1,Math.round(Math.min(.05,(now-last)/1000)*3.6/.02));last=now;for(let i=0;i<n;i++){const dt=.02,rf=kf*S.a,rr=kr*S.b*S.b;S.a+=(rr-rf)*dt;S.b+=2*(rf-rr)*dt;S.t+=dt;}S.h.push([S.t,S.a,S.b]);show();if(S.t<20)raf=requestAnimationFrame(st);};raf=requestAnimationFrame(st);};
+  const start=()=>{reset();let last=performance.now(),carry=0;const st=now=>{carry+=Math.min(.05,(now-last)/1000)*3.6/.02;const n=Math.round(carry);carry-=n;last=now;for(let i=0;i<n;i++){const dt=.02,rf=kf*S.a,rr=kr*S.b*S.b;S.a+=(rr-rf)*dt;S.b+=2*(rf-rr)*dt;S.t+=dt;}S.h.push([S.t,S.a,S.b]);show();if(S.t<20)raf=requestAnimationFrame(st);};raf=requestAnimationFrame(st);};
   btnRow(c,[['Start the reaction',start],['Reset',reset,'ghost'],['Start with products only',()=>{K.set({a:0,b:1.5});start();},'ghost'],['Start with reactants only',()=>{K.set({a:1,b:0});start();},'ghost']]);
   c.append(el('p',{class:'hint'},'Start from reactants only or from products only. The final ratio [NO₂]² / [N₂O₄] is the same. This constant ratio is the equilibrium constant.'));reset();
 },qz:[
@@ -2712,7 +2700,7 @@ EQL.push({t:'Le Chatelier',h:'Le Chatelier\'s principle',d:'If a stress is appli
     <li><b>Inert gas at constant volume:</b> the total pressure increases, but the concentrations do not change. The graph does not change.</li><li><b>Catalyst:</b> the forward and reverse rates increase equally. The graph does not change.</li></ul>
     ${CF(FIG.eqgraphs(),'Three examples for a system with one reactant line (blue) and one product line (orange). The dashed line shows the time of the stress.')}`,'half');
   const c=card(g,C('Stress the Haber system: N2(g) + 3H2(g) <=> 2NH3(g) + 92.2 kJ'),`<p class="hint">The system starts at equilibrium with each concentration at 2.00 mol/L (K<sub>c</sub> = 0.250). Apply a stress and watch the graph and the vessel. The numbered lines on the graph show when each stress occurred.</p>`);
-  let S,raf=0;const K0=.25,KR=.02,names=['N₂','H₂','NH₃'],NPV=4,KIND=['n2','h2','nh3','inert'];
+  let S;const K0=.25,KR=.02,names=['N₂','H₂','NH₃'],NPV=4,KIND=['n2','h2','nh3','inert'];
   const kc=()=>K0*Math.pow(.3656,S.T),rates=()=>{const m=(S.cat?4:1)*Math.pow(1.4,S.T),kr=KR*m,kf=kc()*kr;return [kf*S.c[0]*S.c[1]**3,kr*S.c[2]**2];};
   const row=el('div',{class:'figrow'}),left=el('div'),right=el('div');c.append(row);row.append(left,right);
   const cv=canvas(left,340,(ctx,w,h)=>{const t1=Math.max(60,S.t),t0=t1-60,ym=niceMax(Math.max(4,...S.h.map(p=>Math.max(p[1],p[2],p[3])))*1.02,4),P=plot(ctx,w,h,{x0:t0,x1:t1,y0:0,y1:ym,xt:6,yt:4,xd:0,yd:2,xl:'Time (s)',yl:'Concentration (mol/L)',leg:1,xn:'Time',xu:'s',yu:'mol/L',fy:v=>v.toFixed(2)}),k=P.K,cs=[k.s1,k.s2,k.s3];
@@ -2773,8 +2761,8 @@ EQL.push({t:'Le Chatelier',h:'Le Chatelier\'s principle',d:'If a stress is appli
   btnRow(c,A.map(([t,f])=>[t,f,'ghost']).concat([['Reset',()=>reset()]]));c.append(log);
   reset();
   /* the system keeps moving while the graph or the vessel is on screen. With reduced motion, time stands still while the system is at equilibrium: a stress runs it until it settles */
-  loop({vis:()=>cv.vis()||vv.vis()},fdt=>{const [f0,r0]=rates();if(!(RM&&Math.abs(f0-r0)<=1e-3*Math.max(f0,r0))){const n=Math.max(1,Math.round(fdt*6/.025));for(let i=0;i<n;i++){const dt=.025,[rf,rr]=rates(),x=(rf-rr)*dt;S.c[0]=Math.max(.001,S.c[0]-x);S.c[1]=Math.max(.001,S.c[1]-3*x);S.c[2]=Math.max(.001,S.c[2]+2*x);S.t+=dt;}
-      S.h.push([S.t,...S.c]);if(S.h.length>1500)S.h.splice(0,300);}show();});
+  loop({c:cv.c,vis:()=>cv.vis()||vv.vis()},fdt=>{const [f0,r0]=rates();if(!(RM&&Math.abs(f0-r0)<=1e-3*Math.max(f0,r0))){S.carry=(S.carry||0)+fdt*6/.025;const n=Math.round(S.carry);S.carry-=n;for(let i=0;i<n;i++){const dt=.025,[rf,rr]=rates(),x=(rf-rr)*dt;S.c[0]=Math.max(.001,S.c[0]-x);S.c[1]=Math.max(.001,S.c[1]-3*x);S.c[2]=Math.max(.001,S.c[2]+2*x);S.t+=dt;/* a point per .1 s of simulated time: the same graph at any frame rate */if(Math.round(S.t*40)%4===0)S.h.push([S.t,...S.c]);}
+      if(S.h.length>1500)S.h.splice(0,300);}show();});
   card(g,'How temperature changes K<sub>c</sub>',`<p>${C('For N2(g) + 3H2(g) <=> 2NH3(g) + heat with each concentration at 2.00 mol/L:')}</p><div class="fx"><i>K</i><sub>c</sub> = <span class="frac"><span>(2.00)²</span><span>(2.00)(2.00)³</span></span> = 0.250</div>
     <p>Add heat. The system shifts left. The new concentrations are [${C('NH3')}] = 1.70 mol/L, [${C('N2')}] = 2.15 mol/L and [${C('H2')}] = 2.45 mol/L.</p><div class="fx"><i>K</i><sub>c</sub> = <span class="frac"><span>(1.70)²</span><span>(2.15)(2.45)³</span></span> = 0.0914</div>
     <p>The ratio of products to reactants is different at the new temperature, thus K<sub>c</sub> has a new value. For all other stresses, the concentrations change relative to each other and the ratio returns to the same K<sub>c</sub>.</p>`);
@@ -2819,7 +2807,7 @@ EQL.push({t:'Acids and bases',h:'Brønsted-Lowry acids and bases',d:'An acid don
   const RX=[[['SO3^2-','H3O^+','HSO3^-','H2O'],['B','A','CA','CB']],[['HCO3^-','OH^-','CO3^2-','H2O'],['A','B','CB','CA']],[['HCO3^-','HOCl','H2CO3','OCl^-'],['B','A','CA','CB']],[['H2O','HCN','H3O^+','CN^-'],['B','A','CA','CB']],
     [['H2PO4^-','HBO3^2-','HPO4^2-','H2BO3^-'],['A','B','CB','CA']],[['H2O','S^2-','OH^-','HS^-'],['A','B','CB','CA']],[['NH4^+','OH^-','NH3','H2O'],['A','B','CB','CA']],[['NH3','H3O^+','NH4^+','H2O'],['B','A','CA','CB']]];
   let ri=0;const stage=el('div');d.append(stage);const cyc=['?','A','B','CA','CB'];
-  function loadR(){const [sp,ans]=RX[ri];stage.innerHTML=`<div class="row" style="justify-content:center;font-size:1.05rem">${sp.map((s,i)=>`<button type="button" class="tile" style="text-align:center;min-width:6.5rem" data-i="${i}" data-v="0"><b>${C(s)}</b><small>?</small></button>${i===0||i===2?'<span>+</span>':i===1?'<span>⇌</span>':''}`).join('')}</div><div class="row"><button type="button" class="btn sm" data-a="c">Check</button><button type="button" class="btn sm ghost" data-a="n">Next reaction</button><span class="hint">Reaction ${ri+1} of ${RX.length}</span></div><p class="fb" hidden aria-live="polite"></p>`;
+  function loadR(){const [sp,ans]=RX[ri];stage.innerHTML=`<div class="row" style="justify-content:center;font-size:1.05rem">${sp.map((s,i)=>`<button type="button" class="tile" style="text-align:center;min-width:6.5rem" data-v="0"><b>${C(s)}</b><small>?</small></button>${i===0||i===2?'<span>+</span>':i===1?'<span>⇌</span>':''}`).join('')}</div><div class="row"><button type="button" class="btn sm" data-a="c">Check</button><button type="button" class="btn sm ghost" data-a="n">Next reaction</button><span class="hint">Reaction ${ri+1} of ${RX.length}</span></div><p class="fb" hidden aria-live="polite"></p>`;
     $$('.tile',stage).forEach(b=>b.onclick=()=>{b.dataset.v=(+b.dataset.v+1)%5;b.children[1].textContent=cyc[b.dataset.v];b.classList.remove('ok','bad');});
     $('[data-a=c]',stage).onclick=()=>{let n=0;$$('.tile',stage).forEach((b,i)=>{const o=cyc[b.dataset.v]===ans[i];if(o)n++;b.classList.toggle('ok',o);b.classList.toggle('bad',!o);});const fb=$('.fb',stage);fb.hidden=false;fb.className='fb '+(n===4?'ok':'bad');
       const a=sp[ans.indexOf('A')],cb=sp[ans.indexOf('CB')],b2=sp[ans.indexOf('B')],ca=sp[ans.indexOf('CA')];fb.innerHTML=n===4?`Correct. The pairs are ${C(a)} / ${C(cb)} and ${C(ca)} / ${C(b2)}.`:`${n} of 4 are correct. The acid loses one proton and becomes its conjugate base.`;};
@@ -2952,7 +2940,7 @@ EQL.push({t:'Indicators',h:'Acid-base indicators',d:'An indicator is a weak acid
   c.append(grid);K.set({});
   const d=card(g,'Find the pH of an unknown solution','<p class="hint">Separate samples of one solution were tested with four indicators. Use the colours to find the pH range. Then set your estimate and check it.</p>');
   const st=el('div',{class:'rack'}),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});d.append(st);let lo,hi;
-  const G=ctl(d,[{k:'p',l:'Your estimate of the pH',min:0,max:14,step:.1,v:7,dp:1}],()=>{});
+  const G=ctl(d,[{k:'p',l:'Your estimate of the pH',min:0,max:14,step:.1,v:7,dp:1}]);
   const next=()=>{const p=Math.round((1+Math.random()*12)*10)/10,pick=shuffle(IND).slice(0,4);lo=0;hi=14;st.innerHTML=pick.map(i=>{const s=indState(i,p);lo=Math.max(lo,s.lo);hi=Math.min(hi,s.hi);return `<div class="rtube">${tubeSVG(s.css)}<b>${i[0]}</b><span>${s.name}</span></div>`;}).join('');fb.hidden=true;};
   btnRow(d,[['Check my estimate',()=>{const ok=G.v.p>=lo-.001&&G.v.p<=hi+.001;fb.hidden=false;fb.className='fb '+(ok?'ok':'bad');fb.innerHTML=(ok?'Correct. ':'Not correct. ')+`These colours occur together only from pH ${lo.toFixed(1)} to pH ${hi.toFixed(1)}.`;}],['New unknown solution',next,'ghost']]);d.append(fb);next();
 },qz:[
@@ -3027,7 +3015,7 @@ EQL.push({t:'Titration and buffers',d:'A titration finds an unknown concentratio
     <p>Blood stays near pH 7.4 because of the carbonic acid buffer:</p><div class="fx">${C('HCO3^-(aq) + H3O^+(aq) -> H2CO3(aq) + H2O(l)')}<br>${C('H2CO3(aq) + OH^-(aq) -> HCO3^-(aq) + H2O(l)')}</div>
     <p class="hint">On a titration curve, buffer regions are the flat parts before and between the equivalence points of a weak acid or weak base. A strong acid with strong base curve has no buffer region.</p>`,'half');
   const b=card(g,'Buffer and water: add acid or base',`<p class="hint">Beaker 1 holds 1.0 L of buffer with 0.10 mol ${C('CH3COOH')} and 0.10 mol ${C('CH3COO^-')}. Beaker 2 holds 1.0 L of pure water. Each button adds 0.02 mol to both beakers. The colour of each liquid shows its pH: red is acidic, green is neutral and violet is basic.</p>`,'half');
-  let x=0;const RB=stats(b,['pH of the buffer','pH of the water',C('CH3COOH')+' in the buffer',C('CH3COO^-')+' in the buffer']);const msg=el('div',{class:'note'});let BV={pb:4.74,pw:7,ha:.1,a:.1};
+  let x=0;const RB=stats(b,['pH of the buffer','pH of the water',C('CH3COOH')+' in the buffer',C('CH3COO^-')+' in the buffer']);const msg=el('div',{class:'note'});let BV;
   const bv=canvas(b,220,(ctx,w,h)=>{const k=col(),bw=Math.min(150,(w-50)/2),gap=(w-2*bw)/3,by=38,bh=h-by-60;
     [['Buffer',BV.pb],['Water',BV.pw]].forEach(([n,p],i)=>{const x=gap+i*(bw+gap);beaker(ctx,x,by,bw,bh,.8,phColor(p,.62));tag(ctx,n+': pH '+p.toFixed(2),x+bw/2,18,{size:12,w0:0,w1:w});});
     /* the two parts of the buffer */
@@ -3065,7 +3053,7 @@ NSL.push({t:'Organization',h:'Organization of the nervous system',d:'The nervous
     aut:['Autonomic system','It brings information about the internal environment to the CNS and carries signals from the CNS to the smooth muscles, organs and glands. It is involuntary. It has two units that have opposite effects.'],
     sym:['Sympathetic nervous system','It prepares the body for stress: the "fight-or-flight" response.'],
     par:['Parasympathetic nervous system','It returns the body to normal: "rest and digest".']};
-  const DOT={cns:'s1',brain:'s1',cord:'s1',som:'s2',aut:'s3',sym:'s3',par:'s3'},SHOW={ns:['brain','cord','som','aut'],cns:['brain','cord'],brain:['brain'],cord:['cord'],pns:['som','aut'],som:['som'],aut:['aut'],sym:['aut'],par:['aut']};
+  const DOT={cns:'s1',brain:'s1',cord:'s1',som:'s2',aut:'s3',sym:'s3',par:'s3'},SHOW={cns:['brain','cord'],brain:['brain'],cord:['cord'],pns:['som','aut'],som:['som'],aut:['aut'],sym:['aut'],par:['aut']};
   const node=(k,kids='')=>`<li><button type="button" class="tile" data-k="${k}">${DOT[k]?`<i class="dot" style="background:var(--${DOT[k]})"></i>`:''}${D[k][0]}</button>${kids?`<ul>${kids}</ul>`:''}</li>`;
   const row=el('div',{class:'figrow side'}),fig=el('div',{class:'hs-fig bodyfig'},SVG_BODY),right=el('div',{class:'figside'});c.append(row);row.append(fig,right);
   const tree=el('ul',{class:'tree'},node('ns',node('cns',node('brain')+node('cord'))+node('pns',node('som')+node('aut',node('sym')+node('par')))));right.append(tree);
@@ -3114,7 +3102,7 @@ NSL.push({t:'Reflex arc',h:'The reflex arc',d:'A reflex arc is the simplest nerv
   const row=el('div',{class:'figrow'}),side=el('div',{class:'figside'});c.append(row);
   const fig=el('div',{class:'hs-fig'},SVG_REFLEX);row.append(fig,side);figFit(fig);
   const chips=el('div',{class:'chipsrow',style:'margin-top:.9em'}),tx=el('div',{class:'note'},'Select "Send an impulse".');
-  const mark=i=>{$$('[data-p]',fig).forEach(e=>e.classList.toggle('on',i>=0&&e.dataset.p===P[i][0]));$$('.chip',chips).forEach((b,j)=>b.classList.toggle('on',j===i));tx.innerHTML=i<0?'Select "Send an impulse".':`<b>${P[i][1].slice(3)}.</b> ${P[i][2]}`;};
+  const mark=i=>{$$('[data-p]',fig).forEach(e=>e.classList.toggle('on',e.dataset.p===P[i][0]));$$('.chip',chips).forEach((b,j)=>b.classList.toggle('on',j===i));tx.innerHTML=`<b>${P[i][1].slice(3)}.</b> ${P[i][2]}`;};
   /* rid changes when a run of the animation is stopped, thus the frames of an old run do nothing */
   let rid=0;const stop=()=>{rid++;$('#rdot',fig).setAttribute('opacity',0);$('#rmus',fig).style.transform='';};
   P.forEach((p,i)=>{const b=el('button',{type:'button',class:'chip'},p[1]);b.onclick=()=>{stop();mark(i);};chips.append(b);});
@@ -3158,7 +3146,7 @@ NSL.push({t:'Action potential',h:'Resting potential and action potential',d:'A n
       if(u<.5)arrow(ctx,x-40,my+22,x-40,my-22,k.s1,2.2);else arrow(ctx,x-40,my-22,x-40,my+22,k.s2,2.2);}});
   const PR=stats(pc,['Cycles','Na⁺ moved out','K⁺ moved in','ATP used','Net positive charge moved out']);
   const ps=()=>{PR(0,n);PR(1,3*n);PR(2,2*n);PR(3,n);PR(4,'+'+n);};
-  loop(pv,dt=>{if(pt<0)return;pt+=dt/(q>3?.34:1.5);if(pt>=1){n++;q--;ps();pt=q>0?0:-1;}pv.draw();});
+  loop(pv,dt=>{if(pt<0)return;pt+=dt/(q>3?.34:1.5);if(pt>=1){n++;q--;ps();pt=q>0?pt-1:-1;}pv.draw();});
   const runP=k2=>{if(RM){n+=k2;ps();return;}q+=k2;if(pt<0)pt=0;kick();};
   btnRow(pc,[['Run one cycle',()=>runP(1)],['Run 10 cycles',()=>runP(10),'ghost'],['Reset',()=>{n=0;q=0;pt=-1;ps();pv.draw();},'ghost']]);ps();
   pc.append(el('p',{class:'hint'},'More positive charge goes out than comes in. This helps to make the inside of the membrane negative relative to the outside.'));
@@ -3186,11 +3174,11 @@ NSL.push({t:'Action potential',h:'Resting potential and action potential',d:'A n
     const st=(x,name,open)=>tag(ctx,name+': '+(open?'open':'closed'),x,my+(nar?47:46),{size:11,w:open?650:500,color:open?k.ink:k.ink2,w0:0,w1:w});
     st(x1,nar?'Na⁺':'Na⁺ channel',naOpen);st(x2,nar?'K⁺':'K⁺ channel',kOpen);tag(ctx,ph===5?'pump: active':nar?'pump':'Na⁺/K⁺ pump',x3,my+46,{size:11,w:ph===5?650:500,color:ph===5?k.ink:k.ink2,w0:0,w1:w});
     tag(ctx,(nar?'Outside: ':'Outside the neuron: ')+(pos?'negative':'positive'),8,top+15,{align:'left',size:11.5});tag(ctx,(nar?'Inside: ':'Inside the neuron: ')+(pos?'positive':'negative'),8,h-15,{align:'left',size:11.5});});
-  loop(cv,()=>{if(!K||RM)return;const ph=APH.findIndex(p=>K.v.t<p[0]);if(ph>=1&&ph<=5)cv.draw();});
+  loop(cv,()=>{if(!K||RM||raf)return;const ph=APH.findIndex(p=>K.v.t<p[0]);if(ph>=1&&ph<=5)cv.draw();});
   const R=stats(c,['Time','Membrane potential','Phase']);const tx=el('div',{class:'note'});
-  const upd=v=>{const ph=APH.find(p=>v.t<p[0]);R(0,v.t.toFixed(2)+' ms');R(1,apV(v.t).toFixed(0).replace('-','−')+' mV');R(2,ph[1]);tx.innerHTML=`<b>${ph[1]}.</b> ${ph[2]}`;cv.draw();kick();};
+  const upd=v=>{const ph=APH.find(p=>v.t<p[0]);R(0,v.t.toFixed(2)+' ms');R(1,apV(v.t).toFixed(0).replace('-','−')+' mV');R(2,ph[1]);const s=`<b>${ph[1]}.</b> ${ph[2]}`;if(tx.innerHTML!==s)tx.innerHTML=s;cv.draw();kick();};
   K=ctl(c,[{k:'t',l:'Time',min:0,max:6,step:.02,v:0,dp:2,u:'ms'}],upd);
-  btnRow(c,[['Play the impulse',()=>{cancelAnimationFrame(raf);const t0=performance.now();const st=n2=>{const t=Math.min(6,(n2-t0)/1500);K.set({t});if(t<6&&cv.vis())raf=requestAnimationFrame(st);};raf=requestAnimationFrame(st);}],...APH.slice(0,6).map((p,i)=>[p[1],()=>{cancelAnimationFrame(raf);K.set({t:[.5,1.2,1.7,2.5,3.25,4.2][i]});},'ghost'])]);c.append(tx);upd(K.v);
+  btnRow(c,[['Play the impulse',()=>{cancelAnimationFrame(raf);const t0=performance.now();const st=n2=>{const t=Math.min(6,(n2-t0)/1500);K.set({t});raf=t<6&&cv.vis()?requestAnimationFrame(st):0;};raf=requestAnimationFrame(st);}],...APH.slice(0,6).map((p,i)=>[p[1],()=>{cancelAnimationFrame(raf);raf=0;K.set({t:[.5,1.2,1.7,2.5,3.25,4.2][i]});},'ghost'])]);c.append(tx);upd(K.v);
   const ax=card(g,'How the impulse moves along the axon',`<ol><li>At one area of the membrane, Na⁺ rushes in. This area is depolarized.</li><li>The opposite charges of the adjacent area are attracted to it. This electrical stimulus starts an action potential in the adjacent area.</li>
     <li>The process repeats along the axon, like a line of dominoes. Behind the action potential, the membrane repolarizes. This refractory area cannot be stimulated, thus the impulse moves in one direction only.</li></ol>`);
   /* a part of an axon. The depolarized area moves to the right and the refractory area follows it */
@@ -3371,9 +3359,9 @@ NSL.push({t:'PNS',h:'The peripheral nervous system',d:'The PNS has a sensory-som
     <li>It includes 12 pairs of cranial nerves and 31 pairs of spinal nerves.</li><li>The <span class="key">vagus nerve</span> is a cranial nerve that connects the brain to the internal organs.</li></ul>`,'half');
   card(g,'Autonomic system',`<ul><li>It brings information about the internal environment of the body to the CNS.</li><li>It regulates the body: it carries signals from the CNS to muscles and organs.</li><li>It is involuntary.</li>
     <li>The <span class="key">sympathetic</span> division gives the "fight-or-flight" response.</li><li>The <span class="key">parasympathetic</span> division returns the body to "rest and digest".</li></ul>`,'half');
-  const c=card(g,'Change between the two autonomic divisions','<p class="hint">Select a division and see the effect on each organ.</p>');const sh=el('div'),box=el('div',{class:'tiles',style:'margin-top:1em'});c.append(sh,box);
+  const c=card(g,'Change between the two autonomic divisions','<p class="hint">Select a division and see the effect on each organ.</p>');const sh=el('div'),box=el('div',{class:'tiles org',style:'margin-top:1em'});c.append(sh,box);
   const E=[['Heart',['Heart rate increases','Heart rate decreases']],['Digestive tract',['Peristalsis decreases','Peristalsis increases']],['Liver',['Releases glucose into the blood','Stores glucose']],['Eyes',['Pupils dilate','Pupils constrict']],['Adrenal gland',['Releases epinephrine','No effect']]];
-  box.className='tiles org';box.innerHTML=E.map(([n],j)=>`<div class="organ">${ORGAN[j]}<div><span>${n}</span><b></b></div></div>`).join('');
+  box.innerHTML=E.map(([n],j)=>`<div class="organ">${ORGAN[j]}<div><span>${n}</span><b></b></div></div>`).join('');
   const show=i=>{box.classList.toggle('symp',i===0);box.classList.toggle('para',i===1);$$('.organ b',box).forEach((b,j)=>{b.textContent=E[j][1][i];});};
   seg(sh,['Sympathetic: fight or flight','Parasympathetic: rest and digest'],show);show(0);
 },qz:[
@@ -3401,7 +3389,7 @@ SNL.push({t:'Sensory receptors',h:'Sensory information',d:'Sensory receptors cha
     <li>Main difference: <span class="key">taste</span> detects chemicals that are dissolved. <span class="key">Smell</span> detects chemicals that are in the air.</li></ul>
     ${CF(FIG.taste(),'Orange dots: particles of a chemical. Each picture shows a row of receptor cells and their nerve fibres.')}`,'w5');
   const c=card(g,'Watch a receptor adapt','<p class="hint">Start a constant stimulus. The neuron fires quickly at first. Then the threshold moves up and the neuron stops firing, although the stimulus is still there. Increase the stimulus to make it fire again.</p>');
-  let S={t:0,s:0,th:20,acc:0,rate:0,h:[[0,0,20]],sp:[]},raf=0;
+  let S={t:0,s:0,th:20,acc:0,rate:0,h:[[0,0,20]],sp:[]};
   const cv=canvas(c,290,(ctx,w,h)=>{const t1=Math.max(30,S.t),t0=t1-30,P=plot(ctx,w,h-50,{x0:t0,x1:t1,y0:0,y1:120,xt:6,yt:4,xd:0,yd:0,xl:'',yl:'Level',leg:1,B:26,xn:'Time',xu:'s',fy:v=>v.toFixed(0)}),k=P.K,hh=S.h.filter(p=>p[0]>=t0);
     P.clip(()=>{P.line(hh.map(p=>[p[0],p[1]]),k.s1,{w:2.4,n:'Stimulus'});P.line(hh.map(p=>[p[0],p[2]]),k.bad,{w:1.8,dash:[6,5],n:'Threshold'});});P.legend();
     /* one mark for each nerve impulse */
@@ -3409,9 +3397,9 @@ SNL.push({t:'Sensory receptors',h:'Sensory information',d:'Sensory receptors cha
     label(ctx,'Nerve impulses, time in seconds',(P.L+w-P.R)/2,h-7,k.ink2,'center','500 12px '+FONT);});
   const R=stats(c,['Stimulus','Firing rate of the neuron','What you sense']);
   /* with reduced motion, time stands still once the threshold has reached its level: a button runs it until it settles */
-  loop(cv,fdt=>{{if(!(RM&&Math.abs((S.s>0?S.s+8:20)-S.th)<.05)){const n=Math.max(1,Math.round(fdt*5.4/.03));for(let i=0;i<n;i++){const dt=.03,tg=S.s>0?S.s+8:20;S.th+=(tg-S.th)*dt/(S.s>0?5:2.5);const rate=Math.max(0,S.s-S.th)*.22;S.acc+=rate*dt;if(S.acc>=1){S.acc-=1;S.sp.push(S.t);}S.t+=dt;S.rate=rate;}
-      S.h.push([S.t,S.s,S.th]);if(S.h.length>1400){S.h.splice(0,300);S.sp=S.sp.filter(t=>t>S.t-35);}}
-      R(0,S.s>0?'Present (level '+S.s+')':'Not present');R(1,S.rate.toFixed(1)+' impulses per second');R(2,S.s===0?'Nothing':S.rate>.4?'You sense the stimulus':'You do not notice it now: sensory adaptation');cv.draw();}});
+  loop(cv,fdt=>{if(!(RM&&Math.abs((S.s>0?S.s+8:20)-S.th)<.05)){S.carry=(S.carry||0)+Math.max(0,fdt)*5.4/.03;const n=Math.round(S.carry);S.carry-=n;for(let i=0;i<n;i++){const dt=.03,tg=S.s>0?S.s+8:20;S.th+=(tg-S.th)*dt/(S.s>0?5:2.5);const rate=Math.max(0,S.s-S.th)*.22;S.acc+=rate*dt;if(S.acc>=1){S.acc-=1;S.sp.push(S.t);}S.t+=dt;S.rate=rate;}
+      if(n)S.h.push([S.t,S.s,S.th]);if(S.h.length>1400){S.h.splice(0,300);S.sp=S.sp.filter(t=>t>S.t-35);}}
+      R(0,S.s>0?'Present (level '+S.s+')':'Not present');R(1,S.rate.toFixed(1)+' impulses per second');R(2,S.s===0?'Nothing':S.rate>.4?'You sense the stimulus':'You do not notice it now: sensory adaptation');cv.draw();});
   const step=f=>()=>{S.h.push([S.t,S.s,S.th]);f();S.h.push([S.t,S.s,S.th]);};
   btnRow(c,[['Start a constant stimulus',step(()=>{if(S.s===0)S.s=50;})],['Increase the stimulus',step(()=>{S.s=Math.min(100,S.s+25);}),'ghost'],['Remove the stimulus',step(()=>{S.s=0;}),'ghost']]);
 },qz:[
@@ -3901,11 +3889,11 @@ const ap=(k,s,fx,fy,x,y,inner,dl=0)=>s<k?'':`<g transform="translate(${x},${y})"
 const hl=(on,inner)=>on?`<g class="en1-hl">${inner}</g>`:inner;
 
 /* epinephrine and a liver cell */
-const RCP=(cx,on)=>`<g fill="${tn('s6',on?42:22)}" stroke="var(--s6)" stroke-width="1.5" stroke-linejoin="round"><path d="M${cx-17},80V53Q${cx-17},44 ${cx-8},44A8 8 0 0 0 ${cx+8},44Q${cx+17},44 ${cx+17},53V80Z"/><rect x="${cx-15}" y="103" width="30" height="22" rx="7"/><rect x="${cx-8}" y="77" width="16" height="28" fill="${tn('s6',on?70:50)}"/></g>`;
+const RCP=cx=>`<g fill="${tn('s6',42)}" stroke="var(--s6)" stroke-width="1.5" stroke-linejoin="round"><path d="M${cx-17},80V53Q${cx-17},44 ${cx-8},44A8 8 0 0 0 ${cx+8},44Q${cx+17},44 ${cx+17},53V80Z"/><rect x="${cx-15}" y="103" width="30" height="22" rx="7"/><rect x="${cx-8}" y="77" width="16" height="28" fill="${tn('s6',70)}"/></g>`;
 const GLY=(()=>{const pts=[],seen=new Set(),br=(x0,y0,x1,y1)=>{const n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)/8.5));for(let i=0;i<=n;i++){const p=[f1(x0+(x1-x0)*i/n),f1(y0+(y1-y0)*i/n)],k=Math.round(p[0])+','+Math.round(p[1]);if(!seen.has(k)){seen.add(k);pts.push(p);}}};
   br(330,284,448,284);br(354,284,372,260);br(372,260,402,250);br(402,250,416,234);br(398,284,420,262);br(420,262,448,256);br(372,260,362,240);
   return `<g fill="${tn('s4',55)}" stroke="var(--s4)" stroke-width="1">${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4"/>`).join('')}</g>`;})();
-const BOX=(y,t,on,p)=>`<rect x="8" y="${y}" width="176" height="24" rx="8" fill="${tn('s6',on?20:8)}" stroke="var(--s6)" stroke-width="1.3"/>${TX(t,89,y+16,{s:10.5,f:'ink',w:600,c:'s'})}${p?PH(173,y+12):''}`;
+const BOX=(y,t,p)=>`<rect x="8" y="${y}" width="176" height="24" rx="8" fill="${tn('s6',20)}" stroke="var(--s6)" stroke-width="1.3"/>${TX(t,89,y+16,{s:10.5,f:'ink',w:600,c:'s'})}${p?PH(173,y+12):''}`;
 function drawEpi(s){
   const gP=[[112,116],[112,116],[78,116],[128,116]],eP=[[140,22],[46,45]];
   const cp=[[176,146],[194,138],[212,152],[186,164],[230,141],[222,170],[202,176]];
@@ -3913,21 +3901,21 @@ function drawEpi(s){
   return TX('liver cell',452,128,{a:'end',s:11,f:'mute',c:'r'})+
     `<rect x="396" y="76" width="20" height="30" rx="5" fill="${tn('s4',30)}" stroke="var(--s4)" stroke-width="1.3"/><path d="M406,80V102" stroke="var(--fig)" stroke-width="2.4"/>`+
     GLY+TX('glycogen',330,226,{a:'start',s:11,c:'l'})+
-    hl(s===0,RCP(46,s>=0))+TX('receptor',46,142,{s:11,c:'s'})+
+    hl(s===0,RCP(46))+TX('receptor',46,142,{s:11,c:'s'})+
     hl(s===2||s===3,`<rect x="145" y="70" width="26" height="58" rx="9" fill="${tn('s1',s>=2?50:18)}" stroke="var(--s1)" stroke-width="1.5"/>`)+TX('adenylyl cyclase',158,62,{s:11,c:'s'})+
     mv(gP,s,hl(s===1||s===2,`<ellipse rx="15" ry="9" fill="${s>=1?'var(--s3)':tn('s3',26)}" stroke="var(--s3)" stroke-width="1.5"/>`)+TX('G protein',0,40,{s:11,c:'s'}))+
     mv(eP,s,EPI+TX('epinephrine',0,-12,{s:11,f:'ink',w:600,c:'s'}))+
     cp.map((p,i)=>ap(3,s,158,124,p[0],p[1],CAMP,i*.08)).join('')+
     nw(3,s,TX('ATP → cAMP',250,148,{a:'start',s:11,f:'ink',w:600,c:'l'})+TX('second messenger',250,162,{a:'start',s:10.5,c:'l'}),.3)+
-    nw(4,s,BOX(186,'protein kinase A',1,0)+`<circle cx="166" cy="198" r="3.6" fill="var(--s5)" stroke="var(--fig)"/><circle cx="175" cy="198" r="3.6" fill="var(--s5)" stroke="var(--fig)"/>`+sArrow(206,178,188,190,'var(--ink2)',1.8))+
-    nw(4,s,sArrow(89,210,89,222,'var(--ink2)',1.8)+BOX(222,'phosphorylase kinase',1,1),.4)+
-    nw(4,s,sArrow(89,246,89,258,'var(--ink2)',1.8)+BOX(258,'glycogen phosphorylase',1,1),.8)+
+    nw(4,s,BOX(186,'protein kinase A',0)+`<circle cx="166" cy="198" r="3.6" fill="var(--s5)" stroke="var(--fig)"/><circle cx="175" cy="198" r="3.6" fill="var(--s5)" stroke="var(--fig)"/>`+sArrow(206,178,188,190,'var(--ink2)',1.8))+
+    nw(4,s,sArrow(89,210,89,222,'var(--ink2)',1.8)+BOX(222,'phosphorylase kinase',1),.4)+
+    nw(4,s,sArrow(89,246,89,258,'var(--ink2)',1.8)+BOX(258,'glycogen phosphorylase',1),.8)+
     nw(5,s,sArrow(188,270,322,268,'var(--ink2)',1.8))+
     gl.map((p,i)=>ap(5,s,p[0],p[1],p[2],p[3],GLU,.3+i*.25)).join('')+
     nw(5,s,TX('glucose to the blood',452,22,{a:'end',s:11,f:'ink',w:600,c:'r'}),.9);}
 
 /* insulin and a muscle cell */
-const IR=on=>`<g fill="${tn('s6',on?42:22)}" stroke="var(--s6)" stroke-width="1.5" stroke-linejoin="round"><path d="M36,80V50Q36,44 42,44H48Q54,44 54,50V64H66V50Q66,44 72,44H78Q84,44 84,50V80Z"/><rect x="39" y="103" width="18" height="44" rx="6"/><rect x="63" y="103" width="18" height="44" rx="6"/><g fill="${tn('s6',on?70:50)}"><rect x="43" y="77" width="10" height="28"/><rect x="67" y="77" width="10" height="28"/></g></g>`;
+const IR=`<g fill="${tn('s6',42)}" stroke="var(--s6)" stroke-width="1.5" stroke-linejoin="round"><path d="M36,80V50Q36,44 42,44H48Q54,44 54,50V64H66V50Q66,44 72,44H78Q84,44 84,50V80Z"/><rect x="39" y="103" width="18" height="44" rx="6"/><rect x="63" y="103" width="18" height="44" rx="6"/><g fill="${tn('s6',70)}"><rect x="43" y="77" width="10" height="28"/><rect x="67" y="77" width="10" height="28"/></g></g>`;
 const VES=`<circle r="15" fill="${tn('gl',30)}" stroke="var(--gl)" stroke-width="1.4"/><rect x="-4.5" y="-8" width="9" height="16" rx="3" fill="${tn('s3',55)}" stroke="var(--s3)" stroke-width="1.2"/>`;
 const GT=x=>`<rect x="${x-6}" y="76" width="12" height="30" rx="4" fill="${tn('s3',55)}" stroke="var(--s3)" stroke-width="1.3"/><path d="M${x},80V102" stroke="var(--fig)" stroke-width="2"/>`;
 function drawIns(s){
@@ -3936,7 +3924,7 @@ function drawIns(s){
   let ves='';if(s<2)ves=VP.map(p=>`<g transform="translate(${p[0]},${p[1]})">${VES}</g>`).join('')+TX('vesicles with glucose transporters',306,206,{s:11,c:'s t2'})+TX('vesicles',306,206,{s:11,c:'s t3'});
   else if(s===2&&!RM)ves=VP.map((p,i)=>`<g transform="translate(${p[0]},118)"><g class="en1-fuse" style="--dx:0px;--dy:${p[1]-118}px;animation-delay:${i*.12}s">${VES}</g></g>`).join('');
   return TX('muscle cell',452,292,{a:'end',s:11,f:'mute',c:'r'})+ves+
-    hl(s===0||s===1,IR(s>=0))+TX('insulin receptor',60,166,{s:11,c:'s'})+
+    hl(s===0||s===1,IR)+TX('insulin receptor',60,166,{s:11,c:'s'})+
     mv(iP,s,INS+TX('insulin',0,-14,{s:11,f:'ink',w:600,c:'s'}))+
     [[48,116],[48,134],[72,116],[72,134]].map((p,i)=>nw(1,s,PH(p[0],p[1]),.2+i*.15)).join('')+
     nw(1,s,TX('tyrosine kinase',90,121,{a:'start',s:11,f:'ink',w:600,c:'l'})+TX('ATP → ADP',90,140,{a:'start',s:10.5,c:'l'}),.4)+
@@ -4175,7 +4163,7 @@ const BODY=(()=>{
   const panc='M104,190C102,184 108,181 114,182C124,183 134,180 146,175C152,173 157,177 153,181C146,187 132,190 120,193C112,195 106,194 104,190Z';
   const thy='M110,81C107,85 108,92 113,93C116,93.5 118,90 120,90C122,90 124,93.5 127,93C132,92 133,85 130,81C127,79 124,84 120,85C116,84 113,79 110,81Z';
   const thm='M119,102C114,101 111,106 112,112C113,118 116,122 119,123C119.6,118 119.6,108 119,102ZM121,102C126,101 129,106 128,112C127,118 124,122 121,123C120.4,118 120.4,108 121,102Z';
-  const gl='fill="var(--t-gland)" stroke="var(--t-gland2)" stroke-width="1.1"',ctx=(c,m,b='var(--t-body)')=>`color-mix(in srgb,var(${c}) ${m}%,${b})`;
+  const gl='fill="var(--t-gland)" stroke="var(--t-gland2)" stroke-width="1.1"',ctx=(c,m)=>`color-mix(in srgb,var(${c}) ${m}%,var(--t-body))`;
   const isl=[[112,188],[122,188],[132,184],[142,180]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.3" fill="var(--t-gland)" stroke="var(--t-gland2)" stroke-width=".8"/>`).join('');
   return `<svg class="en2-body" viewBox="0 0 240 396" role="img" aria-label="Front view of the body. The thyroid gland is in the neck and the thymus is in the upper chest. An adrenal gland sits on top of each kidney. The pancreas, with its islets, lies across the upper abdomen behind the stomach. The picture shows both the ovaries in the pelvis of a female and the testes of a male. A dashed box marks the head and the neck, which the close-up shows.">
 <g fill="var(--t-body)" stroke="var(--t-body)" pointer-events="none"><path d="M101,224L97,300L95,372M139,224L143,300L145,372" fill="none" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/><path d="M80,104L60,164L50,222M160,104L180,164L190,222" fill="none" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
@@ -4378,7 +4366,7 @@ ENL[2]={t:EN_T[2],h:'The endocrine glands and the pituitary',d:'Endocrine glands
   /* 7. the melatonin model: 48 hours, screen light and constant darkness */
   const mc=card(g,'Melatonin over 48 hours','<p class="hint">Move the slider to add screen light before bed (bedtime is 23:00). Then switch on constant darkness. The curve is a simple model of typical values.</p>');
   let K,dark=false;
-  const cv=canvas(mc,300,(ctx,w,h)=>{if(!K)return;const k=col(),s=dark?0:K.v.s,nar=w<520,xt=nar?4:8,pts=[];
+  const cv=canvas(mc,300,(ctx,w,h)=>{const k=col(),s=dark?0:K.v.s,nar=w<520,xt=nar?4:8,pts=[];
     for(let t=0;t<=48.0001;t+=.1)pts.push([t,mel(t,s,dark)]);
     const P=plot(ctx,w,h,{x0:0,x1:48,y0:0,y1:70,xt,yt:7,xd:0,yd:0,B:56,xl:nar?'Time from midnight, day 1 (h)':'Time from midnight at the start of day 1 (h)',yl:'Melatonin (pg/mL)',xn:'Time',yu:'pg/mL',fx:x=>'day '+(1+Math.floor(x/24+1e-9))+', '+hm(x),fy:v=>v.toFixed(0)});
     if(dark)P.band(0,48,k.s6,.13,'constant darkness');else [[0,7],[21,31],[45,48]].forEach(([a,b])=>P.band(a,b,k.s6,.13,'night'));
@@ -4574,8 +4562,8 @@ function story(R,m){
 function drawDay(ctx,w,h,R,vt){
   const k=col(),nar=w<520,gh=Math.round(h*.62),xt=nar?4:8;
   /* the points up to the visible time, with one point between samples while the line grows */
-  const sh=R.pts.filter(p=>p[0]<=vt+1e-6);if(!sh.length)sh.push(R.pts[0]);const nx=R.pts[sh.length];
-  if(nx&&sh.length){const a=sh[sh.length-1],u=(vt-a[0])/(nx[0]-a[0]);if(u>1e-3)sh.push(a.map((v,i)=>v+(nx[i]-v)*u));}
+  const sh=R.pts.filter(p=>p[0]<=vt+1e-6);const nx=R.pts[sh.length];
+  if(nx){const a=sh[sh.length-1],u=(vt-a[0])/(nx[0]-a[0]);if(u>1e-3)sh.push(a.map((v,i)=>v+(nx[i]-v)*u));}
   const P=plot(ctx,w,gh,{x0:0,x1:24,y0:0,y1:20,xt,yt:5,xd:0,yd:0,yl:'Glucose (mmol/L)',xn:'Time',xu:'h',fy:v=>v.toFixed(1)+' mmol/L',T:54,B:26});
   /* normal range: 4 to 6 mmol/L when fasting (darker), up to 8 mmol/L after a meal */
   P.hband(4,8,k.s3,.11);P.hband(4,6,k.s3,.13);
@@ -4630,7 +4618,7 @@ ENL[3]={t:EN_T[3],h:'Blood sugar: insulin and glucagon',d:'Two antagonistic horm
   /* ----- the simulator ----- */
   const sc=card(g,'Simulator: blood glucose over a day','<p class="hint">Select an action. The clock moves forward, and the graph shows what happens. Then select another type of person to see the same day.</p>');
   const sh=el('div');sc.append(sh);
-  let m=0,ev=[],R=simDay(ev,0),vt=0;R.m=0;
+  let m=0,ev=[],R,vt=0;
   const cv=canvas(sc,420,(ctx,w,h)=>drawDay(ctx,w,h,R,vt));
   loop(cv,dt=>{if(vt<R.end-1e-9){vt=RM?R.end:clamp(vt+Math.max(0,dt)*9,0,R.end);cv.draw();}});
   const row=btnRow(sc,[['Eat a meal',()=>act('meal')],['Exercise',()=>act('ex')],['Fast overnight',()=>act('fast')],['Inject insulin',()=>act('ins')],['Reset',()=>{ev=[];vt=0;run();},'ghost']]);
@@ -4652,7 +4640,7 @@ ENL[3]={t:EN_T[3],h:'Blood sugar: insulin and glucagon',d:'Two antagonistic horm
     ST(5,G0>KTH?'Yes':R.urine>0?'Not now (about '+hrs(R.urine)+' h today)':'No');
     note.innerHTML=story(R,m);
     const over=R.end>=24-1e-9;B.slice(0,4).forEach(b=>{b.disabled=over;});B[3].hidden=m!==1;cv.draw();}
-  function act(k){if(R.end>=24-1e-9)return;ev.push(k);run();if(RM)vt=R.end;if(R.end>=24-1e-9)markStudy();}
+  function act(k){if(R.end>=24-1e-9)return;ev.push(k);run();if(R.end>=24-1e-9)markStudy();}
   seg(sh,['Healthy','Type 1','Type 2'],i=>{m=i;run();vt=R.end;cv.draw();});
   run();
 
@@ -4834,7 +4822,6 @@ const hm=m=>{const r=Math.max(0,Math.round(m));return Math.floor(r/60)+' h '+(r%
 
 ENL[4]={t:EN_T[4],h:'Stress and the adrenal glands',d:'Each adrenal gland has two parts that respond to stress at two speeds. Nerves start the fast response of the medulla. Hormones start the slow response of the cortex.',build(g){
   enCSS(4,`#en-4 .en4-off .o-glu,#en-4 .en4-off .o-epi{animation:none;opacity:0}
-#en-4 .organ b{transition:color .3s}
 @media(min-width:900px){#en-4 .tiles.org.en4-org{grid-template-columns:repeat(3,1fr)}}`);
 
   /* ----- notes: the gland ----- */
@@ -4897,7 +4884,7 @@ ENL[4]={t:EN_T[4],h:'Stress and the adrenal glands',d:'Each adrenal gland has tw
     ST.sc.forEach(s=>{if(s>=t0&&s<=t1)P.vline(s/60,k.s2,nar?'':'scare');});
     const hh=ST.h.filter(p=>p[0]>=t0-1);
     P.clip(()=>{P.line(hh.map(p=>[p[0]/60,p[2]]),k.s6,{w:1.8,dash:[5,4],n:'ACTH'});P.line(hh.map(p=>[p[0]/60,p[3]]),k.s1,{w:2.6,n:'Cortisol'});P.line(hh.map(p=>[p[0]/60,p[1]]),k.s2,{w:2.4,n:'Epinephrine',end:1});});
-    P.legend(P.series.length===3?[P.series[2],P.series[0],P.series[1]]:undefined);
+    P.legend([P.series[2],P.series[0],P.series[1]]);
     tag(ctx,slow()?(nar?'slow motion':'slow motion: 1 s = 1.5 min'):(nar?'1 s = 12 min':'normal speed: 1 s = 12 min'),w-P.R-4,P.T+12,{align:'right',size:11,w:500,color:slow()?k.ink:k.ink2});});
   const R=stats(tc,['Epinephrine','Cortisol','Heart rate','Blood glucose']);
   const tiles=el('div',{class:'tiles org en4-org',style:'margin-top:.4em'});tc.append(tiles);
@@ -4919,7 +4906,7 @@ ENL[4]={t:EN_T[4],h:'Stress and the adrenal glands',d:'Each adrenal gland has tw
     ['Skip 1 hour',()=>{adv(60);out();cv.draw();},'ghost']]);
   tc.append(nt);
   legendRow(tc,[['color-mix(in srgb,var(--s5) 30%,var(--fig))','shaded: a time of long-term stress'],['var(--s2)','dashed vertical line: a sudden scare']]);
-  out();cv.draw();
+  out();
 
   /* ----- comparison and costs ----- */
   card(g,'Short-term and long-term responses compared',`<div class="scroll"><table><tr><th>Feature</th><th>Short-term response</th><th>Long-term response</th></tr>
@@ -5098,7 +5085,7 @@ ENL[5]={t:EN_T[5],h:'Thyroxine and growth hormone',d:'Thyroxine from the thyroid
 #en-5 .en5-thy{transform-box:fill-box;transform-origin:center;transition:transform .45s var(--ease)}
 #en-5 .en5-fade{transition:opacity .32s}
 #en-5 .en5-segs{margin-bottom:.8em}
-@media(prefers-reduced-motion:reduce){#en-5 .en5-bar,#en-5 .en5-thy,#en-5 .en5-fade{transition:none}}`);
+`);
 
   card(g,'The thyroid gland and thyroxine',`<ul><li>The <span class="key">thyroid gland</span> is in the neck, below the larynx and in front of the trachea. It has two lobes.</li>
     <li>It releases <span class="key">thyroxine</span> (T₄). Each molecule contains four iodine atoms. Target cells change much of it to T₃, which has three iodine atoms and is more active.</li>
@@ -5116,13 +5103,13 @@ ENL[5]={t:EN_T[5],h:'Thyroxine and growth hormone',d:'Thyroxine from the thyroid
     <p class="note"><b>Remember:</b> TSH is a tropic hormone: its target is another gland. Thyroxine is the hormone that acts on the body cells. Negative feedback keeps thyroxine within narrow limits.</p>`,'half');
 
   /* ----- the thyroid feedback simulator ----- */
-  const c=card(g,'Thyroid feedback simulator','<p class="hint">Select a condition. It starts at week 0, and the levels change over the following weeks. Move the slider to see any week. The bars show each level; the green band is the normal range. The dashed arrows (negative feedback) are strong when thyroxine is high and faint when it is low.</p>','en5-sim');
+  const c=card(g,'Thyroid feedback simulator','<p class="hint">Select a condition. It starts at week 0, and the levels change over the following weeks. Move the slider to see any week. The bars show each level; the green band is the normal range. The dashed arrows (negative feedback) are strong when thyroxine is high and faint when it is low.</p>');
   const sh=el('div',{class:'en5-segs'});c.append(sh);
   const row=el('div',{class:'figrow'}),fig=el('div',{class:'gfx en5-loop'},SVG_TH),side=el('div',{class:'figside'});c.append(row);row.append(fig,side);figFit(fig);
   const svg=$('svg',fig),note=el('div',{class:'note','aria-live':'polite'});side.append(note);
   const R=stats(side,['TRH','TSH','Thyroxine','Metabolic rate','Thyroid']);
   let ci=0,K,rid=0;
-  const show=()=>{if(!K)return;const w=clamp(Math.round(K.v.wk),0,THW),v=THT[ci][w];
+  const show=()=>{const w=clamp(Math.round(K.v.wk),0,THW),v=THT[ci][w];
     $$('.en5-bar',svg).forEach(b=>{const k=b.dataset.k,mx=k==='m'?2:2.6;b.style.transform=`scaleX(${r3(clamp(v[k]/mx,.02,1))})`;});
     $$('.en5-v',svg).forEach(t=>{t.textContent=t.dataset.k==='m'?mrW(v.m):lvW(v[t.dataset.k]);});
     $$('.en5-fade',svg).forEach(a=>{const x=a.dataset.a==='f'?clamp(.12+.5*v.t,.12,1):clamp(.2+.6*v[a.dataset.a],.2,1);a.style.opacity=r3(x);});
@@ -5162,7 +5149,7 @@ ENL[5]={t:EN_T[5],h:'Thyroxine and growth hormone',d:'Thyroxine from the thyroid
     ${ex('Why newborn babies are tested','<p>A baby that has too little thyroxine looks normal at birth. Without treatment, the brain and the skeleton do not develop normally (cretinism). A blood test in the first days of life finds the problem, and thyroxine tablets from the first weeks prevent the damage.</p>')}
     <p class="note">A goitre can occur with too much thyroxine (Graves’ disease) or with too little (iodine deficiency). A swollen neck alone does not show which.</p>`,'w7');
 
-  const so=card(g,'Hyperthyroidism or hypothyroidism?','<p class="hint">Select each sign until it shows the correct condition. Then check.</p>','en5-sort');
+  const so=card(g,'Hyperthyroidism or hypothyroidism?','<p class="hint">Select each sign until it shows the correct condition. Then check.</p>');
   sorter(so,[['High metabolic rate',0],['Feels cold in a warm room',1],['Weight loss with a large appetite',0],['Lethargy: tired and slow',1],['Fast heart rate',0],['Weight gain',1],['Sweats and feels hot',0],['Slow heart rate',1],['Bulging eyes (Graves’ disease)',0],['Stunted growth and mental development in an infant',1]],['Hyperthyroidism','Hypothyroidism'],{done:'Each sign follows from the metabolic rate. A goitre can occur in both conditions.'});
 
   card(g,'Human growth hormone',`<ul><li><span class="key">Human growth hormone</span> (hGH) comes from the anterior pituitary. The hypothalamus controls its release.</li>
@@ -5179,9 +5166,9 @@ ENL[5]={t:EN_T[5],h:'Thyroxine and growth hormone',d:'Thyroxine from the thyroid
     <ul><li>Too much hGH usually comes from a tumour of the anterior pituitary.</li><li>A child with too little hGH can get injections of hGH. Genetically modified bacteria make this hGH.</li></ul>`,'half');
 
   /* ----- growth chart ----- */
-  const gc=card(g,'Growth hormone and height','<p class="hint">Select a condition. Move the slider to read the height, the growth rate and the hGH release at any age. You can also move the pointer over the graph, or select it and use the arrow keys.</p>','en5-grow');
+  const gc=card(g,'Growth hormone and height','<p class="hint">Select a condition. Move the slider to read the height, the growth rate and the hGH release at any age. You can also move the pointer over the graph, or select it and use the arrow keys.</p>');
   const gsh=el('div',{class:'en5-segs'});gc.append(gsh);let gi=0,GK;
-  const gcv=canvas(gc,340,(ctx,w,h)=>{if(!GK)return;const k=col(),nar=w<520,S=GRS[gi],D=GRP[gi],a=GK.v.age,top=Math.round(h*.64);
+  const gcv=canvas(gc,340,(ctx,w,h)=>{const k=col(),nar=w<520,S=GRS[gi],D=GRP[gi],a=GK.v.age,top=Math.round(h*.64);
     const P=plot(ctx,w,top,{x0:0,x1:30,y0:40,y1:240,xt:nar?3:6,yt:5,xd:0,yd:0,yl:'Height (cm)',xn:'Age',xu:'years',yu:'cm',fy:v=>v.toFixed(0),B:24,leg:1});
     P.band(15,19,k.s6,.08);tag(ctx,nar?'plates close':'growth plates close',P.X(17),P.T+12,{size:11,w:500});
     if(gi)P.line(GRP[0].H,k.mute,{w:1.8,dash:[5,4],n:'Typical boy'});
@@ -5195,7 +5182,7 @@ ENL[5]={t:EN_T[5],h:'Thyroxine and growth hormone',d:'Thyroxine from the thyroid
     if(S.on!=null){Q.vline(S.on,k.bad);tag(ctx,nar?'tumour':'tumour starts',Q.X(S.on)-6,Q.Y(2.8),{align:'right',size:11,w:500,w0:Q.L,w1:w-Q.R});}
     Q.knob(a,S.g(a),k.s2,7);ctx.restore();});
   const GR=stats(gc,['Height at this age','Growth rate at this age','hGH release at this age','Adult height']),gnote=el('div',{class:'note','aria-live':'polite'});
-  const gup=()=>{if(!GK)return;const S=GRS[gi],a=GK.v.age,rate=(S.h(Math.min(30,a+.5))-S.h(Math.max(0,a-.5)))/(Math.min(30,a+.5)-Math.max(0,a-.5)),q=S.g(a)/GHN(a);
+  const gup=()=>{const S=GRS[gi],a=GK.v.age,rate=(S.h(Math.min(30,a+.5))-S.h(Math.max(0,a-.5)))/(Math.min(30,a+.5)-Math.max(0,a-.5)),q=S.g(a)/GHN(a);
     GR(0,Math.round(S.h(a))+' cm');GR(1,(rate<.05?'0':rate.toFixed(1))+' cm per year');GR(2,q<.5?'low':q>1.6?'high':'normal for this age');GR(3,Math.round(S.h(30))+' cm');gnote.innerHTML=S.n;gcv.draw();};
   seg(gsh,['Normal','Too little in childhood','Too much in childhood','Too much in adulthood'],i=>{gi=i;gup();markStudy();});
   GK=ctl(gc,[{k:'age',l:'Age',min:0,max:30,step:1,v:10,f:x=>x+(x===1?' year':' years')}],gup);
@@ -5277,7 +5264,7 @@ const CAP0=c=>sm((2.8-c)/.8),CAT0=c=>sm((c-2)/.8);
 const CASC=[{n:'Normal'},{n:'Parathyroid tumour',P:1},{n:'Parathyroids removed',P:0},{n:'Low vitamin D diet',vd:.15}];
 function caState(c,s){const sc=CASC[s]||CASC[0],P=sc.P!=null?sc.P:CAP0(c),T=CAT0(c),vd=sc.vd||1;
   const B=(P-.5)-.5*(T-.5),K=.6*(P-.5)-.3*(T-.5),A=Math.max(0,vd*(.25+.5*P)-.1*(T-.5)),G=-3*Math.max(0,c-2.7)+3*Math.max(0,2-c);
-  return {P,T,B,K,A,G,U:Math.max(0,(.5-K)*c/2.4+3*Math.max(0,c-2.7)),N:B+K+(A-.5)+G};}
+  return {P,T,B,K,A,U:Math.max(0,(.5-K)*c/2.4+3*Math.max(0,c-2.7)),N:B+K+(A-.5)+G};}
 const CARATE=.4;
 /* the blood Ca2+ that negative feedback reaches under condition s */
 function caSettle(c,s){for(let k=0;k<6000;k++){const n=caState(c,s).N;if(Math.abs(n)<1e-4)break;c=clamp(c+CARATE*n*.01,1.6,3.2);}return c;}
@@ -5318,7 +5305,7 @@ ${svgText('thyroid with four parathyroids',140,292,{s:11,c:'s'})}
 <g class="en6-dyn"></g></svg>`;})();
 /* a vertical arrow from y1 to y2. Wide arrows get moving dots that show the direction */
 function caArrow(x,y1,y2,w,colr){let s=sArrow(x,y1,x,y2,colr,w);if(w>=3.4){const L=Math.abs(y2-y1),hd=Math.min(Math.max(8,w*3.5),L*.6),d=Math.sign(y2-y1);
-  s+=`<path class="en6-flow" d="M${x},${y1}V${(y2-d*hd*.9).toFixed(1)}" fill="none" stroke="var(--fig)" stroke-opacity=".8" stroke-width="${(w*.38).toFixed(2)}" stroke-linecap="round" stroke-dasharray="0.1 7"/>`;}return s;}
+  s+=`<path class="en6-flow" d="M${x},${y1}V${(y2-d*hd*.9).toFixed(1)}" fill="none" stroke="var(--fig)" stroke-opacity=".8" stroke-width="${(w*.38).toFixed(2)}" stroke-linecap="round" stroke-dasharray="0.1 7" style="animation-delay:-${performance.now()%800}ms"/>`;}return s;}
 /* the parts of the drawing that change: arrows, labels, ions and the calcium in the urine */
 function caDyn(st,c){const g3='var(--s3)',lbl=(t,x,y)=>svgText(t,x,y,{a:'start',s:11.5,w:600,f:'ink',c:'l'});let s='';
   /* bone: up = stores, down = releases */
@@ -5377,7 +5364,7 @@ ENL[6]={t:EN_T[6],h:'Calcium balance: calcitonin and PTH',d:'Two antagonistic ho
 @media(prefers-reduced-motion:reduce){#en-6 .en6-tr i{transition:none}}
 #en-6 .en6-side h4{margin:.2em 0 .45em}
 #en-6 .en6-pt{transform-box:fill-box;transform-origin:center;transition:transform .3s,opacity .3s}
-@media(prefers-reduced-motion:reduce){#en-6 .en6-pt{transition:none}}`);
+`);
 
   card(g,'Why the body controls calcium',`<ul><li>Calcium makes bones and teeth hard. Calcium ions (Ca²⁺) in the blood and the tissue fluid are needed for muscle contraction, for the release of neurotransmitters at synapses and for blood clotting.</li>
     <li>About 99% of the calcium in the body is in the bones and teeth. Bone is a calcium store: Ca²⁺ can be deposited in it or released from it.</li>
@@ -5462,7 +5449,7 @@ ENL[6]={t:EN_T[6],h:'Calcium balance: calcitonin and PTH',d:'Two antagonistic ho
     {q:'PTH increases the absorption of Ca²⁺ from food in the small intestine. How?',o:['It makes the kidneys activate vitamin D, and activated vitamin D makes the intestine absorb more Ca²⁺.','It binds to the cells of the intestine and pumps Ca²⁺ into them directly.','It makes the thyroid release calcitonin, which acts on the intestine.','It makes the stomach release more acid, which frees Ca²⁺ from food.'],a:0,w:'PTH acts on the intestine indirectly. It stimulates the kidneys to activate vitamin D, and activated vitamin D increases the absorption of Ca²⁺.'},
     {q:'A benign tumour of one parathyroid gland releases large amounts of PTH. Which effect is most likely?',o:['The bones lose calcium and become weak.','Blood Ca²⁺ falls, and the muscles go into spasms.','The bones store extra calcium and become denser.','The thyroid stops releasing calcitonin.'],a:0,w:'Too much PTH makes bone release calcium all the time. Blood Ca²⁺ rises, the bones become weak and break easily, and kidney stones can form.'},
     {q:'A person releases far too much calcitonin. Predict the result.',o:['Blood Ca²⁺ falls below normal, and nerves and muscles become too excitable.','Blood Ca²⁺ rises above normal, and kidney stones form.','Blood Ca²⁺ falls below normal, because the bones release more calcium.','Blood Ca²⁺ does not change, because calcitonin acts only on the thyroid.'],a:0,w:'Calcitonin moves Ca²⁺ out of the blood, into bone and into the urine. Low blood Ca²⁺ makes nerves and muscles fire too easily: twitches and spasms (tetany).'},
-    {q:'About 99% of the calcium in the body is in the bones and teeth. An adult body contains about 1.1 kg of calcium. Calculate the mass of calcium that is <b>not</b> in the bones and teeth.',n:11,u:'g',tol:.02,ans:'11',m:'Find the percentage that is not in the bones and teeth. Then take that percentage of the total mass in grams.',w:'The part outside the bones and teeth is 100% − 99% = 1%. The total mass is 1.1 kg = 1100 g. 1% of 1100 g is 0.01 × 1100 g. The mass outside the bones and teeth is 11 g.'},
+    {q:'About 99% of the calcium in the body is in the bones and teeth. An adult body contains about 1.1 kg of calcium. Calculate the mass of calcium that is <b>not</b> in the bones and teeth.',n:11,u:'g',ans:'11',m:'Find the percentage that is not in the bones and teeth. Then take that percentage of the total mass in grams.',w:'The part outside the bones and teeth is 100% − 99% = 1%. The total mass is 1.1 kg = 1100 g. 1% of 1100 g is 0.01 × 1100 g. The mass outside the bones and teeth is 11 g.'},
     {q:'The graph shows the blood Ca²⁺ of a person over one day. At which point is the release of PTH highest?',fig:CADAY,o:['Point C','Point A','Point B','Point D'],a:0,w:'PTH release is highest when blood Ca²⁺ is lowest. At C, blood Ca²⁺ is 2.1 mmol/L, below the normal range. At A it is highest, thus calcitonin release is highest there.'}]};
 
 /* ---------- review bank: diploma and IB level, not repeats of the lesson questions ---------- */
@@ -5492,7 +5479,7 @@ EN_RQ[6]=[
    w:'Activated vitamin D is needed for the absorption of Ca²⁺ from food. Less absorption lowers blood Ca²⁺, which stimulates the parathyroid glands. The extra PTH then takes Ca²⁺ from the bones.'},
   {q:'Which pair of hormones has the same kind of relationship as calcitonin and PTH?',o:['Insulin and glucagon','TSH and thyroxine','ADH and aldosterone','Epinephrine and cortisol'],a:0,
    w:'Insulin and glucagon have opposite effects on one variable, blood glucose, as calcitonin and PTH do on blood Ca²⁺. TSH stimulates the release of thyroxine, and the hormones of the other two pairs act in the same direction.'},
-  {q:'An adult has 3.0 L of blood plasma with a total calcium concentration of 2.4 mmol/L. The molar mass of calcium is 40.1 g/mol. Calculate the mass of calcium in the plasma, in milligrams.',n:289,u:'mg',tol:.02,m:'The amount is the concentration × the volume. Then the mass is the amount × the molar mass.',
+  {q:'An adult has 3.0 L of blood plasma with a total calcium concentration of 2.4 mmol/L. The molar mass of calcium is 40.1 g/mol. Calculate the mass of calcium in the plasma, in milligrams.',n:289,u:'mg',m:'The amount is the concentration × the volume. Then the mass is the amount × the molar mass.',
    w:'The amount of calcium is 2.4 mmol/L × 3.0 L = 7.2 mmol. A molar mass of 40.1 g/mol is the same as 40.1 mg/mmol. The mass is 7.2 mmol × 40.1 mg/mmol = 289 mg, tiny compared with about 1 kg of calcium in the bones.'}];
 
 /* ---------- challenge problem: PTH, vitamin D and the kidneys ---------- */
@@ -6088,9 +6075,8 @@ ns:{f:[['Resting potential','−70 mV'],['Threshold','approximately −55 mV'],[
  t:[['Neuron','The functional unit of the nervous system. It conducts nerve impulses.'],['Glial cell','A cell that gives structural support to neurons and helps their metabolism.'],['Dendrite','The part of a neuron that receives information and conducts impulses toward the cell body.'],['Axon','The extension of a neuron that conducts impulses away from the cell body.'],['Myelin sheath','A white coat of fatty protein that insulates the axon and makes the impulse faster.'],['Schwann cell','A glial cell that forms the myelin sheath and the neurilemma in the PNS.'],['Node of Ranvier','A gap between two sections of myelin. The impulse jumps from node to node.'],['Neurilemma','The thin outer membrane of an axon in the PNS. It promotes the regeneration of damaged axons.'],['Sensory neuron','A neuron that carries information from sensory receptors to the CNS.'],['Interneuron','A neuron in the brain or spinal cord that links sensory neurons to motor neurons.'],['Motor neuron','A neuron that carries information from the CNS to an effector.'],['Effector','A cell, organ or gland that responds to a stimulus.'],['Reflex arc','The simplest nerve pathway: receptor, sensory neuron, interneuron, motor neuron, effector.'],['Resting potential','The voltage across the membrane of a neuron that does not transmit an impulse (−70 mV).'],['Action potential','The fast change in the charge across the membrane when a neuron is stimulated.'],['Depolarization','Na⁺ diffuses into the neuron and the inside becomes positive.'],['Repolarization','K⁺ diffuses out of the neuron and the inside becomes negative again.'],['Hyperpolarization','A short time in which the inside is more negative than the resting potential.'],['Refractory period','The time in which the membrane returns to rest and cannot start a new action potential.'],['Threshold','The minimum level of stimulus that produces an action potential.'],['All-or-none response','A neuron fires completely or does not fire. The size of the action potential does not change.'],['Saltatory conduction','The jump of an impulse from node to node in a myelinated axon.'],['Synapse','The space between two neurons, or between a neuron and an effector.'],['Neurotransmitter','A chemical that carries the signal across a synapse.'],['Acetylcholine','The most common neurotransmitter. It usually has an excitatory effect.'],['Cholinesterase','The enzyme that breaks down acetylcholine.'],['Summation','The combined effect of the neurotransmitter from several presynaptic neurons.'],['Central nervous system','The brain and the spinal cord.'],['Peripheral nervous system','The nerves that carry information between the body and the CNS.'],['Cerebrum','The largest part of the brain. Its covering, the cerebral cortex, is grey matter.'],['Cerebellum','The part of the hindbrain that controls limb movements, balance and muscle tone.'],['Medulla oblongata','The part of the hindbrain that controls breathing, heart rate and the diameter of blood vessels.'],['Hypothalamus','The part of the forebrain that keeps homeostasis and connects to the pituitary gland.'],['Thalamus','The part of the forebrain that relays sensory information to the cerebrum.'],['Corpus callosum','The bundle of nerves that connects the two cerebral hemispheres.'],['Meninges','Three protective layers around the brain and the spinal cord.'],['Sympathetic nervous system','The autonomic division that prepares the body for stress (fight or flight).'],['Parasympathetic nervous system','The autonomic division that returns the body to normal (rest and digest).']]},
 sn:{f:[['Types of taste','sweet, sour, salt, bitter, savoury'],['Ossicles, in order','malleus, incus, stapes'],['Rods and cones','rods: low light, black and white &nbsp; cones: bright light, colour'],['Balance','semicircular canals: dynamic &nbsp; vestibule: static']],
  t:[['Sensory receptor','A structure that changes one form of energy into nerve impulses.'],['Sensory adaptation','The neurons stop firing although the stimulus is still present. The threshold level has moved up.'],['Sclera','The white, fibrous outer layer of the eye. It protects the eye and keeps its shape.'],['Cornea','The clear front part of the sclera. It bends light toward the pupil.'],['Aqueous humour','The transparent fluid behind the cornea. It supplies nutrients to the cornea.'],['Choroid layer','The middle layer of the eye. It has pigment that prevents the scattering of light, and blood vessels.'],['Iris','A circular muscle that controls the size of the pupil.'],['Pupil','The opening in the iris that lets light into the eye.'],['Lens','The structure that focuses the image on the retina.'],['Ciliary muscles','Muscles that change the shape of the lens.'],['Vitreous humour','The jellylike material that keeps the shape of the eyeball.'],['Retina','The inner layer of the eye. It contains rods and cones.'],['Rods','Cells that respond to low-intensity light and give black and white vision.'],['Cones','Cells that respond to high-intensity light and give colour vision.'],['Fovea centralis','The most sensitive area of the retina. It has the highest density of cones.'],['Blind spot','The area where the optic nerve touches the retina. It has no rods or cones.'],['Optic nerve','The nerve that carries impulses from the retina to the brain.'],['Positive afterimage','An image that you continue to see in its original colours after you look at a bright light.'],['Negative afterimage','An image in reversed colours, caused by fatigue of one type of cone.'],['Myopia','Near-sightedness. The eyeball is too long, and the focus is in front of the retina. A concave lens corrects it.'],['Hyperopia','Far-sightedness. The eyeball is too short, and the focus is behind the retina. A convex lens corrects it.'],['Astigmatism','A defect in which the lens or the cornea has an irregular shape.'],['Cataract','A defect in which the lens becomes opaque.'],['Glaucoma','A build-up of aqueous humour. The pressure slowly kills retinal cells.'],['Pinna','The outer ear flap. It funnels sound into the auditory canal.'],['Tympanic membrane','The eardrum. It separates the outer ear from the middle ear and vibrates with sound.'],['Ossicles','Three small bones (malleus, incus, stapes) that amplify sound.'],['Eustachian tube','The tube that connects the middle ear to the throat and equalizes air pressure.'],['Cochlea','The fluid-filled part of the inner ear for hearing.'],['Organ of Corti','The rows of hair cells in the cochlea that change vibrations into nerve impulses.'],['Semicircular canals','Three fluid-filled rings of the inner ear for dynamic equilibrium.'],['Vestibule','The part of the inner ear, with the utricle and the saccule, for static equilibrium.']]}};
-/* the right margin of a graph: room for the names at the line ends, measured at the 15.5px phone text size */
 /* small SVG graph for questions */
-function G(o){const n=(o.s||[]).filter(x=>x.n).length,leg=n>1,W=o.w||460,H=(o.h||250)+(leg||o.cap?20:0),L=56,R=o.r||gR(o,W,L),T=14+(leg||o.cap?22:0),B=42,X=x=>L+(x-o.x[0])/(o.x[1]-o.x[0])*(W-L-R),Y=y=>H-B-(y-o.y[0])/(o.y[1]-o.y[0])*(H-T-B),cs=['var(--s1)','var(--s2)','var(--s3)','var(--s4)'],f=v=>v.toFixed(1);
+function G(o){const n=(o.s||[]).filter(x=>x.n).length,leg=n>1,W=460,H=(o.h||250)+(leg||o.cap?20:0),L=56,R=o.r||gR(o,W,L),T=14+(leg||o.cap?22:0),B=42,X=x=>L+(x-o.x[0])/(o.x[1]-o.x[0])*(W-L-R),Y=y=>H-B-(y-o.y[0])/(o.y[1]-o.y[0])*(H-T-B),cs=['var(--s1)','var(--s2)','var(--s3)','var(--s4)'],f=v=>v.toFixed(1);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.alt||'Graph'}" font-size="12.5">`;
   /* fine grid with simple values, so that squares can be counted */
   const minor=(st,a,b,fn)=>{if(!st)return;for(let v=Math.ceil(a/st-1e-9)*st;v<=b+1e-9;v+=st)fn(+v.toFixed(6));};
@@ -6215,7 +6201,7 @@ function collide2D(host){
 /* a short quotation with its source */
 const lq=(t,src)=>`<blockquote class="lq">${t}${src?`<cite>${src}</cite>`:''}</blockquote>`;
 /* select words or phrases in a passage. chunks: array of strings; a chunk that starts with * is a target. A plain string is split into words, and {braces} mark target words. o.need: the number of targets that is a full answer (default: all). */
-function pickText(host,o){const box=el('div',{class:'pk-box'});host.append(box);
+function pickText(host,o){const box=el('div');host.append(box);
   const toks=Array.isArray(o.chunks)?o.chunks.map(c=>c[0]==='*'?{t:c.slice(1),k:1}:{t:c,k:0}):(o.text.match(/\{[^}]+\}|[^\s{}]+/g)||[]).map(w=>w[0]==='{'?{t:w.slice(1,-1),k:1}:{t:w,k:0});
   const need=o.need||toks.filter(x=>x.k).length;
   function render(){box.innerHTML=`<p class="hint">${o.prompt}</p><p class="pk" role="group" aria-label="Passage. Use the arrow keys to move between the words.">${toks.map((x,i)=>`<button type="button" class="pkw" data-i="${i}" tabindex="${i?-1:0}" aria-pressed="false">${x.t}</button>`).join(' ')}</p><div class="row"><button type="button" class="btn sm" data-a="c">Check</button><button type="button" class="btn sm ghost" data-a="r">Clear</button><span class="hint" aria-live="polite"></span></div><div data-after></div>`;
@@ -6225,7 +6211,7 @@ function pickText(host,o){const box=el('div',{class:'pk-box'});host.append(box);
     $('[data-a=c]',box).onclick=()=>{if(box.dataset.done)return;let hit=0,wrong=0;const full=$$('.pkw.on',box).filter(b=>toks[+b.dataset.i].k).length>=need;$$('.pkw',box).forEach(b=>{const x=toks[+b.dataset.i],on=b.classList.contains('on');b.classList.remove('on');b.removeAttribute('aria-pressed');
         if(on&&x.k){b.classList.add('ok');hit++;}else if(on){b.classList.add('bad');wrong++;}else if(x.k&&!full)b.classList.add('miss');});box.dataset.done=1;
       /* screen readers: each marked word says its result; the toggle state no longer applies */
-      $$('.pkw',box).forEach(b=>{const s=b.classList.contains('ok')?'correct':b.classList.contains('bad')?'not part of the answer':b.classList.contains('miss')?'missed':'';b.removeAttribute('aria-pressed');if(s)b.setAttribute('aria-label',b.textContent+' ('+s+')');});
+      $$('.pkw',box).forEach(b=>{const s=b.classList.contains('ok')?'correct':b.classList.contains('bad')?'not part of the answer':b.classList.contains('miss')?'missed':'';if(s)b.setAttribute('aria-label',b.textContent+' ('+s+')');});
       $('.row .hint',box).textContent=`You found ${Math.min(hit,need)} of ${need}.`+(wrong?` ${wrong} ${wrong===1?'selection is':'selections are'} not part of the answer.`:'')+(hit<need?' The missed parts are underlined.':'');
       if(o.after)$('[data-after]',box).innerHTML=`<p class="fb info">${o.after}</p>`;if(hit||wrong)markStudy();};
     $('[data-a=r]',box).onclick=()=>{delete box.dataset.done;render();};}
@@ -6269,7 +6255,7 @@ const PRL=[
   const sh=el('div'),tx=el('div');dl.append(sh,tx);const show=i=>{tx.innerHTML=lq(D[i][1],D[i][0])+ex('What does the diction show?','<p>'+D[i][2]+'</p>');};seg(sh,['Lecter','Sally','Rocky'],show);show(0);
   const sp=card(g,'Formal or colloquial?','<p>Formal words sound educated or official. Colloquial words sound like everyday speech.</p>');
   const FC=[['Thoroughfare',0],['Regulations',0],['Premises',0],['Commence',0],['Nevertheless',0],['Purchase',0],['Ain’t',1],['Gonna',1],['Kid',1],['Yeah',1],['Wanna',1],['Stuff',1]];
-  speed(sp,'fc',{title:'Formal or colloquial',intro:'Sort 12 words as fast as you can.',items:()=>shuffle(FC.slice()).map(([w,c])=>({q:`<p class="sp-term">${w}</p>`,o:['Formal','Colloquial'],a:c}))});
+  speed(sp,'fc',{title:'Formal or colloquial',intro:'Sort 12 words as fast as you can.',items:()=>shuffle(FC).map(([w,c])=>({q:`<p class="sp-term">${w}</p>`,o:['Formal','Colloquial'],a:c}))});
   const ic=card(g,'In-class activity: <i>Room</i>, by Emma Donoghue','<p>Read and annotate your copy of the excerpt. The narrator is a five-year-old boy. Look for:</p><ul><li>words that a young child would use, and words that he uses in an unusual way</li><li>what his diction shows about his age and about the world that he knows</li><li>the effect of seeing a frightening situation through a child’s words</li></ul>');notesBox(ic,'room');
 },qz:[
   {q:'What is diction?',o:['The type of words that an author uses','The order in which the words are arranged in a sentence','The attitude of the narrator','The person who tells the story'],a:0,w:'Diction is word choice. The order of the words is syntax.'},
@@ -6302,7 +6288,7 @@ const PRL=[
   const show=i=>{tx.innerHTML=lq(Q[i][1],Q[i][2])+ex('Show the analysis: '+Q[i][0].toLowerCase(),'<p>'+Q[i][3]+'</p>');};seg(sh,Q.map(x=>x[0]),show);show(0);
   const sp=card(g,'Name the technique','<p>A speed round with new example sentences.</p>');
   const T=['Polysyndeton','Parallel structure','Inversion','Short sentences','Midsentence break'],SX=[['She laughed and cried and laughed and could not stop.',0],['To read is to think; to write is to think twice.',1],['Into the dark forest walked the boy.',2],['We ran. We hid. We waited.',3],['The answer – and she knew it – was no.',4],['He wanted the house and the car and the boat and the silence.',0],['Easy to promise, hard to keep.',1],['Strange was the silence that followed.',2]];
-  speed(sp,'tech',{title:'Name the technique',intro:'Name the technique in 8 sentences.',items:()=>shuffle(SX.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:T,a}))});
+  speed(sp,'tech',{title:'Name the technique',intro:'Name the technique in 8 sentences.',items:()=>shuffle(SX).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:T,a}))});
   const ic=card(g,'In-class activity: <i>The Sun Also Rises</i>, by Ernest Hemingway','<p>Read and annotate your copy of the excerpt. Hemingway is famous for his plain style. Look for:</p><ul><li>the length of the sentences, and where they become longer or shorter</li><li>repeated words and the conjunction “and”</li><li>what the characters do not say, and how the syntax hides their feelings</li></ul>');notesBox(ic,'sun');
 },qz:[
   {q:'What is syntax?',o:['The arrangement of words and phrases to create an effect','The type of words that an author uses, such as formal or colloquial words','The attitude of the speaker towards the subject and the audience','The point of view'],a:0,w:'Syntax is arrangement. Diction is word choice.'},
@@ -6328,7 +6314,7 @@ const PRL=[
   dd.insertAdjacentHTML('beforeend',ex('Show why',`<p><b>Atticus</b> sounds more hopeless than anywhere else in the novel, but he also understands Tom’s choice, almost with approval.</p><p><b>Fred</b> dies among his brothers, and “the ghost of his last laugh” reminds us of his carefree nature. The death feels cruel and undeserved.</p><p><b>Ratchett</b>: the speaker cannot even remember his name, thus we do not grieve for him. The focus is on solving the murder, and the tone builds tension.</p>`));
   const sp=card(g,'Name the tone','<p>A speed round with new example sentences.</p>','half');
   const TN=['Mournful','Optimistic','Suspenseful','Sarcastic','Nostalgic','Defiant'],TS=[['Every chair at the table was empty now, and the clock kept ticking for no one.',0],['Tomorrow the fields will be green again, and we will plant twice as much.',1],['The footsteps stopped outside the door. Then the handle began to turn.',2],['Oh, wonderful. Another meeting about meetings. My favourite.',3],['We used to ride our bikes to the lake every summer, back when the days felt endless.',4],['Nobody will ever push my sister around again. Nobody.',5]];
-  speed(sp,'tone',{title:'Name the tone',intro:'Name the tone of 6 sentences.',items:()=>shuffle(TS.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:TN,a}))});
+  speed(sp,'tone',{title:'Name the tone',intro:'Name the tone of 6 sentences.',items:()=>shuffle(TS).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:TN,a}))});
   const el2=card(g,'Other prose elements','<p>Prose prompts also ask about these elements. Each one supports the tone.</p>','half');const es=el('div'),et=el('div');el2.append(es,et);
   const E=[['Detail','<p><b>Selection of detail</b> is what the author chooses to include or to leave out.</p>'+lq('“Her long hair was streaked with gray, tangled and matted, and her eyes had sunk deep into their sockets, but still she reminded me of the mom she’d been when I was a kid, swan-diving off cliffs and painting in the desert and reading Shakespeare aloud.”','Jeannette Walls, <i>The Glass Castle</i>')+ex('Show the analysis','<p>Details of the mother’s past (swan-diving, painting, Shakespeare) are put next to details of her ragged present. The contrast shows a proud, once-vibrant woman, not only a homeless stranger. It prepares the reader for the story of how she changed.</p>')],
     ['Figurative','<p><b>Figurative language</b> is language that is not literally true: metaphor, simile, personification, hyperbole.</p>'+lq('“With the brass nozzle in his fists, with this great python spitting its venomous kerosene upon the world, the blood pounded in his head…”','Ray Bradbury, <i>Fahrenheit 451</i>')+ex('Show the analysis','<p>The hose becomes a “great python” (metaphor) that spits “venomous” kerosene. Bradbury writes beautiful, poetic language about destruction, in a world with no art. The fireman’s burning seems mesmerizing, and this idea grows later in the novel.</p>')],
@@ -6369,7 +6355,7 @@ const PRL=[
   const showK=i=>{kt.innerHTML=K[i][1];};seg(ks,K.map(x=>x[0]),showK);showK(0);
   const sp=card(g,'Which point of view?','<p>A speed round with new example sentences.</p>','half');
   const PV=['1st person','2nd person','3rd limited','3rd omniscient','Stream of consciousness'],PS=[['I never told anyone about the key.',0],['You open the door and smell smoke.',1],['Leo hated the rain, but he said nothing to anyone.',2],['Leo hated the rain; beside him, Ana secretly loved it.',3],['rain and the bus late again and wet shoes and why say yes to this why',4],['My brother says I always lie, which is funny, because I never do.',0],['You will remember this day, although you do not know it yet.',1],['The captain feared the storm, the cook feared the captain, and the boy feared nothing at all.',3]];
-  speed(sp,'pov',{title:'Which point of view',intro:'Name the point of view of 8 sentences.',items:()=>shuffle(PS.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:PV,a}))});
+  speed(sp,'pov',{title:'Which point of view',intro:'Name the point of view of 8 sentences.',items:()=>shuffle(PS).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:PV,a}))});
   const ic=card(g,'In-class activity: <i>The Curious Incident of the Dog in the Night-Time</i>, by Mark Haddon','<p>Read and annotate your copy of the excerpt. Pay attention to the narration style:</p><ul><li>who the narrator is, and how he sees the world differently from other characters</li><li>what he notices in detail, and what he does not understand</li><li>how his point of view affects what the reader knows</li></ul>');notesBox(ic,'curious');
 },qz:[
   {q:'Which point of view uses “I” and “my”, with the narrator inside the story?',o:['1st person','2nd person','3rd person limited','3rd person omniscient'],a:0,w:'A first-person narrator is a character.'},
@@ -6402,9 +6388,9 @@ WRQ.pr=[
     model:'<p>Distance controls what the reader can know. Death in The Book Thief stands outside human life, thus he can see “all of that” and choose which stories to tell; his weary, businesslike voice gives a wide but selective view. The narrator of “The Tell-Tale Heart” is inside the events and inside his own madness. He insists the officers “knew”, but they hear nothing, thus the reader must look past his account to find the truth.</p>'}];
 
 /* ===================== Physics 30 Unit 2: Forces and fields ===================== */
-const KC=8.99e9,QE=1.60e-19,ME=9.11e-31,MP=1.67e-27,MA=6.65e-27,MU0=1.26e-6,UA=1.66e-27;
+const KC=8.99e9,QE=1.60e-19,ME=9.11e-31,MP=1.67e-27,MA=6.65e-27,UA=1.66e-27;
 
-const FFP={electron:{n:'electron',q:-QE,m:ME},proton:{n:'proton',q:QE,m:MP},alpha:{n:'alpha particle',q:2*QE,m:MA}};
+const FFP={electron:{q:-QE,m:ME},proton:{q:QE,m:MP},alpha:{q:2*QE,m:MA}};
 
 const FFL=[
 /* ---------------- 0 charge and charging ---------------- */
@@ -6573,7 +6559,7 @@ const FFL=[
   card(g,'Three kinds of field',`<table><tr><th></th><th>Gravitational</th><th>Electric</th><th>Magnetic</th></tr><tr><td>Source</td><td>Mass</td><td>Charge</td><td>Moving charge</td></tr><tr><td>Direction</td><td>Toward the mass</td><td>Force on a + test charge</td><td>Where a compass N points</td></tr><tr><td>Strength</td><td><i>g</i> (N/kg)</td><td><i>E</i> (N/C)</td><td><i>B</i> (T)</td></tr><tr><td>Test with</td><td>A test mass</td><td>A + test charge</td><td>A compass</td></tr></table>`,'half');
   const sp=card(g,'Which hand?','<p>A speed round: choose the hand for each moving charge.</p>');
   const HQ=[['Electron flow in a wire',0],['Conventional current in a wire',1],['A beam of protons',1],['An alpha particle',1],['A cathode ray (electrons)',0],['A negative ion',0],['A positive ion',1],['A beta particle (electron)',0]];
-  speed(sp,'hand',{title:'Which hand',intro:'Choose the hand for 8 moving charges.',items:()=>shuffle(HQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Left hand','Right hand'],a}))});
+  speed(sp,'hand',{title:'Which hand',intro:'Choose the hand for 8 moving charges.',items:()=>shuffle(HQ).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Left hand','Right hand'],a}))});
 },qz:[
   {q:'According to domain theory, why does a dropped or heated magnet become weaker?',o:['Its domains become random again','It loses electrons','Its poles change places','It becomes charged'],a:0,w:'Heat and shocks let the domains move back to random directions.'},
   {q:'How is the direction of a magnetic field defined?',o:['The direction that the N pole of a compass points','The direction of the force on a positive charge','From S to N outside a magnet','The direction of the current'],a:0,w:'Outside a magnet, the field goes from N to S.'},
@@ -6630,7 +6616,7 @@ const FFL=[
     R(0,sig(Fg)+' N');R(1,sig(Fm)+' N');R(2,Math.abs(Fm-Fg)/Fg<.02?'<b>Suspended</b>':(Fm>Fg?'Rises':'Falls')+` (needs ${sig(need)} A)`);});K.set({});
   const sp=card(g,'Motor, generator or both?','<p>A speed round about energy changes.</p>');
   const MG=[['Changes electrical energy into mechanical energy',0],['Changes mechanical energy into electrical energy',1],['A coil turns in a magnetic field because of a current in it',0],['A turbine turns a coil in a magnetic field',1],['Uses a magnetic field and a coil of wire',2],['A loudspeaker cone moves because of a current in its coil',0],['A bicycle light is powered as the wheel turns a magnet',1],['A hydro dam sends power to homes',1]];
-  speed(sp,'mg',{title:'Motor or generator',intro:'Sort 8 statements.',items:()=>shuffle(MG.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Motor','Generator','Both'],a}))});
+  speed(sp,'mg',{title:'Motor or generator',intro:'Sort 8 statements.',items:()=>shuffle(MG).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Motor','Generator','Both'],a}))});
 },qz:[
   {q:'A 1.00 g wire carries 2.50 A, and 2.00 cm of it is perpendicular to a magnetic field. It falls at a constant velocity. What is the field strength?',n:0.196,u:'T',w:'Constant velocity: Fm = Fg, thus B = mg/(Il) = (0.00100)(9.81)/((2.50)(0.0200)) = 0.196 T.'},
   {q:'A 0.350 N wire has 7.00 cm in a 0.600 T field. What current holds it up?',n:8.33,u:'A',w:'IlB = mg, thus I = 0.350 / ((0.0700)(0.600)) = 8.33 A.'},
@@ -6690,8 +6676,8 @@ function wpoly(ts){let s='';ts.forEach(([c,v])=>{if(!c)return;const a=Math.abs(c
 function wrf(n,d){if(d<0){n=-n;d=-d;}const g=gcd(Math.abs(n),d)||1;n/=g;d/=g;return d===1?wmn(n):(n<0?'−':'')+Math.abs(n)+'/'+d;}
 function wrfH(n,d){if(d<0){n=-n;d=-d;}const g=gcd(Math.abs(n),d)||1;n/=g;d/=g;return d===1?wmn(n):(n<0?'−':'')+FR(Math.abs(n),d);}
 /* a def is {n:name, how:[method steps], trap:common mistake, p0:example numbers, rp():new numbers, make(p):{q, ask, s:[[work, why]], a:answer, n, tol}} */
-function wk(host,title,defs,cls){
-  const c=card(host,title,'<p class="hint">Read the method, then go through the example one step at a time. Each step shows the work and the reason for it. Then do one yourself with new numbers.</p>',cls),body=el('div');
+function wk(host,title,defs){
+  const c=card(host,title,'<p class="hint">Read the method, then go through the example one step at a time. Each step shows the work and the reason for it. Then do one yourself with new numbers.</p>'),body=el('div');
   if(defs.length>1){const sh=el('div');c.append(sh);seg(sh,defs.map(d=>d.n),i=>show(i));}
   c.append(body);
   const li=([m,w])=>`<li><div class="wk-m">${m}</div>${w?`<p class="wk-w">${w}</p>`:''}</li>`;
@@ -6960,7 +6946,7 @@ const LML=[
   seg(sh,F.map(x=>x[0].split(',')[0]),show);show(0);
   const sp=card(g,'Which method?','<p>A speed round: choose the first step for each limit.</p>');
   const MO=['Substitute directly','Factor and cancel','Expand and simplify','Rationalize','Does not exist'],MQ=[['lim (x→2) (x² + 3x − 1)',0],['lim (x→4) (x² − 16)/(x − 4)',1],['lim (h→0) ((1 + h)² − 1)/h',2],['lim (x→0) (√(x + 9) − 3)/x',3],['lim (x→0) 1/x',4],['lim (x→1) (x³ − 1)/(x − 1)',1],['lim (x→5) √(x + 4)',0],['lim (h→0) ((2 + h)³ − 8)/h',2]];
-  speed(sp,'meth',{title:'Which method',intro:'Choose the method for 8 limits.',items:()=>shuffle(MQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:MO,a}))});
+  speed(sp,'meth',{title:'Which method',intro:'Choose the method for 8 limits.',items:()=>shuffle(MQ).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:MO,a}))});
 },qz:[
   {q:'Evaluate lim (x→2) (x³ − 3x + 1).',n:3,abs:.001,w:'A polynomial is continuous: substitute. 8 − 6 + 1 = 3.'},
   {q:'Evaluate lim (x→3) (x² − 9)/(x − 3).',n:6,abs:.001,w:'Factor: x + 3 → 6.'},
@@ -6986,7 +6972,7 @@ const LML=[
     {n:'Step',d:'Parking: $3 for the first hour or part, then $2 for each extra hour or part. a = 2',a:2,p:[[x=>3,0,1,0,1],[x=>5,1,2,0,1],[x=>7,2,3,0,1],[x=>9,3,4,0,1]],L:5,Rr:7,fa:5,v:'Jump discontinuity at every whole hour.',xr:[0,4],yr:[0,10]}];
   let fi=0;const dsc=el('p',{class:'hint'});c.insertBefore(dsc,c.children[3]);
   const cv=canvas(c,260,(ctx,w,h)=>{const o=F[fi],P=plot(ctx,w,h,{x0:o.xr[0],x1:o.xr[1],y0:o.yr[0],y1:o.yr[1],xt:o.xr[1]-o.xr[0],yt:o.yr[1]-o.yr[0],xd:1,yd:0,xl:'x',yl:'y'}),k=P.K;
-    P.clip(()=>{o.p.forEach(([f,x0,x1,ci0,ci1])=>{samp(x=>Math.abs(x-o.a)<1e-6&&o.n==='Infinite'?NaN:f(x),x0,x1,300,o.yr[1]*4).forEach(s=>P.line(s,k.s1,{w:2.4}));
+    P.clip(()=>{o.p.forEach(([f,x0,x1,ci0,ci1])=>{samp(f,x0,x1,300,o.yr[1]*4).forEach(s=>P.line(s,k.s1,{w:2.4}));
       if(o.n!=='Infinite'){if(x0>o.xr[0]){const y=f(x0);ci0?P.dot(x0,y,k.s1,4):odot(ctx,P,x0,y,k.s1);}if(x1<o.xr[1]){const y=f(x1);ci1?P.dot(x1,y,k.s1,4):odot(ctx,P,x1,y,k.s1);}}});
       if(o.pt)P.dot(o.pt[0],o.pt[1],k.s2,4);});});
   const show=i=>{fi=i;const o=F[i],t=v=>v===Infinity?'∞ (no limit)':fmtn(v);dsc.innerHTML=o.d;R(0,t(o.L));R(1,t(o.Rr));R(2,isNaN(o.fa)?'not defined':fmtn(o.fa));R(3,o.v);cv.draw();};seg(sh,F.map(x=>x.n),show);show(0);
@@ -7008,7 +6994,7 @@ const LML=[
   const c=card(g,'Tangent finder','<p>Choose a parabola <i>y</i> = <i>px</i>² + <i>qx</i> + <i>r</i> and a point. The table shows the difference quotient as <i>h</i> shrinks.</p>');let K;
   const R=stats(c,['Point','Slope m','Tangent line']),tb=el('div',{class:'scroll'});
   const cv=canvas(c,300,(ctx,w,h)=>{if(!K)return;const {p,q,r,a}=K.v,f=x=>p*x*x+q*x+r,m=2*p*a+q,Y=Math.max(10,Math.ceil((Math.abs(f(a))+2)/10)*10),P=plot(ctx,w,h,{x0:-5,x1:5,y0:-Y,y1:Y,xt:10,yt:4,xd:0,yd:0,xl:'x',yl:'y'}),k=P.K;
-    P.clip(()=>{P.line(samp(f,-5,5)[0]||[],k.s1,{w:2.4});P.line([[-5,f(a)+m*(-5-a)],[5,f(a)+m*(5-a)]],k.s2,{w:2});P.dot(a,f(a),k.s4);});});
+    P.clip(()=>{P.line(samp(f,-5,5)[0],k.s1,{w:2.4});P.line([[-5,f(a)+m*(-5-a)],[5,f(a)+m*(5-a)]],k.s2,{w:2});P.dot(a,f(a),k.s4);});});
   c.append(tb);
   K=ctl(c,[{k:'p',l:'p',min:-2,max:2,step:.5,v:1,dp:1},{k:'q',l:'q',min:-4,max:4,step:1,v:-2},{k:'r',l:'r',min:-5,max:5,step:1,v:-3},{k:'a',l:'Point: x = a',min:-3,max:3,step:.5,v:2,dp:1}],v=>{const f=x=>v.p*x*x+v.q*x+v.r,m=2*v.p*v.a+v.q,b=f(v.a)-m*v.a;
     R(0,`(${fmtn(v.a)}, ${fmtn(f(v.a))})`);R(1,fmtn(m));R(2,'y = '+(m?(m===1?'':m===-1?'−':fmtn(m))+'x'+(b?(b<0?' − ':' + ')+fmtn(Math.abs(b)):''):fmtn(b)));
@@ -7078,7 +7064,7 @@ const LML=[
   K=ctl(c,[{k:'a',l:'First term a',min:1,max:10,step:1,v:8},{k:'r',l:'Ratio r',min:-1.2,max:1.2,step:.05,v:.5,dp:2}],v=>{const {a,r}=v,s10=r===1?10*a:a*(1-r**10)/(1-r),t1=+(a*r).toFixed(4);R(0,`${a} ${t1<0?'−':'+'} ${fmtn(Math.abs(t1))} + ${fmtn(+(a*r*r).toFixed(4))} + …`);R(1,fmtn(+s10.toFixed(4)));R(2,Math.abs(r)<1?`${a}/(1 ${r<0?'+':'−'} ${fmtn(Math.abs(r))}) = <b>${fmtn(+(a/(1-r)).toFixed(4))}</b>`:'Diverges (|r| ≥ 1)');cv.draw();});K.set({});
   const sp=card(g,'Converges or diverges?','<p>A speed round.</p>');
   const CQ=[['1 + 1/3 + 1/9 + 1/27 + …',0],['2 + 4 + 8 + 16 + …',1],['1 − 1 + 1 − 1 + …',1],['5 − 2.5 + 1.25 − …',0],['0.9 + 0.09 + 0.009 + …',0],['1 + 1.1 + 1.21 + 1.331 + …',1],['3 + 3 + 3 + …',1],['4 − 1 + 1/4 − 1/16 + …',0]];
-  speed(sp,'conv',{title:'Converges or diverges',intro:'Decide for 8 series.',items:()=>shuffle(CQ.slice()).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Converges','Diverges'],a}))});
+  speed(sp,'conv',{title:'Converges or diverges',intro:'Decide for 8 series.',items:()=>shuffle(CQ).map(([s,a])=>({q:`<p class="sp-term" style="font-weight:500">${s}</p>`,o:['Converges','Diverges'],a}))});
 },qz:[
   {q:'Find the sum: 8 + 4 + 2 + 1 + …',n:16,abs:.001,w:'a = 8, r = 1/2: 8/(1 − 1/2) = 16.'},
   {q:'Find the sum: 9 − 3 + 1 − 1/3 + …',n:6.75,abs:.001,w:'a = 9, r = −1/3: 9/(4/3) = 27/4 = 6.75.'},
@@ -7100,7 +7086,7 @@ const CH_LIM=[
   {q:'A ball is dropped from 10 m. After each bounce it rises to 3/5 of the height of the fall before. What is the total vertical distance that it travels?',n:40,u:'m',w:'Down 10 m, then up and down 6 + 3.6 + … each: 10 + 2 × 6/(1 − 0.6) = 10 + 30 = 40 m.'}];
 
 GEN.lim=[
-  ()=>{const a=RN(1,9,1),s=RN(-5,5,1)||1;return {L:1,q:`Evaluate lim (x→${a}) (x² − ${a*a})/(x − ${a}).`,n:2*a,abs:.001,w:`Factor: (x − ${a})(x + ${a})/(x − ${a}) = x + ${a} → ${2*a}.`};},
+  ()=>{const a=RN(1,9,1);return {L:1,q:`Evaluate lim (x→${a}) (x² − ${a*a})/(x − ${a}).`,n:2*a,abs:.001,w:`Factor: (x − ${a})(x + ${a})/(x − ${a}) = x + ${a} → ${2*a}.`};},
   ()=>{const p=RN(1,4,1),q=RN(-6,6,1)||5,a=RN(-3,3,1),m=2*p*a+q;return {L:3,q:`Find the slope of the tangent to y = ${p===1?'':p}x² ${q<0?'−':'+'} ${Math.abs(q)}x at x = ${a}.`,n:m,abs:.001,w:`[f(${a} + h) − f(${a})]/h = ${2*p*a+q} + ${p}h → ${m}.`};},
   ()=>{const a=RN(2,20,1),d=[2,3,4,5][Math.floor(Math.random()*4)],sg=Math.random()<.5?1:-1,r=sg/d,S=a/(1-r);return {L:6,q:`Find the sum of the geometric series with first term ${a} and common ratio ${sg<0?'−':''}1/${d}.`,n:S,abs:.001,tol:.005,w:`S = a/(1 − r) = ${a}/(1 ${sg<0?'+':'−'} 1/${d}) = ${fmtn(+S.toFixed(4))}.`};},
   ()=>{const a=RN(1,6,1),c=RN(1,5,1);return {L:4,q:`A particle has position s = t² + ${c}t (metres, seconds). Find its velocity at t = ${a} s.`,n:2*a+c,u:'m/s',w:`[(${a} + h)² + ${c}(${a} + h) − (${a*a+c*a})]/h = ${2*a+c} + h → ${2*a+c} m/s.`};},
@@ -8516,7 +8502,7 @@ function speed(host,name,o){const box=el('div',{class:'speed'});host.append(box)
   const best=()=>{const v=Store.w(key);return v&&v.s;};
   function idle(msg){const back=box.contains(document.activeElement);cancelAnimationFrame(raf);const b=best();box.innerHTML=`<div class="row"><button type="button" class="btn sm">${icon('bolt',14)}Speed round</button><span class="hint">${msg?msg+' ':''}${b?'Your best time: <b>'+fmtS(b)+'</b>.':o.intro||'Race your own best time.'}</span></div>`;$('button',box).onclick=go;if(back)focusTo(box,'button');}
   function go(){const its=o.items();let i=0,miss=0;const t0=performance.now();
-    const tick=()=>{if(!box.isConnected)return;const t=$('[data-clock]',box);if(t)t.textContent=fmtS(performance.now()-t0);raf=requestAnimationFrame(tick);};
+    const tick=()=>{if(!box.isConnected)return;const t=$('[data-clock]',box),s=fmtS(performance.now()-t0);if(t&&t.textContent!==s)t.textContent=s;raf=requestAnimationFrame(tick);};
     const show=()=>{const x=its[i],back=box.contains(document.activeElement);box.innerHTML=`<div class="qh"><b>${o.title}: ${i+1} of ${its.length}</b><span class="score" data-clock>${fmtS(performance.now()-t0)}</span></div>${x.q}<div class="ops">${x.o.map((t,j)=>`<button type="button" class="op" data-j="${j}">${t}</button>`).join('')}</div><div class="row"><button type="button" class="btn sm ghost" data-stop>Stop</button></div>`;
       $$('.op',box).forEach(b=>b.onclick=()=>{if(+b.dataset.j===x.a){i++;i<its.length?show():done();}else{miss++;b.classList.add('bad');const f=document.activeElement===b;b.disabled=true;fx(b,'shake');if(f){const nb=$$('.op',box).find(y=>!y.disabled);nb&&nb.focus();}}});$('[data-stop]',box).onclick=()=>{o.on&&o.on(null);idle('Stopped.');};o.on&&o.on(x);if(back)focusTo(box,'.op');};
     const done=()=>{cancelAnimationFrame(raf);o.on&&o.on(null);const ms=Math.round(performance.now()-t0),b=best(),fast=!b||ms<b,nb=!miss&&fast;if(nb)Store.wSet(key,{s:ms});if(nb&&b)inc('speedPB');markStudy();afterChange();
@@ -8734,7 +8720,7 @@ CH.en=EN_CH;
 const CONF=[['sure','Sure',"I know this"],['unsure','Unsure',"I think so"],['guess','Guess',"I am guessing"]];
 const CONFN={sure:'Sure',unsure:'Unsure',guess:'Guess'};
 /* TBUSY: 0 setup page, 1 a test or revision round is running, 2 its results are shown. A tab switch keeps 1 and 2. */
-let TEST=null,TBUSY=0;
+let TBUSY=0;
 addEventListener('beforeunload',e=>{if(TBUSY===1){e.preventDefault();e.returnValue='';}});
 const testSetup=()=>{const s=Object.assign({units:{},n:20,conf:true},gv('tset')||{});s.units=Object.assign({},s.units);return s;};
 function testUnits(){return SUBJECTS.filter(s=>s.units.length).map(s=>({s,units:s.units.filter(u=>SUBJ[u])}));}
@@ -8752,7 +8738,7 @@ function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const
   L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
 function testHead(L,title,lede){const back=L.contains(document.activeElement);L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;if(back)focusTo(L,'h1');return $('.grid',L);}
 
-function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
+function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
   const c=card(g,'1. Choose what to test','<p class="hint">Select a subject to include all of its units, or select single units.</p>','w7');
   const tree=el('div',{class:'ttree'});c.append(tree);
   /* a unit with no saved choice (also one added since the last visit) is included; an unticked unit is saved as 0 */
@@ -8763,14 +8749,14 @@ function testSetupPage(L){TBUSY=0;TEST=null;const g=testHead(L,'Test','Build a t
     $('input',all).onchange=e=>{boxes.forEach(([u,b])=>{b.checked=e.target.checked;st.units[u]=b.checked?1:0;});sync();upd();};
     boxes.forEach(([u,b])=>b.onchange=()=>{st.units[u]=b.checked?1:0;sync();upd();});sync();});
   const c2=card(g,'2. Length and confidence','','w5');
-  const lenRow=el('div',{class:'ctl'}),len=ctl(lenRow,[{k:'n',l:'Questions',min:5,max:60,step:5,v:clamp(st.n,5,60)}],v=>{st.n=v.n;upd();});c2.append(lenRow);
+  const lenRow=el('div',{class:'ctl'});ctl(lenRow,[{k:'n',l:'Questions',min:5,max:60,step:5,v:clamp(st.n,5,60)}],v=>{st.n=v.n;upd();});c2.append(lenRow);
   const sw=el('label',{class:'tsw'},`<input type="checkbox" ${st.conf?'checked':''}><span class="tsk"></span><span><b>Rate my confidence</b><small>After each answer, and before you see the result, say whether you were sure, unsure or guessing. After the test, a revision section sorts your answers by confidence.</small></span></label>`);c2.append(sw);
   $('input',sw).onchange=e=>{st.conf=e.target.checked;upd();};
   const sum=el('p',{class:'note'}),row=el('div',{class:'row'}),go=el('button',{type:'button',class:'btn'},icon('play',15)+'Start the test');row.append(go);c2.append(sum,row);
   const upd=(save=1)=>{if(save)gset('tset',st);const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]),pool=testPool(sel).length,n=Math.min(st.n,pool);
     sum.innerHTML=sel.length?`<b>${n} questions</b> from ${sel.length} ${sel.length===1?'unit':'units'} (${pool} available)${st.conf?', with confidence ratings':''}.`:'Select at least one unit.';go.disabled=!sel.length||!n;};
   go.onclick=()=>{const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]);testRun(L,testPick(sel,st.n),st.conf);};upd(0);
-  const last=gv('tlast');if(last){const r=card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
+  const last=gv('tlast');if(last){card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
 }
 
 function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Answer each question, then rate how sure you were before you see the result.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
@@ -8789,7 +8775,7 @@ function testResults(L,res,conf){TBUSY=2;const n=res.length,c=res.filter(r=>r.ok
     <div class="bars" style="margin-top:.8em">${Object.keys(by).map(sk=>`<div class="barrow"><span>${icon(sk,15)}${SUBJ[sk].name}</span><div class="bar2"><i class="b2" data-w="${100*by[sk][0]/by[sk][1]}"></i></div><b>${by[sk][0]} / ${by[sk][1]}</b><span></span></div>`).join('')}</div></div></div>`);
   setRing(c1,f,c+' of '+n);grow(c1);
   if(conf){const cnt={};res.forEach(r=>{cnt[r.conf]=cnt[r.conf]||[0,0];cnt[r.conf][1]++;if(r.ok)cnt[r.conf][0]++;});
-    const cc=card(g,'Confidence check',`<p class="hint">How well your confidence matched your results.</p><div class="stats">${CONF.map(([k,nme])=>cnt[k]?`<div class="stat"><span>${nme}</span><b>${cnt[k][0]} / ${cnt[k][1]} correct</b></div>`:'').join('')}</div>`+
+    card(g,'Confidence check',`<p class="hint">How well your confidence matched your results.</p><div class="stats">${CONF.map(([k,nme])=>cnt[k]?`<div class="stat"><span>${nme}</span><b>${cnt[k][0]} / ${cnt[k][1]} correct</b></div>`:'').join('')}</div>`+
       (sw?`<p class="note"><b>${sw} ${sw===1?'answer was':'answers were'} “sure” but wrong.</b> These matter most: a confident wrong answer is a misconception, not a gap.</p>`:'<p class="note">No confident wrong answers. Your judgement of what you know is accurate.</p>'));
     const order=['bad-sure','bad-unsure','bad-guess','ok-doubt','ok-sure'],groups=order.map(k=>[k,res.filter(r=>CKEY(r)===k)]).filter(([,a])=>a.length);
     const rev=card(g,'Revise by confidence','<p class="hint">Grouped in the order to study them. Wrong answers are already in spaced repetition.</p>');
