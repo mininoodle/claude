@@ -19,7 +19,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 
 ## Features
 
-- Lesson notes, interactive figures and quizzes with hints
+- Lesson notes, interactive figures and quizzes with hints. Try-it tasks: diagram tests, drag the labels, put events in order, match descriptions to terms, and sort items between two labels. The Nervous system and Senses sections take their try-its and extra questions from the class notes, with the diploma questions from the notes in the lesson quizzes
 - Math: step-by-step worked examples in every lesson (17 question types). Each one gives the method, an example to go through one step at a time with the reason for each step, a common mistake, and a "Your turn" question with new numbers that you can check, with hints that show the solution one step at a time
 - Physics, Chemistry and Math: a "How to do the questions" guide in every lesson, placed before the questions. It lists the kinds of question in that lesson, with the steps for each kind and a check that catches the usual mistake. The Momentum unit practice lesson has a guide for the practice exam formats (numerical response, multiple choice, written response)
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
