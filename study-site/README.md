@@ -11,7 +11,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Today | Daily 5-question challenge, weekly goal, level, progress map, achievements |
 | Physics | Momentum, Forces and fields |
 | Biology | Unit 1: Nervous and endocrine systems, in three sections, chosen from their own row under the unit, that each keep their own lessons, reference sheet and review: Nervous system; Senses; Endocrine system (homeostasis and feedback, hormones and receptors, glands and the pituitary, blood sugar and diabetes, stress and the adrenal glands, thyroid and growth, calcium balance, water and salt balance) |
-| Chemistry | Equilibrium |
+| Chemistry | Unit 1: Thermochemistry (energy and temperature, Q = mcΔt, enthalpy, activation energy and catalysts, enthalpies of formation, calorimetry, Hess’s law by adding equations and by the formation method, efficiency); Unit 2: Equilibrium |
 | Math | Limits and rates of change |
 | Language Arts | Prose analysis: diction, syntax, tone, point of view |
 | Social Studies | Ideologies and identity (Related Issue 1): ideology, democratic primer, the American political system, translating the will of the people, classical liberalism, thinkers and liberal democracy |
@@ -19,7 +19,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 
 ## Features
 
-- Lesson notes, interactive figures and quizzes with hints. Try-it tasks: diagram tests, drag the labels, put events in order, match descriptions to terms, and sort items between two labels. The Nervous system and Senses sections take their try-its and extra questions from the class notes, with the diploma questions from the notes in the lesson quizzes
+- Lesson notes, interactive figures and quizzes with hints. Try-it tasks: diagram tests, drag the labels, put events in order, match descriptions to terms, and sort items between two labels. The Nervous system and Senses sections take their try-its and extra questions from the class notes, with the diploma questions from the notes in the lesson quizzes. The Endocrine, Momentum, Equilibrium and Thermochemistry sections take their extra questions and matching tasks from the class notepacks and their diploma practice in the same way
 - Math: step-by-step worked examples in every lesson (17 question types). Each one gives the method, an example to go through one step at a time with the reason for each step, a common mistake, and a "Your turn" question with new numbers that you can check, with hints that show the solution one step at a time
 - Physics, Chemistry and Math: a "How to do the questions" guide in every lesson, placed before the questions. It lists the kinds of question in that lesson, with the steps for each kind and a check that catches the usual mistake. The Momentum unit practice lesson has a guide for the practice exam formats (numerical response, multiple choice, written response)
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
