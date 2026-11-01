@@ -10397,7 +10397,7 @@ html{scroll-padding-top:62px}
 }
 /* wide screens: more cards side by side instead of wider cards, and slightly larger type. Column counts: 2 across from 1600 px, 3 from 2400 px, 4 from 3200 px */
 @media(min-width:1600px){
-  .lesson{max-width:none}
+  .lesson{max-width:1800px;margin:0 auto}
   #main{padding:0 clamp(40px,2.5vw,96px) 80px}
   .crumb{margin:0 calc(-1*clamp(40px,2.5vw,96px)) 8px;padding:0 clamp(40px,2.5vw,96px)}
   #main .grid{grid-template-columns:repeat(24,minmax(0,1fr));gap:18px;align-items:start}
@@ -10410,6 +10410,7 @@ html{scroll-padding-top:62px}
   #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
 @media(min-width:2400px){
   :root{--railw:290px}
+  .lesson{max-width:2700px}
   #main .grid{grid-template-columns:repeat(36,minmax(0,1fr));gap:20px}
   #main .card{grid-column:span 12}
   #main .card.half{grid-column:span 12}#main .card.w7{grid-column:span 14}#main .card.w5{grid-column:span 10}
@@ -10419,10 +10420,8 @@ html{scroll-padding-top:62px}
 @media(min-width:3000px){html{font-size:18px}}
 @media(min-width:3200px){
   :root{--railw:320px}
-  #main .grid{grid-template-columns:repeat(48,minmax(0,1fr));gap:22px}
-  #main .card{grid-column:span 12}
-  #main .card.half{grid-column:span 12}#main .card.w7{grid-column:span 14}#main .card.w5{grid-column:span 10}
-  #main .card.quiz,#main .card.boss-c{grid-column:span 24}
+  .lesson{max-width:2900px}
+  #main .grid{gap:22px}
 }
 @media print{#rail,.crumb{display:none}}
 </style>
