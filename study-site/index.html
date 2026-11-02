@@ -10442,4 +10442,127 @@ if(FIREBASE_CONFIG){
 dispatchEvent(new Event('sync-change'));
 </script>
 
+
+<!-- ===== Sidebar layout: a navigation rail on the left, a breadcrumb bar, and a centred lesson column. It moves the existing bars into the rail at load ===== -->
+<style id="sidebar-skin">
+:root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
+  --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
+  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
+  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
+  --cap:1000px;--pad:40px}
+:root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
+  --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
+body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
+[data-mode="dark"] body,[data-mode="dark"] body[data-s]{--a1:#5a9cf0;--a2:#5a5a58;--a3:#3a3a3a}
+.bg,#top{display:none!important}
+html{scroll-padding-top:62px}
+#shell{display:flex;align-items:flex-start;min-height:100vh}
+#rail{flex:none;width:var(--railw);position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);border-right:1px solid var(--hair);padding:14px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.rail-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;font-size:14px}
+.rail-logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;display:grid;place-items:center}
+.rail-h,#rail .ulabel{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:14px 8px 4px;margin:0}
+#rail .seg{display:flex;flex-direction:column;gap:1px;border-radius:0;background:none;border:0;padding:0;box-shadow:none;max-width:none;overflow:visible;isolation:isolate}
+#rail .seg button{justify-content:flex-start;font-size:13.5px;font-weight:500;padding:6px 8px;border-radius:6px;white-space:normal;text-align:left;color:var(--ink);gap:.5em}
+#rail .seg button[aria-selected="true"]{font-weight:600}
+#rail .seg .thumb{border-radius:6px;background:var(--hov);border:0;box-shadow:none;top:0;bottom:auto}
+#rail .seg.main .sm{display:none}#rail .seg.main .lg{display:inline}
+#rail .units{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:2px;padding:0}
+#rail .units .uclear{margin:10px 8px 0;align-self:flex-start}
+#rail .units .usec{flex-direction:column;flex-basis:auto;align-items:stretch;gap:2px}
+#rail .chips{display:flex;flex-direction:column;gap:1px;padding:0 0 0 12px;background:none;border:0;max-width:none;overflow:visible;border-radius:0;flex-wrap:nowrap;justify-content:flex-start}
+#rail .chips button{font-size:13px;font-weight:500;padding:5px 8px;border-radius:6px;text-align:left;white-space:normal;color:var(--ink2);display:flex;align-items:center;transform:none}
+#rail .chips button .ic{flex:none}
+#rail .chips button[aria-selected="true"]{background:var(--hov);color:var(--ink);box-shadow:none;font-weight:600}
+#rail .chips button .pr{margin-left:auto;flex:none}
+#rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
+.rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
+.modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
+#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
+/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
+.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
+.crumb b{color:var(--ink);font-weight:500}
+.crumb-sep{margin:0 8px;color:var(--a3)}
+.lesson{max-width:var(--cap);margin-inline:auto}
+.glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.card{border-radius:10px;padding:18px 20px}
+.card::before{display:none}
+.lhead{padding:24px 0 16px}
+.lhead h1{font-size:2.2rem;letter-spacing:-.02em}
+.fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
+.btn{box-shadow:none;border-radius:6px}
+.btn.ghost{box-shadow:none;border-radius:6px}
+.note{background:var(--notebg);border-color:#e8d79a}
+[data-mode="dark"] .note{border-color:#5a4d1e}
+.seg.in{background:var(--glass2);border-color:var(--hair);border-radius:8px}
+.seg.in .thumb{border-radius:6px;background:var(--glass);box-shadow:0 1px 2px rgba(0,0,0,.1);border:1px solid var(--hair)}
+.tile{border-radius:8px;box-shadow:none}
+@media(max-width:900px){
+  #shell{display:block}
+  #rail{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px 12px 12px;gap:6px}
+  #rail .seg,#rail .chips,#rail .units,#rail .units .usec{flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
+  #rail .chips{padding:0}
+  .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
+  #rail .units .uclear{margin:0 0 0 auto}
+  .rail-tools{margin-top:0;padding:4px 0 0}
+  :root{--pad:16px}
+  #main{padding-bottom:60px}
+  .crumb{height:40px;position:static}
+  .rail-brand,.rail-h{display:none}
+  #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
+  #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
+  #rail .seg.main button,#rail .chips button{flex:none;white-space:nowrap}
+  #rail .seg.main button{flex-direction:row}
+  #rail .ulabel{flex-basis:100%}
+}
+/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
+   The column is capped and centred, thus the card order stays as written and the margins stay even */
+@media(min-width:1600px){
+  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
+  /* wrapping rows instead of a fixed grid: a full row fills the column exactly, and a row that is not full sits in the middle.
+     A card that is n columns wide is n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way */
+  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:var(--gap)}
+  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
+  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
+  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
+  .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
+}
+@media(min-width:2200px){html{font-size:17px}
+  #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
+@media(min-width:2400px){
+  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
+  .lhead h1{font-size:2.8rem}
+}
+@media(min-width:3000px){html{font-size:18px}}
+@media(min-width:3200px){
+  :root{--railw:320px;--cap:2900px;--gap:22px}
+}
+@media print{#rail,.crumb{display:none}}
+</style>
+<script>
+(function(){
+  const $id=i=>document.getElementById(i);
+  const main=$id('main');if(!main||$id('rail'))return;
+  const shell=document.createElement('div');shell.id='shell';main.parentNode.insertBefore(shell,main);
+  const rail=document.createElement('aside');rail.id='rail';rail.setAttribute('aria-label','Navigation');
+  rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span>Study</div><div class="rail-h">Subjects</div>';
+  rail.append($id('tabs'),$id('units'));
+  const lh=document.createElement('div');lh.className='rail-h';lh.textContent='Lessons';rail.append(lh,$id('chips'));
+  const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.append(tools);
+  shell.append(rail,main);
+  const crumb=document.createElement('div');crumb.className='crumb';crumb.innerHTML='<span class="crumb-path"></span><span class="crumb-right"></span>';main.prepend(crumb);
+  const path=crumb.firstChild,right=crumb.lastChild,sep='<span class="crumb-sep" aria-hidden="true">/</span>';
+  const upd=()=>{const parts=document.title.replace(/ · Study site$/,'').split(' · ');let p=[];
+    if(parts.length>=2){p=[parts[1]];if(typeof SUBJ!=='undefined'&&SUBJ[curS]&&SUBJ[curS].name!==parts[1])p.push(SUBJ[curS].name);p.push('<b>'+parts[0]+'</b>');}else p=['<b>'+parts[0]+'</b>'];
+    const h=p.join(sep);if(path.innerHTML!==h)path.innerHTML=h;lh.hidden=$id('chips').hidden;
+    const lv=document.querySelector('.lesson:not([hidden]) .emblem small'),t=lv?lv.textContent:'';if(right.textContent!==t)right.textContent=t;};
+  new MutationObserver(upd).observe(document.querySelector('title'),{childList:true,characterData:true,subtree:true});
+  new MutationObserver(ms=>{if(ms.some(m=>!crumb.contains(m.target)))upd();}).observe(main,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
+  upd();
+  /* keep the open lesson visible in the rail */
+  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'});};
+  new MutationObserver(seen).observe($id('chips'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
+})();
+</script>
+
 </body></html>
