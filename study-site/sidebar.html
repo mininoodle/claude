@@ -10332,7 +10332,9 @@ dispatchEvent(new Event('sync-change'));
 <style id="sidebar-skin">
 :root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
   --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
-  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%}
+  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
+  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
+  --cap:1000px;--pad:40px}
 :root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
   --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
 body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
@@ -10360,11 +10362,12 @@ html{scroll-padding-top:62px}
 #rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
 .rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
 .modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
-#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 40px 80px}
-.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 -40px 8px;padding:0 40px;position:sticky;top:0;background:var(--bg);z-index:5}
+#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
+/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
+.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
 .crumb b{color:var(--ink);font-weight:500}
 .crumb-sep{margin:0 8px;color:var(--a3)}
-.lesson{max-width:1000px}
+.lesson{max-width:var(--cap);margin-inline:auto}
 .glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .card{border-radius:10px;padding:18px 20px}
 .card::before{display:none}
@@ -10386,8 +10389,9 @@ html{scroll-padding-top:62px}
   .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
   #rail .units .uclear{margin:0 0 0 auto}
   .rail-tools{margin-top:0;padding:4px 0 0}
-  #main{padding:0 16px 60px}
-  .crumb{margin:0 -16px 8px;padding:0 16px;height:40px;position:static}
+  :root{--pad:16px}
+  #main{padding-bottom:60px}
+  .crumb{height:40px;position:static}
   .rail-brand,.rail-h{display:none}
   #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
   #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
@@ -10395,33 +10399,28 @@ html{scroll-padding-top:62px}
   #rail .seg.main button{flex-direction:row}
   #rail .ulabel{flex-basis:100%}
 }
-/* wide screens: more cards side by side instead of wider cards, and slightly larger type. Column counts: 2 across from 1600 px, 3 from 2400 px, 4 from 3200 px */
+/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
+   The column is capped and centred, thus the card order stays as written and the margins stay even */
 @media(min-width:1600px){
-  .lesson{max-width:1800px;margin:0 auto}
-  #main{padding:0 clamp(40px,2.5vw,96px) 80px}
-  .crumb{margin:0 calc(-1*clamp(40px,2.5vw,96px)) 8px;padding:0 clamp(40px,2.5vw,96px)}
-  #main .grid{grid-template-columns:repeat(24,minmax(0,1fr));gap:18px;align-items:start}
-  #main .card{grid-column:span 12}
-  #main .card.half{grid-column:span 12}#main .card.w7{grid-column:span 14}#main .card.w5{grid-column:span 10}
-  #main .card.quiz,#main .card.boss-c{grid-column:span 24}
+  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
+  /* wrapping rows instead of a fixed grid: a full row fills the column exactly, and a row that is not full sits in the middle.
+     A card that is n columns wide is n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way */
+  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:var(--gap)}
+  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
+  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
+  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
   .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
 }
 @media(min-width:2200px){html{font-size:17px}
   #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
 @media(min-width:2400px){
-  :root{--railw:290px}
-  .lesson{max-width:2700px}
-  #main .grid{grid-template-columns:repeat(36,minmax(0,1fr));gap:20px}
-  #main .card{grid-column:span 12}
-  #main .card.half{grid-column:span 12}#main .card.w7{grid-column:span 14}#main .card.w5{grid-column:span 10}
-  #main .card.quiz,#main .card.boss-c{grid-column:span 36}
+  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
   .lhead h1{font-size:2.8rem}
 }
 @media(min-width:3000px){html{font-size:18px}}
 @media(min-width:3200px){
-  :root{--railw:320px}
-  .lesson{max-width:2900px}
-  #main .grid{gap:22px}
+  :root{--railw:320px;--cap:2900px;--gap:22px}
 }
 @media print{#rail,.crumb{display:none}}
 </style>
