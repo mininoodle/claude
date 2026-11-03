@@ -1,6 +1,8 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Study site</title>
-<script>try{document.documentElement.dataset.mode=localStorage.getItem('unit-study-site.mode')||'light';}catch(e){}</script>
+<script>/* the colour mode: the student's own choice (the button in the header) wins; otherwise the viewer's theme: data-theme on the root (set by a Claude artifact viewer), then the system setting */
+window.sysMode=()=>{const t=document.documentElement.getAttribute('data-theme');return t==='dark'||t==='light'?t:(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');};
+(()=>{let m=null;try{m=localStorage.getItem('unit-study-site.mode');}catch(e){}document.documentElement.dataset.mode=m==='dark'||m==='light'?m:sysMode();})();</script>
 <style>
 @property --a1{syntax:'<color>';inherits:true;initial-value:#736f72}
 @property --a2{syntax:'<color>';inherits:true;initial-value:#c3baba}
@@ -1399,7 +1401,10 @@ function boot(){
     S.lessons.push({t:'Review',rv:1,ic:'target',h:S.name+' review',d:'See your results, practise the questions that are due, take a mixed test or do a timed exam.',build(g,le){reviewUI(g,k,le);}});});
   const mb=el('button',{type:'button',class:'modebtn',id:'mode'});$('.bar').append(mb);
   const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();setTimeout(()=>{_col=null;redrawAll();},960);};
-  let m0='light';try{m0=localStorage.getItem('unit-study-site.mode')||'light';}catch(e){}setMode(m0);mb.onclick=()=>setMode(document.documentElement.dataset.mode==='dark'?'light':'dark',true);
+  let m0=null;try{m0=localStorage.getItem('unit-study-site.mode');}catch(e){}setMode(m0==='dark'||m0==='light'?m0:sysMode());
+  /* the viewer's theme changes: an explicit change in an artifact viewer is followed at once; a system change only when the student made no choice */
+  new MutationObserver(()=>setMode(sysMode())).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{let c=null;try{c=localStorage.getItem('unit-study-site.mode');}catch(e){}if(!c)setMode(sysMode());});mb.onclick=()=>setMode(document.documentElement.dataset.mode==='dark'?'light':'dark',true);
   /* print in light mode (dark ink on white paper), then go back; the saved choice does not change */
   let prm=null;addEventListener('beforeprint',()=>{prm=document.documentElement.dataset.mode;if(prm==='dark')setMode('light');});addEventListener('afterprint',()=>{if(prm==='dark')setMode('dark');prm=null;});
   const ab=el('button',{type:'button',class:'modebtn acct',id:'acct'});$('.bar').append(ab);
@@ -11276,7 +11281,7 @@ boot();
 /* Google sign-in and cross-device sync. This runs only when FIREBASE_CONFIG above is filled in.
    Progress is stored in Firestore at users/{uid}/progress/main, and merged with the data on this device. */
 window.SYNC={ready:false,error:''};
-if(FIREBASE_CONFIG){
+if(FIREBASE_CONFIG&&!(window.claude&&typeof window.claude.use==='function')){
   try{
     const V='10.12.0',U=n=>`https://www.gstatic.com/firebasejs/${V}/firebase-${n}.js`;
     const [{initializeApp},A,F]=await Promise.all([import(U('app')),import(U('auth')),import(U('firestore'))]);
