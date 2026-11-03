@@ -1044,16 +1044,30 @@ function ordering(host,items,intro,slot){
   $('[data-a=mix]',box).onclick=()=>{arr=mixed();save();render(false,'The steps are shuffled.');};
   render(false,ok?'Your last order is restored.':'');
 }
-/* matching: one row for each description, with a select of all of the terms. slot: the index of this task in its lesson */
+/* a numerical-response try-it with a four-digit code answer (diploma style): o.q question html, o.a the four characters, o.w the explanation. The saved answer uses an mt_ key, thus Clear answers for the section removes it */
+function nrCode(host,o,slot){
+  const key='mt_'+((host.closest('.lesson')||{}).id||'x')+'_nr'+(slot||0),box=el('div');host.append(box);
+  box.innerHTML=(o.q?`<div class="qt">${o.q}</div>`:'')+`<p class="hint">Record your answer in the four boxes.</p><div class="nr"></div><div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answer</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
+  const bx=$('.nr',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),val=()=>[...bx.children].map(z=>z.value||' ').join('');
+  const sv=Store.w(key),cur=(typeof sv==='string'?sv:'').padEnd(4,' ');
+  for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'numeric',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
+    b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');Store.wSet(key,val().replace(/\s+$/,''));bx.classList.remove('ok','bad');if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
+    b.onkeydown=e=>{if(e.key==='Backspace'&&!b.value&&k>0)bx.children[k-1].focus();};b.onfocus=()=>b.select();bx.append(b);}
+  const mark=show=>{const ok=val()===o.a;lv.textContent=show?'This is the answer.':ok?'Correct.':'Not correct. Try again, or show the answer.';wv.innerHTML=(ok||show)&&o.w?`<p class="fb info">${o.w}</p>`:'';if(!show)markStudy();};
+  $('[data-a=check]',box).onclick=()=>mark(false);
+  $('[data-a=show]',box).onclick=()=>{[...o.a].forEach((c,k)=>bx.children[k].value=c);Store.wSet(key,o.a);mark(true);};
+  $('[data-a=clear]',box).onclick=()=>{[...bx.children].forEach(b=>b.value='');Store.wSet(key,'');lv.textContent='';wv.innerHTML='';};
+}
+/* matching: one row for each description, with a select of all of the terms. slot: the index of this task in its lesson. A pair can give a third entry, another term that is also accepted (for example two boxes in either order) */
 function matching(host,pairs,intro,slot){
   const box=el('div'),key='mt_'+((host.closest('.lesson')||{}).id||'x')+(slot?'_'+slot:''),terms=[...new Set(pairs.map(p=>p[1]))].sort((a,b)=>a.localeCompare(b)),uid='mt'+(matching.n=(matching.n||0)+1);host.append(box);
   const valid=v=>Array.isArray(v)&&v.length===pairs.length&&v.every(x=>x===-1||terms[x]!==undefined);
-  let sel=valid(Store.w(key))?Store.w(key).slice():pairs.map(()=>-1);const save=()=>Store.wSet(key,sel.slice()),ans=i=>terms.indexOf(pairs[i][1]);
+  let sel=valid(Store.w(key))?Store.w(key).slice():pairs.map(()=>-1);const save=()=>Store.wSet(key,sel.slice()),ans=i=>terms.indexOf(pairs[i][1]),okAt=i=>sel[i]===ans(i)||(pairs[i][2]!=null&&sel[i]===terms.indexOf(pairs[i][2]));
   box.innerHTML=(intro?`<p class="hint">${intro}</p>`:'')+`<ol class="mtl"></ol><div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div>`;
   const ol=$('ol',box),lv=$('[aria-live]',box);
-  function render(res,msg){ol.innerHTML=pairs.map((p,i)=>`<li class="${res?(sel[i]===ans(i)?'ok':'bad'):''}"><span class="ordn">${i+1}</span><span id="${uid}-${i}">${p[0]}</span><select aria-labelledby="${uid}-${i}" data-i="${i}"><option value="-1">Select…</option>${terms.map((t,j)=>`<option value="${j}"${sel[i]===j?' selected':''}>${t}</option>`).join('')}</select></li>`).join('');lv.textContent=msg||'';
+  function render(res,msg){ol.innerHTML=pairs.map((p,i)=>`<li class="${res?(okAt(i)?'ok':'bad'):''}"><span class="ordn">${i+1}</span><span id="${uid}-${i}">${p[0]}</span><select aria-labelledby="${uid}-${i}" data-i="${i}"><option value="-1">Select…</option>${terms.map((t,j)=>`<option value="${j}"${sel[i]===j?' selected':''}>${t}</option>`).join('')}</select></li>`).join('');lv.textContent=msg||'';
     $$('select',ol).forEach(e=>e.onchange=()=>{sel[+e.dataset.i]=+e.value;save();e.closest('li').className='';});}
-  $('[data-a=check]',box).onclick=()=>{const n=pairs.filter((p,i)=>sel[i]===ans(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
+  $('[data-a=check]',box).onclick=()=>{const n=pairs.filter((p,i)=>okAt(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
   $('[data-a=show]',box).onclick=()=>{sel=pairs.map((p,i)=>ans(i));save();render(true,'These are the answers.');};
   $('[data-a=clear]',box).onclick=()=>{sel=pairs.map(()=>-1);save();render(false,'');};
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
