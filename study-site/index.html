@@ -6875,6 +6875,16 @@ const MB_AA={F:'Phe',L:'Leu',I:'Ile',M:'Met',V:'Val',S:'Ser',P:'Pro',T:'Thr',A:'
 const MB_CODE='FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG';
 const mbAA=c=>{const B='UCAG',i=B.indexOf(c[0])*16+B.indexOf(c[1])*4+B.indexOf(c[2]);return i>=0&&c.length===3?MB_AA[MB_CODE[i]]:'?';};
 const mbComp=(s,rna)=>[...s].map(b=>({A:rna?'U':'T',T:'A',U:'A',G:'C',C:'G'})[b]||b).join('');
+/* the full names of the amino acids, as in the codon table */
+const MB_AAN={F:'phenylalanine',L:'leucine',I:'isoleucine',M:'methionine',V:'valine',S:'serine',P:'proline',T:'threonine',A:'alanine',Y:'tyrosine',H:'histidine',Q:'glutamine',N:'asparagine',K:'lysine',D:'aspartate',E:'glutamate',C:'cysteine',W:'tryptophan',R:'arginine',G:'glycine','*':'stop'};
+/* the codon table: first base in the left column, second base in the top row, third base in the right column. A line under each block of 16 codons */
+const mbCodonTable=()=>{const B='UCAG',p='padding:.22em .55em;';let h=`<table aria-label="Messenger RNA codons and their amino acids" style="font-size:.86rem"><thead><tr><th rowspan="2" style="min-width:0">First base</th><th colspan="4" style="text-align:center">Second base</th><th rowspan="2" style="min-width:0">Third base</th></tr><tr>${[...B].map(b=>`<th>${b}</th>`).join('')}</tr></thead>`;
+  for(let i=0;i<4;i++){h+='<tbody>';for(let k=0;k<4;k++){const st=p+(k<3?'border-bottom:0;':'');
+    h+=`<tr>${k?'':`<th rowspan="4" style="${p}min-width:0">${B[i]}</th>`}${[...B].map((b,j)=>{const c=B[i]+b+B[k],a=MB_CODE[i*16+j*4+k],t=c+' '+MB_AAN[a]+(c==='AUG'?'*':'');return `<td style="${st}">${c==='AUG'||a==='*'?`<span class="key">${t}</span>`:t}</td>`;}).join('')}<th style="${st}min-width:0">${B[k]}</th></tr>`;}
+    h+='</tbody>';}
+  return h+'</table>';};
+/* the short names of the amino acids that the translation tool uses, in alphabetical order */
+const mbShortNames=()=>Object.keys(MB_AAN).filter(k=>k!=='*').map(k=>[MB_AA[k],MB_AAN[k]]).sort((a,b)=>a[0].localeCompare(b[0])).map(x=>`<b>${x[0]}</b> ${x[1]}`).join(', ');
 const MBL=[];
 MBL.push({t:'History of DNA',h:'The discovery of DNA as the genetic material',d:'Over almost one hundred years, many scientists found what DNA is, that it carries the genetic information, and what its structure is.',build(g){
   const c=card(g,'A DNA timeline','<p class="hint">Select a year to see the event.</p>');
@@ -6981,13 +6991,17 @@ MBL.push({t:'Translation',h:'The genetic code and translation',d:'At a ribosome,
     <li><span class="key">Continuous</span>: there are no spaces or punctuation. An insertion or a deletion shifts the reading frame of all the codons after it.</li>
     <li><span class="key">Universal</span>: almost all organisms use the same code. This is the strongest support for a common origin of all life, and it lets bacteria make human proteins.</li></ol>`,'half');
   card(g,'Translation: the steps',`<ol><li>The mRNA arrives at a ribosome in the cytoplasm.</li><li>A ribosome is made of two subunits (rRNA and protein). They attach to the mRNA.</li><li>Translation starts at the <span class="key">start codon</span>, AUG.</li><li><span class="key">Transfer RNA</span> (tRNA) brings the correct amino acid. Each tRNA has an <span class="key">anticodon</span> that pairs with a codon, and it carries one specific amino acid.</li><li>The amino acids join into a chain by <span class="key">peptide bonds</span>. This uses energy.</li><li>A stop codon (UAA, UAG or UGA) ends translation, and the polypeptide is released.</li></ol>`,'half');
-  const w=card(g,'Translate a sequence','<p class="hint">Type an mRNA or a DNA template strand. Translation starts at the first AUG and ends at a stop codon.</p>');
-  let mode=0;const inp=el('input',{type:'text',autocomplete:'off',autocapitalize:'characters',spellcheck:'false','aria-label':'A base sequence',value:'CCAAUGGCA',style:'width:100%;font-family:ui-monospace,monospace'}),out=el('div',{class:'note'});
-  seg(w,['mRNA','DNA template strand'],i=>{mode=i;draw();});w.append(inp,out);
+  card(g,'The codon table',`<p>The codon table gives the amino acid for each of the 64 mRNA codons. To read a codon, find its first base in the left column, its second base in the top row and its third base in the right column. For example, UGG codes for tryptophan.</p>${mbCodonTable()}<p class="hint">* AUG is the start codon, and it also codes for methionine. UAA, UAG and UGA are stop codons: they end translation.</p><p class="hint">Short names of the amino acids: ${mbShortNames()}.</p>`);
+  const w=card(g,'Translate a sequence','<p class="hint"><b>Practice question.</b> Use the codon table to answer it. Then use the button “Practice question” to put the sequence in the tool and check your answer.</p>'+
+    ex('Practice question. Try to translate the following: CCA AUG GCA','<ol><li>The sequence has U, thus it is mRNA. Each group of three bases is one codon.</li><li>Find each codon in the codon table: CCA codes for proline (Pro), AUG codes for methionine (Met), and GCA codes for alanine (Ala).</li><li>AUG is the start codon, thus translation starts at AUG. CCA comes before the start codon, thus it is not translated.</li></ol><p>The polypeptide is methionine-alanine (<b>Met-Ala</b>).</p>')+
+    '<p class="hint">Type an mRNA or a DNA template strand. Translation starts at the first AUG and ends at a stop codon.</p>');
+  let mode=0;const inp=el('input',{type:'text',autocomplete:'off',autocapitalize:'characters',spellcheck:'false','aria-label':'A base sequence',style:'width:100%;font-family:ui-monospace,monospace'}),out=el('div',{class:'note'});
+  const sg=seg(w,['mRNA','DNA template strand'],i=>{mode=i;draw();});w.append(inp,out);
+  btnRow(w,[['Practice question',()=>{sg.set(0);mode=0;inp.value='CCA AUG GCA';draw();}]]);
   function draw(){let s=inp.value.toUpperCase().replace(/[^ACGTU]/g,'');if(mode)s=mbComp(s.replace(/U/g,'T'),1);else s=s.replace(/T/g,'U');
     const st=s.indexOf('AUG');if(!s){out.innerHTML='Type a sequence.';return;}if(st<0){out.innerHTML=`mRNA: <code>${s}</code><br>There is no start codon (AUG), thus no protein is made.`;return;}
     const cs=[],aa=[];let stop=false;for(let i=st;i+3<=s.length;i+=3){const c=s.slice(i,i+3),a=mbAA(c);cs.push(c);if(a==='stop'){stop=true;break;}aa.push(a);}
-    out.innerHTML=`mRNA: <code>${s}</code><br>Codons from AUG: <code>${cs.join(' ')}</code><br>Polypeptide: <b>${aa.join('-')||'none'}</b>${stop?' (then a stop codon)':' (no stop codon yet)'}`;}
+    out.innerHTML=`mRNA: <code>${s}</code>${st?`<br>Before the start codon (not translated): <code>${s.slice(0,st)}</code>`:''}<br>Codons from AUG: <code>${cs.join(' ')}</code><br>Polypeptide: <b>${aa.join('-')||'none'}</b>${stop?' (then a stop codon)':' (no stop codon yet)'}`;}
   inp.addEventListener('input',draw);draw();
   card(g,'Many possible polypeptides (B1.2.4)',`<p>Each position in a chain can be any of the 20 amino acids. There are 20<sup>2</sup> = 400 dipeptides, 20<sup>3</sup> = 8000 tripeptides and 20<sup><i>n</i></sup> polypeptides of <i>n</i> amino acids.</p>
     <ul><li>Beta-endorphin, a natural pain killer from the pituitary gland: 31 amino acids</li><li>Insulin: two polypeptides of 21 and 30 amino acids</li><li>Salivary amylase: 496 amino acids</li><li>Titin, in muscle, the largest known polypeptide: 34 350 amino acids</li></ul>`,'half');
