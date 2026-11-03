@@ -3767,7 +3767,9 @@ const nsPinSVG=(()=>{let s=SVG_REFLEX;const rp=(a,b)=>{if(!s.includes(a))return 
   const pin=s.match(/\n<path d="M122,6V54"[^\n]*\n<path d="M108,40[^\n]*/);if(!ok||!pin){console.error('nsPinSVG: SVG_REFLEX changed');return '';}
   s=s.replace(pin[0],'').replace('<g data-p="sen">','<g data-p="stim" data-a="1">'+pin[0].trim().replace(/\n/g,'')+'<rect x="100" y="0" width="44" height="42" fill="transparent"/></g>\n<g data-p="sen">');
   /* each neuron is a line 5 units wide, too thin to touch on a phone. A wide transparent stroke under it is its hit area, as in SVG_NEURON. Its ends are flat, thus it does not cover the endings of the receptor */
-  let nh=0;s=s.replace(/<path id="r([sim])" d="([^"]+)"/g,(m,k,d)=>{nh++;return `<path d="${d}" fill="none" stroke="transparent" stroke-width="18" stroke-linecap="butt"/>`+m;});if(nh!==3)console.error('nsPinSVG: SVG_REFLEX changed');
+  /* the motor neuron runs close beside the sensory neuron for a stretch: a clip splits the gap between them at its midline (y 196), thus a touch near the sensory line selects the sensory neuron. A round join keeps the focus ring of a part close to its line */
+  s=s.replace('</defs>','<clipPath id="nsp-hc"><path d="M0,0H800V400H0ZM220,0V196H360V0Z" clip-rule="evenodd"/></clipPath></defs>');
+  let nh=0;s=s.replace(/<path id="r([sim])" d="([^"]+)"/g,(m,k,d)=>{nh++;return `<path d="${d}" fill="none" stroke="transparent" stroke-width="18" stroke-linecap="butt" stroke-linejoin="round"${k==='m'?' clip-path="url(#nsp-hc)"':''}/>`+m;});if(nh!==3)console.error('nsPinSVG: SVG_REFLEX changed');
   return s.replace(/ id="r(s|i|m|mus)"/g,'').replace(/<circle id="rdot"[^>]*\/>/,'').replace(/rf-m/g,'nsp-m');})();
 /* the neuron of 'Parts of a neuron' with the nucleus as a part of its own */
 const nsNeuronSVG=(()=>{const a='<circle cx="146" cy="158" r="17" fill="url(#nr-nuc)"/><circle cx="150" cy="162" r="5" fill="var(--t-nuc)"/><circle cx="139" cy="150" r="4.5" fill="#fff" opacity=".25"/></g>';
@@ -7507,8 +7509,8 @@ const EXTRA3={ff:{
   {q:'An electron at 1.88 × 10⁷ m/s west accelerates at 1.50 × 10¹⁸ m/s² out of the page. Magnitude of the field?',n:0.454,u:'T',w:'B = ma/(qv) = (9.11 × 10⁻³¹)(1.50 × 10¹⁸)/((1.60 × 10⁻¹⁹)(1.88 × 10⁷)) = 0.454 T, directed north.'},
   {q:'A particle with 7 electrons in excess moves at 4.00 × 10⁶ m/s west into a 300 mT field into the page. The diameter of its circle is 14.0 cm. Mass?',n:5.88e-27,u:'kg',w:'q = 7e = 1.12 × 10⁻¹⁸ C, r = 0.0700 m. m = qBr/v = 5.88 × 10⁻²⁷ kg. It moves clockwise.'},
   {q:'A student varies the magnetic field and measures the acceleration of an electron, with its speed constant. What is the slope of the straight line a against B?',o:['qv/m, in C·m/(kg·s)','m/(qv), in kg·s/(C·m)','qvB','v/B'],a:0,w:'ma = qvB, thus a = (qv/m)B: a direct, linear relationship.'},
-  {q:'Protons circle with r = 0.25 m in a 0.30 T field. Speed?',n:7.19e6,u:'m/s',tol:.03,w:'v = qBr/m = (1.60 × 10⁻¹⁹)(0.30)(0.25)/(1.67 × 10⁻²⁷) = 7.2 × 10⁶ m/s.'},
-  {q:'The same protons: the centripetal force on each?',n:3.45e-13,u:'N',tol:.03,w:'Fc = qvB = (1.60 × 10⁻¹⁹)(7.2 × 10⁶)(0.30) = 3.4 × 10⁻¹³ N.'},
+  {q:'Protons circle with r = 0.25 m in a 0.30 T field. Speed?',n:7.19e6,u:'m/s',tol:.03,w:'v = qBr/m = (1.60 × 10⁻¹⁹)(0.30)(0.25)/(1.67 × 10⁻²⁷) = 7.186 × 10⁶ m/s = 7.2 × 10⁶ m/s.'},
+  {q:'The same protons: the centripetal force on each?',n:3.45e-13,u:'N',tol:.03,w:'Fc = qvB = (1.60 × 10⁻¹⁹)(7.186 × 10⁶)(0.30) = 3.449 × 10⁻¹³ N, thus 3.4 × 10⁻¹³ N. Keep the unrounded speed: with 7.2 × 10⁶ m/s the product rounds to 3.5 × 10⁻¹³ N.'},
   {q:'An ionized helium atom (6.6 × 10⁻²⁷ kg) at 4.4 × 10⁵ m/s circles with r = 0.012 m in 0.75 T. Magnitude of its charge?',n:3.2e-19,u:'C',tol:.03,w:'q = mv/(rB) = 3.2 × 10⁻¹⁹ C: it has lost 2 electrons.'},
   {q:'Doubly ionized gold (3.27 × 10⁻²⁵ kg) is accelerated from rest through 1000 V. Speed?',n:4.42e4,u:'m/s',w:'v = √(2qV/m) = √(2(3.20 × 10⁻¹⁹)(1000)/3.27 × 10⁻²⁵) = 4.42 × 10⁴ m/s.'},
   {q:'The same gold ions enter a 0.500 T field. Radius?',n:0.0904,u:'m',tol:.03,w:'r = mv/(qB) = (3.27 × 10⁻²⁵)(4.42 × 10⁴)/((3.20 × 10⁻¹⁹)(0.500)) = 9.04 × 10⁻² m.'},
