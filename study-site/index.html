@@ -176,9 +176,9 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .bossmk{display:inline-grid;color:var(--at);margin-left:.1em}
 .seg button.tdue::after{content:"";position:absolute;top:7px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--a1);box-shadow:0 0 0 2px var(--fig)}
 /* weekly goal */
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:.7em 0;max-width:22rem}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:.7em 0;max-width:22rem}
 .wd{display:grid;justify-items:center;gap:4px;font-size:.74rem;color:var(--ink2)}
-.wd i{width:30px;height:30px;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;background:var(--glass2)}
+.wd i{width:100%;max-width:30px;aspect-ratio:1;height:auto;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;background:var(--glass2)}
 .wd.on i{background:var(--a1);border-color:var(--a1);color:#fff}
 .wd.now i{box-shadow:0 0 0 3px color-mix(in srgb,var(--a1) 30%,transparent)}
 /* experience table, next steps */
@@ -252,8 +252,8 @@ blockquote.lq cite{display:block;margin-top:.45em;font:600 .8rem -apple-system,B
 .tiles.wide{grid-template-columns:1fr}
 .lim{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .2em 0 .05em;font-style:normal}.lim sub{font-size:.62em;line-height:1;white-space:nowrap}
 /* custom test */
-.ttree{display:grid;gap:10px}.tsub{padding:.5em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair)}
-.tsl{display:flex;align-items:center;gap:.5em;padding:.3em 0;cursor:pointer}.tsl input{width:18px;height:18px;accent-color:var(--a1);margin:0}.tul{padding-left:1.7em}
+.ttree{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}.tsub{padding:.5em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair)}
+.tsl{display:flex;flex-wrap:wrap;align-items:center;gap:.5em;padding:.3em 0;cursor:pointer}.tsl input{width:18px;height:18px;accent-color:var(--a1);margin:0}.tul{padding-left:1.7em}
 .tsw{display:flex;align-items:flex-start;gap:12px;cursor:pointer;margin:.8em 0}.tsw input{position:absolute;opacity:0;width:0;height:0}
 .tsk{flex:none;width:44px;height:26px;border-radius:13px;background:color-mix(in srgb,var(--ink2) 30%,transparent);position:relative;transition:background .25s;margin-top:2px}.tsk::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .25s var(--spring)}
 .tsw input:checked+.tsk{background:var(--a1)}.tsw input:checked+.tsk::after{transform:translateX(18px)}.tsw input:focus-visible+.tsk{outline:3px solid var(--at);outline-offset:2px}
@@ -315,6 +315,9 @@ li{margin:.25em 0}
 .hint{color:var(--ink2);font-size:.92rem}
 .key{color:var(--at);font-weight:650}
 table{border-collapse:collapse;width:100%;font-size:.94rem}
+/* a table in a card scrolls inside its own box when it is wider than the card (see fitTable) */
+.tw{overflow-x:auto;max-width:100%}.tw:focus-visible{outline-offset:-3px}
+.tw.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent)}
 th,td{text-align:left;padding:.5em .6em;border-bottom:1px solid var(--hair);vertical-align:top}
 th{font-weight:650;color:var(--ink2);font-size:.84rem}
 .scroll{overflow-x:auto}
@@ -446,14 +449,19 @@ select{padding-right:1.6em;max-width:100%}
 .chip.on{background:var(--a1);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 
 /* ordering */
-.ordl{list-style:none;padding:0;display:grid;gap:6px;max-width:none}
+.ordl{list-style:none;padding:0;display:grid;gap:6px;max-width:none;grid-template-columns:minmax(0,1fr)}
+/* in a narrow card the text column shrinks, and only a word longer than the whole column breaks, thus the arrows stay inside the card */
+.ordl li>span:nth-child(2){overflow-wrap:break-word;min-width:0}
+/* a narrow list (a small card on a laptop): the arrows go under the text, thus the text keeps the width of the row */
+.ordl{container-type:inline-size}
+@container (max-width:300px){.ordl li{grid-template-columns:auto minmax(0,1fr);row-gap:.4em}.ordl li>.ordb{grid-column:2;justify-self:start}}
 .mtl{list-style:none;padding:0;display:grid;gap:6px;max-width:none}
 .mtl li{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;padding:.5em .7em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:0;box-shadow:inset 0 1px 0 var(--hi);transition:background .3s,border-color .3s}
 .mtl li select{grid-column:2;justify-self:start;max-width:100%}
 .mtl li.ok{background:var(--okb);border-color:var(--ok)}.mtl li.bad{background:var(--badb);border-color:var(--bad);border-style:dashed}
 .mtl li.ok>span:nth-child(2)::after{content:" \2713";content:" \2713" / "correct";font-weight:700;color:var(--ok)}
 .mtl li.bad>span:nth-child(2)::after{content:" \2717";content:" \2717" / "incorrect";font-weight:700;color:var(--bad)}
-.ordl li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:.5em .7em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:0;box-shadow:inset 0 1px 0 var(--hi);transition:background .3s,border-color .3s}
+.ordl li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:.5em .7em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:0;box-shadow:inset 0 1px 0 var(--hi);transition:background .3s,border-color .3s}
 .ordl li.ok{background:var(--okb);border-color:var(--ok)}.ordl li.bad{background:var(--badb);border-color:var(--bad)}
 .ordl li.moved{animation:pop .35s var(--spring)}
 .ordn{font:600 .9rem ui-rounded,system-ui,sans-serif;color:var(--ink2);width:1.4em;text-align:center}
@@ -468,8 +476,8 @@ select{padding-right:1.6em;max-width:100%}
 .tile.on{background:color-mix(in srgb,var(--a1) 15%,var(--notebg));border-color:var(--a1)}
 .tile.ok{background:var(--okb);border-color:var(--ok)}.tile.bad{background:var(--badb);border-color:var(--bad)}
 .tile small{display:block;color:var(--ink2)}
-.two{display:grid;gap:14px}
-@media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.two{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 
 .ice input{width:5.6rem;text-align:center;font-size:1rem}
 .ice td,.ice th{text-align:center}
@@ -567,7 +575,8 @@ div.miss{border-top:1px solid var(--hair);padding:.7em 0}
   .seg.main button:focus-visible{outline-offset:-3px}
   .bar{border-radius:24px}
   .card>table{display:block;overflow-x:auto}.card>table td,.card>table th{min-width:7.5em}.card>table.t3 td,.card>table.t3 th{min-width:5.4em;padding:.5em .4em}
-  .card>table.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent)}.card>table:focus-visible{outline-offset:-3px}
+  .tw.d>table td,.tw.d>table th{min-width:7.5em}.tw.d>table.t3 td,.tw.d>table.t3 th{min-width:5.4em;padding:.5em .4em}
+.card>table.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 3em),transparent)}.card>table:focus-visible{outline-offset:-3px}
   .card{padding:16px;border-radius:24px}
   main{padding-block:16px 70px}
   .ring{width:120px;height:120px}.ring svg{width:120px;height:120px}
@@ -622,10 +631,12 @@ svg:not(.compact) .t3{display:none}
 .tree ul>li::before{content:"";position:absolute;left:-1.05em;top:0;height:calc(.42em + 1.32em);width:.95em;border-left:1.5px solid var(--axis);border-bottom:1.5px solid var(--axis);border-bottom-left-radius:9px}
 .tree ul>li:not(:last-child)::after{content:"";position:absolute;left:-1.05em;top:0;bottom:0;border-left:1.5px solid var(--axis)}
 .tree .tile{display:inline-flex;align-items:center;gap:.5em;font-weight:600;padding:.5em .85em;border-radius:14px}
+/* a small phone: a smaller indent for each level of the tree (and its connector lines), thus the deepest tiles stay inside the card */
+@media(max-width:420px){.tree ul{padding-left:1.35em}.tree ul>li::before{left:-.75em;width:.65em}.tree ul>li:not(:last-child)::after{left:-.75em}}
 .dot{flex:none;width:.62em;height:.62em;border-radius:50%;display:inline-block}
 p.legend{margin:.6em 0 0;max-width:none;gap:.25em 1.1em}
-p.legend>span{white-space:nowrap}
-@media(max-width:520px){p.legend>span{white-space:normal}}
+/* a legend item stays on one line when it fits; flex-wrap first moves it to a line of its own, and it wraps only when it is longer than the whole line */
+p.legend>span{white-space:normal;min-width:0}
 /* summation picture */
 .sum .syn{cursor:pointer}
 .sum .exc{--c:var(--s1)}.sum .inh{--c:var(--s2)}
@@ -873,8 +884,14 @@ function stats(host,labels){
   host.append(box);const last=[];
   const f=(i,h)=>{h=String(h);if(last[i]!==h){last[i]=h;vs[i].children[1].innerHTML=h;}};return f;
 }
-function card(host,title,html,cls=''){const c=el('section',{class:'card glass '+cls},(title?`<h3>${title}</h3>`:'')+(html||''));host.append(c);[...c.children].forEach(x=>{if(x.tagName==='TABLE')tblCue(x);});return c;}
+function card(host,title,html,cls=''){const c=el('section',{class:'card glass '+cls},(title?`<h3>${title}</h3>`:'')+(html||''));host.append(c);[...c.children].forEach(x=>{if(x.tagName==='TABLE')fitTable(x);});return c;}
 /* a table that scrolls sideways (phones): fade the right edge while columns are hidden, and let the keyboard reach it */
+/* a table in a card that is wider than its box scrolls inside a wrapper with a fade cue, instead of sticking out of the card (a half card on a laptop is narrow).
+   A table inside a box that already scrolls or clips is left alone. card() wraps its own tables at once; tables added later are wrapped as they appear */
+function fitTable(t){const c=t.closest('.card');if(!c||t.parentElement.classList.contains('tw'))return;const d=t.parentElement===c;
+  if(!d)for(let e=t.parentElement;e&&e!==c;e=e.parentElement)if(getComputedStyle(e).overflowX!=='visible')return;
+  const w=el('div',{class:'tw'+(d?' d':'')});t.before(w);w.append(t);tblCue(w);}
+function fitTables(root){(root.tagName==='TABLE'?[root]:[...root.querySelectorAll('table')]).forEach(fitTable);}
 function tblCue(t){const u=()=>{const o=t.scrollWidth>t.clientWidth+1;t.classList.toggle('more',o&&t.scrollLeft+t.clientWidth<t.scrollWidth-1);if(o)t.tabIndex=0;else t.removeAttribute('tabindex');};
   t.addEventListener('scroll',u,{passive:true});new ResizeObserver(u).observe(t);}
 function ex(title,html){return `<details class="ex"><summary><span>${title}</span></summary><div>${html}</div></details>`;}
@@ -1371,6 +1388,7 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
   const y=$('[data-sync]',d);if(y)y.onclick=async()=>{y.disabled=true;const ok=await Store.sync();close();toast(ok?'Synced.':Store.mode()==='account'?'Could not sync. Your progress is saved on this device and uploads when the connection works.':'Sync is off. Sign in again to sync across devices.');};
   d.showModal();(x||i||y||cb).focus();}
 function boot(){
+  {let due=new Set(),raf=0;new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1&&(n.tagName==='TABLE'||n.querySelector('table')))due.add(n);if(due.size&&!raf)raf=requestAnimationFrame(()=>{raf=0;const d=[...due];due.clear();d.forEach(n=>n.isConnected&&fitTables(n));});}).observe($('#main'),{childList:true,subtree:true});}
   document.documentElement.lang='en';
   ORDER.forEach(k=>{const S=SUBJ[k];if(EXTRA[k])S.lessons.forEach((le,i)=>{if(le.qz&&EXTRA[k][i])le.qz.push(...EXTRA[k][i]);});
     S.lessons.forEach((le,i)=>{if(le.qz&&METHOD[k]&&METHOD[k][i])le.qz.forEach(it=>{if(!it.o&&!it.m)it.m=METHOD[k][i];});});
@@ -1823,14 +1841,16 @@ const anc=(p,x,y,below)=>`<circle data-p="${p}" data-a="${below?'b':'1'}" cx="${
 const taper=(d,steps,c1,c2)=>steps.map(([p,w])=>`<path d="${d}" fill="none" stroke="${c2}" stroke-width="${w+2.6}" stroke-linecap="round" pathLength="100" stroke-dasharray="${p} 200"/>`).join('')+steps.map(([p,w])=>`<path d="${d}" fill="none" stroke="${c1}" stroke-width="${w}" stroke-linecap="round" pathLength="100" stroke-dasharray="${p} 200"/>`).join('');
 /* number in a circle. The class lb keeps it readable when the figure is small */
 const badge=(n,x,y,fill,r=11)=>`<g class="lb" pointer-events="none"><circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="var(--fig)" stroke-width="2"/><text x="${x}" y="${y+4.4}" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff">${n}</text></g>`;
-const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}" x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||12}" font-weight="${o.w||500}" fill="var(--${o.f||'ink2'})">${t}</text>`;
+const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}"${o.mx!=null?` data-mx="${o.mx}"`:''} x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||12}" font-weight="${o.w||500}" fill="var(--${o.f||'ink2'})">${t}</text>`;
 /* keep the labels of a scaled figure readable: --k is the number of drawing units in one screen pixel */
 function figFit(fig){
   const f=()=>$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,sr=s.getBoundingClientRect(),w=sr.width;if(!w||!vb||!vb.width)return;const k=vb.width/w,K=clamp(k,1,2.1);s.style.setProperty('--k',K.toFixed(3));s.classList.toggle('compact',k>1.5);
     /* a label grows only up to the edge of the drawing, where it would be clipped: its own --k is the room it has */
     const lbs=$$('.lb',s),ks=lbs.map(t=>{if(K<=1)return K;let b,M;try{b=t.getBBox();M=t.parentNode.getScreenCTM();}catch(e){return K;}if(!b.width||!M)return K;
       const [ox,oy]=getComputedStyle(t).transformOrigin.split(' ').map(parseFloat),X=(x,y)=>M.a*x+M.c*y+M.e,P=X(b.x+ox,b.y+oy),xs=[X(b.x,b.y),X(b.x+b.width,b.y),X(b.x,b.y+b.height),X(b.x+b.width,b.y+b.height)],lo=Math.min(...xs),hi=Math.max(...xs);
-      let m=K;if(hi-P>.01)m=Math.min(m,(sr.right-1-P)/(hi-P));if(P-lo>.01)m=Math.min(m,(P-sr.left-1)/(P-lo));return Math.max(1,m);});
+      /* data-mx: a right-hand limit inside the drawing (in drawing units), for a label that must not grow into the next part of the figure */
+      const mx=t.getAttribute('data-mx'),R=mx==null?sr.right-1:Math.min(sr.right-1,X(+mx,b.y+b.height/2));
+      let m=K;if(hi-P>.01)m=Math.min(m,(R-P)/(hi-P));if(P-lo>.01)m=Math.min(m,(P-sr.left-1)/(P-lo));return Math.max(1,m);});
     lbs.forEach((t,i)=>ks[i]<K?t.style.setProperty('--k',ks[i].toFixed(3)):t.style.removeProperty('--k'));});
   new ResizeObserver(f).observe(fig);f();
 }
@@ -4332,7 +4352,7 @@ const FIG_RC=(()=>{const cx=80;
 ${TX('hydrophilic hormone',118,16,{s:12.5,w:650,f:'ink',c:'s'})}${TX('hydrophobic hormone',350,16,{s:12.5,w:650,f:'ink',c:'s'})}
 ${MEM('en1-pl2',12,146)}${rec}<g transform="translate(${cx},42)">${INS}</g>
 <path d="M${cx+19},58H156M${cx+10},91H156M${cx+17},118H156" stroke="var(--mute)" stroke-width="1"/>
-${TX('hydrophilic',160,62,{a:'start',s:11,c:'l'})}${TX('hydrophobic',160,95,{a:'start',s:11,f:'ink',w:600,c:'l'})}${TX('hydrophilic',160,122,{a:'start',s:11,c:'l'})}
+${TX('hydrophilic',160,62,{a:'start',s:11,c:'l',mx:232})}${TX('hydrophobic',160,95,{a:'start',s:11,f:'ink',w:600,c:'l',mx:232})}${TX('hydrophilic',160,122,{a:'start',s:11,c:'l',mx:232})}
 ${sArrow(cx,132,cx,158,'var(--ink2)',1.8)}${[[66,172],[84,168],[98,178],[74,186],[90,190]].map(p=>`<g transform="translate(${p[0]},${p[1]})">${CAMP}</g>`).join('')}
 ${TX('second messenger',cx,212,{s:11,f:'ink',w:600,c:'s'})}
 ${MEM('en1-pl2',254,448)}
@@ -10531,17 +10551,24 @@ html{scroll-padding-top:62px}
   #rail .seg.main button{flex-direction:row}
   #rail .ulabel{flex-basis:100%}
 }
+/* rows of cards, from 880 px (where cards first sit side by side): wrapping rows instead of a fixed grid. A full row fills the column exactly,
+   and a row that is not full sits in the middle, thus a lone half card is centred, not pushed to the left. A card that is n columns wide is
+   n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way.
+   From 880 px to 1599 px the widths are those of the 12-column grid (half 6, w7 7, w5 5), and the cards of a row keep one height, as before */
+@media(min-width:880px){
+  :root{--cols:12;--gap:16px}
+  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:var(--gap)}
+  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
+  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid .card.half{--n:6}#main .grid .card.w7{--n:7}#main .grid .card.w5{--n:5}
+  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
+}
 /* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
    The column is capped and centred, thus the card order stays as written and the margins stay even */
 @media(min-width:1600px){
   :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
-  /* wrapping rows instead of a fixed grid: a full row fills the column exactly, and a row that is not full sits in the middle.
-     A card that is n columns wide is n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way */
-  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:var(--gap)}
-  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
-  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid,#main .grid>div:not(.card){align-items:flex-start}
   #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
-  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
   .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
 }
 @media(min-width:2200px){html{font-size:17px}
