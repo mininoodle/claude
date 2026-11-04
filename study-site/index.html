@@ -1168,9 +1168,12 @@ const nrShow=(sp,t)=>!t?'no answer':sp.m==='d'?t:/^\d{4}$/.test(t)?`${t[0]}.${t[
 const EXK=sk=>'exam:'+sk;
 /* a reload or close would drop a review test or an exam in progress: ask first */
 addEventListener('beforeunload',e=>{if($('section.rv-q')){e.preventDefault();e.returnValue='';}});
+/* the science sections (Physics, Biology, Chemistry) have numerical-response questions on the diploma: their timed exam takes 4 from the review bank
+   when the section has no generators but at least 4 bank questions that fit the four boxes. Math keeps its generated ones; Language Arts and Social Studies have none */
+const nrUnit=sk=>SUBJECTS.some(s=>['phy','bio','chem'].includes(s.k)&&s.units.includes(sk));
 function reviewUI(g,sk,le){
   const S=SUBJ[sk],host=el('div',{style:'grid-column:1/-1;display:grid;grid-template-columns:repeat(12,1fr);gap:16px'});g.append(host);
-  const LS=S.lessons.map((l,i)=>({l,i})).filter(x=>x.l.qz),gens=GEN[sk]||null,wrs=WRQ[sk]||[],nMC=gens?10:14,nNR=gens?4:0;let view='home',T=null,E=null,tick=0,len=10,mins=30;
+  const LS=S.lessons.map((l,i)=>({l,i})).filter(x=>x.l.qz),gens=GEN[sk]||null,wrs=WRQ[sk]||[],nNR=gens||nrUnit(sk)&&LS.flatMap(({l})=>l.rq||l.qz).filter(it=>!it.o&&nrSpec(it.n)&&!it.ans).length>=4?4:0,nMC=nNR?10:14;let view='home',T=null,E=null,tick=0,len=10,mins=30;
   const stat=({l,i})=>{let a=0,c=0;l.qz.forEach((_,j)=>{const e=Store.get(sk+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});return {a,c,n:l.qz.length};};
   const item=id=>{const p=id.split('_');if(p[2]&&p[2][0]==='g'){const x=qItem(id);return x&&{it:x.it,L:x.L,id,gen:1};}const l=S.lessons[+p[1]],r=p[2]&&p[2][0]==='r',arr=l&&(r?l.rq:l.qz),j=+(r?p[2].slice(1):p[2]);return arr&&arr[j]?{it:arr[j],L:+p[1],id}:null;};
   /* the review bank of a lesson, or its lesson questions when a unit has no bank yet */
