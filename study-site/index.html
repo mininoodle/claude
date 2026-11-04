@@ -777,6 +777,16 @@ html .find input{flex:1;min-width:0;width:100%;border:0;background:none;box-shad
 /* the achievement celebration is a modal <dialog> that covers the window, as the old overlay did */
 dialog.cele,dialog.cele:modal{width:auto;height:auto;max-width:none;max-height:none;margin:0;border:0;color:inherit}
 dialog.cele::backdrop{background:transparent}
+/* the course units: a card on the Today page, a line at the end of the rail, the end of the breadcrumb's section menu */
+#main .grid .card.cov-card{--n:var(--cols)}
+.cov{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:12px 24px;margin-top:.6em}
+.cov-s b{display:flex;align-items:center;gap:.45em;font-weight:600}
+.cov-s p{margin:.3em 0 0;font-size:.9rem}
+.cov-k{font-weight:600}
+#rail>.ucov{max-width:none;margin:12px 8px 0;padding-top:10px;border-top:1px solid var(--hair);font-size:11.5px;line-height:1.45;color:var(--ink2)}
+#rail>.ucov span{font-weight:600}
+@media(max-width:600px){#rail>.ucov{display:none}}
+.cm-n{font-size:12.5px;color:var(--ink2);padding:3px 8px 3px 31px}
 /* the level pill under a lesson's title is a button: it goes to the lesson's questions */
 button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
 button.lvl:hover{background:var(--hov);color:var(--ink)}
@@ -871,6 +881,23 @@ function findGo(x){TOP=x.kind===0?1:0;goLesson(x.k,x.i);const A=document.getElem
       if(matchMedia('(pointer:fine)').matches)inp.focus({preventScroll:true});else focusTo(c,'h3');return;}}
   if(x.kind===2){const c=[...A.querySelectorAll('.card')].find(c=>{const h=c.querySelector('h2,h3');return h&&fold(h.textContent)===x.ft;});if(c){goTo(c,'h2,h3');return;}}
   focusTo(A,'h1');}
+
+/* ----- the course units of each subject (Alberta programs), and which of them are on the site. The units on the site come from SUBJECTS and
+   UGROUPS; COURSE lists the ones that are not yet, each with the section key that will hold it when that is known (then it leaves this list by
+   itself when the section is added). Update COURSE when a unit without a key is added ----- */
+const COURSE={phy:{c:'Physics 30',todo:[['Electromagnetic radiation'],['Atomic physics']]},
+  bio:{c:'Biology 30',todo:[['Cell division and genetics (the rest of Unit 2)'],['Reproduction and development'],['Population and community dynamics']]},
+  chem:{c:'Chemistry 30',todo:[['Electrochemical changes','ec'],['Organic chemistry']]},
+  math:{c:'Math 31',todo:[['Derivatives'],['Applications of derivatives'],['Integrals']]},
+  la:{c:'English 30-1',todo:[['Poetry (Part B reading)'],['Shakespearean drama (Part B reading)'],['Part A writing: the personal response and the critical/analytical response']]},
+  ss:{c:'Social Studies 30-1',todo:[['Related issue 2: resistance to liberalism','ri2'],['Related issue 3: the viability of liberalism','ri3'],['Related issue 4: citizenship and ideology','ri4']]}};
+/* {c: course name, on: units on the site (a grouped unit with its sections), todo: units not on the site yet} */
+function courseUnits(S){const C=COURSE[S.k],on=dispUnits(S).map(d=>typeof d==='string'?SUBJ[d].name:d.name.split(':')[0]+': '+d.units.map(k=>SUBJ[k].name).join(', '));
+  return {c:C?C.c:S.name,on,todo:C?C.todo.filter(([,k])=>!k||!S.units.includes(k)).map(([n])=>n):[]};}
+/* the Today card: every subject's course units, on the site and not yet */
+function courseCard(g){const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  card(g,'Course units',`<p class="hint">The site follows the class: a unit is added when the class reaches it.</p><div class="cov">${SUBJECTS.filter(S=>S.units.length).map(S=>{const u=courseUnits(S);
+    return `<div class="cov-s"><b>${icon(S.k,16)}${esc(u.c)}</b><p><span class="cov-k">On the site:</span> ${u.on.map(esc).join(' · ')}</p>${u.todo.length?`<p class="hint"><span class="cov-k">Not on the site yet:</span> ${u.todo.map(esc).join(' · ')}</p>`:''}</div>`;}).join('')}</div>`,'cov-card');}
 
 /* the browser's own scroll restoration would move the page during Back and Forward before the page changes, thus the site keeps the places itself.
    For a reload, or a return to the site, the place of the page on screen is kept for this tab when the page is hidden */
@@ -11289,7 +11316,7 @@ function showHome(){keepPlace();curS='home';document.body.dataset.s='home';chipB
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);courseCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
@@ -11610,6 +11637,7 @@ html{scroll-padding-top:62px}
   rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span><span class="rail-name">Study</span></div><div class="rail-h">Subjects</div>';
   rail.append($id('tabs'),$id('units'));
   const lh=document.createElement('div');lh.className='rail-h';lh.textContent='Lessons';rail.append(lh,$id('chips'));
+  const cov=document.createElement('p');cov.className='ucov';cov.hidden=true;rail.append(cov);
   /* the mode and account buttons sit in the 'Study' row at the top, thus they stay in view however long the lists are */
   const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.firstChild.append(tools);
   shell.append(rail,main);
@@ -11657,7 +11685,8 @@ html{scroll-padding-top:62px}
   const closeMenu=focus=>{if(menu.hidden)return;menu.hidden=true;menu.innerHTML='';if(mBtn){mBtn.setAttribute('aria-expanded','false');if(focus)mBtn.focus();}mBtn=null;};
   const items=(lv,sub)=>{if(lv==='s')return SUBJECTS.map((S,i)=>({t:S.name,ic:S.k,cur:S.name===sub,go:()=>{tabSeg.set(i);showTab(i);}}));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
-    if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});return out;}
+    if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});
+      const todo=courseUnits(S).todo;if(todo.length)out.push({h:'Not on the site yet'},...todo.map(t=>({note:t})));return out;}
     return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i)}));};
   /* 'On this page': the top of the page, then each card that has a heading. The card on screen is marked; choosing one scrolls it to just below the bar and focuses its heading */
   const outline=()=>{const L=document.querySelector('#main>.lesson:not([hidden])');if(!L)return [];const y0=topBar()+innerHeight/4,h1=L.querySelector('h1');let on=-1;
@@ -11666,7 +11695,7 @@ html{scroll-padding-top:62px}
     return [{h:'On this page'},{t:h1?h1.textContent:'Top of the page',ic:'up',here:on<0,go:()=>{window.scrollTo({top:0,behavior:RM?'auto':'smooth'});focusTo(L,'h1');return 1;}}]
       .concat(cs.map((x,i)=>({t:x.h.textContent.replace(/\s+/g,' ').trim(),ic:'dash',here:i===on,go:()=>{goTo(x.c,'h2,h3');return 1;}})));};
   const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';if(typeof popClose==='function')popClose();
-    (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
+    (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h||it.note){const h=document.createElement('div');h.className=it.h?'cm-h':'cm-n';h.textContent=it.h||it.note;menu.append(h);return;}
       const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
       /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
@@ -11691,6 +11720,8 @@ html{scroll-padding-top:62px}
     const short=x=>{const n=x.lv==='s'?(SUBJECTS.find(S=>S.name===x.t)||{}).short:x.lv==='u'&&SUBJ[curS]?SUBJ[curS].short:'';return n&&n!==x.t?`<span class="cl">${esc(x.t)}</span><span class="cs">${esc(n)}</span>`:esc(x.t);};
     if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':short(x)}</span>${icon('down',12)}</button>`).join(sep);}
     lh.hidden=$id('chips').hidden;
+    /* the end of the rail: the open subject's course units that are not on the site yet */
+    const CS=SUBJECTS.find(s=>s.units.includes(curS)),todo=CS?courseUnits(CS).todo:[],ct=todo.length?'<span>Not on the site yet:</span> '+todo.map(esc).join(', '):'';if(cov.innerHTML!==ct){cov.innerHTML=ct;cov.hidden=!ct;}
     const lv=document.querySelector('.lesson:not([hidden]) .emblem small'),t=lv?lv.textContent:'';if(right.textContent!==t)right.textContent=t;};
   new MutationObserver(upd).observe(document.querySelector('title'),{childList:true,characterData:true,subtree:true});
   new MutationObserver(ms=>{if(ms.some(m=>!crumb.contains(m.target)))upd();}).observe(main,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
