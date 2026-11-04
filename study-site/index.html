@@ -4340,7 +4340,7 @@ ECL[1]={t:EC_T[1],h:'Oxidation numbers',
     w:'In SO₃ + H₂O → H₂SO₄, S stays +6, O stays −2 and H stays +1: no oxidation number changes. In each of the other three, an uncombined element (Zn, K, H₂) becomes an ion or a compound: its oxidation number changes.'},
   {q:'In the reaction '+ec1N('MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)')+', the element that is reduced is',o:['Mn, which goes from +7 to +2','Fe, which goes from +2 to +3','O, which goes from −2 to −1','H, which goes from +1 to 0'],a:0,
     w:'Mn is +7 in MnO₄⁻ and +2 in Mn²⁺: a decrease, thus Mn is reduced and MnO₄⁻ is the oxidizing agent. Fe goes from +2 to +3: it is oxidized. O stays −2 and H stays +1.'},
-  {q:'Copper reacts with nitric acid: '+ec1N('3Cu(s) + 8HNO3(aq) -> 3Cu(NO3)2(aq) + 2NO(g) + 4H2O(l)')+'. How many electrons does each nitrogen atom that is reduced gain?',n:3,u:'',tol:0,ans:'3',
+  {q:'Copper reacts with nitric acid: '+ec1N('3Cu(s) + 8HNO3(aq) -> 3Cu(NO3)2(aq) + 2NO(g) + 4H2O(l)')+'. How many electrons does each nitrogen atom that is reduced gain?',n:3,u:'',tol:0,
     w:'N is +5 in HNO₃. In NO, O is −2, thus N is +2. The N atoms that form NO go from +5 to +2. Each one gains 3 electrons.'},
   {q:'The oxidation number of oxygen in oxygen difluoride, '+C('OF2(g)')+', is',o:['+2','−2','−1','0'],a:0,w:'F is always −1, and two F atoms give −2. The sum is 0: O + (−2) = 0, thus O = +2. OF₂ is an exception to the rule that O is −2.'},
   {q:'Calculate the average oxidation number of carbon in glucose, '+C('C6H12O6(aq)')+'.',n:0,u:'',tol:0,ans:'0',w:'H is +1 and O is −2. The sum is 0: 6C + 12(+1) + 6(−2) = 0. 6C + 12 − 12 = 0, thus 6C = 0. C = 0.'},
@@ -4377,10 +4377,10 @@ EC_RQ[1]=[
   {q:'Use the information below. In this reaction, nitrogen is',fig:ec1P('In polluted air, nitrogen dioxide reacts with water to form acid rain:')+`<p style="margin:.4em .5em;text-align:center">${ec1N('3NO2(g) + H2O(l) -> 2HNO3(aq) + NO(g)')}</p>`,
     o:['both oxidized and reduced','only oxidized','only reduced','neither oxidized nor reduced'],a:0,
     w:'N is +4 in NO₂, +5 in HNO₃ and +2 in NO. Two N atoms go from +4 to +5: they are oxidized. One N atom goes from +4 to +2: it is reduced. The same element is both oxidized and reduced: this is a disproportionation (see Disproportionation and voltaic cells). H (+1) and O (−2) do not change.'},
-  {q:'Ammonia burns in oxygen: '+ec1N('4NH3(g) + 5O2(g) -> 4NO(g) + 6H2O(g)')+'. How many electrons does each nitrogen atom lose?',n:5,u:'',tol:0,ans:'5',
+  {q:'Ammonia burns in oxygen: '+ec1N('4NH3(g) + 5O2(g) -> 4NO(g) + 6H2O(g)')+'. How many electrons does each nitrogen atom lose?',n:5,u:'',tol:0,
     w:'In NH₃, H is +1, thus N is −3. In NO, O is −2, thus N is +2. N goes from −3 to +2. Each N atom loses 5 electrons.'},
   {q:'Use the information below. Calculate the total number of electrons transferred in the equation as written.',
-    fig:ec1P(`Hydrazine, ${C('N2H4(l)')}, and hydrogen peroxide, ${C('H2O2(l)')}, are used together as a rocket fuel:`)+`<p style="margin:.4em .5em;text-align:center">${ec1N('N2H4(l) + 2H2O2(l) -> N2(g) + 4H2O(g)')}</p>`,n:4,u:'',tol:0,ans:'4',
+    fig:ec1P(`Hydrazine, ${C('N2H4(l)')}, and hydrogen peroxide, ${C('H2O2(l)')}, are used together as a rocket fuel:`)+`<p style="margin:.4em .5em;text-align:center">${ec1N('N2H4(l) + 2H2O2(l) -> N2(g) + 4H2O(g)')}</p>`,n:4,u:'',tol:0,
     w:'N is −2 in N₂H₄ and 0 in N₂. Each N atom loses 2 electrons, and there are two N atoms. O is −1 in H₂O₂ and −2 in H₂O. Each O atom gains 1 electron, and the two H₂O₂ have four O atoms. Thus 4 electrons are transferred.'},
   {q:'In photosynthesis, '+ec1N('6CO2(g) + 6H2O(l) -> C6H12O6(aq) + 6O2(g)')+', the average oxidation number of carbon',
     o:['decreases from +4 to 0, thus carbon is reduced','increases from 0 to +4, thus carbon is oxidized','decreases from +4 to 0, thus carbon is oxidized','increases from −4 to 0, thus carbon is reduced'],a:0,
@@ -4422,7 +4422,7 @@ EC_GEN[1]=[
   ()=>{const r=EC1_POOL[RN(0,EC1_POOL.length-1)];
     return {q:`Calculate the oxidation number of ${EC1_NM[r.x]} in ${C(r.f)}.`,n:r.v,u:'',tol:0,ans:ec1S(r.v),w:ec1Work(r)};},
   ()=>{const [x,a,b,va,vb]=EC1_CV[RN(0,EC1_CV.length-1)],k=ecAtoms(a).a[x],d=vb-va,n=k*Math.abs(d),up=d>0;
-    return {q:`In a reaction, ${C(a)} changes to ${C(b)}. How many electrons does one ${C(a)} lose or gain?`,n,u:'',tol:0,ans:String(n),
+    return {q:`In a reaction, ${C(a)} changes to ${C(b)}. How many electrons does one ${C(a)} lose or gain?`,n,u:'',tol:0,
       w:`${x} is ${ec1S(va)} in ${ecU(a)} and ${ec1S(vb)} in ${ecU(b)}. The oxidation number ${up?'increases':'decreases'} by ${Math.abs(d)} for each ${x} atom.`+(k>1?` One ${ecU(a)} has ${k} ${x} atoms: ${k} × ${Math.abs(d)} = ${n} electrons.`:'')+
         ` Thus one ${ecU(a)} ${up?'loses':'gains'} ${n} electron${n>1?'s':''}: it is ${up?'oxidized':'reduced'}.`};}];
 EC_METHOD[1]='Use the rules first: an element is 0, a monatomic ion is its charge, H is +1, O is −2, Group 1 is +1, Group 2 is +2 and F is −1. Then the sum of all the oxidation numbers equals the charge of the entity (0 for a compound).';
