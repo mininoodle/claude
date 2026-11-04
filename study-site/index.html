@@ -4190,16 +4190,428 @@ EC_REF.f.push(['Standard cell potential',ecEs('net')+' = '+ecEs('r')+' cathode �
 }catch(e){console.error('[ec] slot 7 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 8 ----- */
 {try{
-/* placeholder of lesson 8 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[8]={t:EC_T[8],h:'Batteries and fuel cells',d:'A battery is two or more cells joined together. Primary cells cannot be recharged, secondary cells can, and fuel cells need a constant supply of fuel.',build(g){
-  card(g,'Kinds of cells',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.3s</p><ul><li>A <span class="key">primary cell</span> cannot be recharged (the zinc-carbon dry cell, the alkaline cell).</li>
-    <li>A <span class="key">secondary cell</span> can be recharged: electrical energy reverses the reaction (lead-acid, nickel-cadmium, lithium).</li>
-    <li>A <span class="key">fuel cell</span> is a voltaic cell with a constant supply of fuel and oxidizing agent, for example ${C('H2(g)')} and ${C('O2(g)')}.</li></ul>
-    <p class="note">You do not need to memorize the reactions of each battery. Apply what you know about voltaic cells to the information that is given.</p>`);
+/* lesson 8: Batteries and fuel cells. Notes pp. 56-64: cells and batteries; primary cells (zinc-carbon, alkaline, mercury and silver oxide button cells);
+   secondary cells (lithium, nickel-cadmium, lead-acid); fuel cells (hydrogen-oxygen, aluminum-air); the diploma questions 92 to 105 are in EC_DIP[8].
+   Lesson-local helpers: ec8Grid (sentences with blanks to fill from lists, saved under mt_<lesson id>_g<slot>), the drawings ec8Dry, ec8Alk, ec8Btn,
+   ec8Fuel, ec8Air and ec8Lead, and the small text helpers ec8T, ec8Ld, ec8Q. Question figures use inline styles: they are also shown outside the lesson */
+/* C() with no line break between a charge and its state (SO₄²⁻|(aq)): a word joiner after the charge */
+const C8=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060(');
+const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
+  /* a leader line from a label to a part, with a dot on the part */
+  ec8Ld=(x1,y1,x2,y2)=>`<path d="M${x1},${y1}L${x2},${y2}" fill="none" stroke="var(--ink2)" stroke-width="1.2"/><circle cx="${x2}" cy="${y2}" r="2.3" fill="var(--ink2)"/>`,
+  ec8Svg=(w,h,alt,body)=>`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${alt.replace(/"/g,'&quot;')}">${body}</svg>`,
+  /* a label of a drawing: words (one or more lines, 21 units apart: the labels grow on a phone) or, with N, a numbered badge.
+     yc: the middle of the label, where its leader starts. side 'r': the text ends at x (left of the part); 'l': it starts at x */
+  ec8Lab=(N,n,t,x,yc,side)=>{const a=Array.isArray(t)?t:[t],y0=yc+4-(a.length-1)*10.5;return N?ecBadge(n,side==='r'?x-10:x+10,yc):a.map((s,i)=>ec8T(s,x,y0+21*i,{a:side==='r'?'end':'start',c:side==='r'?'r':'l'})).join('');},
+  /* small dots: the grain of a paste or of a porous electrode */
+  ec8Dots=(x0,y0,x1,y1,st,c,r=1.1,skip)=>{let s='';for(let y=y0;y<=y1;y+=st)for(let x=x0+((y-y0)/st%2?st/2:0);x<=x1;x+=st){if(skip&&skip(x,y))continue;s+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${c}"/>`;}return s;},
+  /* the information of a question (figure HTML): a paragraph, a centred title, a centred line */
+  ec8P=h=>`<p style="margin:.35em .5em">${h}</p>`,ec8H=h=>`<p style="margin:.3em .5em .2em;text-align:center;font-weight:650">${h}</p>`,
+  ec8C=h=>`<p style="margin:.25em .5em;text-align:center">${h}</p>`,
+  ec8Q='<b>Numerical response.</b> ';
+
+/* the zinc-carbon dry cell, cut in half. o.nums: numbered parts (1 metal cap, 2 carbon rod, 3 MnO2 paste, 4 electrolyte paste, 5 zinc can, 6 steel case, 7 metal bottom) */
+function ec8Dry(o={}){const N=!!o.nums,L=(n,t,yc,side,tx,ty)=>ec8Lab(N,n,t,side==='r'?138:302,yc,side)+ec8Ld(side==='r'?141:299,yc,tx,ty);
+  let s=`<rect x="150" y="50" width="140" height="222" rx="9" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.4"/>`+
+    `<rect x="157" y="50" width="126" height="215" rx="6" fill="${EC_ELC.Zn}" stroke="var(--ink2)" stroke-width="1"/>`+
+    `<rect x="167" y="57" width="106" height="199" rx="5" fill="color-mix(in srgb,var(--s4) 34%,var(--fig))" stroke="var(--ink2)" stroke-width=".8"/>`+
+    `<rect x="179" y="64" width="82" height="183" rx="4" fill="#4a4548" stroke="var(--ink2)" stroke-width=".8"/>`+
+    ec8Dots(184,70,256,242,7,'#6f696c',1.1,(x,y)=>x>206&&x<234)+
+    `<rect x="157" y="46" width="126" height="9" rx="3" fill="var(--rubber)" stroke="var(--ink2)" stroke-width=".8"/>`+
+    `<rect x="211" y="30" width="18" height="211" rx="3" fill="#262327" stroke="#a0a6ae" stroke-width="1"/>`+
+    `<rect x="202" y="20" width="36" height="12" rx="3" fill="var(--brass)" stroke="var(--ink2)" stroke-width="1.1"/>`+
+    `<rect x="172" y="272" width="96" height="9" rx="2.5" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1"/>`;
+  s+=L(1,'Metal cap (+)',26,'r',202,26)+L(2,'Carbon rod',96,'r',218,96)+L(3,['MnO₂(s) paste','(cathode)'],154,'r',192,154)+
+    L(6,'Steel case',72,'l',287,72)+L(5,['Zinc can','(anode, −)'],120,'l',279,120)+L(4,['NH₄Cl and ZnCl₂','paste','(electrolyte)'],186,'l',268,186)+L(7,'Metal bottom (−)',290,'l',262,279);
+  return ec8Svg(440,302,N?'A zinc-carbon dry cell cut in half, with seven numbered parts. 1: the metal cap on top of the central rod. 2: the central rod. 3: the black paste around the rod. 4: the pale paste layer next to the can. 5: the can around the pastes. 6: the outer case. 7: the metal plate at the bottom.':
+    'A zinc-carbon dry cell cut in half. A carbon rod with a metal cap (+) is in the centre. Around it is a black paste of MnO₂(s), the cathode. Next is a paste of NH₄Cl and ZnCl₂, the electrolyte. The zinc can around the pastes is the anode (−). A steel case is outside, and a metal bottom (−) is under the can.',s);}
+
+/* the alkaline dry cell, cut in half. o.short: short labels (for a question figure, whose labels are larger on a phone) */
+function ec8Alk(o={}){const S=!!o.short,L=(t,yc,side,tx,ty)=>ec8Lab(false,0,t,side==='r'?138:302,yc,side)+ec8Ld(side==='r'?141:299,yc,tx,ty);
+  let s=`<rect x="150" y="46" width="140" height="222" rx="9" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.4"/>`+
+    `<rect x="203" y="33" width="34" height="15" rx="3" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<rect x="157" y="53" width="126" height="203" rx="6" fill="#4a4548" stroke="var(--ink2)" stroke-width=".8"/>`+ec8Dots(161,58,279,252,7,'#6f696c',1.1,(x,y)=>x>171&&x<269&&y<250)+
+    `<rect x="174" y="62" width="92" height="188" rx="4" fill="var(--fig2)" stroke="var(--mute)" stroke-width="1.2" stroke-dasharray="3 2.5"/>`+
+    `<rect x="181" y="68" width="78" height="176" rx="3" fill="#9aa3b0" stroke="var(--ink2)" stroke-width=".8"/>`+ec8Dots(185,73,255,240,6,'#c9cfd8',1.2,(x,y)=>x>213&&x<227)+
+    `<rect x="217" y="96" width="6" height="172" rx="2" fill="var(--brass)" stroke="var(--ink2)" stroke-width=".8"/>`+
+    `<rect x="157" y="254" width="126" height="9" rx="2" fill="var(--rubber)" stroke="var(--ink2)" stroke-width=".8"/>`+
+    `<rect x="164" y="268" width="112" height="10" rx="3" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1"/>`;
+  s+=L(S?'Button (+)':['Positive','button (+)'],36,'r',204,38)+L('Steel case',98,'r',153,98)+L(S?'MnO₂ paste':['MnO₂ in KOH','paste (cathode)'],152,'r',166,152)+
+    L('Separator',80,'l',262,80)+L(S?'Zinc gel':['Powdered zinc','in KOH gel','(anode)'],140,'l',240,140)+L('Brass pin',210,'l',220,210)+L(S?'End cap (−)':['Negative end','cap (−)'],278,'l',262,274);
+  return ec8Svg(440,302,'An alkaline dry cell cut in half. The steel case and the positive button (+) are outside. Inside the case is a black paste of MnO₂ in KOH, the cathode. A separator divides it from the core of powdered zinc in a KOH gel, the anode. A brass pin in the zinc goes down to the negative end cap (−).',s);}
+
+/* a button cell (mercury or silver oxide), cut in half. o.ox: the oxide of the paste ('HgO(s)' or 'Ag2O(s)') */
+function ec8Btn(o={}){const ox=ecU(o.ox||'HgO(s)');
+  let s=`<path d="M108,74V188a10 10 0 0 0 10,10H322a10 10 0 0 0 10,-10V74H320V186H120V74Z" fill="${EC_ELC.Zn}" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<path d="M120,74V186H320V74H314V180H126V74Z" fill="var(--fig2)" stroke="var(--mute)" stroke-width="1" stroke-dasharray="3 2.5"/>`+
+    `<rect x="126" y="96" width="188" height="84" fill="color-mix(in srgb,var(--s2) 26%,var(--fig2))"/>`+ec8Dots(131,102,309,176,8,'color-mix(in srgb,var(--s2) 55%,var(--fig2))',1.3)+
+    `<rect x="146" y="58" width="148" height="40" rx="5" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<rect x="108" y="62" width="38" height="13" rx="2" fill="var(--rubber)" stroke="var(--ink2)" stroke-width=".8"/><rect x="294" y="62" width="38" height="13" rx="2" fill="var(--rubber)" stroke="var(--ink2)" stroke-width=".8"/>`;
+  s+=ec8T('Steel (cathode, +)',206,22)+ec8Ld(206,28,206,58)+ec8T('Insulation',98,44,{a:'end',c:'r'})+ec8Ld(101,40,124,66)+
+    ec8T('Zinc container',312,20,{a:'start',c:'l'})+ec8T('(anode, −)',312,39,{a:'start',c:'l'})+ec8Ld(330,46,326,100)+
+    ec8T('Paste of '+ox+', KOH',150,216)+ec8T('and Zn(OH)₂(s)',150,235)+ec8Ld(150,202,180,150)+ec8T('Porous separator',332,222)+ec8Ld(332,208,317,170);
+  return ec8Svg(440,244,'A button cell cut in half. A steel cap at the top is the cathode (+). Insulation separates it from the zinc container, the anode (−), which forms the bottom and the sides. Inside is a paste of '+ox+', KOH and Zn(OH)₂(s). A porous separator lines the zinc container.',s);}
+
+/* the hydrogen-oxygen fuel cell with a KOH(aq) electrolyte. o.nums: the numbers of the diploma diagram (1 gas inlets, 2 anode, 3 external circuit, 4 water vapour, 5 electrolyte, 6 cathode) */
+function ec8Fuel(o={}){const N=!!o.nums,ink='var(--ink)';
+  let s=`<rect x="160" y="96" width="120" height="154" fill="var(--liq)" fill-opacity=".7"/>`+
+    `<path d="M160,96q7.5,-4 15,0t15,0t15,0t15,0t15,0t15,0t15,0t15,0" fill="none" stroke="var(--s1)" stroke-width="1.3"/>`+
+    [140,280].map(x=>`<rect x="${x}" y="62" width="20" height="192" fill="#4f4a4d" stroke="var(--ink2)" stroke-width="1"/>`+ec8Dots(x+4,68,x+17,248,7,'#8d878a',1.1)).join('')+
+    `<path d="M100,62V190M100,208V254H340V208M340,190V62M100,62H205M235,62H340M205,62V50M235,62V50M64,190H100M64,208H100M340,190H376M340,208H376" fill="none" stroke="var(--ink2)" stroke-width="2.4" stroke-linejoin="round"/>`+
+    sArrow(68,199,98,199,ink,2.6)+sArrow(372,199,342,199,ink,2.6)+sArrow(220,60,220,22,ink,3.2)+
+    `<path d="M150,254V292H290V254" fill="none" stroke="var(--ink2)" stroke-width="2"/>`+sArrow(150,260,150,284,'var(--s1)',2.2)+sArrow(290,284,290,260,'var(--s1)',2.2)+
+    ec8T('e⁻',137,282,{s:12.5,w:700,f:'s1',a:'end',c:'r'})+ec8T('e⁻',303,282,{s:12.5,w:700,f:'s1',a:'start',c:'l'});
+  if(N){s+=ecBadge(1,40,176)+ec8T('H₂(g)',62,203,{a:'end',c:'r'})+ecBadge(1,400,176)+ec8T('O₂(g)',378,203,{a:'start',c:'l'})+
+      ecBadge(2,150,110)+ecBadge(6,290,110)+ecBadge(3,220,310)+`<path d="M220,292V299" stroke="var(--ink2)" stroke-width="1.2"/>`+ecBadge(4,198,22)+ec8T('H₂O(g)',232,26,{a:'start',c:'l'})+
+      ecBadge(5,180,173)+`<path d="M198,142q-6,0 -6,6v20l-4,4l4,4v20q0,6 6,6" fill="none" stroke="var(--ink2)" stroke-width="1.3"/>`+
+      ec8T('K⁺(aq)',204,153,{a:'start',c:'l'})+ec8T('OH⁻(aq)',204,177,{a:'start',c:'l'})+ec8T('H₂O(l)',204,201,{a:'start',c:'l'})+
+      ['Porous','carbon','electrodes','containing','catalysts'].map((t,i)=>ec8T(t,4,84+17*i,{a:'start',s:11.5,w:500,f:'ink2',c:'l'})).join('')+
+      sArrow(90,114,139,124,'var(--ink2)',1.3)+sArrow(90,100,280,82,'var(--ink2)',1.3);}
+  else{s+=ec8T('H₂(g) in',60,203,{a:'end',c:'r'})+ec8T('O₂(g) in',380,203,{a:'start',c:'l'})+ec8T('H₂O(g) out',232,26,{a:'start',c:'l'})+
+      ec8T('KOH(aq)',220,122,{s:12.5})+ec8T('electrolyte',220,141,{s:11.5,w:500,f:'ink2'})+sArrow(266,224,176,224,'var(--s5)',2.2)+ec8T('OH⁻',221,216,{s:12,w:650,f:'s5'})+
+      ['Anode (−)','porous carbon'].map((t,i)=>ec8T(t,96,228+19*i,{a:'end',c:'r',s:i?11.5:12,w:i?500:700,f:i?'ink2':'ink'})).join('')+ec8Ld(99,233,144,233)+
+      ['Cathode (+)','porous carbon'].map((t,i)=>ec8T(t,344,228+19*i,{a:'start',c:'l',s:i?11.5:12,w:i?500:700,f:i?'ink2':'ink'})).join('')+ec8Ld(341,233,296,233)+
+      `<circle cx="220" cy="292" r="11" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/><path d="M213.5,297l3,-8 3.5,6 3.5,-6 3,8" fill="none" stroke="var(--s4)" stroke-width="1.5" stroke-linejoin="round"/>`+ec8T('load',220,318,{s:11.5,w:500,f:'ink2'});}
+  return ec8Svg(440,324,N?'A hydrogen-oxygen fuel cell with numbered parts. 1: H₂(g) enters at the left and O₂(g) enters at the right. 2: the left porous carbon electrode. 6: the right porous carbon electrode. Both electrodes contain catalysts. 5: the central compartment with K⁺(aq), OH⁻(aq) and H₂O(l). 4: H₂O(g) leaves at the top. 3: the external circuit under the cell; electrons leave electrode 2 and enter electrode 6.':
+    'A hydrogen-oxygen fuel cell. H₂(g) enters at the left, at the porous carbon anode (−). O₂(g) enters at the right, at the porous carbon cathode (+). Between them is hot KOH(aq), the electrolyte; OH⁻ ions move toward the anode. H₂O(g) leaves at the top. Electrons flow through the external circuit and a load from the anode to the cathode.',s);}
+
+/* the aluminum-air cell. o.lab: the words anode and cathode */
+function ec8Air(o={}){const ink='var(--ink2)';
+  let s=`<rect x="118" y="70" width="18" height="160" fill="#7a828d" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<rect x="262" y="70" width="16" height="160" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.2"/>`+ec8Dots(265,74,276,226,5,'var(--ink2)',.9)+
+    `<path d="M127,70V40H160l4,-7 8,14 8,-14 8,14 8,-14 8,14 8,-14 8,14 8,-14 4,7H270V70" fill="none" stroke="var(--ink2)" stroke-width="1.8" stroke-linejoin="round"/>`+
+    sArrow(186,18,226,18,'var(--s1)',2)+ec8T('e⁻',178,22,{s:12.5,w:700,f:'s1',a:'end',c:'r'})+
+    [226,176,126].map(y=>sArrow(170,y,170,y-26,ink,1.6)).join('')+
+    [96,144,192].map(y=>`<path d="M260,${y}Q234,${y} 222,${y+10}" fill="none" stroke="var(--s5)" stroke-width="1.8"/>`+sArrow(226,y+7,215,y+15,'var(--s5)',1.8)+ec8T('OH⁻(aq)',218,y+31,{s:11.5,w:600,f:'s5'})).join('')+
+    `<path d="M346,232V82" fill="none" stroke="var(--mute)" stroke-width="1.6" stroke-dasharray="4 3"/>`+sArrow(346,96,346,74,'var(--mute)',1.6)+
+    [112,152,192].map(y=>`<path d="M344,${y+24}Q340,${y} 290,${y}" fill="none" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="4 3"/>`+sArrow(294,y,281,y,'var(--mute)',1.5)+ec8T('O₂(g)',288,y-7,{s:11.5,w:600,f:'ink',a:'start',c:'l'})).join('')+
+    sArrow(76,150,114,150,'var(--ink)',2.2)+ec8T('Al(s)',70,154,{a:'end',c:'r'})+
+    ec8T('Porous cathode'+(o.lab?' (+)':''),298,48,{a:'start',c:'l'})+ec8Ld(300,52,276,70)+
+    ec8T('Flowing electrolyte',172,260,{s:11.5,w:600})+ec8T('NaOH(aq)',172,279,{s:11.5,w:600})+ec8T('Flowing moist air',360,260,{s:11.5,w:600})+ec8T('(O₂(g), H₂O(l))',360,279,{s:11.5,w:600});
+  if(o.lab)s+=ec8T('Anode (−)',70,174,{a:'end',c:'r',s:11.5,w:600,f:'ink2'});
+  return ec8Svg(440,290,'An aluminum-air cell. A plate of Al(s)'+(o.lab?', the anode (−),':'')+' is on the left and a porous cathode'+(o.lab?' (+)':'')+' on the right, joined by a wire with a load; electrons flow from the aluminum to the cathode. A NaOH(aq) electrolyte flows up between them, and OH⁻(aq) ions move from the cathode toward the aluminum. Moist air with O₂(g) flows up on the right, and O₂(g) enters the porous cathode.',s);}
+
+/* one cell of a lead-acid battery while it discharges (ecCell with a dark brown PbO2 plate) */
+const ec8Lead=(o={})=>ecCell(Object.assign({sep:'none',L:{el:'Pb(s)',sol:'H2SO4(aq)'},R:{el:'PbO2(s)'},meter:'load',cat:'H⁺',an:'SO₄²⁻',
+  extra:`<rect x="323" y="112" width="14" height="138" rx="2" fill="#6b4a32" stroke="var(--ink2)" stroke-width="1.1"/>`,
+  alt:'One cell of a lead-acid battery while it discharges: a lead plate, Pb(s), the anode (−), and a lead(IV) oxide plate, PbO₂(s), the cathode (+), in sulfuric acid, H₂SO₄(aq). A light bulb is connected by a wire. Electrons flow through the wire from the lead to the lead(IV) oxide. H⁺ ions move toward the cathode and SO₄²⁻ ions toward the anode.'},o));
+
+/* sentences with blanks: each blank {j} of a row is a select with its own options. o.rows: [{l: the sentence (HTML, with {0}, {1} ...), f: [[options (HTML), answer index], ...]}].
+   o.after: the explanation (HTML) shown when every blank is correct or shown. The choices are saved under mt_<lesson id>_g<slot> (Clear answers for the section removes them) */
+function ec8Grid(host,o,slot){
+  const key='mt_'+((host.closest('.lesson')||{}).id||'x')+'_g'+(slot||0),uid='ec8g'+(ec8Grid.n=(ec8Grid.n||0)+1),box=el('div');host.append(box);
+  const R=o.rows,F=R.map(r=>r.f),blank=()=>F.map(f=>f.map(()=>-1)),plain=h=>String(h).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+  const valid=v=>Array.isArray(v)&&v.length===R.length&&v.every((a,i)=>Array.isArray(a)&&a.length===F[i].length&&a.every((x,j)=>x===-1||(Number.isInteger(x)&&x>=0&&x<F[i][j][0].length)));
+  let sel=valid(Store.w(key))?Store.w(key).map(a=>a.slice()):blank(),seen=JSON.stringify(sel),open=false;
+  const save=()=>{Store.wSet(key,sel.map(a=>a.slice()));seen=JSON.stringify(sel);};
+  const sl=(i,j)=>{const t=plain(R[i].l).replace(/\{(\d)\}/g,(m,k)=>+k===j?'(blank)':'…');return `<select data-i="${i}" data-j="${j}" aria-label="${t.replace(/"/g,'&quot;')}"><option value="-1">Select…</option>${F[i][j][0].map((x,k)=>`<option value="${k}">${x}</option>`).join('')}</select>`;};
+  box.innerHTML=(o.intro?`<p class="hint">${o.intro}</p>`:'')+`<ol class="mtl ec8g">${R.map((r,i)=>`<li><span class="ordn">${i+1}</span><span class="ec8gl">${/\{\d\}/.test(r.l)?r.l.replace(/\{(\d)\}/g,(m,j)=>sl(i,+j)):r.l+' '+r.f.map((x,j)=>sl(i,j)).join(' ')}</span></li>`).join('')}</ol>`+
+    `<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
+  const ss=$$('select',box),lis=$$('ol.ec8g>li',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=(i,j)=>sel[i][j]===F[i][j][1],all=()=>F.every((f,i)=>f.every((x,j)=>ok(i,j)));
+  const paint=res=>{ss.forEach(s=>{const i=+s.dataset.i,j=+s.dataset.j;s.value=String(sel[i][j]);s.classList.toggle('ok',!!res&&ok(i,j));s.classList.toggle('bad',!!res&&!ok(i,j));if(res&&!ok(i,j))s.setAttribute('aria-invalid','true');else s.removeAttribute('aria-invalid');});
+    lis.forEach((li,i)=>{const g=F[i].every((x,j)=>ok(i,j));li.classList.toggle('ok',!!res&&g);li.classList.toggle('bad',!!res&&!g);});};
+  const reveal=()=>{wv.innerHTML=o.after?`<p class="fb info">${o.after}</p>`:'';open=true;},hide=()=>{wv.innerHTML='';open=false;};
+  ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');s.removeAttribute('aria-invalid');s.closest('li').classList.remove('ok','bad');});
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){lv.textContent='Choose your answers first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
+    lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct. Try again, or show the answers.';if(n===ss.length)reveal();else hide();};
+  $('[data-a=show]',box).onclick=()=>{sel=F.map(f=>f.map(x=>x[1]));save();paint(true);lv.textContent='These are the answers.';reveal();};
+  $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';hide();};
+  paint(false);if(sel.some(a=>a.some(x=>x>=0)))lv.textContent='Your last answers are restored.';if(all())reveal();
+  /* newer synced answers (another device, a remote clear) replace the ones on screen */
+  const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=valid(v)?JSON.stringify(v):JSON.stringify(blank());if(j===seen)return;seen=j;sel=JSON.parse(j);paint(false);lv.textContent='';if(all())reveal();else if(open)hide();};LIVE.add(view);
+  return box;}
+
+/* the rows of the table of standard electrode potentials that the lesson uses */
+const e8PbO2=ecRow('PbO2(s)'),e8PbS=ecRow('PbSO4(s)'),e8Pb=ecRow('Pb^2+(aq)'),e8OH=ecRow('O2(g)'),e8OA=ecRow('O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)'),e8H=ecRow('H^+(aq)'),
+  e8W=ecRow('H2O(l)'),e8Al=ecRow('Al^3+(aq)'),e8Cl=ecRow('Cl2(g)'),e8Li=ecRow('Li^+(aq)'),e8Zn=ecRow('Zn^2+(aq)'),e8Mg=ecRow('Mg^2+(aq)'),e8Cu=ecRow('Cu^2+(aq)');
+const e8LA=ecPair(e8PbO2,e8PbS),e8FC=ecPair(e8OH,e8W);
+/* the equations of the lesson, in C notation (each one is checked with ecBal in the test of this lesson) */
+const E8={zcC:'2MnO2(s) + 2NH4^+(aq) + 2e^- -> 2MnO(OH)(s) + 2NH3(aq)',zcA:'Zn(s) + 4NH3(aq) -> Zn(NH3)4^2+(aq) + 2e^-',zcN:'Zn(s) + 2MnO2(s) + 2NH4^+(aq) -> Zn^2+(aq) + 2MnO(OH)(s) + 2NH3(aq)',
+  akC:'2MnO2(s) + H2O(l) + 2e^- -> Mn2O3(s) + 2OH^-(aq)',akA:'Zn(s) + 2OH^-(aq) -> ZnO(s) + H2O(l) + 2e^-',akN:'Zn(s) + 2MnO2(s) -> ZnO(s) + Mn2O3(s)',
+  hgC:'HgO(s) + H2O(l) + 2e^- -> Hg(l) + 2OH^-(aq)',hgN:'Zn(s) + HgO(s) -> ZnO(s) + Hg(l)',
+  liA:'Li(s) -> Li^+ + e^-',liC:'TiS2(s) + e^- -> TiS2^-',liN:'Li(s) + TiS2(s) -> Li^+ + TiS2^-',
+  ncC:'2NiO(OH)(s) + 2H2O(l) + 2e^- -> 2Ni(OH)2(s) + 2OH^-(aq)',ncC2:'NiO2(s) + 2H2O(l) + 2e^- -> Ni(OH)2(s) + 2OH^-(aq)',ncA:'Cd(s) + 2OH^-(aq) -> Cd(OH)2(s) + 2e^-',ncN:'Cd(s) + 2NiO(OH)(s) + 2H2O(l) -> Cd(OH)2(s) + 2Ni(OH)2(s)',
+  laA:'Pb(s) + SO4^2-(aq) -> PbSO4(s) + 2e^-',laC:'PbO2(s) + SO4^2-(aq) + 4H^+(aq) + 2e^- -> PbSO4(s) + 2H2O(l)',laN:'Pb(s) + PbO2(s) + 2SO4^2-(aq) + 4H^+(aq) -> 2PbSO4(s) + 2H2O(l)',
+  laR:'2PbSO4(s) + 2H2O(l) -> Pb(s) + PbO2(s) + 2SO4^2-(aq) + 4H^+(aq)',
+  fcA:'2H2(g) + 4OH^-(aq) -> 4H2O(l) + 4e^-',fcC:'O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)',fcN:'2H2(g) + O2(g) -> 2H2O(l)',pmA:'2H2(g) -> 4H^+(aq) + 4e^-',pmC:'O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)',
+  aaC:'3O2(g) + 6H2O(l) + 12e^- -> 12OH^-(aq)',aaA:'4Al(s) -> 4Al^3+(aq) + 12e^-',aaN:'4Al(s) + 3O2(g) + 6H2O(l) -> 4Al^3+(aq) + 12OH^-(aq)',aaP:'Al^3+(aq) + 3OH^-(aq) -> Al(OH)3(s)',aaT:'4Al(s) + 3O2(g) + 6H2O(l) -> 4Al(OH)3(s)',
+  agC:'Ag2O(s) + H2O(l) + 2e^- -> 2Ag(s) + 2OH^-(aq)',agR:'Zn(OH)2(s) + 2e^- -> Zn(s) + 2OH^-(aq)',agN:'Zn(s) + Ag2O(s) + H2O(l) -> Zn(OH)2(s) + 2Ag(s)'};
+/* a half-reaction or an equation on its own line, with a bold label */
+const e8Eq=(lab,k,tail)=>`<p class="ec8eq"><b>${lab}</b> ${C8(E8[k]||k)}${tail?` <span class="hint">${tail}</span>`:''}</p>`;
+
+/* ---------- the figures of the diploma questions (each item carries its own copy: items are also shown alone in review and tests) ---------- */
+const F92=ec8P('Concern about increased air pollution and the increasing use of non-renewable resources has accelerated research into alternatives to the internal combustion engine. One alternative is a battery-powered electric motor. Several “new” efficient batteries are being tested. The diagram below represents one of these batteries.')+ec8H('Aluminum–Air Battery')+ec8Air();
+const F96=ec8P('During the operation of a NiCad battery, the two half-reactions that occur are')+
+  ec8C('<b>I</b>&ensp;'+C8('Cd(s) + 2OH^-(aq) -> Cd(OH)2(s) + 2e^-')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = ? V</span>')+
+  ec8C('<b>II</b>&ensp;'+C8('NiO2(s) + 2H2O(l) + 2e^- -> Ni(OH)2(s) + 2OH^-(aq)')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = −0.49 V</span>');
+const F97=ec8P('When a car is started, the starter motor draws a current from the battery. The battery recharges while the car is running.');
+const F100=ec8P('The silver oxide alkaline cell is a miniature power source used in watches, calculators, hearing aids, and cameras. The construction of this cell is shown in the following diagram.')+ec8Btn({ox:'Ag2O(s)'})+
+  ec8H('Half-Reactions')+ec8C(C8('Zn(OH)2(s) + 2e^- -> Zn(s) + 2OH^-(aq)')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = −1.25 V</span>')+ec8C(C8('Ag2O(s) + H2O(l) + 2e^- -> 2Ag(s) + 2OH^-(aq)')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = +0.34 V</span>');
+const F103=ec8P('Hydrogen–oxygen fuel cells have been used for years in spacecraft and more recently in small-scale power plants to generate electricity. Now, some governments and companies are working together to perfect this type of fuel cell for automobile use, and experiments are currently being conducted with operational prototypes. A diagram of a hydrogen–oxygen fuel cell is shown below.')+ec8Fuel({nums:true});
+const F105=ec8P('Most lead storage batteries in automobiles are made up of six voltaic cells connected in series. Each of the cells consists of a lead electrode, '+C8('Pb(s)')+', a lead(IV) oxide electrode, '+C8('PbO2(s)')+', and sulphuric acid electrolyte, '+C8('H2SO4(aq)')+'.');
+
+ecCSS(8,'#ec-8 .ec8eq{margin:.35em 0;line-height:1.55}#ec-8 .ec8eq b{font-weight:650}#ec-8 .nw{white-space:nowrap}'+
+  '#ec-8 .ec8g .ec8gl{line-height:2.15}#ec-8 .ec8g select{margin:.1em .15em;max-width:100%}'+
+  '#ec-8 .ec8g select.ok{border-color:var(--ok);background:var(--okb)}#ec-8 .ec8g select.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
+  '#ec-8 .ec8fig figure.cf{max-width:520px;margin-left:auto;margin-right:auto}#ec-8 .ec8m td{text-align:right;font-variant-numeric:tabular-nums}#ec-8 .ec8m td:first-child{text-align:left}');
+
+ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or more cells joined together. Primary cells cannot be recharged, secondary cells can, and a fuel cell runs on a constant supply of fuel.',build(g){
+  /* ---------- cells and batteries ---------- */
+  card(g,'Cells and batteries',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.3s</p>
+    <p class="note">You do not need to memorize the details of the cells in this lesson. Learn the general ideas. Then apply what you know about voltaic cells to the information that a question gives you, as in the diploma questions at the end.</p>
+    <ul><li>A <span class="key">cell</span> is two electrodes and an electrolyte, joined together.</li><li>A <span class="key">battery</span> is two or more cells, linked one to the next, to give a higher total voltage.</li></ul>
+    <table><tr><th>Kind of cell</th><th>Can it be recharged?</th><th>Examples in this lesson</th></tr>
+    <tr><td><span class="key">Primary cell</span></td><td>No. Its products are too delicate, or not suitable, for recharging.</td><td>zinc-carbon dry cell, alkaline cell, mercury and silver oxide button cells</td></tr>
+    <tr><td><span class="key">Secondary cell</span></td><td>Yes. Electricity reverses the redox reaction that produced the electricity.</td><td>lithium, nickel-cadmium, lead-acid (car battery)</td></tr>
+    <tr><td><span class="key">Fuel cell</span></td><td>It does not need to be. Its fuel is supplied all the time.</td><td>hydrogen-oxygen fuel cell</td></tr></table>
+    <p>Cells are <b>wet</b> or <b>dry</b>. A <span class="key">dry cell</span> is a voltaic cell whose electrolyte is a paste: the electrolyte is thickened with starch. AA, C and D cells and 9&nbsp;V batteries are dry cells. A car battery is a wet cell: its electrolyte is a liquid.</p>`,'w7');
+  card(g,'Every battery is a voltaic cell',`<ul><li>The <b>anode</b> is the negative terminal. The reducing agent is oxidized there: a reactive metal (Zn, Li, Cd, Pb, Al) or a fuel (${C8('H2(g)')}).</li>
+    <li>The <b>cathode</b> is the positive terminal. The oxidizing agent is reduced there: often a metal oxide (${C8('MnO2')}, ${C8('HgO')}, ${C8('Ag2O')}, ${C8('NiO(OH)')}, ${C8('PbO2')}) or ${C8('O2(g)')} from the air.</li>
+    <li>Electrons flow through the external circuit from the anode to the cathode. Inside the cell, ions carry the charge through the electrolyte or a porous separator: anions toward the anode, cations toward the cathode.</li>
+    <li>Discharging is spontaneous: the cell is voltaic. Recharging is non-spontaneous: the cell is electrolytic and needs a power supply.</li></ul>
+    <div class="fx">${ecEs('net')} = ${ecEs('r')} cathode − ${ecEs('r')} anode<br>battery voltage = (number of cells in series) × ${ecEs('net')}</div>
+    <p class="hint">The voltage of a cell depends on its substances, not on its size. An AA cell and a D cell both give 1.5 V. The D cell holds more reactants, thus it lasts longer.</p>`,'w5');
+
+  /* ---------- primary cells ---------- */
+  card(g,'Primary cells: the zinc-carbon dry cell',`<p>The <b>zinc-carbon cell</b> is also called the Leclanché cell, the common dry cell, or the regular carbon (“heavy duty”) battery. It cannot be recharged.</p>
+    <div class="ec8fig">${CF(ec8Dry(),'A zinc-carbon dry cell, cut in half.')}</div>
+    ${e8Eq('Cathode (+), GER C:','zcC','Simplified: Mn⁴⁺ + e⁻ → Mn³⁺')}${e8Eq('Anode (−), LEO A:','zcA','Simplified: Zn(s) → Zn²⁺(aq) + 2e⁻')}
+    <ul><li>The carbon rod in the ${C8('MnO2(s)')} paste is the cathode. The zinc can is the anode.</li><li>The paste of ${C8('NH4Cl')} and ${C8('ZnCl2')} is acidic. A cell that leaks causes rust.</li><li>It is fairly cheap, but it does not last long, especially with large currents.</li></ul>`+
+    ex('The oxidation numbers and the net reaction',`<p>Manganese: in ${C8('MnO2')}, each O is −2, thus Mn is +4. In ${C8('MnO(OH)')}, O is −2, H is +1, thus Mn is +3. The oxidation number decreases: ${C8('MnO2')} is reduced (it is the oxidizing agent).</p>
+      <p>Zinc: from 0 in ${C8('Zn(s)')} to +2 in ${C8('Zn^2+(aq)')}. Zinc is oxidized (it is the reducing agent).</p><p>With the simplified anode, the electrons (2e⁻) cancel and the net reaction is<br>${C8(E8.zcN)}</p>`),'half');
+  card(g,'Primary cells: the alkaline dry cell',`<p>The <b>alkaline cell</b> has the same reactants, zinc and ${C8('MnO2')}, but it works under <b>basic</b> conditions: its electrolyte is ${C8('KOH(aq)')} in a paste.</p>
+    <div class="ec8fig">${CF(ec8Alk(),'An alkaline cell, cut in half.')}</div>
+    ${e8Eq('Cathode (+), GER C:','akC')}${e8Eq('Anode (−), LEO A:','akA')}
+    <ul><li>It delivers a much greater current than a zinc-carbon cell, and its voltage stays constant.</li><li>It is more expensive, but it lasts longer.</li></ul>`+
+    ex('Fill in the oxidation numbers of zinc (notes p. 57), and find the net reaction',`<p>${C8('Zn(s)')}: an element, thus 0. ${C8('ZnO(s)')}: O is −2, thus Zn is <b>+2</b>. The oxidation number of zinc increases from 0 to +2: zinc is oxidized at the anode.</p>
+      <p>Manganese: +4 in ${C8('MnO2')} and +3 in ${C8('Mn2O3')} (2Mn + 3(−2) = 0). It is reduced at the cathode.</p>
+      <p>Add the half-reactions. The 2e⁻, the 2OH⁻ and the H₂O cancel: ${C8(E8.akN)}. The electrolyte is not used up, thus the voltage stays almost constant.</p>
+      <p class="hint">The notes print the anode with two H₂O on the right. It balances with one: ${C8(E8.akA)}.</p>`),'half');
+  card(g,'Button cells: mercury and silver oxide',`<p>The <b>mercury cell</b> (the mercury(II) oxide alkaline cell) is a miniature power source used in watches, calculators, hearing aids and cameras. ${ecEs('net')} = 1.35 V.</p>
+    <div class="ec8fig">${CF(ec8Btn({ox:'HgO(s)'}),'A mercury cell, cut in half.')}</div>
+    ${e8Eq('Anode (−), oxidation:','akA')}${e8Eq('Cathode (+), reduction:','hgC')}
+    <p>The <b>silver oxide cell</b> is built the same way, with ${C8('Ag2O(s)')} in place of ${C8('HgO(s)')} (diploma questions 100 to 102).</p>`+
+    ex('The net reaction of the mercury cell',`<p>Each half-reaction has 2e⁻, thus add them as they are. The 2OH⁻ and the H₂O cancel:<br>${C8(E8.hgN)}</p><p>Zinc goes from 0 to +2 (oxidized) and mercury from +2 to 0 (reduced). The KOH(aq) is not used up.</p>`),'w5');
+
+  /* ---------- secondary cells ---------- */
+  card(g,'Secondary cells: lithium and nickel-cadmium',`<p><span class="key">Secondary cells</span> can be recharged: electricity from a power supply reverses the redox reaction that produced the electricity.</p>
+    <h4>Lithium cells</h4><ul><li>Used in portable devices. The anode is lithium and the cathode is ${C8('TiS2(s)')}.</li><li>Lithium is very light: 6.94 g of Li gives 1 mol of electrons. It is also a very strong reducing agent, thus the cell has a high voltage, about 3 V.</li>
+    <li>The electrolyte is a polymer: ions can move through it, but electrons cannot.</li></ul>${e8Eq('Anode (−):','liA')}${e8Eq('Cathode (+):','liC')}
+    <h4>The nickel-cadmium (Ni-Cad) cell</h4><p>${ecEs('net')} = 1.25 V. From the outside it looks like a dry cell. Inside, thin sheets of the two electrodes and of a separator are rolled together.</p>
+    ${e8Eq('Cathode (+):','ncC')}${e8Eq('Anode (−):','ncA')}<p class="hint">The notes print the cathode as ${C8('NiO(OH)(s) + 2H2O(l) + 2e^- -> Ni(OH)2(s) + 2H2O(l)')}, which does not balance. The form above balances. The nickel electrode is also written as ${C8('NiO2(s)')}: ${C8(E8.ncC2)}.</p>`+
+    ex('Why lithium: the mass of metal that gives 1 mol of electrons',`<p>Each atom gives as many electrons as its ion charge: ${C8('Li -> Li^+ + e^-')}, ${C8('Zn -> Zn^2+ + 2e^-')}, ${C8('Al -> Al^3+ + 3e^-')}. Thus the mass for 1 mol of e⁻ is <i>M</i> ÷ (electrons per atom).</p>
+      <table class="ec8m"><tr><th>Metal</th><th>M (g/mol)</th><th>e⁻ per atom</th><th>mass for 1 mol e⁻</th></tr><tr><td>Li</td><td>6.94</td><td>1</td><td>6.94 g</td></tr><tr><td>Al</td><td>26.98</td><td>3</td><td>8.99 g</td></tr>
+      <tr><td>Zn</td><td>65.38</td><td>2</td><td>32.69 g</td></tr><tr><td>Cd</td><td>112.41</td><td>2</td><td>56.21 g</td></tr><tr><td>Pb</td><td>207.20</td><td>2</td><td>103.60 g</td></tr></table><p>Lithium gives the most electrons for each gram, and ${C8('Li^+')} is at the bottom of the table (${e8Li.Es} V): the lightest anode with the highest voltage.</p>`)+
+    ex('The net reaction of the nickel-cadmium cell',`<p>Both half-reactions have 2e⁻. Add them and cancel the 2OH⁻:<br>${C8(E8.ncN)}</p><p>Recharging runs this reaction in reverse: ${C8('Cd(OH)2(s)')} is reduced back to ${C8('Cd(s)')}.</p>`),'w7');
+
+  /* ---------- the lead-acid battery ---------- */
+  card(g,'The lead-acid storage battery',`<div class="figrow even"><div class="ec8fig">${CF(ec8Lead(),'One cell of a lead-acid battery while it discharges.')}</div><div>
+    <p>A car battery is a <b>lead storage battery</b>: a group of cells connected together. Each cell has two lead grids. One grid is packed with lead, the other with lead(IV) oxide. The grids are in strong sulfuric acid, ${C8('H2SO4(aq)')}. The cell is <b>rechargeable</b>: its reactions can be reversed.</p>
+    ${e8Eq('Anode (−), discharging:','laA','Pb: 0 → +2')}${e8Eq('Cathode (+), discharging:','laC','Pb: +4 → +2')}
+    <p>One cell gives about 2 V. Six cells in series give a 12 V battery.</p></div></div>
+    <ul><li>Recharging runs the reaction in reverse. This is an electrolysis (see Electrolytic cells). It is non-spontaneous: a direct current must be supplied to drive it.</li>
+    <li>In theory the battery lasts forever. In reality some lead(II) sulfate flakes off the plates and is lost to the reaction.</li>
+    <li>When it is cold, the electrolyte thickens and the ions do not move as well. The battery seems dead, but it is only too cold. Warmed to room temperature, it works again.</li></ul>`+
+    ex('Write the balanced equation for the overall reaction (discharging)',ecTableH(ecRows([e8PbO2.s,e8PbS.s]),{mark:{soa:0,sra:1},rows:[0,1]})+
+      `<p>The SOA is ${C8('PbO2(s)')} with ${C8('SO4^2-(aq)')} and ${C8('H^+(aq)')}. The SRA is ${C8('Pb(s)')} with ${C8('SO4^2-(aq)')}. Both half-reactions have 2e⁻, thus add them as they are:</p>
+      <p>${C8(E8.laC)}<br>${C8(E8.laA)}<br><b>${C8(E8.laN)}</b></p><p>${ecEs('net')} = ${e8PbO2.Es} V − (${e8PbS.Es} V) = <b>${e8LA.Es} V</b>: about 2 V for each cell. Six cells: 6 × 2.05 V = 12.3 V.</p>`)+
+    ex('During discharge, what occurs at the anode? At the cathode?',`<p><b>Anode:</b> lead atoms are oxidized (0 to +2). The lead grid becomes coated with ${C8('PbSO4(s)')}. Electrons leave the anode through the external circuit.</p>
+      <p><b>Cathode:</b> ${C8('PbO2(s)')} is reduced (+4 to +2). This grid also becomes coated with ${C8('PbSO4(s)')}. It gains the electrons from the circuit.</p><p><b>Electrolyte:</b> ${C8('H^+(aq)')} and ${C8('SO4^2-(aq)')} are used up and water forms, thus the sulfuric acid becomes more dilute.</p>`)+
+    ex('How do you check the strength of the battery?',`<p>Measure the density of the electrolyte with a hydrometer. As the battery discharges, sulfuric acid is used up and water is produced. The density of the acid decreases. A low density means a discharged cell. (A voltmeter across the terminals also shows a weak battery.)</p><p class="hint">The notes ask this question without an answer. This is the usual answer.</p>`)+
+    ex('What happens when the battery is recharged?',`<p>A power supply (the car’s alternator) forces electrons into the lead grid and out of the lead(IV) oxide grid. The reverse reaction occurs:</p><p>${C8(E8.laR)}</p><p>${ecEs('net')} = −2.05 V: the reaction is non-spontaneous. The cell now acts as an electrolytic cell.</p>`));
+  const tp=card(g,'Try it: the SOA and the SRA of a lead-acid cell',`<p>A charged lead-acid cell contains ${C8('Pb(s)')}, ${C8('PbO2(s)')}, ${C8('H^+(aq)')}, ${C8('SO4^2-(aq)')} and ${C8('H2O(l)')}. They are underlined in the table. Tap the strongest oxidizing agent (left column) and the strongest reducing agent (right column), then Check.</p>`);
+  ecTable(tp,ecRows([e8PbO2.s,e8OA.s,e8H.s,e8Pb.s,e8PbS.s]),{hl:['Pb(s)','PbO2(s)','H^+(aq)','SO4^2-(aq)','H2O(l)'],pick:true,slot:1,
+    w:`The SOA is ${C8('PbO2(s)')} (with ${C8('SO4^2-(aq)')} and ${C8('H^+(aq)')}): ${e8PbO2.Es} V. ${C8('Pb(s)')} is in two rows. With ${C8('SO4^2-(aq)')} present, the lower row applies: ${C8('Pb(s)')} + ${C8('SO4^2-(aq)')} is the SRA (${e8PbS.Es} V). ${ecEs('net')} = ${e8PbO2.Es} V − (${e8PbS.Es} V) = ${e8LA.Es} V.`});
+  const pr=card(g,'Practice: the lead-acid battery (notes pp. 58-59)','<p class="hint">Choose the word or the value for each blank, then Check.</p>');
+  pr.append(el('h4',{},'Oxidation numbers'));
+  const on=['−2','0','+2','+4'];
+  ec8Grid(pr,{rows:[
+    {l:'Anode: '+ecU(E8.laA)+'. The oxidation number of Pb changes from {0} to {1}.',f:[[on,1],[on,2]]},
+    {l:'You can tell this is oxidation because the oxidation number of Pb {0} and electrons are {1} (LEO A).',f:[[['increases','decreases'],0],[['gained','lost'],1]]},
+    {l:'Cathode: '+ecU(E8.laC)+'. The oxidation number of Pb changes from {0} to {1}.',f:[[on,3],[on,2]]},
+    {l:'This is reduction because the oxidation number of Pb {0} and electrons are {1} (GER C).',f:[[['increases','decreases'],1],[['gained','lost'],0]]}],
+    after:`In ${C8('Pb(s)')} the oxidation number is 0. In ${C8('PbSO4(s)')} it is +2, because sulfate is 2−. In ${C8('PbO2(s)')} it is +4, because each O is −2. At the anode, Pb goes from 0 to +2: two electrons are lost (oxidation). At the cathode, Pb goes from +4 to +2: two electrons are gained (reduction). Both grids end as ${C8('PbSO4(s)')}.`},1);
+  pr.append(el('h4',{},'Discharging and recharging'));
+  ec8Grid(pr,{rows:[
+    {l:'During discharge, lead atoms at the anode are {0} and the grid becomes coated with {1}.',f:[[['oxidized','reduced'],0],[[ecU('PbSO4(s)'),ecU('PbO2(s)'),ecU('H2SO4(aq)')],0]]},
+    {l:'At the cathode, '+ecU('PbO2(s)')+' is {0} to {1}.',f:[[['oxidized','reduced'],1],[[ecU('Pb(s)'),ecU('PbSO4(s)'),ecU('Pb^2+(aq)')],1]]},
+    {l:'As the battery discharges, the concentration of the sulfuric acid {0}, thus the density of the electrolyte {1}.',f:[[['increases','decreases','stays the same'],1],[['increases','decreases','stays the same'],1]]},
+    {l:'To check the strength of the battery, measure {0}.',f:[[['the density of the electrolyte (hydrometer)','the mass of the battery','the volume of the electrolyte'],0]]},
+    {l:'Recharging runs the reaction in reverse. It is {0}, thus {1} must be supplied.',f:[[['spontaneous','non-spontaneous'],1],[['a direct current','heat','more lead'],0]]},
+    {l:'In reality the battery wears out, because some {0} flakes off the grids.',f:[[['lead(II) sulfate','sulfuric acid','water'],0]]},
+    {l:'On a very cold day the battery seems dead: the electrolyte {0} and its ions move {1}.',f:[[['thickens','boils','evaporates'],0],[['slowly','quickly'],0]]}],
+    after:`Discharging: ${C8(E8.laN)}. Sulfuric acid is used up and water forms, thus the acid becomes more dilute and less dense: a hydrometer shows the state of charge. Recharging is the reverse reaction, which needs a direct current because it is non-spontaneous. Lead(II) sulfate that flakes off can no longer react. Cold makes the electrolyte thick, thus the ions move slowly and the current is small.`},2);
+
+  /* ---------- fuel cells ---------- */
+  card(g,'Fuel cells',`<ul><li>A <span class="key">fuel cell</span> is a voltaic cell in which a fuel is oxidized. Electrical energy is obtained continuously, and the cell does not need to be recharged.</li>
+    <li>Unlike a battery, a fuel cell needs a constant supply of its fuel and of its oxidizing agent. The products and the heat must be removed all the time.</li>
+    <li>Fuel cells grew from the idea of getting energy from combustion. Combustion is also a redox reaction, but most of its energy becomes heat. A fuel cell makes less heat and more electricity: about 80 % of the energy, compared with about 40 % for burning the fuel.</li>
+    <li>A fuel cell does not get as hot, thus it does not lose efficiency to the problems that heat brings.</li>
+    <li>It gives off no air pollution, and it is quieter than a generator. It can be cheaper to run, but it is very expensive to build.</li>
+    <li>Methane or ammonia can replace hydrogen as the fuel, and chlorine or ozone can replace oxygen. Hydrogen itself is usually made from methane, but a fuel cell car uses less methane and gives off less carbon dioxide than a car that burns fuel.</li>
+    <li>Fuel cells have powered spacecraft for years, and they are being developed for cars.</li></ul>
+    <h4>The hydrogen-oxygen fuel cell</h4><div class="figrow even"><div class="ec8fig">${CF(ec8Fuel(),'A hydrogen-oxygen fuel cell with a hot KOH(aq) electrolyte.')}</div><div>
+    <p>Three compartments are separated by two porous carbon electrodes that contain catalysts. Hydrogen, the fuel, is added at the anode. Oxygen, the oxidizing agent, is added at the cathode. The centre holds hot ${C8('KOH(aq)')}. Electrons from the oxidation at the anode (carbon with nickel) pass through the external circuit to the reduction at the cathode (carbon with nickel oxide). Water is the product.</p>
+    ${e8Eq('Anode (−), oxidation:','fcA')}${e8Eq('Cathode (+), reduction:','fcC')}${e8Eq('Net:','fcN')}</div></div>
+    <p>Another design uses a polymer membrane as the electrolyte. ${C8('H^+(aq)')} ions move through it from the anode to the cathode: ${C8(E8.pmA)} at the anode and ${C8(E8.pmC)} at the cathode. The water forms at the cathode, and excess hydrogen leaves the anode side. The net reaction is the same.</p>`+
+    ex('The net equation and the cell potential of the hydrogen-oxygen fuel cell',ecTableH(ecRows([e8OH.s,e8W.s]),{mark:{soa:0,sra:1},rows:[0,1]})+
+      `<p>Both half-reactions have 4e⁻. Add them: ${C8('2H2(g) + 4OH^-(aq) + O2(g) + 2H2O(l) -> 4H2O(l) + 4OH^-(aq)')}.</p><p>Cancel 4OH⁻ on each side, and 2H₂O (4H₂O − 2H₂O leaves 2H₂O on the right): <b>${C8(E8.fcN)}</b></p>
+      <p>${ecEs('net')} = ${e8OH.Es} V − (${e8W.Es} V) = <b>${e8FC.Es} V</b>. With the membrane (acid) design: ${e8OA.Es} V − ${e8H.Es} V = ${ecVs(e8OA.E-e8H.E)} V, the same value.</p>`));
+  const fp=card(g,'Try it: the parts of the fuel cell','<p>This is the fuel cell diagram of the notes and of diploma question 103, with numbered parts. Choose the part for each number.</p>'+`<div class="ec8fig">${CF(ec8Fuel({nums:true}),'A hydrogen-oxygen fuel cell with numbered parts.')}</div>`,'half');
+  matching(fp,[['Number 1','where the reactant gases enter'],['Number 2','the anode, where H₂(g) is oxidized'],['Number 3','the external circuit'],['Number 4','the product, H₂O(g)'],['Number 5','the electrolyte, hot KOH(aq)'],['Number 6','the cathode, where O₂(g) is reduced']],'',1);
+  const kc=card(g,'Try it: which kind of cell?','<p class="hint">Choose primary cell, secondary cell or fuel cell for each description.</p>','half');
+  matching(kc,[['Zinc-carbon dry cell (Leclanché cell)','primary cell'],['Lithium cell with a TiS₂ cathode','secondary cell'],['Hydrogen-oxygen cell of a spacecraft','fuel cell'],['Alkaline dry cell','primary cell'],['Lead-acid car battery','secondary cell'],
+    ['Its fuel and its oxidizing agent are supplied all the time','fuel cell'],['Mercury or silver oxide button cell','primary cell'],['Nickel-cadmium (Ni-Cad) cell','secondary cell'],['A power supply can reverse its redox reaction','secondary cell'],['It is thrown away when its reactants are used up','primary cell']],'',2);
+  card(g,'The aluminum-air cell',`<p>In the <b>aluminum-air cell</b> the oxidizing agent also flows in from outside: oxygen in moist air. Aluminum is the anode. A flowing ${C8('NaOH(aq)')} solution is the electrolyte. The cathode is porous, so that the air can reach it.</p>
+    <div class="ec8fig">${CF(ec8Air({lab:true}),'An aluminum-air cell.')}</div>${e8Eq('Cathode (+):','aaC')}${e8Eq('Anode (−):','aaA')}
+    <p class="hint">The notes print the anode as ${C8('4Al(s) + 2OH^-(aq) -> 4Al^3+(aq) + 12e^-')}. That equation does not balance: the O, the H and the charge differ. Without the 2OH⁻ it balances.</p>`+
+    ex('The net reaction of the aluminum-air cell',`<p>Both half-reactions have 12e⁻, thus add them as they are:<br>${C8(E8.aaN)}</p><p>The ${C8('Al^3+(aq)')} ions then join ${C8('OH^-(aq)')} ions: ${C8(E8.aaP)}. Overall: <b>${C8(E8.aaT)}</b>. Four aluminum atoms react with three oxygen molecules.</p>`),'half');
+  const dq=card(g,'Diploma-style question: the parts of a dry cell','','half');
+  nrCode(dq,{q:'<p>The diagram shows a zinc-carbon dry cell, cut in half.</p>'+`<div class="ec8fig">${CF(ec8Dry({nums:true}),'A zinc-carbon dry cell with numbered parts.')}</div>`+'<p><b>Numerical response.</b> In the diagram, the anode, the oxidizing agent, the electrolyte and the positive terminal are numbered, respectively, ____, ____, ____ and ____. (Record all four digits of your answer.)</p>',a:'5341',
+    w:'The zinc can (5) is oxidized, Zn(s) → Zn²⁺(aq) + 2e⁻, thus it is the anode. MnO₂(s) in the black paste (3) gains electrons at the carbon rod: it is the oxidizing agent. The moist paste of NH₄Cl and ZnCl₂ (4) is the electrolyte. The metal cap (1) on the carbon rod is the positive terminal. Record 5341.'},1);
 },qz:[
-  {q:'A cell that can be recharged is',o:['a secondary cell','a primary cell','a zinc-carbon cell','an alkaline cell'],a:0,w:'In a secondary cell, an external power supply reverses the redox reaction.'},
-  {q:'The product of a hydrogen-oxygen fuel cell is',o:['water','carbon dioxide','hydrogen peroxide','ozone'],a:0,w:'2H₂(g) + O₂(g) → 2H₂O(l).'}]};
-EC_REF.t.push(['Fuel cell','A voltaic cell with a constant supply of fuel and oxidizing agent, for example hydrogen and oxygen.']);
+  {q:'A battery is',o:['two or more cells joined to give a higher voltage','one electrode dipped in a solution of its own ions','a voltaic cell whose electrolyte is a thick paste','a voltaic cell that runs on a supply of hydrogen gas'],a:0,
+   w:'A battery contains two or more cells, linked one to the next. In series their voltages add, for example six 2 V cells give a 12 V car battery. A cell with a paste electrolyte is a dry cell, and a cell that runs on hydrogen is a fuel cell.'},
+  {q:'In a dry cell, the electrolyte is',o:['a moist paste, thickened with starch','a dilute solution of sulfuric acid','a gas that flows past the electrodes','a metal that conducts the electrons'],a:0,
+   w:'A dry cell is a voltaic cell whose electrolyte is a paste, for example NH₄Cl and ZnCl₂ in a zinc-carbon cell or KOH in an alkaline cell. Electrons flow in the external circuit, not through the electrolyte.'},
+  {q:'In both the zinc-carbon cell and the alkaline cell, the substance reduced at the cathode is',o:[C8('MnO2(s)'),C8('Zn(s)'),C8('NH4^+(aq)'),C8('C8(s)')],a:0,
+   w:'Mn goes from +4 in MnO₂ to +3 (in MnO(OH) or Mn₂O₃): MnO₂(s) gains electrons, thus it is reduced. Zinc is oxidized at the anode. The carbon rod only carries the electrons, and N stays at −3 in NH₄⁺ and NH₃.'},
+  {q:'Compared with a zinc-carbon cell, an alkaline cell',o:['delivers a greater current and lasts longer','is cheaper, because its paste is acidic','can be recharged by a power supply','has a voltage that drops more quickly as it is used'],a:0,
+   w:'The alkaline cell works in basic conditions (KOH). It delivers a much greater current, its voltage stays constant, and it lasts longer, but it is more expensive. Neither cell is rechargeable.'},
+  {q:'Lithium is a good choice for the anode of a portable battery because lithium',o:['is light and is a very strong reducing agent','is heavy and is a very strong oxidizing agent','does not react with water or with oxygen','is a liquid at room temperature'],a:0,
+   w:'Li⁺(aq) + e⁻ ⇌ Li(s) is the lowest half-reaction in the table (−3.04 V), thus Li(s) is the strongest reducing agent and gives a high voltage. Only 6.94 g of lithium gives 1 mol of electrons, thus the battery is light.'},
+  {q:'While a lead-acid battery discharges, the concentration of the sulfuric acid',o:['decreases','increases','stays the same','first increases, then decreases'],a:0,
+   w:'Pb(s) + PbO₂(s) + 2SO₄²⁻(aq) + 4H⁺(aq) → 2PbSO₄(s) + 2H₂O(l). The H⁺ and SO₄²⁻ ions are used up and water forms, thus the acid becomes more dilute. Its density decreases too.'},
+  {q:'When the battery of a running car is recharged, the reaction in the battery is',o:['non-spontaneous: the alternator forces it to occur','spontaneous: it occurs without any energy input','spontaneous: the alternator only speeds it up','non-spontaneous: it occurs only when the engine is cold'],a:0,
+   w:'Recharging runs the discharge reaction in reverse. Its E°net is negative (−2.05 V for each lead-acid cell), thus it is non-spontaneous. Electrical energy from the alternator, a power supply, drives it: the battery acts as an electrolytic cell. The temperature does not decide it.'},
+  {q:'A fuel cell differs from a battery because a fuel cell',o:['needs a constant supply of its reactants','is recharged by a power supply when it runs down','holds all of its reactants inside a sealed case','has a paste for its electrolyte'],a:0,
+   w:'The fuel and the oxidizing agent flow into a fuel cell all the time, thus it gives electricity continuously and is never recharged. A battery holds its reactants inside and stops when they are used up.'},
+  {q:'In a hydrogen-oxygen fuel cell, the hydrogen gas is',o:['oxidized at the anode','reduced at the anode','oxidized at the cathode','reduced at the cathode'],a:0,
+   w:'Hydrogen is the fuel. It loses electrons, 2H₂(g) + 4OH⁻(aq) → 4H₂O(l) + 4e⁻, thus it is oxidized, and oxidation occurs at the anode (LEO A).'},
+  {q:'The notes say that chlorine can replace oxygen in a fuel cell. Calculate '+ecEs('net')+' of a hydrogen-chlorine fuel cell with an acidic electrolyte.',fig:ecTableH(ecRows([e8Cl.s,e8OA.s,e8H.s,e8W.s])),n:+(e8Cl.E-e8H.E).toFixed(2),u:'V',abs:.005,tol:0,
+   w:`Chlorine is reduced at the cathode: Cl₂(g) + 2e⁻ → 2Cl⁻(aq), E°r = ${e8Cl.Es} V. Hydrogen is oxidized at the anode. In an acid it is H₂(g) → 2H⁺(aq) + 2e⁻, from the row with E°r = ${e8H.Es} V. E°net = ${e8Cl.Es} V − ${e8H.Es} V = ${ecVs(e8Cl.E-e8H.E)} V.`},
+  {q:'A lead-acid battery for a truck gives 24.6 V. Each cell gives the standard cell potential of a lead-acid cell. How many cells are in the battery?',fig:ecTableH(ecRows([e8PbO2.s,e8PbS.s])),n:12,u:'',tol:0,
+   w:`One cell: E°net = ${e8PbO2.Es} V − (${e8PbS.Es} V) = ${e8LA.Es} V. In series the voltages add, thus the number of cells = 24.6 V ÷ 2.05 V = 12.`},
+  {q:'A lithium cell delivers 0.200 mol of electrons: '+C8('Li(s) -> Li^+ + e^-')+'. Calculate the mass of lithium that is used up.',n:+(0.2*EC_M.Li).toFixed(4),u:'g',tol:.01,
+   w:'Each lithium atom gives one electron, thus n(Li) = n(e⁻) = 0.200 mol. M(Li) = 6.94 g/mol. m = nM = 0.200 mol × 6.94 g/mol = 1.39 g.'}]};
+
+/* ---------- diploma questions 92 to 105 (notes pp. 61-64, key p. 85) ---------- */
+EC_DIP[8]=[
+/* 92 */ {q:'Use the information below. In this aluminum–air battery, the '+C8('O2(g)')+' acts as the',fig:F92,o:['reducing agent and gains electrons','reducing agent and loses electrons','oxidizing agent and gains electrons','oxidizing agent and loses electrons'],a:2,
+  w:'At the porous cathode, oxygen gains electrons: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). A gain of electrons is reduction, and the substance that is reduced is the oxidizing agent. Aluminum is the reducing agent: it loses electrons.'},
+/* 93 */ {q:'Use the information below. The reduction half-reaction for this aluminum–air battery is',fig:F92,o:[C8('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)'),C8('Na^+(aq) + e^- -> Na(s)'),C8('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)'),C8('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')],a:3,
+  w:'The oxidizing agent is O₂(g) from the moist air, and the electrolyte is NaOH(aq): the solution is basic. In a basic solution there is no H⁺(aq), thus oxygen is reduced with water: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq) (+0.40 V). The diagram shows OH⁻(aq) forming at the cathode. No gas forms from the water, and Na⁺(aq) is a much weaker oxidizing agent.'},
+/* 94 */ {q:'Use the information below. The standard voltage produced by this aluminum–air cell is',fig:F92,o:['+2.36 V','+2.06 V','+0.83 V','+1.05 V'],a:1,
+  w:`Cathode: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq), E°r = ${e8OH.Es} V. Anode: Al(s) → Al³⁺(aq) + 3e⁻, from the row Al³⁺(aq) + 3e⁻ ⇌ Al(s), E°r = ${e8Al.Es} V. E°net = ${e8OH.Es} V − (${e8Al.Es} V) = ${ecVs(e8OH.E-e8Al.E)} V. Do not multiply the E° values by the coefficients.`},
+/* 95 */ {q:ec8Q+'Use the information below. When three aluminum–air cells are connected in series, the net voltage generated by the battery is +/− __________ V.',fig:F92,n:+(3*(e8OH.E-e8Al.E)).toFixed(2),u:'V',abs:.005,tol:0,
+  m:'Find E°net of one cell first: E°r(cathode) − E°r(anode). In series the voltages add.',
+  w:`One cell: E°net = ${e8OH.Es} V − (${e8Al.Es} V) = ${ecVs(e8OH.E-e8Al.E)} V. Cells in series add their voltages: 3 × 2.06 V = 6.18 V. Record 6.18.`},
+/* 96 */ {q:ec8Q+'Use the information below. On discharging, the electrical potential of a NiCad battery is +1.40 V. The reduction potential for half-reaction I is −__________ V.',fig:F96,n:1.89,u:'V',abs:.005,tol:0,
+  m:'Half-reaction II is the reduction, at the cathode. Use E°net = E°r(cathode) − E°r(anode) and solve for E°r(anode).',
+  w:'Half-reaction II has the electrons on the left: it is the reduction, at the cathode, with E°r = −0.49 V. Half-reaction I is the oxidation of cadmium at the anode. Its reduction potential is the E° of Cd(OH)₂(s) + 2e⁻ → Cd(s) + 2OH⁻(aq). E°net = E°r(cathode) − E°r(anode), thus +1.40 V = −0.49 V − E°r(anode). E°r(anode) = −0.49 V − 1.40 V = −1.89 V. The blank follows the minus sign: record 1.89.'},
+/* 97 */ {q:'Use the information below. Before the car is started, the battery’s chemical energy is in the form of',fig:F97,o:['kinetic energy','potential energy','vibrational energy','translational energy'],a:1,
+  w:'Chemical energy is stored in the bonds and the arrangement of the reactants (Pb, PbO₂ and H₂SO₄): it is potential energy. When the starter motor draws a current, the redox reaction changes it to electrical energy. Kinetic, vibrational and translational energy are energies of motion.'},
+/* 98 */ {q:'Use the information below. A car is started and then left running to recharge the battery. In these two processes, the battery',fig:F97,o:['acts as an electrolytic cell only','acts as a voltaic cell only','first acts as an electrolytic cell, then as a voltaic cell','first acts as a voltaic cell, then as an electrolytic cell'],a:3,
+  w:'Starting the car: the battery discharges spontaneously and drives a current through the starter motor. It acts as a voltaic cell. Running the car: the alternator forces a current into the battery and reverses the reaction, which is non-spontaneous. The battery then acts as an electrolytic cell.'},
+/* 99 */ {q:'Use the information below. An automotive student obtained 500 mL of acid from a car battery. The student poured 50 mL of the acid into beaker I, 100 mL into beaker II, and then conducted several tests. In this investigation, the student determined that',fig:F97,
+  o:['both solutions conducted an electric current equally well','there was a lower ['+C8('H3O^+(aq)')+'] in beaker I than in beaker II','magnesium metal reacted more quickly in beaker I than in beaker II','one drop of methyl red produced a deeper red in beaker II than in beaker I'],a:0,
+  w:'Both beakers hold the same acid, thus the concentration and [H₃O⁺(aq)] are the same in each. A concentration does not depend on the volume of the sample. The two solutions conduct a current equally, and magnesium reacts at the same rate in each. Methyl red is red in both; one drop in the larger volume is more dilute, thus beaker II would not be a deeper red.'},
+/* 100 */ {q:'Use the information below. During the discharging of the cell, the substance oxidized is',fig:F100,o:[C8('Zn(s)'),C8('Ag(s)'),C8('H2O(l)'),C8('Ag2O(s)')],a:0,
+  w:'Both half-reactions are written as reductions. Ag₂O(s) has the higher E° (+0.34 V), thus it is reduced at the cathode. The zinc half-reaction goes in reverse at the anode: Zn(s) + 2OH⁻(aq) → Zn(OH)₂(s) + 2e⁻. Zinc loses electrons: Zn(s) is oxidized, as the label “zinc container (anode)” shows. Ag(s) is a product, and Ag₂O(s) and H₂O(l) react at the cathode.'},
+/* 101 */ {q:'Use the information below. In this cell, the separator must be porous in order to',fig:F100,o:['allow the migration of ions','replenish the electrolyte','provide a pathway for electron flow','provide a surface on which electron transfer can occur'],a:0,
+  w:'The separator keeps the zinc apart from the silver oxide, thus the electrons must travel through the external circuit. It is porous so that ions (OH⁻(aq) toward the anode) can move through it and keep each side electrically neutral, like a salt bridge. Electrons do not flow through the separator, and it does not add electrolyte.'},
+/* 102 */ {q:ec8Q+'Use the information below. During discharge, the voltage generated by the cell is +/− __________ V.',fig:F100,n:1.59,u:'V',abs:.005,tol:0,
+  m:'The half-reaction with the higher E° is the cathode. E°net = E°r(cathode) − E°r(anode).',
+  w:'Cathode: Ag₂O(s) + H₂O(l) + 2e⁻ → 2Ag(s) + 2OH⁻(aq), E°r = +0.34 V. Anode: Zn(s) + 2OH⁻(aq) → Zn(OH)₂(s) + 2e⁻, from the half-reaction with E°r = −1.25 V. E°net = +0.34 V − (−1.25 V) = +1.59 V. Record 1.59.'},
+/* 103 */ {q:ec8Q+'Use the information below. In the diagram, the anode, the cathode, the electrolyte, and a product of the reaction are labelled, respectively, _____, _____, _____ and _____. (Record all four digits of your answer.)',fig:F103,n:2654,ans:'2654',tol:0,abs:0,
+  m:'Find where the fuel (H₂) enters: it is oxidized at the anode. Oxygen is reduced at the cathode.',
+  w:'H₂(g) enters at the left and is oxidized at electrode 2: 2H₂(g) + 4OH⁻(aq) → 4H₂O(l) + 4e⁻. Thus 2 is the anode. O₂(g) enters at the right and is reduced at electrode 6: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Thus 6 is the cathode. The electrolyte is the KOH(aq) solution, 5. A product of the reaction is H₂O(g), 4. (1 marks the gas inlets and 3 the external circuit.) Record 2654.'},
+/* 104 */ {q:'Use the information below. From an ecological perspective, a reason why hydrogen–oxygen fuel cells should <b>not</b> be used to power automobiles is that',fig:F103,
+  o:['hydrogen fuel may be made by the electrolysis of seawater, with energy from burning fossil fuels','cars powered by a hydrogen–oxygen fuel cell would be up to 30% more efficient than cars powered by gasoline','water vapour is the primary byproduct of the cell','oxygen is readily available from the atmosphere'],a:0,
+  w:'If the hydrogen is made by electrolysis with energy from burning fossil fuels, the air pollution and the carbon dioxide are only moved from the car to the power plant. The other three statements are reasons to use fuel cells: a higher efficiency, water as the only product, and oxygen that is free from the air.'},
+/* 105 */ {q:'Use the information below. In cold weather, an automobile will sometimes be difficult to start because in the battery, the',fig:F105,o:['ions in the electrolyte move very slowly','atoms in the lead plate move very slowly','concentration of the electrolyte decreases','concentration of the lead (IV) oxide decreases'],a:0,
+  w:'In the cold, the electrolyte becomes thicker. Its ions move slowly between the plates, thus the cell delivers a smaller current. The atoms of a solid plate do not need to move for the cell to work, and the cold does not change the concentrations. Warmed up, the battery works again.'}];
+
+/* ---------- review bank (new items, diploma level) ---------- */
+const R8alk=`<div style="max-width:420px;margin:0 auto">${ec8Alk({short:true})}</div>`;
+EC_RQ[8]=[
+  {q:'Use the diagram of an alkaline cell below. In the external circuit, the electrons flow',fig:R8alk,o:['from the negative end cap to the positive button','from the positive button to the negative end cap','through the separator, from the zinc to the MnO₂','through the KOH paste, from the MnO₂ to the zinc'],a:0,
+   w:'Zinc is oxidized at the anode, which is connected to the negative end cap. The electrons travel through the external circuit to the positive button and the steel case, where MnO₂ is reduced. Inside the cell, ions (not electrons) carry the charge through the separator.'},
+  {q:'A zinc-air button cell for a hearing aid uses the two half-reactions below. Calculate the standard cell potential, '+ecEs('net')+'.',fig:ec8C(C8('Zn(OH)2(s) + 2e^- -> Zn(s) + 2OH^-(aq)')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = −1.25 V</span>')+ec8C(C8('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = +0.40 V</span>'),
+   n:1.65,u:'V',abs:.005,tol:0,w:'O₂(g) has the higher E°, thus it is reduced at the cathode (+0.40 V). Zinc is oxidized at the anode: Zn(s) + 2OH⁻(aq) → Zn(OH)₂(s) + 2e⁻ (−1.25 V). E°net = +0.40 V − (−1.25 V) = +1.65 V.'},
+  {q:'While a nickel-cadmium cell is being recharged, the cadmium electrode',o:['is the cathode, where '+C8('Cd(OH)2(s)')+' is reduced to '+C8('Cd(s)'),'is the anode, where '+C8('Cd(s)')+' is oxidized to '+C8('Cd(OH)2(s)'),'is the cathode, where '+C8('Cd(s)')+' is oxidized to '+C8('Cd(OH)2(s)'),'is the anode, where '+C8('Cd(OH)2(s)')+' is reduced to '+C8('Cd(s)')],a:0,
+   w:'During discharge, Cd(s) is oxidized at the anode: Cd(s) + 2OH⁻(aq) → Cd(OH)₂(s) + 2e⁻. Recharging reverses this: Cd(OH)₂(s) + 2e⁻ → Cd(s) + 2OH⁻(aq). That is a reduction, and reduction always occurs at the cathode, now the cathode of an electrolytic cell.'},
+  {q:'A mechanic tests each cell of a car battery with a hydrometer. One cell has an electrolyte with a much lower density than the others. This cell',o:['is discharged: acid was used up and water formed','is fully charged: sulfuric acid formed at both grids','is too cold: its ions move slowly through the acid','is new: its grids have no lead(II) sulfate on them'],a:0,
+   w:'Discharging: Pb(s) + PbO₂(s) + 2SO₄²⁻(aq) + 4H⁺(aq) → 2PbSO₄(s) + 2H₂O(l). The acid is used up and water forms, thus the density falls. A charged cell has the most acid, thus the highest density. The temperature changes the current, not the density reading of this test.'},
+  {q:'A 9.00 V battery is made of six identical cells connected in series. Calculate the voltage of one cell.',n:1.5,u:'V',abs:.005,tol:0,
+   w:'In series the voltages of the cells add. Six identical cells give 9.00 V, thus one cell gives 9.00 V ÷ 6 = 1.50 V.'},
+  {q:'A hydrogen-oxygen fuel cell has an acidic electrolyte: a polymer membrane that lets '+C8('H^+')+' ions through. The half-reaction at the cathode is',o:[C8(E8.pmC),C8(E8.fcC),C8('H2(g) -> 2H^+(aq) + 2e^-'),C8('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')],a:0,
+   w:'At the cathode, O₂(g) gains electrons (reduction). In an acidic electrolyte H⁺(aq) is present, thus O₂(g) + 4H⁺(aq) + 4e⁻ → 2H₂O(l) (+1.23 V). The OH⁻ form is the half-reaction for a basic (KOH) electrolyte. The oxidation of H₂(g) occurs at the anode.'},
+  {q:'Which statement about a primary cell is correct?',o:['Its reaction cannot be reversed by recharging.','It must be supplied with fuel all the time.','Its electrolyte must always be a liquid.','It gives a higher voltage than any secondary cell.'],a:0,
+   w:'A primary cell cannot be recharged: its products are not suitable for it. It holds its reactants inside (not a fuel supply). Dry cells have a paste electrolyte, and the voltage depends on the substances, not on the kind of cell.'},
+  {q:'An aluminum-air cell uses up 1.00 g of aluminum: '+C8('Al(s) -> Al^3+(aq) + 3e^-')+'. Calculate the amount of electrons that flows through the external circuit.',n:+(1/EC_M.Al*3).toFixed(5),u:'mol',tol:.01,
+   w:'n(Al) = m/M = 1.00 g ÷ 26.98 g/mol = 0.03706 mol. Each aluminum atom gives 3 electrons. n(e⁻) = 3 × 0.03706 mol = 0.111 mol.'},
+  {q:'The diagram shows one cell of a lead-acid battery while it discharges. The '+C8('PbO2(s)')+' electrode is the',fig:`<div style="max-width:440px;margin:0 auto">${ec8Lead({lab:false,flow:false,alt:'One cell of a lead-acid battery: a lead plate, Pb(s), and a lead(IV) oxide plate, PbO₂(s), in sulfuric acid, H₂SO₄(aq), connected through a light bulb.'})}</div>`,
+   o:['cathode, and it is positive','anode, and it is negative','cathode, and it is negative','anode, and it is positive'],a:0,
+   w:'In PbO₂(s), Pb is +4. It becomes +2 in PbSO₄(s): it gains electrons, thus PbO₂(s) is reduced, and reduction occurs at the cathode. In a voltaic cell the cathode is the positive electrode: the electrons from the external circuit arrive there.'},
+  {q:'The mercury cell has '+ecEs('net')+' = 1.35 V. Its anode half-reaction, written as a reduction, is '+C8('ZnO(s) + H2O(l) + 2e^- -> Zn(s) + 2OH^-(aq)')+' with '+ecEs('')+' = −1.26 V. Calculate the reduction potential of '+C8(E8.hgC)+'.',n:.09,u:'V',abs:.005,tol:0,ex:1,
+   w:'E°net = E°r(cathode) − E°r(anode). The mercury half-reaction is the cathode. E°r(cathode) = E°net + E°r(anode) = 1.35 V + (−1.26 V) = +0.09 V.'}];
+
+/* ---------- challenge, written response ---------- */
+EC_CH[8]={q:'An aluminum-air battery is designed for an electric car. It runs until 5.40 kg of aluminum is used up. The half-reactions are '+C8(E8.aaA)+' and '+C8(E8.aaC)+'. Calculate the mass of oxygen from the air that the battery uses.',
+  n:+(5400/EC_M.Al*3/4*ecMolar('O2(g)')/1000).toFixed(4),u:'kg',tol:.01,
+  w:'n(Al) = 5400 g ÷ 26.98 g/mol = 200.1 mol. Each aluminum atom gives 3e⁻: n(e⁻) = 3 × 200.1 mol = 600.4 mol. Each O₂ molecule gains 4e⁻: n(O₂) = 600.4 mol ÷ 4 = 150.1 mol (the ratio Al : O₂ is 4 : 3). m(O₂) = 150.1 mol × 32.00 g/mol = 4804 g = 4.80 kg.'};
+EC_WRQ.push({q:'A car battery has six lead-acid cells connected in series. Each cell has a lead grid, a lead(IV) oxide grid and sulfuric acid.<br>(a) Write the half-reactions at the anode and at the cathode while the battery discharges, and the net equation.<br>(b) Calculate '+ecEs('net')+' of one cell and the voltage of the battery.<br>(c) The alternator recharges the battery while the car runs. Explain what happens in the battery, and why a power supply is needed.<br>(d) Explain why the battery may not start the car on a very cold morning.',
+  marks:['(a) Anode (oxidation): '+C8(E8.laA),'(a) Cathode (reduction): '+C8(E8.laC)+', and the net equation '+C8(E8.laN),'(b) '+ecEs('net')+' = +1.69 V − (−0.36 V) = +2.05 V for one cell; 6 × 2.05 V = 12.3 V for the battery','(c) The discharge reaction is reversed. It is non-spontaneous ('+ecEs('net')+' = −2.05 V), thus a direct current from the alternator must drive it: the battery acts as an electrolytic cell','(d) In the cold the electrolyte thickens and its ions move slowly, thus the battery delivers a smaller current'],
+  model:'<p>(a) Anode: '+C8(E8.laA)+'. Cathode: '+C8(E8.laC)+'. Net: '+C8(E8.laN)+'.</p><p>(b) The cathode half-reaction is the PbO₂ row (+1.69 V) and the anode is the PbSO₄/Pb row (−0.36 V). '+ecEs('net')+' = +1.69 V − (−0.36 V) = +2.05 V. In series the voltages add: 6 × 2.05 V = 12.3 V, about 12 V.</p>'+
+    '<p>(c) Recharging is the reverse reaction: '+C8(E8.laR)+'. Its '+ecEs('net')+' is −2.05 V, thus it is non-spontaneous. The alternator, a power supply, forces electrons into the lead grid. The battery acts as an electrolytic cell.</p><p>(d) The electrolyte becomes thick in the cold. The ions move slowly, thus the current is too small to turn the starter motor. Warmed up, the battery works again.</p>'});
+
+/* ---------- generators: one for each numeric question type of the lesson ---------- */
+/* real cells built from rows of the data booklet: [name, cathode row, anode row, the anode half-reaction as it occurs (the row reversed)] */
+const G8C=[['lead-acid cell',e8PbO2,e8PbS],['hydrogen-oxygen fuel cell (basic electrolyte)',e8OH,e8W],['hydrogen-oxygen fuel cell (acidic membrane)',e8OA,e8H],['aluminum-air cell',e8OH,e8Al],
+  ['magnesium-air cell',e8OH,e8Mg],['hydrogen-chlorine fuel cell',e8Cl,e8H],['zinc-chlorine cell',e8Cl,e8Zn],['zinc-copper (Daniell) cell',e8Cu,e8Zn]];
+const g8Pick=()=>G8C[RN(0,G8C.length-1)],g8Two=(c,a)=>RN(0,1)?[c,a]:[a,c],g8Row=r=>`${r.u} (E° = ${r.Es} V)`,g8A=t=>(/^[aeiou]/i.test(t)?'an ':'a ')+t;
+const G8M=[['lithium','Li','Li(s) -> Li^+ + e^-',1],['zinc','Zn','Zn(s) -> Zn^2+(aq) + 2e^-',2],['cadmium','Cd','Cd(s) + 2OH^-(aq) -> Cd(OH)2(s) + 2e^-',2],['lead','Pb','Pb(s) + SO4^2-(aq) -> PbSO4(s) + 2e^-',2],['aluminum','Al','Al(s) -> Al^3+(aq) + 3e^-',3],['magnesium','Mg','Mg(s) -> Mg^2+(aq) + 2e^-',2]];
+EC_GEN[8]=[
+  /* E°net of a battery cell from two half-reactions of the data booklet */
+  ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),[x,y]=g8Two(c,a);
+    return {q:`${g8A(nm).replace(/^a/,'A')} uses these two half-reactions from the data booklet: ${g8Row(x)} and ${g8Row(y)}. Calculate E°net of the cell.`,n:p.E,u:'V',abs:.005,tol:0,
+      w:`The half-reaction with the higher E°, ${c.u}, is the reduction at the cathode. The other one goes in reverse at the anode. E°net = ${c.Es} V − (${a.Es} V) = ${p.Es} V.`};},
+  /* the voltage of a battery of cells in series */
+  ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),k=RN(2,8),v=k*p.E,[x,y]=g8Two(c,a);
+    return {q:`A battery has ${k} identical cells connected in series. Each one is a standard ${nm} with the half-reactions ${g8Row(x)} and ${g8Row(y)}. Calculate the voltage of the battery.`,n:+v.toFixed(2),u:'V',tol:.01,
+      w:`One cell: E°net = ${c.Es} V − (${a.Es} V) = ${p.Es} V. In series the voltages add. Battery = ${k} × ${ecVs(p.E).replace('+','')} V = ${sig(v)} V.`};},
+  /* an unknown reduction potential from E°net and the other half-reaction */
+  ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),hideA=a.E===0?false:c.E===0?true:!!RN(0,1),h=hideA?a:c,k=hideA?c:a;
+    return {q:`A standard ${nm} has E°net = ${p.Es} V. Its ${hideA?'cathode':'anode'} half-reaction, written as a reduction, is ${k.u} with E° = ${k.Es} V. Calculate the reduction potential of the ${hideA?'anode':'cathode'} half-reaction, ${h.u}.`,n:h.E,u:'V',abs:.005,tol:0,ans:ecVs(h.E),
+      w:`E°net = E°r(cathode) − E°r(anode). ${hideA?`E°r(anode) = E°r(cathode) − E°net = ${c.Es} V − ${ecVs(p.E).replace('+','')} V`:`E°r(cathode) = E°net + E°r(anode) = ${ecVs(p.E).replace('+','')} V + (${a.Es} V)`} = ${h.Es} V.`};},
+  /* the mass of anode metal used for an amount of electrons */
+  ()=>{const [nm,s,eq,z]=G8M[RN(0,G8M.length-1)],ne=RN(.02,1.5,.01),M=EC_M[s],m=ne/z*M;
+    return {q:`The anode of a cell is ${nm}: ${ecU(eq)}. The cell delivers ${ne.toFixed(2)} mol of electrons. Calculate the mass of ${nm} that is used up.`,n:m,u:'g',tol:.01,
+      w:`Each ${nm} atom gives ${z} electron${z>1?'s':''}. n(${s}) = ${ne.toFixed(2)} mol ÷ ${z} = ${sig(ne/z)} mol. M(${s}) = ${M.toFixed(2)} g/mol. m = nM = ${sig(ne/z)} mol × ${M.toFixed(2)} g/mol = ${sig(m)} g.`};},
+  /* the number of cells in series for a target voltage */
+  ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),V=RN(5,60),k=Math.ceil(V/p.E-1e-9);
+    return {q:`Each cell of a battery is a standard ${nm}, with E°net = ${p.Es} V. How many cells must be connected in series to give at least ${V} V?`,n:k,u:'',tol:0,
+      w:`In series the voltages add. ${V} V ÷ ${ecVs(p.E).replace('+','')} V = ${(V/p.E).toFixed(2)}. A part of a cell is not possible, thus round up: ${k} cells give ${(k*p.E).toFixed(2)} V.`};},
+  /* a mass relationship through the electrons: the overall reaction of a battery */
+  ()=>{const R=[['aluminum-air cell','Al','aluminum',4,'O2(g)','oxygen',3,'used',E8.aaN],['hydrogen-oxygen fuel cell','H2(g)','hydrogen',2,'H2O(l)','water',2,'produced',E8.fcN],
+      ['lead-acid cell','Pb','lead',1,'PbO2(s)','lead(IV) oxide',1,'used',E8.laN],['alkaline cell','Zn','zinc',1,'MnO2(s)','manganese(IV) oxide',2,'used',E8.akN]][RN(0,3)],
+      [nm,k1,n1,c1,k2,n2,c2,vb,eq]=R,m1=RN(1,60,.1),M1=ecMolar(k1),M2=ecMolar(k2),x=m1/M1*c2/c1,m2=x*M2;
+    return {q:`The overall reaction of ${g8A(nm)} is ${ecU(eq)}. When ${m1.toFixed(1)} g of ${n1} reacts, calculate the mass of ${n2} that is ${vb}.`,n:m2,u:'g',tol:.01,
+      w:`n(${ecU(k1.replace(/\(.*\)$/,''))}) = ${m1.toFixed(1)} g ÷ ${M1.toFixed(2)} g/mol = ${sig(m1/M1)} mol. The mole ratio is ${c1} : ${c2}, thus n(${ecU(k2.replace(/\(.*\)$/,''))}) = ${sig(m1/M1)} × ${c2}/${c1} = ${sig(x)} mol. m = ${sig(x)} mol × ${M2.toFixed(2)} g/mol = ${sig(m2)} g.`};}];
+EC_METHOD[8]='Find what is oxidized (the metal or the fuel, at the anode) and what is reduced (often O₂ or a metal oxide, at the cathode). E°net = E°r(cathode) − E°r(anode). For cells in series, multiply E°net by the number of cells. For a mass, go through the moles of electrons.';
+EC_HT[8]={title:'How to answer battery and fuel cell questions',pre:'You do not need to memorize any cell. Read the information, find what is oxidized and what is reduced, then use what you know about voltaic cells.',items:[
+  {q:'Identify the anode, the cathode and the agents',s:['Find the metal or the fuel (such as H₂) that loses electrons. It is the reducing agent, and its electrode is the anode (−).','Find the substance that gains electrons: often O₂ or a metal oxide such as MnO₂, HgO, Ag₂O or PbO₂. It is the oxidizing agent, at the cathode (+).','Electrons flow through the external circuit from the anode to the cathode. Anions move toward the anode and cations toward the cathode.'],chk:'Check with oxidation numbers: at the anode the number increases, at the cathode it decreases.'},
+  {q:'Calculate E°net of a battery cell',s:['Write both half-reactions as reductions, with their E° values from the information or the data booklet.','The half-reaction with the higher E° is the reduction at the cathode. The other one goes in reverse at the anode.','E°net = E°r(cathode) − E°r(anode). Keep the signs and do not multiply E° by coefficients.'],chk:'A cell that produces electricity has a positive E°net.'},
+  {q:'Find an unknown reduction potential',s:['Write E°net = E°r(cathode) − E°r(anode).','Put in the two values you know.','Solve: E°r(anode) = E°r(cathode) − E°net, or E°r(cathode) = E°net + E°r(anode).'],chk:'The anode must have the lower reduction potential.'},
+  {q:'Find the voltage of a battery',s:['Find E°net of one cell.','In series the voltages add: battery voltage = (number of cells) × E°net.','For a target voltage, divide it by E°net and round up to a whole number of cells.'],chk:'A bigger cell lasts longer, but it has the same voltage.'},
+  {q:'Classify a cell',s:['Can a power supply reverse its reaction? Then it is a secondary (rechargeable) cell.','Are its fuel and oxidizing agent supplied all the time from outside? Then it is a fuel cell.','Otherwise it is a primary cell: it is used until its reactants run out.'],chk:'Discharging is voltaic (spontaneous). Recharging is electrolytic (non-spontaneous) and needs a power supply.'}]};
+EC_REF.f.push(['Battery of cells in series','battery voltage = (number of cells) × '+ecEs('net')],
+  ['Lead-acid cell (discharging)',C8(E8.laN)+' &nbsp; '+ecEs('net')+' = +2.05 V'],['Hydrogen-oxygen fuel cell',C8(E8.fcN)+' &nbsp; '+ecEs('net')+' = +1.23 V']);
+EC_REF.t.push(['Battery','Two or more cells joined together to give a higher voltage.'],['Primary cell','A cell that cannot be recharged. It is used until its reactants run out, for example a zinc-carbon or an alkaline cell.'],
+  ['Secondary cell','A rechargeable cell: electricity from a power supply reverses its redox reaction, for example a lead-acid or a nickel-cadmium cell.'],
+  ['Fuel cell','A voltaic cell in which a fuel, such as hydrogen, is oxidized. The fuel and the oxidizing agent are supplied all the time, thus it does not need to be recharged.'],
+  ['Dry cell','A voltaic cell whose electrolyte is a moist paste, for example an AA cell.'],['Wet cell','A cell with a liquid electrolyte, for example one cell of a lead-acid battery.']);
 }catch(e){console.error('[ec] slot 8 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 9 ----- */
 {try{
