@@ -3964,6 +3964,8 @@ function ecTable(host,rows,o={}){ecBase();
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
   let seen=JSON.stringify(s);const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=valid(v)?JSON.stringify({o:v.o,r:v.r}):JSON.stringify({o:-1,r:-1});if(j===seen)return;seen=j;s=JSON.parse(j);paint(false);};LIVE.add(view);
   paint(false);if(s.o>=0||s.r>=0)lv.textContent='Your last choice is restored.';return box;}
+/* the same table as an HTML string, without a try-it: for the fig of a question ("Use the following information") or a worked example */
+const ecTableH=(rows,o={})=>ecTable(el('div'),rows,Object.assign({},o,{pick:null})).outerHTML;
 /* ---------- an electrochemical cell (SVG) ----------
    ecCell(o) returns an SVG string: put it in CF(svg, caption) or in the fig of a question.
    o.type: 'voltaic' (default) or 'electrolytic'. o.sep: 'bridge' (two beakers and a salt bridge; the default of a voltaic cell), 'cup' (the right half-cell is in a porous cup
@@ -3998,8 +4000,8 @@ function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'br
   const beaker=([x0,x1])=>`<path d="M${x0-4},${yt}L${x0},${yt+4}V${yb-8}a8 8 0 0 0 8,8H${x1-8}a8 8 0 0 0 8,-8V${yt+4}L${x1+4},${yt}" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
   const liquid=([x0,x1],c)=>`<rect x="${x0+1.5}" y="${yl}" width="${x1-x0-3}" height="${yb-yl-1.5}" rx="7" fill="${c}" fill-opacity=".62"/>`;
   /* electrodes: a strip, or a thin platinum wire and plate in a glass tube when a gas is fed over it */
-  const elec=s=>{const h=S[s],x=G.x[s],c=elCol(h);if(!h.gas)return `<rect x="${x-7}" y="${et}" width="14" height="${eb-et}" rx="2" fill="${c}" stroke="var(--steel2)" stroke-width="1"/>`;
-    return `<path d="M${x},${et-16}V${eb-34}" stroke="var(--steel2)" stroke-width="2"/><rect x="${x-6}" y="${eb-36}" width="12" height="22" rx="1.5" fill="${c}" stroke="var(--steel2)" stroke-width="1"/>`;};
+  const elec=s=>{const h=S[s],x=G.x[s],c=elCol(h);if(!h.gas)return `<rect x="${x-7}" y="${et}" width="14" height="${eb-et}" rx="2" fill="${c}" stroke="var(--ink2)" stroke-width="1.1"/>`;
+    return `<path d="M${x},${et-16}V${eb-34}" stroke="var(--steel2)" stroke-width="2"/><rect x="${x-6}" y="${eb-36}" width="12" height="22" rx="1.5" fill="${c}" stroke="var(--ink2)" stroke-width="1.1"/>`;};
   const tube=s=>{const h=S[s],x=G.x[s],d=s==='L'?1:-1;if(!h.gas)return '';const ax=x+d*14,bx=x+d*34;
     return `<path d="M${x-14},${eb-12}V${et-12}H${x+14}V${eb-12}" fill="none" stroke="var(--gl)" stroke-width="2" stroke-linejoin="round"/><path d="M${ax},${et-2}H${bx}M${ax},${et+6}H${bx}" stroke="var(--gl)" stroke-width="2"/>`+
       (names?T(h.gas,bx+d*4,et-11,{a:d>0?'start':'end',s:11.5,c:d>0?'l':'r'}):'')+sArrow(x+d*44,et+2,x+d*18,et+2,'var(--mute)',1.6);};
