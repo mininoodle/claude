@@ -4208,7 +4208,9 @@ const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o
   /* the information of a question (figure HTML): a paragraph, a centred title, a centred line */
   ec8P=h=>`<p style="margin:.35em .5em">${h}</p>`,ec8H=h=>`<p style="margin:.3em .5em .2em;text-align:center;font-weight:650">${h}</p>`,
   ec8C=h=>`<p style="margin:.25em .5em;text-align:center">${h}</p>`,
-  ec8Q='<b>Numerical response.</b> ';
+  ec8Q='<b>Numerical response.</b> ',
+  /* rows of the table of potentials as centred lines with their E° (a question figure: on a phone, a table would scroll sideways) */
+  ec8Rows=rows=>rows.map(r=>ec8C(r.h.replace(/<\/sup>\(/g,'</sup>\u2060(')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = '+r.Es+' V</span>')).join('');
 
 /* the zinc-carbon dry cell, cut in half. o.nums: numbered parts (1 metal cap, 2 carbon rod, 3 MnO2 paste, 4 electrolyte paste, 5 zinc can, 6 steel case, 7 metal bottom) */
 function ec8Dry(o={}){const N=!!o.nums,L=(n,t,yc,side,tx,ty)=>ec8Lab(N,n,t,side==='r'?138:302,yc,side)+ec8Ld(side==='r'?141:299,yc,tx,ty);
@@ -4351,7 +4353,7 @@ const F103=ec8P('Hydrogen–oxygen fuel cells have been used for years in spacec
 const F105=ec8P('Most lead storage batteries in automobiles are made up of six voltaic cells connected in series. Each of the cells consists of a lead electrode, '+C8('Pb(s)')+', a lead(IV) oxide electrode, '+C8('PbO2(s)')+', and sulphuric acid electrolyte, '+C8('H2SO4(aq)')+'.');
 
 ecCSS(8,'#ec-8 .ec8eq{margin:.35em 0;line-height:1.55}#ec-8 .ec8eq b{font-weight:650}#ec-8 .nw{white-space:nowrap}'+
-  '#ec-8 .ec8g .ec8gl{line-height:2.15}#ec-8 .ec8g select{margin:.1em .15em;max-width:100%}'+
+  '#ec-8 .ec8g li{grid-template-columns:auto minmax(0,1fr)}#ec-8 .ec8g .ec8gl{line-height:2.15;min-width:0}#ec-8 .ec8g select{margin:.1em .15em;max-width:100%}'+
   '#ec-8 .ec8g select.ok{border-color:var(--ok);background:var(--okb)}#ec-8 .ec8g select.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
   '#ec-8 .ec8fig figure.cf{max-width:520px;margin-left:auto;margin-right:auto}#ec-8 .ec8m td{text-align:right;font-variant-numeric:tabular-nums}#ec-8 .ec8m td:first-child{text-align:left}');
 
@@ -4361,9 +4363,10 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
     <p class="note">You do not need to memorize the details of the cells in this lesson. Learn the general ideas. Then apply what you know about voltaic cells to the information that a question gives you, as in the diploma questions at the end.</p>
     <ul><li>A <span class="key">cell</span> is two electrodes and an electrolyte, joined together.</li><li>A <span class="key">battery</span> is two or more cells, linked one to the next, to give a higher total voltage.</li></ul>
     <table><tr><th>Kind of cell</th><th>Can it be recharged?</th><th>Examples in this lesson</th></tr>
-    <tr><td><span class="key">Primary cell</span></td><td>No. Its products are too delicate, or not suitable, for recharging.</td><td>zinc-carbon dry cell, alkaline cell, mercury and silver oxide button cells</td></tr>
+    <tr><td><span class="key">Primary cell</span></td><td>No. Its products are too delicate to survive recharging, or not suitable for it.</td><td>zinc-carbon dry cell, alkaline cell, mercury and silver oxide button cells</td></tr>
     <tr><td><span class="key">Secondary cell</span></td><td>Yes. Electricity reverses the redox reaction that produced the electricity.</td><td>lithium, nickel-cadmium, lead-acid (car battery)</td></tr>
     <tr><td><span class="key">Fuel cell</span></td><td>It does not need to be. Its fuel is supplied all the time.</td><td>hydrogen-oxygen fuel cell</td></tr></table>
+    <p>A primary cell delivers a constant voltage over its whole lifetime, then it is thrown away.</p>
     <p>Cells are <b>wet</b> or <b>dry</b>. A <span class="key">dry cell</span> is a voltaic cell whose electrolyte is a paste: the electrolyte is thickened with starch. AA, C and D cells and 9&nbsp;V batteries are dry cells. A car battery is a wet cell: its electrolyte is a liquid.</p>`,'w7');
   card(g,'Every battery is a voltaic cell',`<ul><li>The <b>anode</b> is the negative terminal. The reducing agent is oxidized there: a reactive metal (Zn, Li, Cd, Pb, Al) or a fuel (${C8('H2(g)')}).</li>
     <li>The <b>cathode</b> is the positive terminal. The oxidizing agent is reduced there: often a metal oxide (${C8('MnO2')}, ${C8('HgO')}, ${C8('Ag2O')}, ${C8('NiO(OH)')}, ${C8('PbO2')}) or ${C8('O2(g)')} from the air.</li>
@@ -4469,12 +4472,14 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
   const dq=card(g,'Diploma-style question: the parts of a dry cell','','half');
   nrCode(dq,{q:'<p>The diagram shows a zinc-carbon dry cell, cut in half.</p>'+`<div class="ec8fig">${CF(ec8Dry({nums:true}),'A zinc-carbon dry cell with numbered parts.')}</div>`+'<p><b>Numerical response.</b> In the diagram, the anode, the oxidizing agent, the electrolyte and the positive terminal are numbered, respectively, ____, ____, ____ and ____. (Record all four digits of your answer.)</p>',a:'5341',
     w:'The zinc can (5) is oxidized, Zn(s) → Zn²⁺(aq) + 2e⁻, thus it is the anode. MnO₂(s) in the black paste (3) gains electrons at the carbon rod: it is the oxidizing agent. The moist paste of NH₄Cl and ZnCl₂ (4) is the electrolyte. The metal cap (1) on the carbon rod is the positive terminal. Record 5341.'},1);
+  /* the tables of the worked examples are static HTML: give them the cue that they scroll sideways on a phone */
+  $$('details.ex .ec-tbx>.tw',g).forEach(tblCue);
 },qz:[
   {q:'A battery is',o:['two or more cells joined to give a higher voltage','one electrode dipped in a solution of its own ions','a voltaic cell whose electrolyte is a thick paste','a voltaic cell that runs on a supply of hydrogen gas'],a:0,
    w:'A battery contains two or more cells, linked one to the next. In series their voltages add, for example six 2 V cells give a 12 V car battery. A cell with a paste electrolyte is a dry cell, and a cell that runs on hydrogen is a fuel cell.'},
   {q:'In a dry cell, the electrolyte is',o:['a moist paste, thickened with starch','a dilute solution of sulfuric acid','a gas that flows past the electrodes','a metal that conducts the electrons'],a:0,
    w:'A dry cell is a voltaic cell whose electrolyte is a paste, for example NH₄Cl and ZnCl₂ in a zinc-carbon cell or KOH in an alkaline cell. Electrons flow in the external circuit, not through the electrolyte.'},
-  {q:'In both the zinc-carbon cell and the alkaline cell, the substance reduced at the cathode is',o:[C8('MnO2(s)'),C8('Zn(s)'),C8('NH4^+(aq)'),C8('C8(s)')],a:0,
+  {q:'In both the zinc-carbon cell and the alkaline cell, the substance reduced at the cathode is',o:[C8('MnO2(s)'),C8('Zn(s)'),C8('NH4^+(aq)'),C8('C(s)')],a:0,
    w:'Mn goes from +4 in MnO₂ to +3 (in MnO(OH) or Mn₂O₃): MnO₂(s) gains electrons, thus it is reduced. Zinc is oxidized at the anode. The carbon rod only carries the electrons, and N stays at −3 in NH₄⁺ and NH₃.'},
   {q:'Compared with a zinc-carbon cell, an alkaline cell',o:['delivers a greater current and lasts longer','is cheaper, because its paste is acidic','can be recharged by a power supply','has a voltage that drops more quickly as it is used'],a:0,
    w:'The alkaline cell works in basic conditions (KOH). It delivers a much greater current, its voltage stays constant, and it lasts longer, but it is more expensive. Neither cell is rechargeable.'},
@@ -4488,9 +4493,9 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
    w:'The fuel and the oxidizing agent flow into a fuel cell all the time, thus it gives electricity continuously and is never recharged. A battery holds its reactants inside and stops when they are used up.'},
   {q:'In a hydrogen-oxygen fuel cell, the hydrogen gas is',o:['oxidized at the anode','reduced at the anode','oxidized at the cathode','reduced at the cathode'],a:0,
    w:'Hydrogen is the fuel. It loses electrons, 2H₂(g) + 4OH⁻(aq) → 4H₂O(l) + 4e⁻, thus it is oxidized, and oxidation occurs at the anode (LEO A).'},
-  {q:'The notes say that chlorine can replace oxygen in a fuel cell. Calculate '+ecEs('net')+' of a hydrogen-chlorine fuel cell with an acidic electrolyte.',fig:ecTableH(ecRows([e8Cl.s,e8OA.s,e8H.s,e8W.s])),n:+(e8Cl.E-e8H.E).toFixed(2),u:'V',abs:.005,tol:0,
+  {q:'The notes say that chlorine can replace oxygen in a fuel cell. Calculate '+ecEs('net')+' of a hydrogen-chlorine fuel cell with an acidic electrolyte.',fig:ec8Rows(ecRows([e8Cl.s,e8OA.s,e8H.s,e8W.s])),n:+(e8Cl.E-e8H.E).toFixed(2),u:'V',abs:.005,tol:0,
    w:`Chlorine is reduced at the cathode: Cl₂(g) + 2e⁻ → 2Cl⁻(aq), E°r = ${e8Cl.Es} V. Hydrogen is oxidized at the anode. In an acid it is H₂(g) → 2H⁺(aq) + 2e⁻, from the row with E°r = ${e8H.Es} V. E°net = ${e8Cl.Es} V − ${e8H.Es} V = ${ecVs(e8Cl.E-e8H.E)} V.`},
-  {q:'A lead-acid battery for a truck gives 24.6 V. Each cell gives the standard cell potential of a lead-acid cell. How many cells are in the battery?',fig:ecTableH(ecRows([e8PbO2.s,e8PbS.s])),n:12,u:'',tol:0,
+  {q:'A lead-acid battery for a truck gives 24.6 V. Each cell gives the standard cell potential of a lead-acid cell. How many cells are in the battery?',fig:ec8Rows(ecRows([e8PbO2.s,e8PbS.s])),n:12,u:'',tol:0,
    w:`One cell: E°net = ${e8PbO2.Es} V − (${e8PbS.Es} V) = ${e8LA.Es} V. In series the voltages add, thus the number of cells = 24.6 V ÷ 2.05 V = 12.`},
   {q:'A lithium cell delivers 0.200 mol of electrons: '+C8('Li(s) -> Li^+ + e^-')+'. Calculate the mass of lithium that is used up.',n:+(0.2*EC_M.Li).toFixed(4),u:'g',tol:.01,
    w:'Each lithium atom gives one electron, thus n(Li) = n(e⁻) = 0.200 mol. M(Li) = 6.94 g/mol. m = nM = 0.200 mol × 6.94 g/mol = 1.39 g.'}]};
@@ -4500,7 +4505,7 @@ EC_DIP[8]=[
 /* 92 */ {q:'Use the information below. In this aluminum–air battery, the '+C8('O2(g)')+' acts as the',fig:F92,o:['reducing agent and gains electrons','reducing agent and loses electrons','oxidizing agent and gains electrons','oxidizing agent and loses electrons'],a:2,
   w:'At the porous cathode, oxygen gains electrons: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). A gain of electrons is reduction, and the substance that is reduced is the oxidizing agent. Aluminum is the reducing agent: it loses electrons.'},
 /* 93 */ {q:'Use the information below. The reduction half-reaction for this aluminum–air battery is',fig:F92,o:[C8('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)'),C8('Na^+(aq) + e^- -> Na(s)'),C8('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)'),C8('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')],a:3,
-  w:'The oxidizing agent is O₂(g) from the moist air, and the electrolyte is NaOH(aq): the solution is basic. In a basic solution there is no H⁺(aq), thus oxygen is reduced with water: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq) (+0.40 V). The diagram shows OH⁻(aq) forming at the cathode. No gas forms from the water, and Na⁺(aq) is a much weaker oxidizing agent.'},
+  w:'The oxidizing agent is O₂(g) from the moist air, and the electrolyte is NaOH(aq): the solution is basic. In a basic solution there is no H⁺(aq), thus oxygen is reduced with water: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq) (+0.40 V). The diagram shows OH⁻(aq) forming at the cathode. Water (−0.83 V) and Na⁺(aq) (−2.71 V) are much weaker oxidizing agents than O₂(g), thus they are not reduced.'},
 /* 94 */ {q:'Use the information below. The standard voltage produced by this aluminum–air cell is',fig:F92,o:['+2.36 V','+2.06 V','+0.83 V','+1.05 V'],a:1,
   w:`Cathode: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq), E°r = ${e8OH.Es} V. Anode: Al(s) → Al³⁺(aq) + 3e⁻, from the row Al³⁺(aq) + 3e⁻ ⇌ Al(s), E°r = ${e8Al.Es} V. E°net = ${e8OH.Es} V − (${e8Al.Es} V) = ${ecVs(e8OH.E-e8Al.E)} V. Do not multiply the E° values by the coefficients.`},
 /* 95 */ {q:ec8Q+'Use the information below. When three aluminum–air cells are connected in series, the net voltage generated by the battery is +/− __________ V.',fig:F92,n:+(3*(e8OH.E-e8Al.E)).toFixed(2),u:'V',abs:.005,tol:0,
@@ -4515,7 +4520,7 @@ EC_DIP[8]=[
   w:'Starting the car: the battery discharges spontaneously and drives a current through the starter motor. It acts as a voltaic cell. Running the car: the alternator forces a current into the battery and reverses the reaction, which is non-spontaneous. The battery then acts as an electrolytic cell.'},
 /* 99 */ {q:'Use the information below. An automotive student obtained 500 mL of acid from a car battery. The student poured 50 mL of the acid into beaker I, 100 mL into beaker II, and then conducted several tests. In this investigation, the student determined that',fig:F97,
   o:['both solutions conducted an electric current equally well','there was a lower ['+C8('H3O^+(aq)')+'] in beaker I than in beaker II','magnesium metal reacted more quickly in beaker I than in beaker II','one drop of methyl red produced a deeper red in beaker II than in beaker I'],a:0,
-  w:'Both beakers hold the same acid, thus the concentration and [H₃O⁺(aq)] are the same in each. A concentration does not depend on the volume of the sample. The two solutions conduct a current equally, and magnesium reacts at the same rate in each. Methyl red is red in both; one drop in the larger volume is more dilute, thus beaker II would not be a deeper red.'},
+  w:'Both beakers hold the same acid, thus the concentration and [H₃O⁺(aq)] are the same in each. A concentration does not depend on the volume of the sample. The two solutions conduct a current equally, and magnesium reacts at the same rate in each. Methyl red is red in both. One drop in the larger volume is more dilute, thus beaker II would not be a deeper red.'},
 /* 100 */ {q:'Use the information below. During the discharging of the cell, the substance oxidized is',fig:F100,o:[C8('Zn(s)'),C8('Ag(s)'),C8('H2O(l)'),C8('Ag2O(s)')],a:0,
   w:'Both half-reactions are written as reductions. Ag₂O(s) has the higher E° (+0.34 V), thus it is reduced at the cathode. The zinc half-reaction goes in reverse at the anode: Zn(s) + 2OH⁻(aq) → Zn(OH)₂(s) + 2e⁻. Zinc loses electrons: Zn(s) is oxidized, as the label “zinc container (anode)” shows. Ag(s) is a product, and Ag₂O(s) and H₂O(l) react at the cathode.'},
 /* 101 */ {q:'Use the information below. In this cell, the separator must be porous in order to',fig:F100,o:['allow the migration of ions','replenish the electrolyte','provide a pathway for electron flow','provide a surface on which electron transfer can occur'],a:0,
@@ -4542,7 +4547,7 @@ EC_RQ[8]=[
   {q:'While a nickel-cadmium cell is being recharged, the cadmium electrode',o:['is the cathode, where '+C8('Cd(OH)2(s)')+' is reduced to '+C8('Cd(s)'),'is the anode, where '+C8('Cd(s)')+' is oxidized to '+C8('Cd(OH)2(s)'),'is the cathode, where '+C8('Cd(s)')+' is oxidized to '+C8('Cd(OH)2(s)'),'is the anode, where '+C8('Cd(OH)2(s)')+' is reduced to '+C8('Cd(s)')],a:0,
    w:'During discharge, Cd(s) is oxidized at the anode: Cd(s) + 2OH⁻(aq) → Cd(OH)₂(s) + 2e⁻. Recharging reverses this: Cd(OH)₂(s) + 2e⁻ → Cd(s) + 2OH⁻(aq). That is a reduction, and reduction always occurs at the cathode, now the cathode of an electrolytic cell.'},
   {q:'A mechanic tests each cell of a car battery with a hydrometer. One cell has an electrolyte with a much lower density than the others. This cell',o:['is discharged: acid was used up and water formed','is fully charged: sulfuric acid formed at both grids','is too cold: its ions move slowly through the acid','is new: its grids have no lead(II) sulfate on them'],a:0,
-   w:'Discharging: Pb(s) + PbO₂(s) + 2SO₄²⁻(aq) + 4H⁺(aq) → 2PbSO₄(s) + 2H₂O(l). The acid is used up and water forms, thus the density falls. A charged cell has the most acid, thus the highest density. The temperature changes the current, not the density reading of this test.'},
+   w:'Discharging: Pb(s) + PbO₂(s) + 2SO₄²⁻(aq) + 4H⁺(aq) → 2PbSO₄(s) + 2H₂O(l). The acid is used up and water forms, thus the density falls. A charged cell has the most acid, thus the highest density. Cold slows the ions in every cell, but it does not make the acid of one cell more dilute than the others.'},
   {q:'A 9.00 V battery is made of six identical cells connected in series. Calculate the voltage of one cell.',n:1.5,u:'V',abs:.005,tol:0,
    w:'In series the voltages of the cells add. Six identical cells give 9.00 V, thus one cell gives 9.00 V ÷ 6 = 1.50 V.'},
   {q:'A hydrogen-oxygen fuel cell has an acidic electrolyte: a polymer membrane that lets '+C8('H^+')+' ions through. The half-reaction at the cathode is',o:[C8(E8.pmC),C8(E8.fcC),C8('H2(g) -> 2H^+(aq) + 2e^-'),C8('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')],a:0,
@@ -4567,7 +4572,7 @@ EC_WRQ.push({q:'A car battery has six lead-acid cells connected in series. Each 
     '<p>(c) Recharging is the reverse reaction: '+C8(E8.laR)+'. Its '+ecEs('net')+' is −2.05 V, thus it is non-spontaneous. The alternator, a power supply, forces electrons into the lead grid. The battery acts as an electrolytic cell.</p><p>(d) The electrolyte becomes thick in the cold. The ions move slowly, thus the current is too small to turn the starter motor. Warmed up, the battery works again.</p>'});
 
 /* ---------- generators: one for each numeric question type of the lesson ---------- */
-/* real cells built from rows of the data booklet: [name, cathode row, anode row, the anode half-reaction as it occurs (the row reversed)] */
+/* real cells built from rows of the data booklet: [name, cathode row, anode row] */
 const G8C=[['lead-acid cell',e8PbO2,e8PbS],['hydrogen-oxygen fuel cell (basic electrolyte)',e8OH,e8W],['hydrogen-oxygen fuel cell (acidic membrane)',e8OA,e8H],['aluminum-air cell',e8OH,e8Al],
   ['magnesium-air cell',e8OH,e8Mg],['hydrogen-chlorine fuel cell',e8Cl,e8H],['zinc-chlorine cell',e8Cl,e8Zn],['zinc-copper (Daniell) cell',e8Cu,e8Zn]];
 const g8Pick=()=>G8C[RN(0,G8C.length-1)],g8Two=(c,a)=>RN(0,1)?[c,a]:[a,c],g8Row=r=>`${r.u} (E° = ${r.Es} V)`,g8A=t=>(/^[aeiou]/i.test(t)?'an ':'a ')+t;
@@ -4586,9 +4591,9 @@ EC_GEN[8]=[
     return {q:`A standard ${nm} has E°net = ${p.Es} V. Its ${hideA?'cathode':'anode'} half-reaction, written as a reduction, is ${k.u} with E° = ${k.Es} V. Calculate the reduction potential of the ${hideA?'anode':'cathode'} half-reaction, ${h.u}.`,n:h.E,u:'V',abs:.005,tol:0,ans:ecVs(h.E),
       w:`E°net = E°r(cathode) − E°r(anode). ${hideA?`E°r(anode) = E°r(cathode) − E°net = ${c.Es} V − ${ecVs(p.E).replace('+','')} V`:`E°r(cathode) = E°net + E°r(anode) = ${ecVs(p.E).replace('+','')} V + (${a.Es} V)`} = ${h.Es} V.`};},
   /* the mass of anode metal used for an amount of electrons */
-  ()=>{const [nm,s,eq,z]=G8M[RN(0,G8M.length-1)],ne=RN(.02,1.5,.01),M=EC_M[s],m=ne/z*M;
-    return {q:`The anode of a cell is ${nm}: ${ecU(eq)}. The cell delivers ${ne.toFixed(2)} mol of electrons. Calculate the mass of ${nm} that is used up.`,n:m,u:'g',tol:.01,
-      w:`Each ${nm} atom gives ${z} electron${z>1?'s':''}. n(${s}) = ${ne.toFixed(2)} mol ÷ ${z} = ${sig(ne/z)} mol. M(${s}) = ${M.toFixed(2)} g/mol. m = nM = ${sig(ne/z)} mol × ${M.toFixed(2)} g/mol = ${sig(m)} g.`};},
+  ()=>{const [nm,s,eq,z]=G8M[RN(0,G8M.length-1)],ne=RN(.1,.999,.001),M=EC_M[s],m=ne/z*M;
+    return {q:`The anode of a cell is ${nm}: ${ecU(eq)}. The cell delivers ${ne.toFixed(3)} mol of electrons. Calculate the mass of ${nm} that is used up.`,n:m,u:'g',tol:.01,
+      w:`Each ${nm} atom gives ${z} electron${z>1?'s':''}. n(${s}) = ${ne.toFixed(3)} mol ÷ ${z} = ${sig(ne/z)} mol. M(${s}) = ${M.toFixed(2)} g/mol. m = nM = ${sig(ne/z)} mol × ${M.toFixed(2)} g/mol = ${sig(m)} g.`};},
   /* the number of cells in series for a target voltage */
   ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),V=RN(5,60),k=Math.ceil(V/p.E-1e-9);
     return {q:`Each cell of a battery is a standard ${nm}, with E°net = ${p.Es} V. How many cells must be connected in series to give at least ${V} V?`,n:k,u:'',tol:0,
@@ -4596,12 +4601,12 @@ EC_GEN[8]=[
   /* a mass relationship through the electrons: the overall reaction of a battery */
   ()=>{const R=[['aluminum-air cell','Al','aluminum',4,'O2(g)','oxygen',3,'used',E8.aaN],['hydrogen-oxygen fuel cell','H2(g)','hydrogen',2,'H2O(l)','water',2,'produced',E8.fcN],
       ['lead-acid cell','Pb','lead',1,'PbO2(s)','lead(IV) oxide',1,'used',E8.laN],['alkaline cell','Zn','zinc',1,'MnO2(s)','manganese(IV) oxide',2,'used',E8.akN]][RN(0,3)],
-      [nm,k1,n1,c1,k2,n2,c2,vb,eq]=R,m1=RN(1,60,.1),M1=ecMolar(k1),M2=ecMolar(k2),x=m1/M1*c2/c1,m2=x*M2;
+      [nm,k1,n1,c1,k2,n2,c2,vb,eq]=R,m1=RN(10,60,.1),M1=ecMolar(k1),M2=ecMolar(k2),x=m1/M1*c2/c1,m2=x*M2;
     return {q:`The overall reaction of ${g8A(nm)} is ${ecU(eq)}. When ${m1.toFixed(1)} g of ${n1} reacts, calculate the mass of ${n2} that is ${vb}.`,n:m2,u:'g',tol:.01,
       w:`n(${ecU(k1.replace(/\(.*\)$/,''))}) = ${m1.toFixed(1)} g ÷ ${M1.toFixed(2)} g/mol = ${sig(m1/M1)} mol. The mole ratio is ${c1} : ${c2}, thus n(${ecU(k2.replace(/\(.*\)$/,''))}) = ${sig(m1/M1)} × ${c2}/${c1} = ${sig(x)} mol. m = ${sig(x)} mol × ${M2.toFixed(2)} g/mol = ${sig(m2)} g.`};}];
 EC_METHOD[8]='Find what is oxidized (the metal or the fuel, at the anode) and what is reduced (often O₂ or a metal oxide, at the cathode). E°net = E°r(cathode) − E°r(anode). For cells in series, multiply E°net by the number of cells. For a mass, go through the moles of electrons.';
 EC_HT[8]={title:'How to answer battery and fuel cell questions',pre:'You do not need to memorize any cell. Read the information, find what is oxidized and what is reduced, then use what you know about voltaic cells.',items:[
-  {q:'Identify the anode, the cathode and the agents',s:['Find the metal or the fuel (such as H₂) that loses electrons. It is the reducing agent, and its electrode is the anode (−).','Find the substance that gains electrons: often O₂ or a metal oxide such as MnO₂, HgO, Ag₂O or PbO₂. It is the oxidizing agent, at the cathode (+).','Electrons flow through the external circuit from the anode to the cathode. Anions move toward the anode and cations toward the cathode.'],chk:'Check with oxidation numbers: at the anode the number increases, at the cathode it decreases.'},
+  {q:'Identify the anode, the cathode and the agents',s:['Find the metal or the fuel (such as H₂) that loses electrons. It is the reducing agent, and its electrode is the anode (−).','Find the substance that gains electrons: often O₂ or a metal oxide such as MnO₂, HgO, Ag₂O or PbO₂. It is the oxidizing agent, at the cathode (+).','Electrons flow through the external circuit from the anode to the cathode. Anions move toward the anode and cations toward the cathode.'],chk:'Oxidation numbers confirm it: at the anode the number increases, at the cathode it decreases.'},
   {q:'Calculate E°net of a battery cell',s:['Write both half-reactions as reductions, with their E° values from the information or the data booklet.','The half-reaction with the higher E° is the reduction at the cathode. The other one goes in reverse at the anode.','E°net = E°r(cathode) − E°r(anode). Keep the signs and do not multiply E° by coefficients.'],chk:'A cell that produces electricity has a positive E°net.'},
   {q:'Find an unknown reduction potential',s:['Write E°net = E°r(cathode) − E°r(anode).','Put in the two values you know.','Solve: E°r(anode) = E°r(cathode) − E°net, or E°r(cathode) = E°net + E°r(anode).'],chk:'The anode must have the lower reduction potential.'},
   {q:'Find the voltage of a battery',s:['Find E°net of one cell.','In series the voltages add: battery voltage = (number of cells) × E°net.','For a target voltage, divide it by E°net and round up to a whole number of cells.'],chk:'A bigger cell lasts longer, but it has the same voltage.'},
