@@ -737,8 +737,27 @@ body{--on-a1:#fff}
   #rail>#tabs{flex:1 1 0;order:1}
   #rail>.rail-brand{display:flex;flex:none;order:2;padding:0}
   #rail>.rail-brand>:not(.rail-tools){display:none}
+  /* the breadcrumb stays at the top of the window at every width (on a wide screen the skin already makes it sticky) */
+  html .crumb{position:sticky;height:44px}
 }
+/* a phone: the breadcrumb menus are the navigation (subjects, sections, lessons with their progress rings), thus the rail keeps only its first row */
+@media(max-width:600px){#rail>#units,#rail>#chips{display:none}}
+/* the progress ring and the due badge of a lesson in the breadcrumb's lesson menu */
+.cm-i .pr{margin:0;flex:none}.cm-i .due{margin:0;flex:none}
+/* the level pill under a lesson's title is a button: it goes to the lesson's questions */
+button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
+button.lvl:hover{background:var(--hov);color:var(--ink)}
 </style>
+<script>
+'use strict';
+/* ===== ux-nav: navigation helpers. This script runs before the main script; its functions are called by the main script and by the sidebar skin ===== */
+/* the bottom of the bar that stays at the top of the window (the breadcrumb, sticky at every width): a scroll target lands below it, not under it */
+function topBar(){const c=document.querySelector('.crumb');if(c&&getComputedStyle(c).position==='sticky')return c.offsetHeight;const t=document.getElementById('top');return t?Math.max(0,t.getBoundingClientRect().bottom):0;}
+/* scroll element e to just below that bar (smoothly when it is near, at once when it is more than 3 screens away), and give it focus (sel: the part to focus, as focusTo) */
+function goTo(e,sel){if(!e)return;const y=Math.max(0,e.getBoundingClientRect().top+scrollY-topBar()-12);window.scrollTo({top:y,behavior:RM||Math.abs(y-scrollY)>3*innerHeight?'auto':'smooth'});if(sel)focusTo(e,sel);}
+/* the level pill under a lesson's title goes to the lesson's questions */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button.lvl[data-lvl]'),L=b&&b.closest('.lesson');if(L)goTo($('.card.quiz',L),'h3');});
+</script>
 <script>
 'use strict';
 /* Cross-device sync (optional). Paste the web app config from your Firebase project here to turn on Google sign-in,
@@ -1170,7 +1189,7 @@ function reviewUI(g,sk,le){
     while(list.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)list.push(a.pop());}return list;};
   const fmt=ms=>{const t=Math.max(0,Math.round(ms/1000));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};
   /* show the new card below the sticky header, only when the Review page is on screen */
-  const toHost=()=>{if(host.offsetParent)window.scrollTo({top:Math.max(0,host.getBoundingClientRect().top+scrollY-$('#top').getBoundingClientRect().bottom-12),behavior:RM?'auto':'smooth'});};
+  const toHost=()=>{if(host.offsetParent)window.scrollTo({top:Math.max(0,host.getBoundingClientRect().top+scrollY-topBar()-12),behavior:RM?'auto':'smooth'});};
   let exS='';const exSave=()=>{try{if(!E){exS='';sessionStorage.removeItem(EXK(sk));return;}const s=JSON.stringify(E);if(s!==exS){exS=s;sessionStorage.setItem(EXK(sk),s);}}catch(e){}};
   /* a boss round runs inside the home view: do not redraw it then */
   const busy=()=>!!$('.q',host);
@@ -1312,7 +1331,7 @@ function showLesson(i,o={}){
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
   const id=curS+'-'+i;let L=document.getElementById(id);
   if(!L){L=el('article',{class:'lesson',id,role:'tabpanel','aria-labelledby':'tab-'+id});
-    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<p class="lvl" data-lvl></p>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
+    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<button type="button" class="lvl" data-lvl title="Go to the questions"></button>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
     $('#main').append(L);const g=$('.grid',L);le.build(g,le);howtoCard(g,curS,i);$$('figure.cf',g).forEach(figFit);if(le.qz){quiz(g,le.qz,le.qt,curS+'_'+i);masteryCard(g,curS,i);challengeCard(g,curS,i);}
     $$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));
     /* at the end of a section in a grouped unit, the pager goes on to the next (or previous) section */
@@ -10938,7 +10957,7 @@ function runRound(box,o){let i=0,over=false,tm=0,tEnd=0;const res=[],t0=Date.now
     const row=el('div',{class:'row'});row.append(nx);box.append(row);nx.onclick=()=>{if(over)return;i++;if(i<n){ask();toQ(box);}else fin(false);};focusTo(box,'.qh b');}
   ask();}
 /* after Next: scroll the new question's top to just below the sticky header, when it is out of view */
-function toQ(n){const h=$('#top').getBoundingClientRect().bottom+8,y=n.getBoundingClientRect().top;if(y<h||y>innerHeight-40)window.scrollTo({top:y+scrollY-h,behavior:RM?'auto':'smooth'});}
+function toQ(n){const h=topBar()+8,y=n.getBoundingClientRect().top;if(y<h||y>innerHeight-40)window.scrollTo({top:y+scrollY-h,behavior:RM?'auto':'smooth'});}
 
 /* ----- lesson page: mastery card and challenge problem ----- */
 function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
@@ -11480,11 +11499,13 @@ html{scroll-padding-top:62px}
   const items=(lv,sub)=>{if(lv==='s')return SUBJECTS.map((S,i)=>({t:S.name,ic:S.k,cur:S.name===sub,go:()=>{tabSeg.set(i);showTab(i);}}));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
     if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});return out;}
-    return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],go:()=>showLesson(i)}));};
+    return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i)}));};
   const openMenu=b=>{const x=crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';
     items(x.lv,x.sub).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
       const m=document.createElement('button');m.type='button';m.className='cm-i'+(it.cur?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',it.cur?'true':'false');
-      m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');m.onclick=()=>{closeMenu();if(!it.cur)it.go();};menu.append(m);});
+      m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
+      /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{closeMenu();if(!it.cur)it.go();};menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
@@ -11504,6 +11525,8 @@ html{scroll-padding-top:62px}
     const lv=document.querySelector('.lesson:not([hidden]) .emblem small'),t=lv?lv.textContent:'';if(right.textContent!==t)right.textContent=t;};
   new MutationObserver(upd).observe(document.querySelector('title'),{childList:true,characterData:true,subtree:true});
   new MutationObserver(ms=>{if(ms.some(m=>!crumb.contains(m.target)))upd();}).observe(main,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
+  /* --toph: the height of the bar at the top of the window. The skin hides the old top bar (boot measures 0 px), thus it is the breadcrumb: the labelling figures that stay in view on short landscape screens stick below it */
+  new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',crumb.offsetHeight+'px')).observe(crumb);
   upd();
   /* keep the open lesson visible in the rail */
   const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'});};
