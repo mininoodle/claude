@@ -4183,7 +4183,7 @@ const ec7Css='#ec-7 .ec7f{grid-column:2;display:flex;flex-wrap:wrap;align-items:
   '#ec-7 .ec7ref{border-collapse:collapse;margin:.4em 0}#ec-7 .ec7ref td,#ec-7 .ec7ref th{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;padding:.32em .6em;border-bottom:1px solid var(--hair)}'+
   '#ec-7 .ec7ref td:first-child,#ec-7 .ec7ref th:first-child{text-align:left}#ec-7 .ec7ref th{font-size:.8rem;font-weight:600;color:var(--ink2);vertical-align:bottom}#ec-7 .ec7ref th small{font-weight:500}'+
   '#ec-7 .ec7ref tr.hl td{background:color-mix(in srgb,var(--s4) 15%,transparent)}#ec-7 .ec7ref tr.hl td:first-child::after{content:" reference";font-size:.72rem;font-weight:700;color:var(--s2);margin-left:.4em}'+
-  '#ec-7 .ec7fig .cf{max-width:640px;margin-left:auto;margin-right:auto}@media(min-width:900px){#ec-7 .ec7g.two{grid-template-columns:repeat(2,minmax(0,1fr))}}#ec-7 .ec7ref{width:auto;min-width:min(100%,30rem)}@media(max-width:600px){#ec-7 .ec7ref{font-size:.84rem;min-width:0}#ec-7 .ec7ref td,#ec-7 .ec7ref th{padding:.3em .32em}#ec-7 .ec7ref tr.hl td:first-child::after{content:none}#ec-7 .ec7ref th{white-space:normal;min-width:3.6em}}#ec-7 .ec7fx{font-size:1.06rem}#ec-7 .nw{white-space:nowrap;display:inline-block}#ec-7 .ec7not{font-size:1.02rem;margin:.3em 0 .5em}#ec-7 .ec7ol{margin:.3em 0 .2em;padding-left:1.3em}#ec-7 .ec7ol li{margin:.25em 0}';
+  '#ec-7 .ec7fig .cf{max-width:640px;margin-left:auto;margin-right:auto}@media(min-width:900px){#ec-7 .ec7g.two{grid-template-columns:repeat(2,minmax(0,1fr))}#ec-7 .ec7g.two>li:nth-child(n+9){grid-column:1/-1}}#ec-7 .ec7ref{width:auto;min-width:min(100%,30rem)}@media(max-width:600px){#ec-7 .ec7ref{font-size:.84rem;min-width:0}#ec-7 .ec7ref td,#ec-7 .ec7ref th{padding:.3em .32em}#ec-7 .ec7ref tr.hl td:first-child::after{content:none}#ec-7 .ec7ref th{white-space:normal;min-width:3.6em}}#ec-7 .ec7fx{font-size:1.06rem}#ec-7 .nw{white-space:nowrap;display:inline-block}#ec-7 .ec7not{font-size:1.02rem;margin:.3em 0 .5em}#ec-7 .ec7ol{margin:.3em 0 .2em;padding-left:1.3em}#ec-7 .ec7ol li{margin:.25em 0}';
 /* a fill-in list: each row has one or more selects, each with its own options (plain text). o.rows: [{n: number or letter, l: the row label (HTML), f: [[field name or '', [options], answer index], ...]}].
    o.after: the explanation (HTML) shown when every answer is correct or shown. o.done() runs then (and when correct answers are restored), o.reset() after Clear.
    The choices are saved under mt_<lesson id>_g<slot>, thus Clear answers for the section removes them */
@@ -4198,7 +4198,7 @@ function ec7Grid(host,o,slot){
   const ss=$$('select',box),lis=$$('li',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=(i,j)=>sel[i][j]===F[i][j][2],all=()=>F.every((f,i)=>f.every((x,j)=>ok(i,j)));
   const paint=res=>{ss.forEach(s=>{const i=+s.dataset.i,j=+s.dataset.j;s.value=String(sel[i][j]);s.classList.toggle('ok',!!res&&ok(i,j));s.classList.toggle('bad',!!res&&!ok(i,j));});
     lis.forEach((li,i)=>{const good=F[i].every((x,j)=>ok(i,j));li.classList.toggle('ok',!!res&&good);li.classList.toggle('bad',!!res&&!good);});};
-  const reveal=()=>{wv.innerHTML=o.after?`<p class="fb info">${W7(o.after)}</p>`:'';if(!open){open=true;o.done&&o.done();}},hide=()=>{wv.innerHTML='';if(open){open=false;o.reset&&o.reset();}};
+  const reveal=()=>{wv.innerHTML=o.after?`<div class="fb info">${W7(o.after)}</div>`:'';if(!open){open=true;o.done&&o.done();}},hide=()=>{wv.innerHTML='';if(open){open=false;o.reset&&o.reset();}};
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');s.closest('li').classList.remove('ok','bad');});
   $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){lv.textContent='Make your choices first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
     lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct. Try again, or show the answers.';if(n===ss.length)reveal();};
@@ -4252,27 +4252,27 @@ const Q2C7=[
   {n:'A',t:'A. Cu and Ag',not:'Cu(s) | Cu^2+(aq) || Ag^+(aq) | Ag(s)',cell:{L:{el:'Cu(s)',sol:'Cu(NO3)2(aq)'},R:{el:'Ag(s)',sol:'AgNO3(aq)'},bridge:'KNO3(aq)'},lab:{E:'0.46 V',cat:'K⁺',an:'NO₃⁻'},ca:'Ag^+(aq)',an:'Cu^2+(aq)',rows:['Ag^+(aq)','Cu^2+(aq)'],
    f:[[['Cu(s)','Ag(s)'],0],[['Cu(s)','Ag(s)'],1],[['Cu²⁺(aq) + 2e⁻ → Cu(s)','Ag⁺(aq) + e⁻ → Ag(s)','Ag(s) → Ag⁺(aq) + e⁻'],1],[['Cu(s) → Cu²⁺(aq) + 2e⁻','Ag(s) → Ag⁺(aq) + e⁻','Cu²⁺(aq) + 2e⁻ → Cu(s)'],0],
      [['+1.26 V','+1.14 V','+0.46 V','−0.46 V'],2],[['from Cu(s) to Ag(s)','from Ag(s) to Cu(s)'],0],[['toward the copper half-cell','toward the silver half-cell'],1],[['toward the copper half-cell','toward the silver half-cell'],0],
-     [['the copper electrode loses mass, and its solution turns a deeper blue','copper plates onto the electrode, and the blue colour fades','bubbles of gas form on the copper electrode'],0],
-     [['the silver electrode loses mass','silver crystals form, and the silver electrode gains mass','bubbles of hydrogen gas form on the silver'],1]],
+     [['copper dissolves, and its solution turns a deeper blue','copper plates onto the electrode, and the blue colour fades','bubbles of hydrogen gas form on the copper electrode'],0],
+     [['the silver electrode loses mass as silver dissolves','silver crystals form, and the electrode gains mass','bubbles of hydrogen gas form on the silver electrode'],1]],
    ev:'The copper electrode loses mass, and its solution turns a deeper blue as Cu²⁺(aq) forms. Silver crystals grow on the silver electrode, which gains mass.'},
   {n:'B',t:'B. Cd and C',not:'Cd^2+(aq) | Cd(s) || C(s) | NO3^-(aq), H^+(aq)',cell:{L:{el:'Cd(s)',sol:'Cd(NO3)2(aq)'},R:{el:'C(s)',sol:'HNO3(aq)'},bridge:'KNO3(aq)'},lab:{E:'1.20 V',cat:'K⁺',an:'NO₃⁻',bub:'R'},ca:'2NO3^-(aq) + 4H^+(aq) + 2e^- <=> N2O4(g) + 2H2O(l)',an:'Cd^2+(aq)',rows:['2NO3^-(aq) + 4H^+(aq) + 2e^- <=> N2O4(g) + 2H2O(l)','H^+(aq)','Cd^2+(aq)'],
    f:[[['Cd(s)','C(s)'],0],[['Cd(s)','C(s)'],1],[['Cd²⁺(aq) + 2e⁻ → Cd(s)','2H⁺(aq) + 2e⁻ → H₂(g)','2NO₃⁻(aq) + 4H⁺(aq) + 2e⁻ → N₂O₄(g) + 2H₂O(l)'],2],[['H₂(g) → 2H⁺(aq) + 2e⁻','Cd(s) → Cd²⁺(aq) + 2e⁻','N₂O₄(g) + 2H₂O(l) → 2NO₃⁻(aq) + 4H⁺(aq) + 2e⁻'],1],
      [['+2.00 V','+1.20 V','+0.40 V','−1.20 V'],1],[['from Cd(s) to C(s)','from C(s) to Cd(s)'],0],[['toward the cadmium half-cell','toward the carbon half-cell'],1],[['toward the cadmium half-cell','toward the carbon half-cell'],0],
-     [['cadmium plates onto the electrode','the cadmium electrode loses mass','bubbles of hydrogen gas form on the cadmium'],1],
-     [['the carbon electrode loses mass','cadmium plates onto the carbon','bubbles of N₂O₄(g) form on the carbon, and the acid is used up'],2]],
+     [['cadmium plates onto the electrode, which gains mass','the cadmium electrode loses mass as Cd²⁺(aq) forms','bubbles of hydrogen gas form on the cadmium'],1],
+     [['the carbon electrode is oxidized and loses mass','cadmium metal plates onto the carbon electrode','bubbles of N₂O₄(g) form, and H⁺(aq) is used up'],2]],
    ev:'The cadmium electrode loses mass. Gas bubbles (N₂O₄(g)) form on the carbon, and H⁺(aq) is used up, thus the pH near the cathode rises. H⁺(aq) alone (0.00 V) is a weaker oxidizing agent than NO₃⁻(aq) with H⁺(aq) (+0.80 V), thus no hydrogen gas forms.'},
   {n:'C',t:'C. Sn and Pb',not:'Sn(s) | Sn^2+(aq) || Pb^2+(aq) | Pb(s)',cell:{L:{el:'Sn(s)',sol:'Sn(NO3)2(aq)'},R:{el:'Pb(s)',sol:'Pb(NO3)2(aq)'},bridge:'KNO3(aq)'},lab:{E:'0.01 V',cat:'K⁺',an:'NO₃⁻'},ca:'Pb^2+(aq)',an:'Sn^2+(aq)',rows:['Sn^4+(aq) + 2e^- <=> Sn^2+(aq)','Pb^2+(aq)','Sn^2+(aq)'],
    f:[[['Sn(s)','Pb(s)'],0],[['Sn(s)','Pb(s)'],1],[['Sn²⁺(aq) + 2e⁻ → Sn(s)','Pb²⁺(aq) + 2e⁻ → Pb(s)','Pb(s) → Pb²⁺(aq) + 2e⁻'],1],[['Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻','Pb(s) → Pb²⁺(aq) + 2e⁻','Sn(s) → Sn²⁺(aq) + 2e⁻'],2],
      [['+0.27 V','+0.01 V','−0.01 V','−0.27 V'],1],[['from Pb(s) to Sn(s)','from Sn(s) to Pb(s)'],1],[['toward the tin half-cell','toward the lead half-cell'],1],[['toward the tin half-cell','toward the lead half-cell'],0],
-     [['the tin electrode loses mass','tin plates onto the tin electrode','bubbles of hydrogen gas form on the tin'],0],
-     [['the lead electrode loses mass','bubbles of hydrogen gas form on the lead','lead plates onto the lead electrode, which gains mass'],2]],
+     [['the tin electrode loses mass as tin is oxidized','tin plates onto the tin electrode, which gains mass','bubbles of hydrogen gas form on the tin'],0],
+     [['the lead electrode dissolves and loses mass','bubbles of hydrogen gas form on the lead electrode','lead plates onto the electrode, which gains mass'],2]],
    ev:'The tin electrode loses mass, and lead plates onto the lead electrode. The voltage is very small, but the reaction is still spontaneous. Sn(s) (−0.14 V) is a stronger reducing agent than Sn²⁺(aq) (+0.15 V).'},
   {n:'D',t:'D. Al and Pt',not:'Al(s) | Al^3+(aq) || Na^+(aq), Cl^-(aq), O2(g), H2O(l) | Pt(s)',cell:{L:{el:'Al(s)',sol:'Al(NO3)3(aq)'},R:{el:'Pt(s)',gas:'O2(g)',sol:'NaCl(aq)'},bridge:'KNO3(aq)'},lab:{E:'2.06 V',cat:'K⁺',an:'NO₃⁻'},ca:'O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)',an:'Al^3+(aq)',
    rows:['Cl2(g)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Al^3+(aq)','Na^+(aq)'],
    f:[[['Al(s)','Pt(s)'],0],[['Al(s)','Pt(s)'],1],[['O₂(g) + 4H⁺(aq) + 4e⁻ → 2H₂O(l)','Na⁺(aq) + e⁻ → Na(s)','O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq)'],2],[['Al(s) → Al³⁺(aq) + 3e⁻','2Cl⁻(aq) → Cl₂(g) + 2e⁻','4OH⁻(aq) → O₂(g) + 2H₂O(l) + 4e⁻'],0],
      [['+2.89 V','+2.06 V','+1.26 V','−2.06 V'],1],[['from Al(s) to Pt(s)','from Pt(s) to Al(s)'],0],[['toward the aluminum half-cell','toward the platinum half-cell'],1],[['toward the aluminum half-cell','toward the platinum half-cell'],0],
-     [['aluminum plates onto the electrode','bubbles of oxygen gas form on the aluminum','the aluminum electrode loses mass'],2],
-     [['chlorine gas forms at the platinum','oxygen gas is used up, and the solution becomes basic','sodium metal plates onto the platinum'],1]],
+     [['aluminum plates onto the electrode, which gains mass','bubbles of oxygen gas form on the aluminum','the aluminum electrode loses mass as Al³⁺(aq) forms'],2],
+     [['chlorine gas forms, and the solution becomes acidic','O₂(g) is used up, and the solution becomes basic','sodium metal plates onto the platinum electrode'],1]],
    ev:'The aluminum electrode loses mass. Oxygen gas is used up at the platinum, and OH⁻(aq) forms, thus the solution around the cathode becomes basic. The NaCl(aq) has no H⁺(aq), thus the oxygen half-reaction with water (+0.40 V) applies, not the one with H⁺(aq) (+1.23 V). Na⁺(aq) and Cl⁻(aq) are spectators.'}];
 const Q2N7=['Anode: the negative electrode','Cathode: the positive electrode','Reduction half-reaction at the cathode','Oxidation half-reaction at the anode',ecEs('net'),'Electrons flow through the wire','Cations in the salt bridge move','Anions in the salt bridge move','Evidence of reaction at the anode','Evidence of reaction at the cathode'];
 
@@ -4283,7 +4283,7 @@ ECL[7]={t:EC_T[7],h:'Calculating cell potentials',d:'Two half-cells compete for 
     <li>The two half-cells compete for electrons. The half-cell with the greater tendency to gain electrons (the <b>stronger oxidizing agent</b>) gains them and is reduced. It is the cathode.</li>
     <li>The other half-cell loses electrons and is oxidized. It is the anode.</li>
     <li>The tendency to gain electrons is the <span class="key">reduction potential</span>, ${ecEs('r')}. The table of standard electrode potentials lists every half-reaction as a reduction.</li></ul>
-    <div class="fx">${ecEs('net')} = ${ecEs('r')} cathode − ${ecEs('r')} anode</div>
+    <div class="fx">${ecEs('net')} = <span class="nw">${ecEs('r')} cathode</span> − <span class="nw">${ecEs('r')} anode</span></div>
     <p>Subtract the reduction potential of the anode from the reduction potential of the cathode. Use both values as the table gives them, with their signs. Never multiply an ${ecEs('')} value by a coefficient of the balanced equation.</p>
     <ul><li>The superscript ° means <b>standard conditions</b>: every ion concentration is 1.0 mol/L, at 25 °C and 101.325 kPa (the conditions of the data booklet table).</li>
     <li>The ${ecEs('net')} of a voltaic cell is always <b>positive</b>: its reaction is spontaneous. A negative ${ecEs('net')} means that the reaction is not spontaneous.</li></ul>
@@ -4362,7 +4362,7 @@ ECL[7]={t:EC_T[7],h:'Calculating cell potentials',d:'Two half-cells compete for 
   const pq=card7(g,'Practice: voltaic cell predictions',`<p><b>Practice question 1.</b> Identify the anode and the cathode, and calculate the net cell potential, ${ecEs('net')}, for each of the following cells. Show all your calculations.</p>
     <p class="hint">The cells are not always written with the anode first. In each cell, find the SOA and the SRA: the half-cell of the SOA is the cathode. The rows you need are in this part of the table.</p>`+
     ecTableH(ecRows(['MnO4^-(aq)','Cr2O7^2-(aq)','Ag^+(aq)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','Pb^2+(aq)','Sn^2+(aq)','Co^2+(aq)','Fe^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Cr^2+(aq)'])));
-  const q1w=Q1.map(([n,nt,els,ia,,,ca,an])=>{const p=ecPair(r7(ca),r7(an));return `<li><b>${n}.</b> Cathode: ${els[1-ia]}, ${p.red} (${p.rr.Es} V). Anode: ${els[ia]}, ${p.ox} (${p.or.Es} V). ${ecEs('net')} = ${p.rr.Es} V − (${p.or.Es} V) = <b>${ecV(p.E)}</b>.</li>`;}).join('');
+  const q1w=Q1.map(([n,nt,els,ia,,,ca,an])=>{const p=ecPair(r7(ca),r7(an));return `<li><b>${n}.</b> Cathode ${els[1-ia]}: ${p.red} (${p.rr.Es} V). Anode ${els[ia]}: ${p.ox} (${p.or.Es} V). ${ecEs('net')} = ${p.rr.Es} V − (${p.or.Es} V) = <b>${ecV(p.E)}</b>.</li>`;}).join('');
   ec7Grid(pq,{rows:Q1.map(([n,nt,els,ia,Es,ie])=>({n,l:C(nt),f:[['Anode',els,ia],['Cathode',els,1-ia],[ecEs('net'),Es,ie]]})),
     after:`<ul class="ec7ol">${q1w}</ul>In D, H₂(g) is oxidized in a basic solution: ${C('H2(g) + 2OH^-(aq) -> 2H2O(l) + 2e^-')}, the reverse of the −0.83 V half-reaction. This cell is the hydrogen-oxygen fuel cell.`},0);
   /* complete cell diagrams, p. 42 question 2 */
@@ -4418,7 +4418,7 @@ EC_RQ[7]=[
   {q:'A table of reduction potentials uses the '+C('Zn^2+(aq)')+'/'+C('Zn(s)')+' half-cell as its reference (0.00 V). On this table, what is the reduction potential of '+C('2H^+(aq) + 2e^- <=> H2(g)')+'?',fig:ecTableH(ecRows(['Cu^2+(aq)','H^+(aq)','Zn^2+(aq)'])),n:.76,u:'V',abs:.005,tol:0,
    w:'On the hydrogen table, Zn²⁺/Zn is −0.76 V. To make it 0.00 V, subtract −0.76 V from every value, which is the same as adding 0.76 V. E°r(H⁺/H₂) = 0.00 V − (−0.76 V) = +0.76 V.'},
   {q:'A metal X does not react with 1.0 mol/L HCl(aq). In a standard cell made of the X²⁺(aq)/X(s) half-cell and the standard hydrogen electrode, the voltmeter reads 0.85 V. The reduction potential of X²⁺(aq) is',o:['+0.85 V','−0.85 V','+0.43 V','−0.43 V'],a:0,
-   w:'X does not react with H⁺(aq), thus X²⁺(aq) is a stronger oxidizing agent than H⁺(aq): the X half-cell is the cathode. E°net = E°r(X) − 0.00 V = 0.85 V, thus E°r = +0.85 V. Do not divide by the number of electrons. The metal is probably mercury.'},
+   w:'X does not react with H⁺(aq), thus X²⁺(aq) is a stronger oxidizing agent than H⁺(aq): the X half-cell is the cathode. E°net = E°r(X) − 0.00 V = 0.85 V, thus E°r = +0.85 V. Do not divide by the number of electrons.'},
   {q:'The table below was made with the '+C('Fe^2+(aq)')+'/'+C('Fe(s)')+' half-cell as the reference (0.00 V). Calculate '+ecEs('net')+' of a standard magnesium-copper cell.',
    fig:ecTableH([['Cu^2+(aq) + 2e^- <=> Cu(s)',.79],['Fe^2+(aq) + 2e^- <=> Fe(s)',0],['Zn^2+(aq) + 2e^- <=> Zn(s)',-.31],['Mg^2+(aq) + 2e^- <=> Mg(s)',-1.92]],{cap:'Reduction potentials measured against the iron(II) half-cell.'}),
    o:['+1.13 V','+2.26 V','+2.71 V','+3.16 V'],a:2,
@@ -4446,12 +4446,13 @@ EC_WRQ.push({q:'A student connects a cobalt half-cell, Co(s) | Co²⁺(aq), to t
 /* generators: E°net of a cell, an unknown reduction potential from a reading, and a value on a new reference table */
 EC_GEN[7]=[
   ()=>{const P=['Au^3+(aq)','Cl2(g)','Br2(l)','Ag^+(aq)','Fe^3+(aq)','I2(s)','Cu^2+(aq)','H^+(aq)','Pb^2+(aq)','Ni^2+(aq)','Co^2+(aq)','Cd^2+(aq)','Zn^2+(aq)','Cr^2+(aq)','Al^3+(aq)','Mg^2+(aq)'];
-    let a,b;do{a=r7(P[RN(0,P.length-1)]);b=r7(P[RN(0,P.length-1)]);}while(a===b||Math.abs(a.E-b.E)<.05);
+    /* the cathode is above the reduction of water (−0.83 V) and the anode below the oxidation of water (+1.23 V); else the SOA/SRA method predicts that water reacts */
+    let a,b;do{a=r7(P[RN(0,P.length-1)]);b=r7(P[RN(0,P.length-1)]);}while(a===b||Math.abs(a.E-b.E)<.05||Math.max(a.E,b.E)<-.83||Math.min(a.E,b.E)>1.23);
     const c=a.E>b.E?a:b,an=c===a?b:a,E=+(c.E-an.E).toFixed(2),hc=r=>`the ${hc7[r.k]} half-cell, ${u7(nt7[r.k])}`;
     return {q:`A standard cell is made of ${hc(a)}, and ${hc(b)}. Calculate E°net.`,fig:ecTableH([c,an]),n:E,u:'V',abs:.005,tol:0,
       w:`${u7(c.k)} (${c.Es} V) is the stronger oxidizing agent, thus the ${hc7[c.k]} half-cell is the cathode. ${u7(an.r)} is oxidized at the anode, the ${hc7[an.k]} half-cell (${an.Es} V). E°net = E°r cathode − E°r anode = ${c.Es} V − (${an.Es} V) = ${ecVs(E)} V.`};},
   ()=>{const U=[['manganese','Mn',2,-1.18],['indium','In',3,-.34],['thallium','Tl',1,-.34],['gallium','Ga',3,-.55],['palladium','Pd',2,.95],['bismuth','Bi',3,.31],['beryllium','Be',2,-1.85],['titanium','Ti',2,-1.63]][RN(0,7)];
-    const K=['Au^3+(aq)','Ag^+(aq)','Cu^2+(aq)','H^+(aq)','Pb^2+(aq)','Ni^2+(aq)','Zn^2+(aq)','Al^3+(aq)','Mg^2+(aq)'];let r;do{r=r7(K[RN(0,K.length-1)]);}while(Math.abs(r.E-U[3])<.1);
+    const K=['Au^3+(aq)','Ag^+(aq)','Cu^2+(aq)','H^+(aq)','Pb^2+(aq)','Ni^2+(aq)','Zn^2+(aq)','Al^3+(aq)','Mg^2+(aq)'];let r;do{r=r7(K[RN(0,K.length-1)]);}while(Math.abs(r.E-U[3])<.1||Math.max(r.E,U[3])<-.83);
     const cat=U[3]>r.E,V=+Math.abs(U[3]-r.E).toFixed(2),ion=U[1]+'^'+(U[2]>1?U[2]:'')+'+(aq)',hr=u7(ion+' + '+(U[2]>1?U[2]:'')+'e^- <=> '+U[1]+'(s)'),kn=r.k==='H^+(aq)'?'the standard hydrogen electrode':`the ${hc7[r.k]} half-cell, ${u7(nt7[r.k])}`,kw=r.k==='H^+(aq)'?'hydrogen':hc7[r.k];
     return {q:`A standard cell is made of ${/^[aeiou]/.test(U[0])?"an":"a"} ${U[0]} half-cell, ${U[1]}(s) | ${u7(ion)}, and ${kn}. The voltmeter reads ${V.toFixed(2)} V, and the ${U[0]} electrode ${cat?'gains':'loses'} mass. Calculate the standard reduction potential of ${hr}.`,fig:ecTableH([r]),n:U[3],u:'V',abs:.005,tol:0,
       w:cat?`The ${U[0]} electrode gains mass, thus ${u7(ion)} is reduced: the ${U[0]} half-cell is the cathode. The ${kw} half-cell is the anode (${r.Es} V). E°net = E°r cathode − E°r anode, thus ${V.toFixed(2)} V = E°r − (${r.Es} V). E°r = ${V.toFixed(2)} V + (${r.Es} V) = ${ecVs(U[3])} V.`
