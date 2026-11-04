@@ -977,7 +977,7 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt
   const say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
   if(it.o){
     const ops=el('div',{class:'ops'}),btn={};
-    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>. ')+(it.w||''));if(rr)rr.hidden=ok;};
+    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>'+(/[.?!]$/.test(plain(ansText(it)).trim())?' ':'. '))+(it.w||''));if(rr)rr.hidden=ok;};
     optOrd(it).forEach(j=>{const b=el('button',{type:'button',class:'op'},optLbl(it,j));btn[j]=b;b.onclick=()=>{if(q.dataset.done)return;b.classList.add('picked');b.setAttribute('aria-pressed','true');lock(j,true);cb({v:j,ok:j===it.a?1:0});};ops.append(b);});
     q.append(ops);if(sv&&btn[sv.v])lock(sv.v,false);
   }else{
