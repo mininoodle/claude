@@ -758,7 +758,18 @@ function bearing(x,y){
 /* ---------- saved answers: this browser first, then the account store if the viewer grants it ---------- */
 const Store=(()=>{
   const KEY='unit-study-site.v2',NOC='unit-study-site.noclaude',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},c:{},pos:null,u:null},lastW=null,canSave=true,warned=false;
-  try{const s=localStorage.getItem(KEY);lastW=s;if(s){const o=JSON.parse(s);if(o&&typeof o==='object'){MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
+  /* SCHEMA: the format of the saved copies. Every copy carries it as v (a copy without v is 3). A copy written by a newer page (v above SCHEMA) is still read,
+     but this page stops uploading and asks for a reload, so an old page left open never erases data it does not understand.
+     Top-level fields that this page does not know are kept: LX from the copy in this browser, X1 from the account copy. They are written back unchanged */
+  const SCHEMA=3,TOP=['v','c','pos','u','kind','saved'];let LX={},X1={},newer=0;
+  const extra=o=>{const x={};for(const k in o)if(!MAPS.includes(k)&&!TOP.includes(k))x[k]=o[k];return x;};
+  const gate=o=>{const v=o&&o.v;if(typeof v==='number'&&v>SCHEMA&&v>newer){newer=v;setTimeout(()=>{emit();toast('This page is out of date. Reload it to keep syncing. Your progress is kept on this device.');});}};
+  /* MIGRATIONS[n] turns a copy of format n-1 into format n. upgrade() runs the steps a copy needs: on the copy in this browser at load, and on every copy that arrives
+     (another tab, the account copy, a backup file). Changes to the content of a question are not format steps: they are clears with a fixed cut-off time
+     (RB2 below, RETIRE), which every copy that arrives passes through in fold() */
+  const MIGRATIONS={};
+  const upgrade=o=>{for(let v=(typeof o.v==='number'?o.v:3)+1;v<=SCHEMA;v++)if(MIGRATIONS[v])o=MIGRATIONS[v](o)||o;return o;};
+  try{const s=localStorage.getItem(KEY);lastW=s;if(s){let o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);o=upgrade(o);LX=extra(o);MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,rt=0,mode='device',lastPull=0,pulled=false,uid=null,src='',unsub=null,err='',cur=Promise.resolve(true),scope=()=>null;
   /* one failing subscriber does not stop the others, and its error is reported (the page tests fail on console errors) */
   const emit=()=>subs.forEach(f=>{try{f();}catch(e){console.error('[store] subscriber failed',e);}});
@@ -796,16 +807,17 @@ const Store=(()=>{
   function adopt(o,noUp){if(o.u&&D.u&&o.u!==D.u){MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.u=o.u;if(ref&&uid!==D.u)detach();return [true,false];}
     if(o.u&&!D.u)D.u=o.u;return fold(o,noUp);}
   /* save D. Another tab's newer entries are folded in first, so open tabs never erase each other's work */
-  let lq=0;const local=()=>{lq=0;try{const s=localStorage.getItem(KEY);if(s&&s!==lastW){const o=JSON.parse(s);if(o&&typeof o==='object'&&adopt(o,1)[0])setTimeout(emit);}
-    const w=JSON.stringify(D);localStorage.setItem(KEY,w);lastW=w;canSave=true;}catch(e){canSave=false;warn();}};
-  const merge=(R,quiet)=>{const [ch,up]=fold(R&&typeof R==='object'?JSON.parse(JSON.stringify(R)):{});if(ch){local();emit();}if(up&&!quiet)later(800);};
-  const PAY=()=>JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w,h:D.h,g:D.g,c:D.c})),SOFT=/^(unavailable|resource.exhausted|deadline.exceeded|aborted|internal|cancelled)$/;
+  let lq=0;const local=()=>{lq=0;try{const s=localStorage.getItem(KEY);if(s&&s!==lastW){const o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);Object.assign(LX,extra(o));if(adopt(upgrade(o),1)[0])setTimeout(emit);}}
+    const w=JSON.stringify(Object.assign({},LX,D,{v:SCHEMA}));localStorage.setItem(KEY,w);lastW=w;canSave=true;}catch(e){canSave=false;warn();}};
+  /* R: the account copy. It passes the version gate, and its unknown top-level fields are kept for the next upload */
+  const merge=(R,quiet)=>{R=R&&typeof R==='object'?upgrade(JSON.parse(JSON.stringify(R))):{};gate(R);X1=extra(R);const [ch,up]=fold(R);if(ch){local();emit();}if(up&&!quiet)later(800);};
+  const PAY=()=>{const o=Object.assign({},X1,{v:SCHEMA});MAPS.forEach(m=>{o[m]=D[m];});o.c=D.c;return JSON.parse(JSON.stringify(o));},SOFT=/^(unavailable|resource.exhausted|deadline.exceeded|aborted|internal|cancelled)$/;
   const within=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(false),ms))]);
   /* upload: the account copy is read and merged first, so a write never drops what another device added */
-  function push(){if(busy)return cur;if(!ref||!dirty)return Promise.resolve(true);const r=ref;busy=true;dirty=false;
+  function push(){if(busy)return cur;if(!ref||!dirty)return Promise.resolve(true);if(newer)return Promise.resolve(false);const r=ref;busy=true;dirty=false;
     return cur=(async()=>{let ok=false;
-      try{lastPull=Date.now();const s=await r.get();if(ref!==r)throw 0;pulled=true;merge(s&&s.exists?s.data():null,1);await r.set(PAY());ok=true;lastSync=Date.now();if(err){err='';emit();}}
-      catch(e){if(ref===r){dirty=true;const c=String(e&&e.code||'');if(!SOFT.test(c)&&!err){err=c||'error';emit();toast('Your latest progress could not be uploaded to your account. It is kept on this device and uploads with your next answer, or when you select Sync now.');}}}
+      try{lastPull=Date.now();const s=await r.get();if(ref!==r)throw 0;pulled=true;merge(s&&s.exists?s.data():null,1);if(newer)throw {code:'outdated'};await r.set(PAY());ok=true;lastSync=Date.now();if(err){err='';emit();}}
+      catch(e){if(ref===r){dirty=true;const c=String(e&&e.code||'');if(c==='outdated'){if(!err){err=c;emit();}}else if(!SOFT.test(c)&&!err){err=c||'error';emit();toast('Your latest progress could not be uploaded to your account. It is kept on this device and uploads with your next answer, or when you select Sync now.');}}}
       busy=false;if(dirty&&ref&&!err){clearTimeout(timer);timer=setTimeout(push,4000);}return ok;})();}
   const later=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(push,ms);};
   /* one save per task: the writes of one answer (answer, history, counters, study days, spaced repetition) are saved together, in a microtask that still runs before the task ends */
@@ -840,8 +852,8 @@ const Store=(()=>{
       try{localStorage.removeItem(NOC);}catch(e){}return true;}catch(e){return false;}}
   document.addEventListener('visibilitychange',()=>{if(document.hidden){if(dirty&&ref){clearTimeout(timer);push();}}else if(ref&&Date.now()-lastPull>60000)pull();});
   /* another tab saved: take its newer entries, so open tabs show each other's work */
-  addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;
-    const [ch,up]=adopt(o);if(ch)emit();if(up)local();}catch(e){console.error('[store] the copy saved by another tab could not be read',e);}});
+  addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;gate(o);Object.assign(LX,extra(o));
+    const [ch,up]=adopt(upgrade(o));if(ch)emit();if(up)local();}catch(e){console.error('[store] the copy saved by another tab could not be read',e);}});
   const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});touch();};
   return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
@@ -852,7 +864,7 @@ const Store=(()=>{
     /* T: a fixed cut-off time. Only entries written at or before T are cleared, thus every device clears the same entries, whenever it runs the clear */
     clear(f,id,T){let n=0;const t=T||Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&(!T||(D[m][k].t||0)<=T)&&f(m,k)){D[m][k]={x:1,t};n++;}});if(id)D.c[id]={t};if(n||id)touch();if(n)emit();return n;},cleared:id=>!!D.c[id],
     pos:()=>D.pos,setPos(q){D.pos=q;save();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy,
-    error:()=>err,canSave:()=>canSave,optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
+    error:()=>err,outdated:()=>newer>SCHEMA,canSave:()=>canSave,optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
 /* spaced repetition: a missed question comes back after 1, 3 and 7 days */
 const SRI=[1,3,7],DAY=864e5;
