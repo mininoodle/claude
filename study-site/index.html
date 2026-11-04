@@ -774,6 +774,9 @@ html .find input{flex:1;min-width:0;width:100%;border:0;background:none;box-shad
 .find-pop{position:absolute;z-index:6;left:8px;right:8px;padding:8px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);max-height:min(70vh,30rem);overflow-y:auto}
 @media(max-width:900px){.rail-find{display:none}}
 @media(min-width:901px){.crumb-s,.find-pop{display:none!important}}
+/* the achievement celebration is a modal <dialog> that covers the window, as the old overlay did */
+dialog.cele,dialog.cele:modal{width:auto;height:auto;max-width:none;max-height:none;margin:0;border:0;color:inherit}
+dialog.cele::backdrop{background:transparent}
 /* the level pill under a lesson's title is a button: it goes to the lesson's questions */
 button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
 button.lvl:hover{background:var(--hov);color:var(--ink)}
@@ -808,7 +811,13 @@ let fQuiz=null,fCard=null;
 document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('.card.quiz');fQuiz=c?e.target:null;fCard=c;});
 new MutationObserver(()=>{if(!fQuiz||fQuiz.isConnected)return;const c=fCard;fQuiz=fCard=null;const a=document.activeElement;
   if((!a||a===document.body)&&c&&c.isConnected&&!c.closest('[hidden]'))focusTo(c,'h3');}).observe(document.getElementById('main'),{childList:true,subtree:true});
-function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;
+/* ----- the achievement dialogs wait while the student is answering a lesson's questions: the last quiz card used is on screen and has a question
+   with no saved answer. They show when the card is done or the page changes (pageShown) ----- */
+let LASTQ=null;
+['click','keydown'].forEach(t=>document.addEventListener(t,e=>{const c=e.target.closest&&e.target.closest('.card.quiz');if(c)LASTQ=c;},true));
+function quizBusy(){const c=LASTQ,A=c&&c.isConnected&&!c.closest('[hidden]')&&c.closest('article.lesson'),m=A&&/^(.+)-(\d+)$/.exec(A.id),le=m&&SUBJ[m[1]]&&SUBJ[m[1]].lessons[+m[2]];
+  return !!(le&&le.qz&&le.qz.some((_,j)=>!Store.get(m[1]+'_'+m[2]+'_'+j)));}
+function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;if(!first&&typeof ACH_Q!=='undefined'&&ACH_Q.length)setTimeout(()=>celebrateNext(),400);
   if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;
   /* the page's address: a new history entry for a page the student opens, the same entry at load, for a page shown again,
      for the arrow keys (one press, one lesson) and for a page opened by Back or Forward */
@@ -11195,17 +11204,21 @@ function migrateBadges(){if(gv('achMig'))return;const old=gv('badges')||{};
   gset('ach',st);gset('achMig',today());if(n)toast(icon('trophy',15)+` Achievements updated: ${n} ${n===1?'tier':'tiers'} earned from your history so far.`);}
 /* a timed exam or round is running: the celebration waits until it ends */
 const timedRun=()=>$$('[data-t]').some(e=>e.isConnected&&e.closest('article.lesson:not([hidden])'));
-/* the celebration: one card for each new tier, queued */
-function celebrateNext(){if(ACH_BUSY||!ACH_Q.length||timedRun())return;ACH_BUSY=1;const x=ACH_Q.shift(),pts=achPoints(),tt=achTitle(pts),more=ACH_Q.length?`Next (${ACH_Q.length} more)`:'Continue';
+/* the celebration: one card for each new tier, queued. A Bronze or Silver tier that is not a secret is a toast; a dialog (Gold and above, a secret
+   achievement, a new title) waits while the student is answering a lesson's questions (quizBusy, in ux-nav) and shows when the card is done or the page changes */
+function celebrateNext(){if(ACH_BUSY||!ACH_Q.length||timedRun())return;
+  ACH_Q=ACH_Q.filter(x=>{if(x.title||x.a.secret||x.k>1)return true;toast(icon(x.a.ic,15)+` ${x.a.n}: ${TIERS[x.k][0]} tier, +${TIER_XP[x.k]} XP`);return false;});
+  if(!ACH_Q.length||quizBusy())return;ACH_BUSY=1;const x=ACH_Q.shift(),pts=achPoints(),tt=achTitle(pts),more=ACH_Q.length?`Next (${ACH_Q.length} more)`:'Continue';
   const conf=RM?'':Array.from({length:40},(_,i)=>`<i style="--x:${(Math.random()*100).toFixed(0)}%;--d:${(Math.random()*.9).toFixed(2)}s;--r:${(Math.random()*720-360).toFixed(0)}deg;--c:${i%4}"></i>`).join('');
   let body;
   if(x.title)body=`<div class="cele-card t3"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">New title</p><div class="cele-medal">${icon('trophy',32)}</div><h3>${x.title}</h3><p>You have ${pts} achievement points.${tt.next?` The next title, ${tt.next[1]}, needs ${tt.next[0]}.`:' This is the highest title.'}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;
   else{const {a,k}=x,T=TIERS[k],xp=TIER_XP[k],last=k+1>=a.tiers.length;
     body=`<div class="cele-card ${a.secret?'t3':T[1]}"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">${a.tiers.length>1?T[0]+' tier':a.secret?'Secret achievement':'Achievement'} unlocked</p><div class="cele-medal">${icon(a.ic,32)}</div><h3>${a.n}</h3><p>${a.d(a.tiers[k])}</p>
       <p class="cele-xp">+${xp} XP</p><p class="hint">${last?'Every tier of this achievement is complete.':'Next tier: '+a.d(a.tiers[k+1])}</p><p class="hint">${pts} points · ${tt.name}${tt.next?` · ${tt.next[0]-pts} to ${tt.next[1]}`:''}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;}
-  const d=el('div',{class:'cele',role:'dialog','aria-modal':'true','aria-label':'Achievement unlocked'},body),back=document.activeElement;document.body.append(d);
-  const close=()=>{if(!d.isConnected)return;d.classList.add('out');setTimeout(()=>{d.remove();ACH_BUSY=0;if(ACH_Q.length)celebrateNext();else if(back&&back.isConnected)back.focus();},RM?0:240);};
-  $('.btn',d).onclick=close;d.addEventListener('click',e=>{if(e.target===d)close();});d.addEventListener('keydown',e=>{if(e.key==='Escape')close();});$('.btn',d).focus();}
+  /* a modal <dialog>: the page behind is inert, and Escape closes it */
+  const d=el('dialog',{class:'cele','aria-label':x.title?'New title':'Achievement unlocked'},body),back=document.activeElement;document.body.append(d);
+  const close=()=>{if(!d.isConnected||d.classList.contains('out'))return;d.classList.add('out');setTimeout(()=>{if(d.open)d.close();d.remove();ACH_BUSY=0;if(ACH_Q.length)celebrateNext();else if(back&&back.isConnected)back.focus();},RM?0:240);};
+  $('.btn',d).onclick=close;d.addEventListener('click',e=>{if(e.target===d)close();});d.addEventListener('cancel',e=>{e.preventDefault();close();});d.showModal();$('.btn',d).focus();}
 /* the achievements card on the Today page */
 function achCard(g){const st=achState(),pts=achPoints(st),tt=achTitle(pts),earned=ACH.reduce((s,a)=>s+(st[a.id]||[]).length,0);
   const rows=ACH.map(a=>{const k=(st[a.id]||[]).length,v=achVal(a),done=k>=a.tiers.length,t=done?a.tiers[k-1]:a.tiers[k],lo=k?a.tiers[k-1]:0,f=done?1:Math.min(1,Math.max(0,(v-lo)/(t-lo)));return {a,k,v,done,t,f,vis:!a.secret||k>0};});
