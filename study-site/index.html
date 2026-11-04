@@ -808,7 +808,7 @@ const Store=(()=>{
   function fold(R,noUp){let ch=false;const rc=R.c||{},nc=[],nk=[];
     for(const k in rc){const l=D.c[k],r=rc[k];if(r&&(!l||(r.t||0)>(l.t||0))){D.c[k]=r;ch=true;nc.push(k);}}
     MAPS.forEach(m=>{const rm=R[m]||{},lm=D[m];for(const k in rm){const l=lm[k],r=rm[k];if(!r||typeof r!=='object'||l&&same(l,r))continue;const v=l&&mix(m,k,l,r);
-      if(v){if(J(v)!==J(l)){lm[k]=v;ch=true;nk.push([m,k]);}}else if(!l||nw(r,l)){lm[k]=r;ch=true;nk.push([m,k]);}}});
+      if(v){if(!same(v,l)){lm[k]=v;ch=true;nk.push([m,k]);}}else if(!l||nw(r,l)){lm[k]=r;ch=true;nk.push([m,k]);}}});
     /* a clear is a cut-off: the entries it covers that are older than it stay cleared, also ones that arrive later from another device
        (a clear new to this copy checks every entry, the others only the entries that just arrived) */
     for(const id in D.c){if(id.startsWith('rt:'))continue;const f=scope(id),T=D.c[id].t||0;if(!f)continue;const cut=(m,k)=>{const e=D[m][k];if(e&&!e.x&&(e.t||0)<=T&&f(m,k)){D[m][k]={x:1,t:T};ch=true;}};
@@ -816,7 +816,7 @@ const Store=(()=>{
     /* a retired id (RETIRE): one look-up for each entry that arrived, and every entry of the id when its record is new */
     const rcut=(m,k)=>{const c=RTM.includes(m)&&D.c['rt:'+k],e=c&&D[m][k];if(e&&!e.x&&(e.t||0)<=(c.t||0)){D[m][k]={x:1,t:c.t||0};ch=true;}};
     nk.forEach(([m,k])=>rcut(m,k));nc.forEach(id=>{if(id.startsWith('rt:'))RTM.forEach(m=>rcut(m,id.slice(3)));});
-    const up=!noUp&&(MAPS.some(m=>{const rm=R[m]||{},lm=D[m];return Object.keys(lm).some(k=>{const l=lm[k],r=rm[k];return !r||!same(l,r)&&(mix(m,k,l,r)?J(l)!==J(r):nw(l,r));});})||Object.keys(D.c).some(k=>!rc[k]||(D.c[k].t||0)>(rc[k].t||0)));
+    const up=!noUp&&(MAPS.some(m=>{const rm=R[m]||{},lm=D[m];return Object.keys(lm).some(k=>{const l=lm[k],r=rm[k];return !r||!same(l,r)&&(nw(l,r)||!!mix(m,k,l,r));});})||Object.keys(D.c).some(k=>!rc[k]||(D.c[k].t||0)>(rc[k].t||0)));
     return [ch,up,nk.length];}
   /* storage blocked or full: said at load, and again after the first answer (a: the save followed an answer). status() keeps it on the account button and the Today page */
   const warn=a=>{if(mode==='account'||warned>1||warned&&!a)return;warned++;setTimeout(()=>toast('Your progress cannot be saved in this browser, because its site storage is blocked or full. It is lost when you reload the page.'+(window.SYNC&&window.SYNC.ready?' Sign in to keep it.':'')+' You can also download a backup on the Today page.'));};
