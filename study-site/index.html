@@ -1592,15 +1592,19 @@ document.addEventListener('visibilitychange',kick);
   new MutationObserver(ms=>ms.forEach(m=>{m.removedNodes.forEach(n=>each(n,c=>ro.unobserve(c),1));m.addedNodes.forEach(n=>each(n,c=>ro.observe(c)));})).observe($('#main'),{childList:true,subtree:true});}
 /* drawings that loop (the hormone flows of en-2 and en-6, the organs of ns-7, the nerve impulse): their CSS animations repaint on the main thread
    on every frame. They play only while their drawing is on screen, for about 5 s, then rest (paused). They play again when the drawing comes back
-   into view, when the student selects something in its card, and when the drawing starts a new animation (another gland, another slider value) */
-{const LOOP=new Set(['en2-move','en6-move','hb','gut','glu','epi','fire']),RUN=5000;
+   into view, when the student selects something in its card, and when the drawing starts a new animation (another gland, another slider value).
+   A hidden page (another tab, another app) does not use up the 5 s: the drawings in view play again when the student comes back */
+{const LOOP=new Set(['en2-move','en6-move','hb','gut','glu','epi','fire']),RUN=5000,SV=new Set();
   const loops=s=>s.getAnimations({subtree:true}).filter(a=>LOOP.has(a.animationName));
   const rest=s=>{clearTimeout(s._lt);s._lt=0;loops(s).forEach(a=>{if(a.playState==='running')a.pause();});};
   const run=s=>{loops(s).forEach(a=>{if(a.playState==='paused'||a.playState==='finished')a.play();});clearTimeout(s._lt);s._lt=setTimeout(()=>rest(s),RUN);};
-  const io=new IntersectionObserver(es=>es.forEach(e=>{const s=e.target;s._in=e.isIntersecting;if(s._in)run(s);else rest(s);}));
+  /* a drawing that left the page (its lesson was drawn again) is let go */
+  const gone=s=>{if(s.isConnected)return false;io.unobserve(s);SV.delete(s);clearTimeout(s._lt);s._lo=0;return true;};
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const s=e.target;if(gone(s))return;s._in=e.isIntersecting;if(s._in)run(s);else rest(s);}));
   document.addEventListener('animationstart',e=>{if(!LOOP.has(e.animationName))return;const s=e.target.closest('svg')||e.target;
-    if(!s._lo){s._lo=1;io.observe(s);}else if(s._in)run(s);else rest(s);},true);
-  document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card');if(c)c.querySelectorAll('svg').forEach(s=>{if(s._lo&&s._in)run(s);});},true);}
+    if(!s._lo){s._lo=1;SV.add(s);io.observe(s);}else if(s._in)run(s);else rest(s);},true);
+  document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card');if(c)c.querySelectorAll('svg').forEach(s=>{if(s._lo&&s._in)run(s);});},true);
+  document.addEventListener('visibilitychange',()=>SV.forEach(s=>{if(!gone(s)&&s._in){if(document.hidden)rest(s);else run(s);}}));}
 function dragOn(o,hit,move){
   let h=null;const pos=e=>{const r=o.c.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
   o.c.style.cursor='grab';
