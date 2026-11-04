@@ -11353,7 +11353,7 @@ function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from a
     sum.innerHTML=sel.length?`<b>${n} questions</b> from ${sel.length} ${sel.length===1?'unit':'units'} (${pool} available)${st.conf?', with confidence ratings':''}.`:'Select at least one unit.';go.disabled=!sel.length||!n;};
   go.onclick=()=>{const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]);testRun(L,testPick(sel,st.n),st.conf);};upd(0);
   const last=gv('tlast');if(last){card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
-  mistCard(g,L);
+  mistCard(g,L);dipCard(g,L);
 }
 
 function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Answer each question, then rate how sure you were before you see the result.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
@@ -11437,6 +11437,53 @@ function mistakesRetry(L,items){TBUSY=1;const g=testHead(L,'Retry my mistakes',`
 function mistCard(g,L){const {n:all,nf}=mistCount();if(!all)return;
   const c=card(g,'My mistakes',`<p>${all} ${all===1?'question':'questions'} answered wrong at least once, <b>${nf} not fixed yet</b>. See them by lesson with your last wrong answer, retry them, or save them as a PDF.</p><div class="row"><button type="button" class="btn ghost">${icon('book',15)}Open my mistakes</button></div>`);$('.btn',c).onclick=()=>mistakesPage(L);}
 function openMistakes(){const i=SUBJECTS.findIndex(s=>s.test);if(i<0)return;tabSeg.set(i);showTab(i);const L=$('#test-0');if(L&&TBUSY!==1)mistakesPage(L);}
+
+/* ===================== diploma practice exam: the sections of one course in a timed exam with multiple choice and numerical response
+   in the diploma's ratio, drawn evenly from every lesson, with no feedback until it is submitted ===================== */
+/* nr: the share of numerical-response questions on the diploma; min: minutes for each question (the diploma's pace) */
+const DIP=[{k:'phy',name:'Physics 30',nr:14/50,min:3.6},{k:'chem',name:'Chemistry 30',nr:16/60,min:3},{k:'bio',name:'Biology 30',nr:12/60,min:3}];
+const dipUnits=d=>(SUBJECTS.find(s=>s.k===d.k)||{units:[]}).units.filter(u=>SUBJ[u]);
+/* n questions, about d.nr of them numerical response (questions that fit the four boxes, and calculations with new numbers), one lesson at a time */
+function dipPick(d,n){const us=dipUnits(d),ls=us.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>({sk,L,a:lessonItems(sk,le,L)})).filter(x=>x.a)),gen=us.flatMap(sk=>genList(sk).map(g=>{const it=g.f();return {it,sk,L:g.L,id:g.id,gen:1};}));
+  const take=(groups,k)=>{groups=shuffle(groups.filter(a=>a.length));const out=[];let j=0;while(out.length<k&&groups.some(a=>a.length)){const a=groups[j++%groups.length];if(a.length)out.push(a.pop());}return out;};
+  const nr=take(ls.map(x=>shuffle(x.a.filter(y=>nrOf(y.it)).concat(gen.filter(g=>g.sk===x.sk&&g.L===x.L&&nrSpec(g.it.n))))),Math.round(n*d.nr)),mc=take(ls.map(x=>shuffle(x.a.filter(y=>y.it.o))),n-nr.length);
+  return shuffle(mc.map(x=>Object.assign({},x,{kind:'mc',ord:optOrd(x.it)})).concat(nr.map(x=>Object.assign({},x,{kind:'nr',nr:x.it.code?nrOf(x.it):nrSpec(x.it.n)}))));}
+function dipCard(g,L){const st=Object.assign({c:2,n:20},gv('dipset')||{});
+  const c=card(g,'Diploma practice exam',`<p>The sections of one course in one timed exam: multiple choice and numerical response in the ratio of the diploma exam, from every lesson, at the diploma's pace. There is no feedback until you submit it.</p><div class="row"><span>Course:</span><span data-c></span></div><div class="row"><span>Questions:</span><span data-n></span></div><p class="hint" data-i></p><div class="row"><button type="button" class="btn">${icon('timer',15)}Start the exam</button></div>`);
+  const info=()=>{const d=DIP[st.c],us=dipUnits(d),nr=Math.round(st.n*d.nr),r=Store.x('g','dip_'+d.k);$('[data-i]',c).innerHTML=`${st.n-nr} multiple choice and ${nr} numerical response in ${Math.round(st.n*d.min)} minutes, from ${us.map(u=>SUBJ[u].name).join(', ')}. The site does not have every unit of ${d.name} yet.${r&&r.last?` Last: ${r.last.c} / ${r.last.n}. Best: ${r.best.c} / ${r.best.n}.`:''}`;gset('dipset',st);};
+  seg($('[data-c]',c),DIP.map(d=>d.name),i=>{st.c=i;info();}).set(st.c);seg($('[data-n]',c),['10','20','30'],i=>{st.n=[10,20,30][i];info();}).set(Math.max(0,[10,20,30].indexOf(st.n)));info();
+  $('.row .btn',c).onclick=()=>{const d=DIP[st.c],items=dipPick(d,st.n);if(items.length)dipRun(L,d,items,Math.round(items.length*d.min));};}
+function dipRun(L,d,items,mins){TBUSY=1;const E={items,ans:items.map(()=>null),i:0,t0:Date.now(),end:Date.now()+mins*60000},N=items.length,has=j=>E.ans[j]!=null&&E.ans[j]!=='';let tick=0;
+  const g=testHead(L,d.name+': diploma practice',`${N} questions, ${mins} minutes. There is no feedback until you submit the exam.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  const done=()=>{clearInterval(tick);if(TBUSY!==1||!box.isConnected)return;dipDone(L,d,E);};
+  tick=setInterval(()=>{if(!box.isConnected||TBUSY!==1){clearInterval(tick);return;}const left=E.end-Date.now(),t=$('[data-t]',box);if(t){t.textContent=fmtT(left)+' left';t.classList.toggle('low',left<120000);}if(left<=0)done();},500);
+  function show(f){const x=E.items[E.i];box.innerHTML=`<div class="qh"><b>Question ${E.i+1} of ${N}</b><span class="score" data-t>${fmtT(E.end-Date.now())} left</span></div><div class="chipsrow" data-nav></div><p class="hint">${SUBJ[x.sk].name} · ${x.kind==='mc'?'Multiple choice':'Numerical response'}</p><p class="qt">${x.it.q}</p>${x.it.fig?`<div class="qfig">${x.it.fig}</div>`:''}`;
+    const nav=$('[data-nav]',box);E.items.forEach((y,j)=>{const b=el('button',{type:'button',class:'chip'+(j===E.i?' on':'')+(has(j)?' placed':''),'aria-label':'Question '+(j+1)+(has(j)?', answered':'')},String(j+1));if(j===E.i)b.setAttribute('aria-current','step');else b.tabIndex=-1;b.onclick=()=>{E.i=j;show(1);};nav.append(b);});arrowKeys(nav,()=>[...nav.children],()=>E.i);
+    const mk=()=>nav.children[E.i].classList.toggle('placed',has(E.i));
+    if(x.kind==='mc'){const ops=el('div',{class:'ops'});x.ord.forEach(j=>{const b=el('button',{type:'button',class:'op'+(E.ans[E.i]===j?' sel':''),'aria-pressed':String(E.ans[E.i]===j)},optLbl(x.it,j));b.onclick=()=>{E.ans[E.i]=j;$$('.op',ops).forEach(o=>{o.classList.remove('sel');o.setAttribute('aria-pressed','false');});b.classList.add('sel');b.setAttribute('aria-pressed','true');mk();};ops.append(b);});box.append(ops);}
+    else{const sp=x.nr;box.append(el('p',{class:'hint'},(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${x.it.any?', in any order':''}.`:sp.m==='d'?'Record your answer in the four boxes, from the left. A decimal point uses one box. Record 0.456 as .456.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
+      const bx=el('div',{class:'nr'}),cur=(E.ans[E.i]||'').padEnd(4,' ');
+      for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'decimal',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
+        b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');E.ans[E.i]=[...bx.children].map(z=>z.value||' ').join('').replace(/\s+$/,'');mk();if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
+        b.onkeydown=e=>{if(e.key==='Backspace'&&!b.value&&k>0)bx.children[k-1].focus();};b.onfocus=()=>b.select();bx.append(b);}box.append(bx);}
+    const row=el('div',{class:'row'}),pv=el('button',{type:'button',class:'btn ghost'},'Previous'),nx=el('button',{type:'button',class:'btn'},'Next'),sb=el('button',{type:'button',class:'btn ghost'},'Submit the exam');let armed=0;
+    pv.disabled=E.i===0;nx.disabled=E.i===N-1;pv.onclick=()=>{E.i--;show();toQ(box);};nx.onclick=()=>{E.i++;show();toQ(box);};
+    sb.onclick=()=>{const now=Date.now();if(!armed){armed=now;const un=E.items.filter((_,j)=>!has(j)).length;sb.textContent=(un?un+' without an answer. ':'')+'Select again to submit';setTimeout(()=>{armed=0;if(sb.isConnected)sb.textContent='Submit the exam';},5000);return;}if(now-armed<600)return;done();};
+    row.append(pv,nx,sb);box.append(row);if(f)nav.children[E.i].focus({preventScroll:true});}
+  show();stopBtn(c,L);}
+/* results: the score, each section, and the questions to study again; answered questions go into the history and spaced repetition */
+function dipDone(L,d,E){const used=Math.min(Date.now(),E.end)-E.t0,res=E.items.map((x,j)=>{const a=E.ans[j],na=a==null||a==='';const ok=na?0:x.kind==='mc'?(a===x.it.a?1:0):(nrOK(x.nr,nrVal(x.nr,a),x.it)?1:0);
+    return {x,na,ok,va:na?'no answer':x.kind==='mc'?optLbl(x.it,a):nrShow(x.nr,a)+(x.it.u?' '+x.it.u:''),v:x.kind==='mc'?a:plain(nrShow(x.nr,a))};});
+  res.forEach(r=>{if(!r.na){onAnswer(r.x.id||null,!!r.ok,{sk:r.x.sk,L:r.x.L,nocombo:1,v:r.v});srMark(r.x.id||null,!!r.ok);}});
+  const n=res.length,c=res.filter(r=>r.ok).length,f=n?c/n:0,prev=Store.x('g','dip_'+d.k)||{},best=!prev.best||f>prev.best.c/prev.best.n||(f===prev.best.c/prev.best.n&&n>prev.best.n)?{c,n}:prev.best;
+  Store.xs('g','dip_'+d.k,{last:{c,n,day:today()},best});if(f>=.85)inc('exam85');markStudy();afterChange();TBUSY=2;
+  const by={};res.forEach(r=>{const b=by[r.x.sk]||(by[r.x.sk]=[0,0]);b[1]++;if(r.ok)b[0]++;});
+  const g=testHead(L,d.name+': results',`${c} of ${n} correct in ${fmtT(used)} (min:s).`),c1=card(g,'Score',`<div class="rv-top">${ringHTML()}<div><p style="font-size:1.25rem;font-weight:650;margin:0">${f>=.85?'You are ready for this part of the course.':f>=.6?'A good base. Study the questions below.':'Study these sections again, then take the exam again.'}</p>
+    <div class="stats"><div class="stat"><span>This exam</span><b>${c} / ${n}</b></div><div class="stat"><span>Best</span><b>${best.c} / ${best.n}</b></div>${prev.last?`<div class="stat"><span>Previous</span><b>${prev.last.c} / ${prev.last.n}</b></div>`:''}</div>
+    <div class="bars">${Object.keys(by).map(sk=>`<div class="barrow"><span>${icon(sk,15)}${SUBJ[sk].name}</span><div class="bar2"><i class="b2" data-w="${100*by[sk][0]/by[sk][1]}"></i></div><b>${by[sk][0]} / ${by[sk][1]}</b><span></span></div>`).join('')}</div></div></div>`);
+  setRing(c1,f,c+' of '+n);grow(c1);const miss=res.filter(r=>!r.ok);
+  card(g,miss.length?'Questions to study again':'No incorrect answers',miss.length?`<p class="hint">The questions that you answered are now in your history and in spaced repetition. A question without an answer is not.</p>`+miss.map(missHTML).join(''):'');
+  const nx=card(g,'',''),row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],['Another diploma practice exam',()=>dipRun(L,d,dipPick(d,n),Math.round(n*d.min)),'ghost']].forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});nx.append(row);window.scrollTo({top:0});}
 
 boot();
 

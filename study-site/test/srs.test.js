@@ -311,6 +311,8 @@ async function queue(b) {
   ok(JSON.stringify(nr.key) === '[true,true,true,false,false]', 'exam: four boxes take the key give or take 1 in the last box', nr.key);
   ok(JSON.stringify(nr.code) === '[true,false,true]', 'exam: a code answer is exact, or in any order when the item allows it', nr.code);
   ok(nr.exams.slice(0, 3).every(t => /^10 multiple-choice/.test(t) && /4 numeric-response/.test(t)) && /^14 multiple-choice/.test(nr.exams[3]) && !/numeric-response/.test(nr.exams[3]), 'exam: Biology exams have 4 numerical-response questions, Social Studies none', nr.exams);
+  const dip = await p.evaluate(() => DIP.map(d => { const it = dipPick(d, 20), us = new Set(dipUnits(d)); return { mc: it.filter(x => x.kind === 'mc' && x.it.o).length, nr: it.filter(x => x.kind === 'nr' && nrOf(x.it) || x.gen).length, n: it.length, inCourse: it.every(x => us.has(x.sk)) }; }));
+  ok(dip.every(x => x.n === 20 && x.inCourse) && dip.map(x => x.nr).join() === '6,5,4', 'exam: a diploma practice exam of 20 has the diploma ratio of numerical response (Physics 6, Chemistry 5, Biology 4) from its course only', dip);
   ok(!errs.length, 'queue: no page errors', errs);
   await ctx.close();
 }
