@@ -4078,20 +4078,348 @@ EC_REF.x=g=>{const c=card(g,'Standard electrode potentials','<p class="hint">Sel
 /* ===== EC LESSON SLOTS BEGIN. Each lesson agent edits only the inside of its own slot. Do not add code between the slots. ===== */
 /* ----- ec slot 0 ----- */
 {try{
-/* placeholder of lesson 0 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[0]={t:EC_T[0],h:'Oxidation and reduction',d:'A redox reaction transfers electrons. One entity loses electrons (oxidation) and another entity gains them (reduction).',build(g){
-  card(g,'Key terms',`<p class="hint">Outcomes: 30–B1.1k, 30–B1.2k</p><ul><li>A <span class="key">redox reaction</span> is a reaction in which electrons are transferred between the reactants.</li>
-    <li><span class="key">Oxidation</span> is a loss of electrons. <span class="key">Reduction</span> is a gain of electrons. Both happen at the same time.</li>
-    <li>LEO the lion says GER: Loss of Electrons is Oxidation, Gain of Electrons is Reduction.</li>
-    <li>The <span class="key">oxidizing agent</span> (OA) gains electrons and is reduced. The <span class="key">reducing agent</span> (RA) loses electrons and is oxidized.</li></ul>
-    <p>${C('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')}</p><ul><li>Oxidation: ${C('Zn(s) -> Zn^2+(aq) + 2e^-')}</li><li>Reduction: ${C('Cu^2+(aq) + 2e^- -> Cu(s)')}</li></ul>
-    <p class="note">The number of electrons lost is always equal to the number of electrons gained.</p>`);
+/* lesson 0: Oxidation and reduction. Notes pp. 1-4: the key concepts of the unit (p. 1), the outcomes 30–B1.1k and 30–B1.2k, the terms with their old and new meanings,
+   LEO GER and OIL RIG (p. 2), the clues, the half-reactions of Mg and Cl₂, oxidizing and reducing agents and the example problem (p. 3), mass and molar
+   relationships and practice questions 1 and 2 (p. 4). This lesson has no diploma questions.
+   Lesson-local helpers (all inside this slot): ec0Oil (the OIL RIG figure), ec0Xfer (a zinc atom gives two electrons to a copper(II) ion), ec0Strip, ec0ZnCu and ec0NiAg
+   (a metal strip in a solution, at the start and later), ec0W and ec0C (equations whose terms do not break inside, for the lesson page), ec0Steps (the step try-it; its saved
+   answer is mt_<lesson>_rx<slot>), ec0H and ec0RX (its hints and reactions), ec0Ion, ec0Nm, ec0Sol, ec0Pair and ec0Mix (the metals, ions and solutions of the explorer and
+   the generators), ec0Rt, ec0Pick and ec0Ws (the generators' working). Scoped styles: ecCSS(0, ...) */
+ecCSS(0,'#ec-0 .ec0-pick{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .7em;margin:.2em 0 .7em;font-weight:600}#ec-0 .ec0-pick select{font-weight:400;max-width:100%}'+
+  '#ec-0 .ec0-st{list-style:none;padding:0;margin:.7em 0;display:grid;grid-template-columns:minmax(0,1fr);gap:.6em;counter-reset:ec0}'+
+  '#ec-0 .ec0-st>li{padding:.55em .75em .65em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:0}'+
+  '#ec-0 .ec0-stl{margin:0 0 .45em;font-weight:650}#ec-0 .ec0-stl::before{counter-increment:ec0;content:counter(ec0) ". ";color:var(--ink2)}'+
+  '#ec-0 .ec0-ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16em),1fr));gap:6px}'+
+  '#ec-0 .ec0-op{appearance:none;font:inherit;color:var(--ink);text-align:left;background:var(--fig);border:1px solid var(--hair);border-radius:12px;padding:.45em .7em;cursor:pointer;min-height:2.75em;line-height:1.35}'+
+  '#ec-0 .ec0-op:hover{background:var(--hov)}#ec-0 .ec0-op:focus-visible{outline:2px solid var(--s1);outline-offset:1px}'+
+  '#ec-0 .ec0-op[aria-pressed="true"]{background:color-mix(in srgb,var(--s1) 15%,var(--fig));border:2px solid var(--s1)}'+
+  '#ec-0 .ec0-op.ok{background:var(--okb);border:2px solid var(--ok)}#ec-0 .ec0-op.bad{background:var(--badb);border:2px dashed var(--bad)}'+
+  '#ec-0 .ec0-op.ok::after{content:" \\2713";content:" \\2713" / "correct";font-weight:700;color:var(--ok)}#ec-0 .ec0-op.bad::after{content:" \\2717";content:" \\2717" / "incorrect";font-weight:700;color:var(--bad)}'+
+  '#ec-0 .ec0-sth{margin:.45em 0 0}'+
+  '#ec-0 .ec0-go{appearance:none;background:none;border:0;padding:.15em 0;font:inherit;font-weight:600;color:var(--s1);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}'+
+  '#ec-0 .ec0-go:focus-visible{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}#ec-0 .ec0-map td:first-child{min-width:11em}'+
+  '#ec-0 .ec0-ents{display:flex;flex-wrap:wrap;gap:.3em 1.2em;margin:.4em 0}#ec-0 .ec0-nw{white-space:nowrap}'+
+  '@media(max-width:600px){#ec-0 .ec0-tt,#ec-0 .ec0-tt tbody,#ec-0 .ec0-tt tr,#ec-0 .ec0-tt td{display:block;min-width:0;width:auto}#ec-0 .ec0-tt tr:first-child{display:none}'+
+  '#ec-0 .ec0-tt tr{padding:.45em 0 .6em;border-bottom:1px solid var(--hair)}#ec-0 .ec0-tt tr:last-child{border-bottom:0}#ec-0 .ec0-tt td{border:0;padding:.12em 0}'+
+  '#ec-0 .ec0-tt td[data-h]::before{content:attr(data-h);display:block;font-size:.74rem;font-weight:600;color:var(--ink2)}'+
+  '#ec-0 .ec0-cl,#ec-0 .ec0-cl tbody{display:block}#ec-0 .ec0-cl tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:.7em}'+
+  '#ec-0 .ec0-cl th,#ec-0 .ec0-cl td{display:block;min-width:0;padding-left:.2em;padding-right:.2em}#ec-0 .ec0-cl tr>:first-child{grid-column:1/-1;border-bottom:0;padding-bottom:0}'+
+  '#ec-0 .ec0-cl tr:first-child>:first-child{display:none}#ec-0 .ec0-cl ul{padding-left:1.05em;margin:.2em 0}'+
+  '#ec-0 .ec0-map td,#ec-0 .ec0-map th{min-width:0}#ec-0 .ec0-map td:first-child{min-width:0;width:46%}}'+
+  '#ec-0 .ec0-bars{display:grid;gap:8px;margin:.8em 0}#ec-0 .ec0-br{display:grid;grid-template-columns:minmax(6.5em,9em) minmax(0,1fr) 4.4em;align-items:center;gap:.6em}'+
+  '#ec-0 .ec0-br span{font-weight:600;text-align:right}#ec-0 .ec0-br i{display:block;height:1.5em;border-radius:6px;border:1px solid var(--ink2);box-sizing:border-box}#ec-0 .ec0-br b{font-variant-numeric:tabular-nums}');
+/* the old and the new meanings of oxidation and reduction (notes p. 2): oxygen moves to the substance that is oxidized; hydrogen and electrons move to the substance that is reduced */
+const ec0Oil=()=>{const bw=150,bh=48,xl=22,xr=268,y0=40,gp=10,
+    R=[['gain oxygen','lose oxygen','O',-1,'s2'],['lose hydrogen','gain hydrogen','H',1,'s1'],['lose electrons','gain electrons','e⁻',1,'s3']];
+  let s=svgText('Oxidation',xl+bw/2,25,{s:15.5,w:700,f:'ink',c:'s'})+svgText('Reduction',xr+bw/2,25,{s:15.5,w:700,f:'ink',c:'s'});
+  R.forEach(([a,b,t,d,c],i)=>{const y=y0+i*(bh+gp),k=i===2,ym=y+bh/2,x1=xl+bw+9,x2=xr-9,
+      box=(x,col,tx)=>`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10" fill="color-mix(in srgb,var(--${col}) ${k?30:14}%,var(--fig))" stroke="var(--${col})" stroke-width="${k?2.2:1.2}"/>`+svgText(tx,x+bw/2,ym+5,{s:14.5,w:k?700:600,f:'ink',c:'s'});
+    s+=box(xl,'s2',a)+box(xr,'s1',b)+(d<0?sArrow(x2,ym+7,x1,ym+7,`var(--${c})`,3):sArrow(x1,ym+7,x2,ym+7,`var(--${c})`,3))+svgText(t,(x1+x2)/2,ym-3,{s:15,w:700,f:c,c:'s'});});
+  return `<svg viewBox="0 0 440 214" role="img" aria-label="Two columns of three boxes. Oxidation: gain oxygen, lose hydrogen, lose electrons. Reduction: lose oxygen, gain hydrogen, gain electrons. Between the columns, an arrow marked O points to the oxidation side, and arrows marked H and e⁻ point to the reduction side. The electron boxes are the modern meaning and are drawn darker.">${s}</svg>`;};
+/* a zinc atom gives two electrons to a copper(II) ion (notes p. 4): the reducing agent is oxidized and the oxidizing agent is reduced. Reactants on the top row, products on the bottom row */
+const ec0Xfer=()=>{const T=(t,x,y,o)=>svgText(t,x,y,Object.assign({s:13,w:600,f:'ink',c:'s'},o||{})),
+    ball=(x,y,r,fill,st,t,ts)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${st}" stroke-width="1.6"/><text x="${x}" y="${f1(y+ts*.36)}" text-anchor="middle" font-size="${ts}" font-weight="700" fill="var(--ink)">${t}</text>`;
+  let s=T('reducing agent',90,18,{s:13.5,w:700,f:'s2'})+T('oxidizing agent',250,18,{s:13.5,w:700,f:'s1'})+
+    ball(90,62,28,'var(--steel)','var(--ink2)','Zn',17)+ball(250,62,21,'color-mix(in srgb,var(--s1) 45%,var(--fig))','var(--s1)','Cu²⁺',13.5)+
+    sArrow(123,62,225,62,'var(--s3)',2.2)+[160,184].map(x=>`<circle cx="${x}" cy="62" r="4.8" fill="var(--s3)" stroke="var(--fig)" stroke-width="1.2"/>`).join('')+T('2e⁻',172,47,{s:14,w:700,f:'s3'})+
+    T('Zn(s)',90,110)+T('Cu²⁺(aq)',250,104)+sArrow(90,118,90,148,'var(--ink2)',2)+sArrow(250,112,250,148,'var(--ink2)',2)+
+    T('loses 2e⁻',80,130,{a:'end',w:500,f:'ink2',c:'r'})+T('oxidized',80,147,{a:'end',w:700,f:'s2',c:'r'})+T('gains 2e⁻',260,130,{a:'start',w:500,f:'ink2',c:'l'})+T('reduced',260,147,{a:'start',w:700,f:'s1',c:'l'})+
+    ball(90,176,21,'color-mix(in srgb,var(--steel) 55%,var(--fig))','var(--ink2)','Zn²⁺',13)+ball(250,176,28,'#c47a4a','var(--ink2)','Cu',16)+T('Zn²⁺(aq)',90,224)+T('Cu(s)',250,224);
+  return `<svg viewBox="0 0 340 232" role="img" aria-label="A zinc atom gives two electrons to a copper(II) ion. The zinc atom loses two electrons: it is oxidized to a zinc ion, and it is the reducing agent. The copper(II) ion gains two electrons: it is reduced to a copper atom, and it is the oxidizing agent.">${s}</svg>`;};
+/* a metal strip in a solution, at the start and later. o: m (the metal), s0 (the solution), c0 and c1 (its colour at the start and later), d (the solid that forms), dc (its colour),
+   s1 (the words for the solution later) */
+const ec0Strip=o=>{const T=(t,x,y,q)=>svgText(ecU(t),x,y,Object.assign({s:14,w:600,f:'ink'},q||{})),mc=EC_ELC[(String(o.m).match(/^[A-Z][a-z]?/)||[''])[0]]||'var(--steel)';
+  const beaker=(x0,c,after)=>{const x1=x0+140,sx=x0+28;
+    let g=`<rect x="${x0+1.5}" y="96" width="137" height="108" rx="7" fill="${c}" fill-opacity=".62"/><rect x="${sx-9}" y="30" width="18" height="166" rx="2" fill="${mc}" stroke="var(--ink2)" stroke-width="1.1"/>`;
+    if(after)g+=[[-10,110,4],[10,118,4.6],[-11,132,5],[11,145,4.2],[-10,158,4.6],[10,171,5],[-9,183,4.2],[9,190,4.6]].map(([dx,y,r])=>`<circle cx="${sx+dx}" cy="${y}" r="${r}" fill="${o.dc}" stroke="var(--ink2)" stroke-width=".8"/>`).join('')+
+      `<path d="M${x0+72},203q8,-8 16,-2q7,-7 15,0q8,-6 15,2z" fill="${o.dc}" stroke="var(--ink2)" stroke-width=".8"/>`;
+    return g+`<path d="M${x0-4},60L${x0},64V196a8 8 0 0 0 8,8H${x1-8}a8 8 0 0 0 8,-8V64L${x1+4},60" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;};
+  const s=beaker(12,o.c0,false)+beaker(208,o.c1,true)+T(o.m,54,46,{a:'start',c:'l'})+T(o.m,250,46,{a:'start',c:'l'})+T(o.s0,100,160,{c:'s'})+T(o.d,258,128,{a:'start',c:'l'})+T(o.s1,300,184,{s:13.5,w:500,c:'s'})+
+    T('At the start',82,232,{s:14.5,w:700,c:'s'})+T('Later',278,232,{s:14.5,w:700,c:'s'});
+  return `<svg viewBox="0 0 360 240" role="img" aria-label="${ecU(`At the start, a strip of ${o.m} stands in ${o.s0}. Later, ${o.d} covers the strip and collects at the bottom of the beaker, and the solution is ${o.s1}.`)}">${s}</svg>`;};
+const ec0ZnCu=()=>ec0Strip({m:'Zn(s)',s0:'CuSO4(aq)',c0:'color-mix(in srgb,var(--s1) 36%,var(--liq))',c1:'color-mix(in srgb,var(--s1) 13%,var(--liq))',d:'Cu(s)',dc:'#c47a4a',s1:'paler blue'});
+const ec0NiAg=()=>ec0Strip({m:'Ni(s)',s0:'AgNO3(aq)',c0:'var(--liq)',c1:'color-mix(in srgb,var(--s3) 30%,var(--liq))',d:'Ag(s)',dc:'#c9ccd3',s1:'pale green'});
+/* an equation (HTML) whose terms do not break inside: the line breaks only between terms. The style is scoped to the lesson page, thus it is used in build and in the try-it */
+const ec0W=h=>String(h).split(/( \+ | → | ⇌ )/).map((t,i)=>i%2||!t?t:'<span class="ec0-nw">'+t+'</span>').join(''),ec0C=s=>ec0W(C(s));
+/* metals and their ions: ecPair(ecRow(OA ion), ecRow(ion of the metal)) gives the half-reactions, the multipliers and the net equation from EC_E0 */
+const ec0Ion={Zn:'Zn^2+(aq)',Cu:'Cu^2+(aq)',Ag:'Ag^+(aq)',Mg:'Mg^2+(aq)',Al:'Al^3+(aq)',Fe:'Fe^2+(aq)',Ni:'Ni^2+(aq)',Pb:'Pb^2+(aq)',Cd:'Cd^2+(aq)'};
+const ec0Nm={Zn:'zinc',Cu:'copper',Ag:'silver',Mg:'magnesium',Al:'aluminum',Fe:'iron',Ni:'nickel',Pb:'lead',Cd:'cadmium'};
+/* the solution of each oxidizing agent ion: its name and formula */
+const ec0Sol={Cu:['copper(II) sulfate','CuSO4(aq)'],Ag:['silver nitrate','AgNO3(aq)'],Pb:['lead(II) nitrate','Pb(NO3)2(aq)'],Ni:['nickel(II) nitrate','Ni(NO3)2(aq)'],Zn:['zinc sulfate','ZnSO4(aq)']};
+/* r: the moles of metal formed for each mole of metal that reacts. (The fields of ecPair stay as they are: p.ox is the oxidation half-reaction.) */
+const ec0Pair=(ra,ox)=>{const p=ecPair(ecRow(ec0Ion[ox]),ecRow(ec0Ion[ra]));p.r=p.mr/p.mo;return p;};
+/* [metal (reducing agent), metal of the ion (oxidizing agent)]: every pair is spontaneous (the ion is above the metal ion in EC_E0), and the ion that forms cannot be oxidized further by the oxidizing agent */
+const ec0Mix=[['Zn','Cu'],['Cu','Ag'],['Mg','Cu'],['Al','Cu'],['Ni','Ag'],['Fe','Cu'],['Zn','Ag'],['Al','Ag'],['Pb','Ag'],['Zn','Pb'],['Mg','Zn'],['Al','Ni'],['Ni','Cu'],['Zn','Ni'],['Mg','Ag'],['Cd','Cu']];
+/* the step try-it: choose the reaction, then one option in each step (spectator ion, half-reactions, net reaction, OA, RA), then Check.
+   R: [{n: name in the list, q: question (html), st: [{l: step, o: [options (html)], a: index of the answer, h: hint shown when the choice is wrong}], w: the worked answer (html)}].
+   The choices of each reaction and the chosen reaction are saved under mt_<lesson>_rx<slot> as {p, v: {reaction index: [option index or -1, ...]}} */
+const ec0Steps=function(host,R,slot){
+  const lid=(host.closest('.lesson')||{}).id||'x',key='mt_'+lid+'_rx'+(slot||0),uid='ec0rx'+(ec0Steps.n=(ec0Steps.n||0)+1),box=el('div');host.append(box);
+  const rd=()=>{const s=Store.w(key);return s&&typeof s==='object'&&!Array.isArray(s)?s:{};},
+    sv=(s,i)=>{const a=s.v&&s.v[i],st=R[i].st;return Array.isArray(a)&&a.length===st.length?a.map((x,j)=>Number.isInteger(x)&&x>=0&&x<st[j].o.length?x:-1):st.map(()=>-1);};
+  let S=rd(),cur=Number.isInteger(S.p)&&R[S.p]?S.p:0,seen=JSON.stringify(S),sel=[],lv=null,wv=null;
+  box.innerHTML=`<label class="ec0-pick"><span>Reaction</span><select>${R.map((r,i)=>`<option value="${i}">${r.n}</option>`).join('')}</select></label><div></div>`;
+  const pick=$('select',box),body=box.lastChild;
+  const put=o=>{S=o;seen=JSON.stringify(o);Store.wSet(key,o);};
+  const save=()=>{const v=Object.assign({},S.v||{});if(sel.some(x=>x>=0))v[cur]=sel.slice();else delete v[cur];put({p:cur,v});};
+  const paint=res=>{const st=R[cur].st;$$('.ec0-op',body).forEach(b=>{const j=+b.dataset.j,k=+b.dataset.k,on=sel[j]===k,good=k===st[j].a;b.setAttribute('aria-pressed',String(on));b.classList.toggle('ok',!!res&&on&&good);b.classList.toggle('bad',!!res&&on&&!good);});
+    $$('.ec0-sth',body).forEach((h,j)=>{h.hidden=!(res&&sel[j]>=0&&sel[j]!==st[j].a);});};
+  function check(){const st=R[cur].st;if(sel.every(x=>x<0)){paint(false);lv.textContent='Choose an answer in each step first.';wv.innerHTML='';return;}
+    markStudy();paint(true);const n=st.filter((s,j)=>sel[j]===s.a).length,emp=sel.filter(x=>x<0).length,bad=st.length-n-emp;
+    lv.textContent=n===st.length?'All '+n+' steps are correct.':n+' of '+st.length+' steps are correct.'+(bad?' Read the hint under each step that is marked.':'')+(emp?' '+emp+(emp===1?' step is':' steps are')+' empty.':'');
+    wv.innerHTML=n===st.length?`<p class="fb ok">${R[cur].w}</p>`:'';}
+  function show(){sel=R[cur].st.map(s=>s.a);save();paint(true);lv.textContent='This is the answer.';wv.innerHTML=`<p class="fb info">${R[cur].w}</p>`;}
+  function clear(){sel=R[cur].st.map(()=>-1);save();paint(false);lv.textContent='';wv.innerHTML='';}
+  function load(i){cur=i;pick.value=String(i);const r=R[i];sel=sv(S,i);
+    body.innerHTML=`<div class="qt">${r.q}</div><ol class="ec0-st">${r.st.map((s,j)=>`<li><p class="ec0-stl" id="${uid}-${j}">${s.l}</p><div class="ec0-ops" role="group" aria-labelledby="${uid}-${j}">${s.o.map((t,k)=>`<button type="button" class="ec0-op" aria-pressed="false" data-j="${j}" data-k="${k}">${t}</button>`).join('')}</div><p class="ec0-sth hint" hidden>${s.h}</p></li>`).join('')}</ol>`+
+      `<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answer</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
+    lv=$('[aria-live]',body);wv=$('[data-w]',body);
+    $$('.ec0-op',body).forEach(b=>b.onclick=()=>{const j=+b.dataset.j,k=+b.dataset.k;sel[j]=sel[j]===k?-1:k;save();paint(false);lv.textContent='';wv.innerHTML='';});
+    $('[data-a=check]',body).onclick=check;$('[data-a=show]',body).onclick=show;$('[data-a=clear]',body).onclick=clear;
+    paint(false);lv.textContent=sel.some(x=>x>=0)?'Your last answers are restored.':'';}
+  pick.onchange=()=>{put({p:+pick.value,v:Object.assign({},S.v||{})});load(+pick.value);};
+  /* newer synced answers (another device, a remote clear) replace the ones on screen */
+  const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const s=rd(),j=JSON.stringify(s);if(j===seen)return;seen=j;S=s;sel=sv(S,cur);paint(false);lv.textContent='';wv.innerHTML='';};
+  LIVE.add(view);load(cur);};
+/* the reactions of the step try-it: the example problem (p. 3), practice questions 1 and 2 (p. 4), and two more of the same kind */
+const ec0H={ox:'Oxidation is a loss of electrons: the electrons are on the right side, as a product. Find the reactant that loses electrons.',
+  red:'Reduction is a gain of electrons: the electrons are on the left side. Find the reactant that gains electrons.',
+  oa:'The oxidizing agent is a reactant. It gains electrons and is reduced.',ra:'The reducing agent is a reactant. It loses electrons and is oxidized.',
+  sp:'A spectator ion is in the same form on both sides of the equation, thus it is not oxidized or reduced.'};
+const ec0RX=[
+  {n:'Example problem: AgNO₃ and Cu',
+   q:'Copper metal is placed in aqueous silver nitrate: '+ec0C('2AgNO3(aq) + Cu(s) -> Cu(NO3)2(aq) + 2Ag(s)')+'. Write the net ionic equation, sort out what gains and what loses electrons, write the half-reactions, and identify the OA and the RA.',
+   st:[{l:'Spectator ion',o:[ec0C('Ag^+(aq)'),ec0C('NO3^-(aq)'),ec0C('Cu^2+(aq)'),ec0C('Cu(s)')],a:1,h:ec0H.sp},
+     {l:'Oxidation half-reaction',o:[ec0C('Cu^2+(aq) + 2e^- -> Cu(s)'),ec0C('Ag^+(aq) + e^- -> Ag(s)'),ec0C('Cu(s) -> Cu^2+(aq) + 2e^-'),ec0C('Ag(s) -> Ag^+(aq) + e^-')],a:2,h:ec0H.ox},
+     {l:'Reduction half-reaction',o:[ec0C('Ag^+(aq) + e^- -> Ag(s)'),ec0C('Cu(s) -> Cu^2+(aq) + 2e^-'),ec0C('Cu^2+(aq) + 2e^- -> Cu(s)'),ec0C('Ag(s) -> Ag^+(aq) + e^-')],a:0,h:ec0H.red},
+     {l:'Net redox reaction (the net ionic equation)',o:[ec0C('Ag^+(aq) + Cu(s) -> Ag(s) + Cu^2+(aq)'),ec0C('2Ag^+(aq) + Cu(s) -> 2Ag(s) + Cu^2+(aq)'),ec0C('2Ag(s) + Cu^2+(aq) -> 2Ag^+(aq) + Cu(s)'),ec0C('2Ag^+(aq) + Cu(s) + 2e^- -> 2Ag(s) + Cu^2+(aq)')],a:1,
+      h:'Copper loses 2 electrons, but each silver ion gains only 1. Multiply the silver half-reaction by 2, add, and cancel the electrons. Check the charge on each side.'},
+     {l:'Oxidizing agent',o:[ec0C('Cu(s)'),ec0C('NO3^-(aq)'),ec0C('Ag^+(aq)'),ec0C('Cu^2+(aq)')],a:2,h:ec0H.oa},
+     {l:'Reducing agent',o:[ec0C('Ag^+(aq)'),ec0C('Cu(s)'),ec0C('Ag(s)'),ec0C('NO3^-(aq)')],a:1,h:ec0H.ra}],
+   w:'The entities are '+ec0C('Ag^+(aq)')+', '+ec0C('NO3^-(aq)')+' and '+ec0C('Cu(s)')+'. '+ec0C('NO3^-(aq)')+' is on both sides: it is a spectator ion. Each '+ec0C('Ag^+(aq)')+' gains one electron: '+ec0C('Ag^+(aq) + e^- -> Ag(s)')+' (reduction). Each Cu atom loses two electrons: '+ec0C('Cu(s) -> Cu^2+(aq) + 2e^-')+' (oxidation). Two silver ions take the two electrons of one copper atom: '+ec0C('2Ag^+(aq) + Cu(s) -> 2Ag(s) + Cu^2+(aq)')+'. The OA is '+ec0C('Ag^+(aq)')+' and the RA is '+ec0C('Cu(s)')+'.'},
+  {n:'Practice 1: Br₂ and Zn',
+   q:'Practice 1. Aqueous bromine reacts with solid zinc metal to produce aqueous zinc bromide: '+ec0C('Br2(aq) + Zn(s) -> ZnBr2(aq)')+'. Write out the two half-reactions and the net redox reaction, and identify the reducing and oxidizing agents.',
+   st:[{l:'Oxidation half-reaction',o:[ec0C('Zn(s) -> Zn^2+(aq) + 2e^-'),ec0C('Br2(aq) + 2e^- -> 2Br^-(aq)'),ec0C('Zn^2+(aq) + 2e^- -> Zn(s)'),ec0C('2Br^-(aq) -> Br2(aq) + 2e^-')],a:0,h:ec0H.ox},
+     {l:'Reduction half-reaction',o:[ec0C('Zn^2+(aq) + 2e^- -> Zn(s)'),ec0C('Br2(aq) + e^- -> Br^-(aq)'),ec0C('2Br^-(aq) -> Br2(aq) + 2e^-'),ec0C('Br2(aq) + 2e^- -> 2Br^-(aq)')],a:3,
+      h:'Bromine molecules become bromide ions: a non-metal atom becomes a negative ion. Check that the atoms and the charge balance.'},
+     {l:'Net redox reaction',o:[ec0C('Zn(s) + Br2(aq) -> Zn^2+(aq) + Br^-(aq)'),ec0C('Zn^2+(aq) + 2Br^-(aq) -> Zn(s) + Br2(aq)'),ec0C('Zn(s) + Br2(aq) -> Zn^2+(aq) + 2Br^-(aq)'),ec0C('Zn(s) + 2Br^-(aq) -> Zn^2+(aq) + Br2(aq)')],a:2,
+      h:'Add the two half-reactions. Two electrons are lost and two are gained, thus the electrons cancel. Check the charge on each side.'},
+     {l:'Oxidizing agent',o:[ec0C('Zn(s)'),ec0C('Br2(aq)'),ec0C('Br^-(aq)'),ec0C('Zn^2+(aq)')],a:1,h:ec0H.oa},
+     {l:'Reducing agent',o:[ec0C('Br2(aq)'),ec0C('Zn^2+(aq)'),ec0C('Zn(s)'),ec0C('Br^-(aq)')],a:2,h:ec0H.ra}],
+   w:'Zinc atoms lose two electrons each: '+ec0C('Zn(s) -> Zn^2+(aq) + 2e^-')+' (oxidation). Each bromine molecule gains two electrons: '+ec0C('Br2(aq) + 2e^- -> 2Br^-(aq)')+' (reduction). The electrons balance, thus the net redox reaction is the sum: '+ec0C('Zn(s) + Br2(aq) -> Zn^2+(aq) + 2Br^-(aq)')+'. The RA is '+ec0C('Zn(s)')+' and the OA is '+ec0C('Br2(aq)')+'.'},
+  {n:'Practice 2: AgI and Fe',
+   q:'Practice 2. Silver iodide reacts with solid iron metal in a single replacement reaction, and the iron forms iron(II) ions: '+ec0C('2AgI(s) + Fe(s) -> FeI2(aq) + 2Ag(s)')+'. Silver iodide has a low solubility, thus it is a solid. Write out the two half-reactions and the net redox reaction, and identify the reducing and oxidizing agents.',
+   st:[{l:'Oxidation half-reaction',o:[ec0C('Fe^2+(aq) + 2e^- -> Fe(s)'),ec0C('Fe(s) -> Fe^2+(aq) + 2e^-'),ec0C('Fe(s) -> Fe^3+(aq) + 3e^-'),ec0C('Ag(s) + I^-(aq) -> AgI(s) + e^-')],a:1,
+      h:'Iron metal becomes iron(II) ions: a metal atom that becomes a positive ion loses electrons. Iron(II) means a charge of 2+.'},
+     {l:'Reduction half-reaction',o:[ec0C('I2(s) + 2e^- -> 2I^-(aq)'),ec0C('Ag(s) + I^-(aq) -> AgI(s) + e^-'),ec0C('AgI(s) + e^- -> Ag(s) + I^-(aq)'),ec0C('Fe^2+(aq) + 2e^- -> Fe(s)')],a:2,
+      h:'The silver of the solid AgI becomes silver metal, and the iodide ions go into the solution. Find the AgI(s) row in the table of the data booklet.'},
+     {l:'Net redox reaction',o:[ec0C('2AgI(s) + Fe(s) -> 2Ag(s) + 2I^-(aq) + Fe^2+(aq)'),ec0C('AgI(s) + Fe(s) -> Ag(s) + I^-(aq) + Fe^2+(aq)'),ec0C('2Ag(s) + 2I^-(aq) + Fe^2+(aq) -> 2AgI(s) + Fe(s)'),ec0C('2AgI(s) + Fe(s) -> 2Ag(s) + I2(s) + Fe^2+(aq)')],a:0,
+      h:'Iron loses 2 electrons, but each AgI gains only 1. Multiply the silver iodide half-reaction by 2, then check the charge on each side.'},
+     {l:'Oxidizing agent',o:[ec0C('Fe(s)'),ec0C('I^-(aq)'),ec0C('AgI(s)'),ec0C('Fe^2+(aq)')],a:2,h:ec0H.oa},
+     {l:'Reducing agent',o:[ec0C('AgI(s)'),ec0C('Fe(s)'),ec0C('Ag(s)'),ec0C('I^-(aq)')],a:1,h:ec0H.ra}],
+   w:'Iron atoms lose two electrons each: '+ec0C('Fe(s) -> Fe^2+(aq) + 2e^-')+' (oxidation). The data booklet lists the reduction of the solid: '+ec0C('AgI(s) + e^- -> Ag(s) + I^-(aq)')+'. Multiply it by 2 so that 2 electrons are gained: '+ec0C('2AgI(s) + 2e^- -> 2Ag(s) + 2I^-(aq)')+'. Net: '+ec0C('2AgI(s) + Fe(s) -> 2Ag(s) + 2I^-(aq) + Fe^2+(aq)')+'. The RA is '+ec0C('Fe(s)')+' and the OA is '+ec0C('AgI(s)')+'.'},
+  {n:'More practice: Al and CuCl₂',
+   q:'Aluminum foil is placed in aqueous copper(II) chloride: '+ec0C('2Al(s) + 3CuCl2(aq) -> 2AlCl3(aq) + 3Cu(s)')+'. Write the half-reactions, balance the electrons, and identify the OA and the RA.',
+   st:[{l:'Spectator ion',o:[ec0C('Cu^2+(aq)'),ec0C('Al^3+(aq)'),ec0C('Cl^-(aq)'),ec0C('Al(s)')],a:2,h:ec0H.sp},
+     {l:'Oxidation half-reaction',o:[ec0C('Al^3+(aq) + 3e^- -> Al(s)'),ec0C('Al(s) -> Al^3+(aq) + 3e^-'),ec0C('Cu(s) -> Cu^2+(aq) + 2e^-'),ec0C('2Cl^-(aq) -> Cl2(g) + 2e^-')],a:1,h:ec0H.ox},
+     {l:'Reduction half-reaction',o:[ec0C('Cu(s) -> Cu^2+(aq) + 2e^-'),ec0C('Al^3+(aq) + 3e^- -> Al(s)'),ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)'),ec0C('Cu^2+(aq) + 2e^- -> Cu(s)')],a:3,h:ec0H.red},
+     {l:'Multiply so that the electrons lost equal the electrons gained',o:['oxidation × 3, reduction × 2','oxidation × 2, reduction × 3','oxidation × 1, reduction × 1','oxidation × 2, reduction × 2'],a:1,
+      h:'Each Al atom loses 3 electrons and each Cu²⁺ ion gains 2. Find the smallest number that both 3 and 2 divide into.'},
+     {l:'Net redox reaction',o:[ec0C('Al(s) + Cu^2+(aq) -> Al^3+(aq) + Cu(s)'),ec0C('3Al(s) + 2Cu^2+(aq) -> 3Al^3+(aq) + 2Cu(s)'),ec0C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)'),ec0C('2Al^3+(aq) + 3Cu(s) -> 2Al(s) + 3Cu^2+(aq)')],a:2,
+      h:'Use the multipliers of the step before. Both sides must have the same total charge.'},
+     {l:'Oxidizing agent',o:[ec0C('Al(s)'),ec0C('Cu^2+(aq)'),ec0C('Cl^-(aq)'),ec0C('Al^3+(aq)')],a:1,h:ec0H.oa},
+     {l:'Reducing agent',o:[ec0C('Cu^2+(aq)'),ec0C('Cu(s)'),ec0C('Cl^-(aq)'),ec0C('Al(s)')],a:3,h:ec0H.ra}],
+   w:'Cl⁻(aq) is a spectator ion. Oxidation: '+ec0C('Al(s) -> Al^3+(aq) + 3e^-')+'. Reduction: '+ec0C('Cu^2+(aq) + 2e^- -> Cu(s)')+'. Six electrons balance: the oxidation × 2 (6e⁻ lost) and the reduction × 3 (6e⁻ gained). Net: '+ec0C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+'. The OA is '+ec0C('Cu^2+(aq)')+' and the RA is '+ec0C('Al(s)')+'.'},
+  {n:'More practice: Cl₂ and NaI',
+   q:'Chlorine gas is bubbled into aqueous sodium iodide: '+ec0C('Cl2(g) + 2NaI(aq) -> 2NaCl(aq) + I2(s)')+'. Write the half-reactions and the net redox reaction, and identify the OA and the RA.',
+   st:[{l:'Spectator ion',o:[ec0C('I^-(aq)'),ec0C('Na^+(aq)'),ec0C('Cl^-(aq)'),ec0C('Cl2(g)')],a:1,h:ec0H.sp},
+     {l:'Oxidation half-reaction',o:[ec0C('2I^-(aq) -> I2(s) + 2e^-'),ec0C('I2(s) + 2e^- -> 2I^-(aq)'),ec0C('Na(s) -> Na^+(aq) + e^-'),ec0C('2Cl^-(aq) -> Cl2(g) + 2e^-')],a:0,
+      h:'Iodide ions become iodine: a non-metal ion that becomes an element loses electrons.'},
+     {l:'Reduction half-reaction',o:[ec0C('2Cl^-(aq) -> Cl2(g) + 2e^-'),ec0C('Na^+(aq) + e^- -> Na(s)'),ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)'),ec0C('I2(s) + 2e^- -> 2I^-(aq)')],a:2,h:ec0H.red},
+     {l:'Net redox reaction',o:[ec0C('Cl2(g) + I^-(aq) -> Cl^-(aq) + I2(s)'),ec0C('2Cl^-(aq) + I2(s) -> Cl2(g) + 2I^-(aq)'),ec0C('Cl2(g) + 2Na^+(aq) -> 2Cl^-(aq) + 2Na(s)'),ec0C('Cl2(g) + 2I^-(aq) -> 2Cl^-(aq) + I2(s)')],a:3,
+      h:'Add the two half-reactions and cancel the electrons. Check that the atoms and the charge balance.'},
+     {l:'Oxidizing agent',o:[ec0C('I^-(aq)'),ec0C('Na^+(aq)'),ec0C('Cl2(g)'),ec0C('I2(s)')],a:2,h:ec0H.oa},
+     {l:'Reducing agent',o:[ec0C('I^-(aq)'),ec0C('Cl2(g)'),ec0C('Na^+(aq)'),ec0C('Cl^-(aq)')],a:0,h:ec0H.ra}],
+   w:'Na⁺(aq) is a spectator ion. Oxidation: '+ec0C('2I^-(aq) -> I2(s) + 2e^-')+'. Reduction: '+ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)')+'. Two electrons are lost and two are gained: '+ec0C('Cl2(g) + 2I^-(aq) -> 2Cl^-(aq) + I2(s)')+'. The OA is '+ec0C('Cl2(g)')+' and the RA is '+ec0C('I^-(aq)')+'.'}];
+ECL[0]={t:EC_T[0],h:'Oxidation and reduction',d:'A redox reaction transfers electrons. One entity loses electrons (oxidation) and another entity gains them (reduction), at the same time.',qt:'Check your understanding',build(g){
+  card(g,'Redox reactions',`<p class="hint">Outcomes: 30–B1.1k, 30–B1.2k</p>
+    <p>A <span class="key">redox reaction</span> (oxidation-reduction reaction) is a chemical change in which electrons are transferred between the reactants. Every oxidation comes with a reduction: both happen at the same time.</p>
+    <table class="ec0-tt"><tr><th>Term</th><th>Definition</th><th>Example</th></tr>
+    <tr><td><b>Redox reaction</b></td><td data-h="Definition">Electrons are transferred between the reactants. All oxidations come with reductions.</td><td data-h="Example">Iron ore is reduced to iron metal by heating it with coke (carbon): ${ec0C('2Fe2O3(s) + 3C(s) -> 4Fe(s) + 3CO2(g)')}. The iron is reduced and the carbon is oxidized, at the same time.</td></tr>
+    <tr><td><span class="key">Oxidation</span></td><td data-h="Definition">Originally: an element combines with oxygen to give an oxide. Now: a <b>loss</b> of electrons.</td><td data-h="Example">Iron rusts to form iron(III) oxide: ${ec0C('4Fe(s) + 3O2(g) -> 2Fe2O3(s)')}.</td></tr>
+    <tr><td><span class="key">Reduction</span></td><td data-h="Definition">Originally: a compound loses oxygen. Now: a <b>gain</b> of electrons.</td><td data-h="Example">The iron ore loses its oxygen when it is heated with coke: ${ec0C('2Fe2O3(s) + 3C(s) -> 4Fe(s) + 3CO2(g)')}.</td></tr></table>
+    <p class="note">The old meanings come from what we observe: they are <b>operational</b> definitions. The new meanings explain the change with electrons: they are <b>theoretical</b> definitions.</p>`,'w7');
+  card(g,'LEO GER and OIL RIG',`<p>Two ways to remember the new meanings:</p>
+    <div class="fx"><b>LEO</b> the lion says <b>GER</b><br><small>Lose Electrons: Oxidation. Gain Electrons: Reduction.</small></div>
+    <div class="fx"><b>OIL RIG</b><br><small>Oxidation Is Losing electrons. Reduction Is Gaining electrons.</small></div>
+    ${CF(ec0Oil(),'The old meanings (oxygen and hydrogen) and the new meaning (electrons). Oxygen moves to the substance that is oxidized. Hydrogen and electrons move to the substance that is reduced.')}
+    <p class="hint">The cartoon on the first page of the notes: “I’ve lost an electron!” “Are you sure?” “I’m positive!” An atom that loses negative electrons is left with a positive charge.</p>`,'w5');
+  card(g,'Identify oxidation and reduction',`<table class="ec0-cl"><tr><th></th><th>Oxidation</th><th>Reduction</th></tr>
+    <tr><th>Clues</th><td><ul><li>A metal atom becomes a positive ion.</li><li>A non-metal ion becomes an element.</li><li>All or part of a chemical reacts to give products that contain more oxygen.</li><li>A chemical reacts directly with oxygen.</li><li><b>Always a loss of electrons.</b></li></ul></td>
+      <td><ul><li>A positive metal ion becomes an atom.</li><li>A non-metal atom becomes a negative ion.</li><li>All or part of a chemical reacts to give products that contain less oxygen.</li><li><b>Always a gain of electrons.</b></li></ul></td></tr>
+    <tr><th>Half-reaction</th><td>${ec0C('Mg(s) -> Mg^2+(aq) + 2e^-')}<br><small>The electrons are a product: they are lost.</small></td><td>${ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)')}<br><small>The electrons are a reactant: they are gained.</small></td></tr>
+    <tr><th>Agent</th><td>The <b>reducing agent</b> is oxidized. It donates electrons.</td><td>The <b>oxidizing agent</b> is reduced. It accepts electrons.</td></tr></table>
+    <p>A <span class="key">half-reaction</span> shows only the oxidation or only the reduction, with the electrons. When the electrons lost equal the electrons gained, the sum of the two half-reactions is the <b>net redox reaction</b>:</p>
+    <div class="fx">Oxidation half-reaction: ${ec0C('Mg(s) -> Mg^2+(aq) + 2e^-')}<br>Reduction half-reaction: ${ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)')}<br>Net redox reaction: ${ec0C('Mg(s) + Cl2(g) -> Mg^2+(aq) + 2Cl^-(aq)')}</div>
+    <p class="hint">The table of standard electrode potentials on page 9 of the data booklet lists half-reactions as reductions. Read a row from left to right for a reduction, and from right to left for an oxidation.</p>`,'w7');
+  card(g,'Oxidizing agents and reducing agents',`<ul><li>The <span class="key">reducing agent</span> (RA) causes a reduction, but it is itself <b>oxidized</b>. An RA donates (loses) electrons.</li>
+    <li>The <span class="key">oxidizing agent</span> (OA) causes an oxidation, but it is itself <b>reduced</b>. An OA accepts (gains) electrons.</li>
+    <li>The OA and the RA are always reactants. The products of the reaction are not agents.</li></ul>
+    ${CF(ec0Xfer(),'Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s). The two electrons that the zinc atom loses are the two electrons that the copper(II) ion gains.')}`,'w5');
+  const m1=card(g,'Try it: oxidation or reduction?','<p class="hint">Use the clues. Electrons are not shown: decide from the change in each entity.</p>','half');
+  matching(m1,[[C('Fe(s) -> Fe^3+(aq)'),'Oxidation'],[C('Ag^+(aq) -> Ag(s)'),'Reduction'],[C('2I^-(aq) -> I2(s)'),'Oxidation'],[C('S(s) -> S^2-(aq)'),'Reduction'],[C('CuO(s) -> Cu(s)'),'Reduction'],
+    [C('C(s) -> CO2(g)'),'Oxidation'],[C('Sn^4+(aq) -> Sn^2+(aq)'),'Reduction'],[C('Fe^2+(aq) -> Fe^3+(aq)'),'Oxidation'],[C('Cl2(g) -> 2Cl^-(aq)'),'Reduction'],[C('Na(s) -> Na^+(aq)'),'Oxidation']],
+    'For each change, select oxidation or reduction.',0);
+  const m2=card(g,'Try it: the words of the lesson','<p class="hint">Some terms match more than one description.</p>','half');
+  matching(m2,[['A loss of electrons','Oxidation'],['A gain of electrons','Reduction'],['The original meaning: an element combines with oxygen','Oxidation'],['The original meaning: a compound loses oxygen','Reduction'],
+    ['A chemical change in which electrons are transferred between the reactants','Redox reaction'],['An equation for only the oxidation or only the reduction, with the electrons shown','Half-reaction'],
+    ['Accepts electrons, thus it is reduced','Oxidizing agent'],['Donates electrons, thus it is oxidized','Reducing agent'],['Causes an oxidation in another entity','Oxidizing agent'],['Causes a reduction in another entity','Reducing agent']],
+    'Select the term that matches each description.',1);
+  card(g,'Worked examples',
+    ex('Example 1. Iron ore is reduced to iron metal by heating it with coke (carbon): '+ec0C('2Fe2O3(s) + 3C(s) -> 4Fe(s) + 3CO2(g)')+'. Which reactant is oxidized, and which is reduced?',
+      '<p><b>Old (operational) meanings.</b> '+ec0C('Fe2O3(s)')+' loses its oxygen, thus it is <b>reduced</b>. Carbon combines with oxygen to form '+ec0C('CO2(g)')+', thus it is <b>oxidized</b>.</p>'+
+      '<p><b>New (theoretical) meanings.</b> '+ec0C('Fe2O3(s)')+' is an ionic compound of Fe³⁺ and O²⁻ ions. Each Fe³⁺ ion gains 3 electrons and becomes an Fe atom: '+ec0C('Fe^3+ + 3e^- -> Fe')+'. The 4 iron ions gain 4 × 3 = 12 electrons. The 3 carbon atoms lose the same 12 electrons (4 each) when they form '+ec0C('CO2(g)')+'.</p>'+
+      '<p>Both changes happen at the same time. The oxidizing agent is '+ec0C('Fe2O3(s)')+' and the reducing agent is '+ec0C('C(s)')+'.</p>')+
+    ex('Example 2. Iron rusts: it reacts with oxygen to form iron(III) oxide. Write the balanced equation, and identify the oxidation and the reduction.',
+      '<p>'+ec0C('4Fe(s) + 3O2(g) -> 2Fe2O3(s)')+'. Check: 4 Fe atoms and 6 O atoms on each side.</p>'+
+      '<p>Each iron atom becomes an Fe³⁺ ion. A metal atom that becomes a positive ion loses electrons, thus iron is <b>oxidized</b> (3 electrons per atom). It reacts directly with oxygen, the original meaning of oxidation.</p>'+
+      '<p>Each oxygen atom becomes an O²⁻ ion. A non-metal atom that becomes a negative ion gains electrons, thus oxygen is <b>reduced</b> (2 electrons per atom).</p>'+
+      '<p>Electrons lost: 4 Fe × 3 = 12. Electrons gained: 6 O × 2 = 12. The reducing agent is '+ec0C('Fe(s)')+' and the oxidizing agent is '+ec0C('O2(g)')+'.</p>')+
+    ex('Example 3. Use the half-reactions of the table, '+ec0C('Mg(s) -> Mg^2+(aq) + 2e^-')+' and '+ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)')+', to write the net redox reaction. Identify the oxidizing agent and the reducing agent.',
+      '<p>Oxidation half-reaction (electrons lost): '+ec0C('Mg(s) -> Mg^2+(aq) + 2e^-')+'</p><p>Reduction half-reaction (electrons gained): '+ec0C('Cl2(g) + 2e^- -> 2Cl^-(aq)')+'</p>'+
+      '<p>Two electrons are lost and two are gained. Add the half-reactions and cancel the electrons.</p><p>Net redox reaction: '+ec0C('Mg(s) + Cl2(g) -> Mg^2+(aq) + 2Cl^-(aq)')+'</p>'+
+      '<p>'+ec0C('Mg(s)')+' loses electrons: it is the <b>reducing agent</b>. '+ec0C('Cl2(g)')+' gains electrons: it is the <b>oxidizing agent</b>.</p>')+
+    ex('Example 4 (example problem of the notes). '+ec0C('2AgNO3(aq) + Cu(s) -> Cu(NO3)2(aq) + 2Ag(s)')+'. Write the net ionic equation. Sort out what has gained and what has lost electrons, or use the table of the data booklet to find the half-reactions and write the net redox reaction. Identify the OA and the RA.',
+      '<p><b>1. Entities.</b> '+ec0C('AgNO3(aq)')+' is '+ec0C('Ag^+(aq)')+' and '+ec0C('NO3^-(aq)')+'. '+ec0C('Cu(NO3)2(aq)')+' is '+ec0C('Cu^2+(aq)')+' and '+ec0C('NO3^-(aq)')+'.</p>'+
+      '<p><b>2. Total ionic equation.</b> '+ec0C('2Ag^+(aq) + 2NO3^-(aq) + Cu(s) -> Cu^2+(aq) + 2NO3^-(aq) + 2Ag(s)')+'</p>'+
+      '<p><b>3. Net ionic equation.</b> The nitrate ions are spectator ions: '+ec0C('2Ag^+(aq) + Cu(s) -> Cu^2+(aq) + 2Ag(s)')+'</p>'+
+      '<p><b>4. Gained or lost?</b> Each Cu atom becomes a Cu²⁺ ion: it loses 2 electrons (oxidized). Each Ag⁺ ion becomes an Ag atom: it gains 1 electron (reduced).</p>'+
+      '<p><b>5. The data booklet.</b> Both half-reactions are in the table. Read the silver row from left to right (reduction) and the copper row from right to left (oxidation):</p>'+
+      ecTableH(ecRows(['Ag^+(aq)','Cu^2+(aq)']),{rows:[0,1],arrows:false,cap:'Two rows of the table of standard electrode potentials.'})+
+      '<p>Oxidation: '+ec0C('Cu(s) -> Cu^2+(aq) + 2e^-')+'<br>Reduction: '+ec0C('Ag^+(aq) + e^- -> Ag(s)')+', multiplied by 2: '+ec0C('2Ag^+(aq) + 2e^- -> 2Ag(s)')+'<br>Net redox reaction: '+ec0C('2Ag^+(aq) + Cu(s) -> 2Ag(s) + Cu^2+(aq)')+'</p>'+
+      '<p><b>6. Agents.</b> The OA is '+ec0C('Ag^+(aq)')+' (it gains electrons). The RA is '+ec0C('Cu(s)')+' (it loses electrons).</p>'));
+  card(g,'Mass and molar relationships',`<p>When ${ec0C('Zn(s)')} is placed in ${ec0C('CuSO4(aq)')}, a redox reaction occurs:</p>
+    <div class="fx">${ec0C('Zn(s) -> Zn^2+(aq) + 2e^-')} &nbsp; <small>LEO: loss of electrons, oxidation</small><br>${ec0C('Cu^2+(aq) + 2e^- -> Cu(s)')} &nbsp; <small>GER: gain of electrons, reduction</small><br><b>Overall:</b> ${ec0C('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')}</div>
+    <ul><li>The number of electrons lost by Zn = the number of electrons gained by Cu²⁺.</li>
+    <li>The mass of zinc lost is <b>not</b> equal to the mass of copper that forms, because zinc and copper have different molar masses.</li>
+    <li>The moles of Zn used = the moles of Cu formed, because both half-reactions transfer 2 mol of electrons for each mole of metal or metal ion.</li>
+    <li>This is not always the case. In ${ec0C('Cu(s) + 2Ag^+(aq) -> 2Ag(s) + Cu^2+(aq)')}, two moles of silver ions react with one mole of copper.</li></ul>
+    <p class="note"><b>Key concept to remember:</b> the number of electrons lost = the number of electrons gained.</p>`+
+    ex('Example 5. A zinc strip is placed in excess '+ec0C('CuSO4(aq)')+', and 1.00 g of zinc reacts. Find the amount of zinc, and the mass of copper that forms.',
+      '<p>'+ec0C('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')+': both half-reactions transfer 2 electrons, thus the mole ratio is 1 : 1.</p>'+
+      '<p><i>n</i>(Zn) = 1.00 g ÷ 65.38 g/mol = 0.0153 mol. Thus <i>n</i>(Cu) = 0.0153 mol.</p><p><i>m</i>(Cu) = 0.01530 mol × 63.55 g/mol = <b>0.972 g</b>. The moles are equal, but 1.00 g of zinc forms only 0.972 g of copper.</p>')+
+    ex('Example 6. '+ec0C('Cu(s) + 2Ag^+(aq) -> 2Ag(s) + Cu^2+(aq)')+'. Write the oxidation and the reduction half-reaction equations. How many moles of silver form when 0.500 mol of copper reacts?',
+      '<p>Oxidation half-reaction: '+ec0C('Cu(s) -> Cu^2+(aq) + 2e^-')+'</p><p>Reduction half-reaction: '+ec0C('Ag^+(aq) + e^- -> Ag(s)')+', written two times so that 2 electrons are gained: '+ec0C('2Ag^+(aq) + 2e^- -> 2Ag(s)')+'</p>'+
+      '<p>Two moles of silver ions react with one mole of copper. <i>n</i>(Ag) = 2 × 0.500 mol = <b>1.00 mol</b> (108 g of silver from 31.8 g of copper).</p>'),'w7');
+  card(g,'Zinc in copper(II) sulfate',CF(ec0ZnCu(),'The blue Cu²⁺(aq) ions gain electrons and become red-brown copper metal on the zinc. The zinc atoms lose electrons and become colourless Zn²⁺(aq) ions. As the Cu²⁺(aq) ions are used up, the blue colour fades.')+
+    '<p class="hint">Evidence of the redox reaction: a new solid, a colour change, and a strip that wears away.</p>','w5');
+  /* the explorer: equal electrons give the mole ratio, but not equal masses */
+  const xc=card(g,'Electrons lost = electrons gained','<p class="hint">Choose a metal and a solution of metal ions, then set the mass of metal that reacts. The half-reactions are multiplied so that the electrons balance. The electrons set the mole ratio, but the masses are not equal.</p>');
+  const XP=[['Zn','Cu'],['Cu','Ag'],['Al','Cu'],['Mg','Ag'],['Fe','Cu'],['Ni','Ag']],sh=el('div'),xo=el('div');xc.append(sh);let xi=0;
+  seg(sh,XP.map(([a,b])=>a+' + '+ecU(ec0Ion[b]).replace('(aq)','')),i=>{xi=i;xu(XK.v);});
+  const XK=ctl(xc,[{k:'m',l:'Mass of metal that reacts',min:.1,max:10,step:.01,v:1,dp:2,u:'g'}],v=>xu(v));xc.append(xo);
+  const XR=stats(xc,['Electrons lost and gained','Mole ratio (formed : used)','Amount of metal used','Amount of electrons']);
+  function xu(v){const [ra,ox]=XP[xi],p=ec0Pair(ra,ox),n=v.m/EC_M[ra],nf=n*p.r,mf=nf*EC_M[ox],cap=s=>s[0].toUpperCase()+s.slice(1),
+      bar=(t,x,c)=>`<div class="ec0-br"><span>${t}</span><i style="width:${f1(Math.max(1,100*x/Math.max(v.m,mf)))}%;background:${c}"></i><b>${x.toFixed(2)} g</b></div>`;
+    xo.innerHTML=`<div class="fx">Oxidation: ${ec0W(p.ox)} &nbsp;<small>× ${p.mo}</small><br>Reduction: ${ec0W(p.red)} &nbsp;<small>× ${p.mr}</small><br><b>Net:</b> ${ec0W(p.net)}</div>`+
+      `<div class="ec0-bars" role="img" aria-label="${cap(ec0Nm[ra])} used: ${v.m.toFixed(2)} g. ${cap(ec0Nm[ox])} formed: ${mf.toFixed(2)} g.">${bar(cap(ec0Nm[ra])+' used',v.m,'var(--steel)')}${bar(cap(ec0Nm[ox])+' formed',mf,ox==='Cu'?'#c47a4a':'#c9ccd3')}</div>`+
+      `<p class="hint">${v.m.toFixed(2)} g of ${ec0Nm[ra]} (${EC_M[ra].toFixed(2)} g/mol) forms ${mf.toFixed(2)} g of ${ec0Nm[ox]} (${EC_M[ox].toFixed(2)} g/mol).</p>`;
+    XR(0,p.n+' e⁻ and '+p.n+' e⁻');XR(1,p.mr+' : '+p.mo);XR(2,sig(n)+' mol');XR(3,sig(n*p.or.n)+' mol');}
+  xu(XK.v);
+  const pc=card(g,'Practice: half-reactions, net reaction, OA and RA','<p>For each reaction, write out the two half-reactions and the net redox reaction, and identify the reducing and oxidizing agents. Choose one answer in each step, then Check. Practice questions 1 and 2 are from the notes. The example problem and two more reactions give extra practice.</p>');
+  ec0Steps(pc,ec0RX,0);
+  pc.insertAdjacentHTML('beforeend','<p class="hint">The written answers of practice questions 1 and 2:</p>'+
+    ex('Practice 1. Aqueous bromine reacts with solid zinc metal to produce aqueous zinc bromide.',
+      '<p>Oxidation: '+ec0C('Zn(s) -> Zn^2+(aq) + 2e^-')+'<br>Reduction: '+ec0C('Br2(aq) + 2e^- -> 2Br^-(aq)')+'<br>Net redox reaction: '+ec0C('Zn(s) + Br2(aq) -> Zn^2+(aq) + 2Br^-(aq)')+'</p>'+
+      '<p>Reducing agent: '+ec0C('Zn(s)')+'. Oxidizing agent: '+ec0C('Br2(aq)')+'.</p><p class="hint">The data booklet lists the row '+ec0C('Br2(l) + 2e^- <=> 2Br^-(aq)')+'. Aqueous bromine gains electrons in the same way.</p>')+
+    ex('Practice 2. Silver iodide reacts with solid iron metal (to form iron(II) ions) in a single replacement reaction.',
+      '<p>'+ec0C('2AgI(s) + Fe(s) -> FeI2(aq) + 2Ag(s)')+'. Silver iodide has a low solubility, thus it reacts as a solid.</p>'+
+      '<p>Oxidation: '+ec0C('Fe(s) -> Fe^2+(aq) + 2e^-')+'<br>Reduction: '+ec0C('AgI(s) + e^- -> Ag(s) + I^-(aq)')+', multiplied by 2: '+ec0C('2AgI(s) + 2e^- -> 2Ag(s) + 2I^-(aq)')+'<br>Net redox reaction: '+ec0C('2AgI(s) + Fe(s) -> 2Ag(s) + 2I^-(aq) + Fe^2+(aq)')+'</p>'+
+      '<p>Reducing agent: '+ec0C('Fe(s)')+'. Oxidizing agent: '+ec0C('AgI(s)')+'.</p>'));
+  const nc=card(g,'Numerical response','<p class="hint">A diploma-style question: the answer is a four-digit code.</p>','w5');
+  nrCode(nc,{q:'<p>Use the following information. Zinc metal is placed in a solution of lead(II) nitrate:<br>'+ec0C('Zn(s) + Pb(NO3)2(aq) -> Zn(NO3)2(aq) + Pb(s)')+'</p><p class="ec0-ents"><span>1 '+ec0C('Zn(s)')+'</span><span>2 '+ec0C('Pb^2+(aq)')+'</span><span>3 '+ec0C('NO3^-(aq)')+'</span><span>4 '+ec0C('Zn^2+(aq)')+'</span><span>5 '+ec0C('Pb(s)')+'</span></p>'+
+    '<p>Identify the oxidizing agent, the reducing agent, the spectator ion and the product of the reduction.</p>',a:'2135',
+    w:'Pb²⁺(aq) gains 2 electrons and becomes Pb(s): Pb²⁺(aq) is the oxidizing agent (2), and Pb(s) is the product of the reduction (5). Zn(s) loses 2 electrons: it is the reducing agent (1). NO₃⁻(aq) is the same on both sides: it is the spectator ion (3). Record 2135.'},0);
+  const MAP=[['oxidation, reduction, oxidizing agent, reducing agent, oxidation-reduction (redox) reaction, half-reaction'],['oxidation number'],['spontaneity'],['spontaneity, standard reduction potential (the table)'],
+    ['the mole ratio of a redox reaction'],['half-reaction (balancing)'],['disproportionation, voltaic cell'],['standard reduction potential, standard cell potential'],['voltaic cell (batteries and fuel cells)'],['corrosion'],['electrolytic cell, electrolysis'],['Faraday’s law']];
+  const mc=card(g,'Unit 3: electrochemical changes','<p class="hint">The key concepts of the unit (notes p. 1), and the lesson where each one is taught. Select a lesson to open it.</p>'+
+    `<table class="ec0-map"><tr><th>Lesson</th><th>Key concepts</th></tr>${MAP.map(([k],i)=>`<tr><td>${i+1}. ${i?`<button type="button" class="ec0-go" data-l="${i}">${EC_T[i]}</button>`:EC_T[i]+' (this lesson)'}</td><td>${k}</td></tr>`).join('')}</table>`,'w7');
+  $$('.ec0-go',mc).forEach(b=>b.onclick=()=>{const i=+b.dataset.l;if(curS==='ec')showLesson(i);else goSection('ec',i);});
 },qz:[
-  {q:'In the reaction '+C('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')+', the oxidizing agent is',o:[C('Cu^2+(aq)'),C('Zn(s)'),C('Zn^2+(aq)'),C('Cu(s)')],a:0,w:'Cu²⁺(aq) gains two electrons and is reduced to Cu(s). The entity that is reduced is the oxidizing agent.'},
-  {q:'Oxidation is',o:['a loss of electrons','a gain of electrons','a gain of protons','a loss of neutrons'],a:0,w:'LEO: Loss of Electrons is Oxidation. GER: Gain of Electrons is Reduction.'}]};
-EC_RQ[0]=[{q:'When magnesium burns in oxygen to form MgO(s), the magnesium atoms',o:['lose electrons and are oxidized','gain electrons and are reduced','lose electrons and are reduced','gain electrons and are oxidized'],a:0,w:'Each Mg atom loses two electrons to become Mg²⁺. A loss of electrons is oxidation.'}];
-EC_CH[0]={q:'In '+C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+', how many moles of electrons are transferred when 2 mol of aluminum react?',n:6,u:'mol',tol:0,w:'Each Al atom loses 3 electrons: 2 mol × 3 = 6 mol of electrons. The 3 mol of Cu²⁺ gain 3 × 2 = 6 mol of electrons, the same number.'};
-EC_REF.t.push(['Oxidation','A loss of electrons. The entity that is oxidized is the reducing agent.'],['Reduction','A gain of electrons. The entity that is reduced is the oxidizing agent.']);
+  {q:'Which statement is the theoretical (electron) definition of oxidation?',o:['a loss of electrons','a gain of electrons','a gain of oxygen','a loss of oxygen'],a:0,w:'LEO: Loss of Electrons is Oxidation. A gain of oxygen is the original (operational) meaning of oxidation, not the theoretical one.'},
+  {q:'Iron ore is reduced in a blast furnace: '+ec0C('2Fe2O3(s) + 3C(s) -> 4Fe(s) + 3CO2(g)')+'. Which reactant is reduced?',o:[ec0C('Fe2O3(s)'),ec0C('C(s)'),ec0C('Fe(s)'),ec0C('CO2(g)')],a:0,w:'Fe₂O₃ loses its oxygen, thus it is reduced. Each Fe³⁺ ion gains three electrons and becomes an Fe atom. Carbon gains oxygen, thus it is oxidized. Fe(s) and CO₂(g) are products, not reactants.'},
+  {q:'Which change is an oxidation?',o:[ec0C('2I^-(aq) -> I2(s)'),ec0C('S(s) -> S^2-(aq)'),ec0C('Ag^+(aq) -> Ag(s)'),ec0C('Cl2(g) -> 2Cl^-(aq)')],a:0,w:'A non-metal ion that becomes an element loses electrons: 2I⁻(aq) → I₂(s) + 2e⁻. The other three changes gain electrons: they are reductions.'},
+  {q:'A reducing agent',o:['loses electrons and is oxidized','gains electrons and is reduced','loses electrons and is reduced','gains electrons and is oxidized'],a:0,w:'A reducing agent causes a reduction by giving its electrons to another entity. It loses electrons, thus it is oxidized.'},
+  {q:'Practice 1: '+ec0C('Zn(s) + Br2(aq) -> Zn^2+(aq) + 2Br^-(aq)')+'. The oxidizing agent is',o:[ec0C('Br2(aq)'),ec0C('Zn(s)'),ec0C('Zn^2+(aq)'),ec0C('Br^-(aq)')],a:0,w:'Each Br₂ molecule gains two electrons and becomes two Br⁻ ions: Br₂ is reduced. The entity that is reduced is the oxidizing agent.'},
+  {q:'Practice 2: '+ec0C('2AgI(s) + Fe(s) -> 2Ag(s) + 2I^-(aq) + Fe^2+(aq)')+'. The reducing agent is',o:[ec0C('Fe(s)'),ec0C('AgI(s)'),ec0C('I^-(aq)'),ec0C('Ag(s)')],a:0,w:'Iron atoms lose two electrons each and become Fe²⁺ ions: iron is oxidized, thus Fe(s) is the reducing agent. AgI(s) gains electrons: it is the oxidizing agent.'},
+  {q:'Copper wire is placed in aqueous silver nitrate. Which ion is a spectator ion?',o:[ec0C('NO3^-(aq)'),ec0C('Ag^+(aq)'),ec0C('Cu^2+(aq)'),ec0C('H^+(aq)')],a:0,w:'2AgNO₃(aq) + Cu(s) → Cu(NO₃)₂(aq) + 2Ag(s). The nitrate ions are on both sides, unchanged: they are spectator ions. Ag⁺ is reduced and Cu is oxidized to Cu²⁺. There is no H⁺ in this mixture.'},
+  {q:'Zinc reacts with copper(II) ions: '+ec0C('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')+'. Which statement is true?',o:['Moles of zinc used = moles of copper formed.','Mass of zinc used = mass of copper formed.','Each Cu²⁺(aq) ion loses two electrons to a zinc atom.','Zinc gains two electrons, thus zinc is reduced.'],a:0,w:'Both half-reactions transfer 2 electrons per particle, thus the mole ratio is 1 : 1. The masses are different, because zinc (65.38 g/mol) and copper (63.55 g/mol) have different molar masses. Zinc loses electrons, and Cu²⁺ gains them.'},
+  {q:ec0C('Cu(s) + 2Ag^+(aq) -> 2Ag(s) + Cu^2+(aq)')+'. Why does one mole of copper form two moles of silver?',o:['A Cu atom loses 2e⁻, but an Ag⁺ ion gains only 1e⁻.','Silver has a larger molar mass than copper has.','Copper is a stronger oxidizing agent than silver.','Two Ag⁺ ions are needed to balance the nitrate ions.'],a:0,w:'The electrons lost must equal the electrons gained. One Cu atom loses two electrons, and each Ag⁺ ion takes one, thus two Ag⁺ ions are reduced for each Cu atom. Molar masses do not set mole ratios, copper is the reducing agent here, and nitrate is a spectator ion.'},
+  {q:'Which pair gives the original (operational) meanings of oxidation and reduction?',o:['oxidation: gain of oxygen; reduction: loss of oxygen','oxidation: loss of oxygen; reduction: gain of oxygen','oxidation: gain of electrons; reduction: loss of electrons','oxidation: loss of electrons; reduction: gain of electrons'],a:0,w:'Oxidation first meant that an element combines with oxygen. Reduction meant that a compound (an ore) loses oxygen. The electron meanings are the modern, theoretical definitions.'},
+  {q:'A strip of zinc is placed in blue copper(II) sulfate solution. Which observation is evidence of the redox reaction?',o:['A red-brown solid forms, and the blue colour fades.','The zinc strip turns blue, and the solution turns grey.','Bubbles of oxygen gas form at the zinc strip.','The solution turns from blue to dark purple.'],a:0,w:'Cu²⁺(aq) ions (blue) gain electrons and become copper metal (red-brown). As they are used up, the blue colour fades. The Zn²⁺(aq) ions that form are colourless.'},
+  {q:'Copper wire reacts with excess AgNO₃(aq): '+ec0C('Cu(s) + 2Ag^+(aq) -> Cu^2+(aq) + 2Ag(s)')+'. 0.250 mol of copper reacts completely. Calculate the amount of silver that forms.',n:.5,u:'mol',tol:.01,w:'Each Cu atom loses 2 electrons, and each Ag⁺ ion gains 1 electron. Thus 2 mol of Ag form for each mole of Cu. n(Ag) = 2 × 0.250 mol = 0.500 mol.'},
+  {q:'A strip of zinc is placed in excess CuSO₄(aq), and 2.50 g of zinc reacts. Calculate the mass of copper that forms.',n:2.43,u:'g',tol:.01,w:'Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s). Both half-reactions transfer 2 electrons, thus the mole ratio is 1 : 1. n(Zn) = 2.50 g ÷ 65.38 g/mol = 0.03824 mol = n(Cu). m(Cu) = 0.03824 mol × 63.55 g/mol = 2.43 g.'},
+  {q:'3.18 g of copper wire reacts completely with excess AgNO₃(aq): '+ec0C('Cu(s) + 2Ag^+(aq) -> Cu^2+(aq) + 2Ag(s)')+'. Calculate the mass of silver that forms.',n:10.8,u:'g',tol:.01,w:'n(Cu) = 3.18 g ÷ 63.55 g/mol = 0.05004 mol. The equation gives 2 mol of Ag for each mole of Cu: n(Ag) = 2 × 0.05004 mol = 0.1001 mol. m(Ag) = 0.1001 mol × 107.87 g/mol = 10.8 g.'},
+  {q:ec0C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+'. 0.540 g of aluminum reacts completely. Calculate the amount of electrons transferred.',n:.06,u:'mol',tol:.01,w:'Each Al atom loses 3 electrons: Al(s) → Al³⁺(aq) + 3e⁻. n(Al) = 0.540 g ÷ 26.98 g/mol = 0.02001 mol. n(e⁻) = 3 × 0.02001 mol = 0.0600 mol.'},
+  {q:'Combine '+ec0C('Al(s) -> Al^3+(aq) + 3e^-')+' and '+ec0C('Cu^2+(aq) + 2e^- -> Cu(s)')+' into a balanced net equation. How many electrons are transferred in the balanced equation?',n:6,u:'',tol:0,w:'Aluminum loses 3 electrons per atom, and each copper(II) ion gains 2. Multiply the oxidation by 2 and the reduction by 3, so that the electrons lost equal the electrons gained: 2Al(s) + 3Cu²⁺(aq) → 2Al³⁺(aq) + 3Cu(s). 6 electrons are transferred.'}]};
+EC_RQ[0]=[
+  {q:'A strip of nickel is placed in colourless AgNO₃(aq). Later, grey crystals cover the strip, and the solution is pale green (see the diagram). In this reaction, the oxidizing agent is',fig:ec0NiAg(),
+   o:[C('Ag^+(aq)'),C('Ni(s)'),C('Ni^2+(aq)'),C('NO3^-(aq)')],a:0,w:'The grey crystals are silver: Ag⁺(aq) + e⁻ → Ag(s). The silver ions gain electrons and are reduced, thus Ag⁺(aq) is the oxidizing agent. Nickel is oxidized to green Ni²⁺(aq) ions, and NO₃⁻(aq) is a spectator ion.'},
+  {q:'Nickel reacts with silver ions: '+C('Ni(s) + 2Ag^+(aq) -> Ni^2+(aq) + 2Ag(s)')+'. 0.587 g of nickel reacts completely. Calculate the mass of silver that forms.',n:2.16,u:'g',tol:.01,
+   w:'n(Ni) = 0.587 g ÷ 58.69 g/mol = 0.01000 mol. Each Ni atom gives 2 electrons and each Ag⁺ ion takes 1, thus n(Ag) = 2 × 0.01000 mol = 0.02000 mol. m(Ag) = 0.02000 mol × 107.87 g/mol = 2.16 g.'},
+  {q:'Use the half-reactions from the data booklet shown below. Chlorine gas is bubbled into aqueous potassium bromide. The oxidation half-reaction is',fig:ecTableH(ecRows(['Cl2(g)','Br2(l)']),{arrows:false}),
+   o:[C('2Br^-(aq) -> Br2(l) + 2e^-'),C('Br2(l) + 2e^- -> 2Br^-(aq)'),C('2Cl^-(aq) -> Cl2(g) + 2e^-'),C('Cl2(g) + 2e^- -> 2Cl^-(aq)')],a:0,
+   w:'The entities are Cl₂(g), K⁺(aq), Br⁻(aq) and H₂O(l). Cl₂ is on the left of its row: it gains electrons (the reduction). Br⁻ is on the right of its row: read the row from right to left for the oxidation, 2Br⁻(aq) → Br₂(l) + 2e⁻.'},
+  {q:C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+'. What mass of aluminum must react to produce 5.00 g of copper?',n:1.42,u:'g',tol:.01,
+   w:'n(Cu) = 5.00 g ÷ 63.55 g/mol = 0.07868 mol. The equation has 2 mol of Al for every 3 mol of Cu: n(Al) = 0.07868 mol × 2/3 = 0.05245 mol. m(Al) = 0.05245 mol × 26.98 g/mol = 1.42 g.'},
+  {q:'Magnesium burns in oxygen: '+C('2Mg(s) + O2(g) -> 2MgO(s)')+'. Which statement is correct?',o:['Mg atoms lose electrons, and O₂ gains electrons.','O₂ is the reducing agent, and Mg is reduced.','Each oxygen atom loses two electrons to magnesium.','No electrons move, because MgO(s) is a solid.'],a:0,
+   w:'MgO is an ionic compound of Mg²⁺ and O²⁻ ions. Each Mg atom loses 2 electrons: it is oxidized, and it is the reducing agent. Each O atom gains 2 electrons: O₂ is reduced, and it is the oxidizing agent.'},
+  {q:'Hot copper(II) oxide reacts with hydrogen gas: '+C('CuO(s) + H2(g) -> Cu(s) + H2O(g)')+'. Using the original meanings of the terms, the substance that is oxidized is',o:[C('H2(g)'),C('CuO(s)'),C('Cu(s)'),C('H2O(g)')],a:0,
+   w:'Hydrogen gains oxygen and becomes water, thus H₂(g) is oxidized. Copper(II) oxide loses its oxygen, thus it is reduced. In electron terms, Cu²⁺ gains two electrons and becomes Cu.'},
+  {q:'In the reaction '+C('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+', how many moles of electrons are gained when 0.150 mol of copper(II) ions react?',n:.3,u:'mol',tol:.01,
+   w:'Each Cu²⁺ ion gains 2 electrons: Cu²⁺(aq) + 2e⁻ → Cu(s). n(e⁻) = 2 × 0.150 mol = 0.300 mol.'},
+  {q:'Zinc reacts with Cu²⁺(aq) in a 1 : 1 mole ratio, but copper reacts with Ag⁺(aq) in a 1 : 2 mole ratio. Which statement explains the difference?',o:['A Cu²⁺ ion gains 2 electrons, but an Ag⁺ ion gains 1.','Silver has a larger molar mass than zinc or copper.','Zinc is a stronger oxidizing agent than copper.','Silver ions lose electrons, but copper(II) ions gain them.'],a:0,
+   w:'The electrons lost equal the electrons gained. Zn and Cu each lose 2 electrons. One Cu²⁺ ion can take both electrons of a zinc atom, but two Ag⁺ ions are needed to take the two electrons of a copper atom.'},
+  {q:'Use the following information.<br>'+C('2Fe^3+(aq) + Sn^2+(aq) -> 2Fe^2+(aq) + Sn^4+(aq)')+'<br>1 '+C('Sn^2+(aq)')+' &nbsp; 2 '+C('Sn^4+(aq)')+' &nbsp; 3 '+C('Fe^3+(aq)')+' &nbsp; 4 '+C('Fe^2+(aq)')+'<br>Numerical response. Identify the oxidizing agent, the reducing agent, the product of the oxidation and the product of the reduction. (Record all four digits of your answer.)',
+   n:3124,ans:'3124',tol:0,abs:0,w:'Fe³⁺ gains one electron and becomes Fe²⁺: Fe³⁺(aq) is the oxidizing agent (3), and Fe²⁺(aq) is the product of the reduction (4). Sn²⁺ loses two electrons and becomes Sn⁴⁺: Sn²⁺(aq) is the reducing agent (1), and Sn⁴⁺(aq) is the product of the oxidation (2). Record 3124.'},
+  {q:'Which equation represents a reduction half-reaction?',o:[C('Sn^4+(aq) + 2e^- -> Sn^2+(aq)'),C('Sn^2+(aq) -> Sn^4+(aq) + 2e^-'),C('Fe(s) -> Fe^2+(aq) + 2e^-'),C('2Cl^-(aq) -> Cl2(g) + 2e^-')],a:0,
+   w:'In a reduction, electrons are gained: they are on the left side. Sn⁴⁺ gains two electrons and becomes Sn²⁺. The other three equations have the electrons as products: they are oxidations.'}];
+EC_CH[0]={q:'A copper wire with a mass of 25.00 g is placed in 200.0 mL of 0.150 mol/L AgNO₃(aq). All of the silver ions react, and all of the silver that forms sticks to the wire. Calculate the increase in the mass of the wire.',n:2.28,u:'g',tol:.01,
+  w:'Ag⁺(aq) is the OA and Cu(s) is the RA: Cu(s) + 2Ag⁺(aq) → Cu²⁺(aq) + 2Ag(s). n(Ag⁺) = (0.150 mol/L)(0.2000 L) = 0.0300 mol, thus 0.0300 mol of Ag forms. n(Cu) = 0.0300 mol ÷ 2 = 0.0150 mol. The wire loses (0.0150 mol)(63.55 g/mol) = 0.953 g of copper. It gains (0.0300 mol)(107.87 g/mol) = 3.236 g of silver. The increase is 3.236 g − 0.953 g = 2.28 g.'};
+EC_WRQ.push({q:'A student places a strip of zinc (5.00 g) in 100.0 mL of 0.200 mol/L CuSO₄(aq). The copper(II) ions are the limiting reagent.<br>(a) Describe two observations that show that a redox reaction occurs.<br>(b) Write the oxidation and the reduction half-reactions and the net redox equation. Identify the oxidizing agent and the reducing agent.<br>(c) Calculate the mass of zinc that reacts and the mass of copper that forms. Explain why the two masses are different.',
+  marks:['(a) A red-brown solid (copper) forms on the zinc, and the blue colour of the solution fades as Cu²⁺(aq) is used up','(b) Oxidation: Zn(s) → Zn²⁺(aq) + 2e⁻. Reduction: Cu²⁺(aq) + 2e⁻ → Cu(s)','(b) Net: Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s). OA: Cu²⁺(aq). RA: Zn(s)',
+    '(c) n(Cu²⁺) = (0.200 mol/L)(0.1000 L) = 0.0200 mol = n(Zn) = n(Cu), a 1 : 1 ratio','(c) m(Zn) = (0.0200)(65.38) = 1.31 g and m(Cu) = (0.0200)(63.55) = 1.27 g','(c) The moles (and the electrons, 0.0400 mol) are equal, but zinc and copper have different molar masses'],
+  model:'<p>(a) A red-brown solid (copper) forms on the zinc strip, and the blue colour of the solution fades as the Cu²⁺(aq) ions are used up. The zinc strip slowly wears away.</p><p>(b) Oxidation: Zn(s) → Zn²⁺(aq) + 2e⁻. Reduction: Cu²⁺(aq) + 2e⁻ → Cu(s). The electrons balance, thus the net equation is Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s). The oxidizing agent is Cu²⁺(aq) and the reducing agent is Zn(s).</p>'+
+    '<p>(c) n(Cu²⁺) = (0.200 mol/L)(0.1000 L) = 0.0200 mol. The mole ratio is 1 : 1, thus 0.0200 mol of Zn reacts (5.00 g is 0.0765 mol, an excess) and 0.0200 mol of Cu forms. m(Zn) = (0.0200 mol)(65.38 g/mol) = 1.31 g. m(Cu) = (0.0200 mol)(63.55 g/mol) = 1.27 g. The same amount of electrons (0.0400 mol) is lost and gained, but a mole of zinc has a larger mass than a mole of copper, thus the masses are different.</p>'});
+/* generators: the mass that forms, the electrons, the mass needed, and the mole ratio. ec0Mix holds only spontaneous pairs whose data are in EC_E0 and EC_M */
+const ec0Rt=(a,b)=>b===1?'× '+a:'× '+a+'/'+b,ec0Pick=()=>{const [ra,ox]=ec0Mix[RN(0,ec0Mix.length-1)],p=ec0Pair(ra,ox),[sn,sf]=ec0Sol[ox];return {ra,ox,p,sl:sn+' solution, '+ecU(sf)};},
+  ec0Ws=p=>`Oxidation: ${p.ox}. Reduction: ${p.red}. `+(p.mo===1&&p.mr===1?'The electrons already balance. ':`Multiply ${[p.mo>1?'the oxidation by '+p.mo:'',p.mr>1?'the reduction by '+p.mr:''].filter(Boolean).join(' and ')}, so that ${p.n} electrons are lost and gained. `)+`Net: ${p.net}. `;
+EC_GEN[0]=[
+  ()=>{const {ra,ox,p,sl}=ec0Pick(),m=RN(1,9.99,.01),n=m/EC_M[ra],nf=n*p.r,x=nf*EC_M[ox];
+    return {q:`A piece of ${ec0Nm[ra]} is placed in excess ${sl}. ${m.toFixed(2)} g of ${ec0Nm[ra]} reacts. Calculate the mass of ${ec0Nm[ox]} that forms.`,n:x,u:'g',tol:.01,
+      w:ec0Ws(p)+`n(${ra}) = ${m.toFixed(2)} g ÷ ${EC_M[ra].toFixed(2)} g/mol = ${sig(n,4)} mol. n(${ox}) = ${sig(n,4)} mol ${ec0Rt(p.mr,p.mo)} = ${sig(nf,4)} mol. m(${ox}) = ${sig(nf,4)} mol × ${EC_M[ox].toFixed(2)} g/mol = ${sig(x)} g.`};},
+  ()=>{const {ra,p,sl}=ec0Pick(),m=RN(1,9.99,.01),n=m/EC_M[ra],k=p.or.n,x=n*k;
+    return {q:`${m.toFixed(2)} g of ${ec0Nm[ra]} reacts completely with excess ${sl}. Calculate the amount of electrons that the ${ec0Nm[ra]} loses.`,n:x,u:'mol',tol:.01,
+      w:`Oxidation: ${p.ox}. Each ${ec0Nm[ra]} atom loses ${k} electron${k>1?'s':''}. n(${ra}) = ${m.toFixed(2)} g ÷ ${EC_M[ra].toFixed(2)} g/mol = ${sig(n,4)} mol. n(e⁻) = ${k} × ${sig(n,4)} mol = ${sig(x)} mol.`};},
+  ()=>{const {ra,ox,p,sl}=ec0Pick(),mf=RN(1,9.99,.01),nf=mf/EC_M[ox],n=nf/p.r,x=n*EC_M[ra];
+    return {q:`What mass of ${ec0Nm[ra]} must react with excess ${sl} to produce ${mf.toFixed(2)} g of ${ec0Nm[ox]}?`,n:x,u:'g',tol:.01,
+      w:ec0Ws(p)+`n(${ox}) = ${mf.toFixed(2)} g ÷ ${EC_M[ox].toFixed(2)} g/mol = ${sig(nf,4)} mol. n(${ra}) = ${sig(nf,4)} mol ${ec0Rt(p.mo,p.mr)} = ${sig(n,4)} mol. m(${ra}) = ${sig(n,4)} mol × ${EC_M[ra].toFixed(2)} g/mol = ${sig(x)} g.`};},
+  ()=>{const {ra,ox,p}=ec0Pick(),n=RN(.1,.9,.001),x=n*p.r,io=ecU(ec0Ion[ox]);
+    return {q:`${p.netU}. How many moles of ${io} react with ${n.toFixed(3)} mol of ${ra}(s)?`,n:x,u:'mol',tol:.01,
+      w:`Each ${ec0Nm[ra]} atom loses ${p.or.n} electron${p.or.n>1?'s':''}, and each ${io} ion gains ${p.rr.n}. The electrons balance with ${p.mr} ${io} for every ${p.mo} ${ra}. n(${io}) = ${n.toFixed(3)} mol ${ec0Rt(p.mr,p.mo)} = ${sig(x)} mol.`};}];
+EC_METHOD[0]='Write the two half-reactions and multiply them so that the electrons lost equal the electrons gained. Then use the mole ratio of the net equation: n = m/M of the given substance, multiply by the ratio, then m = nM.';
+EC_HT[0]={pre:'Write each entity with its state. A dissolved ionic compound is two kinds of ions: AgNO₃(aq) is Ag⁺(aq) and NO₃⁻(aq).',items:[
+  {q:'Decide if a change is an oxidation or a reduction',s:['If the electrons are shown: electrons on the right (lost) is an oxidation, and electrons on the left (gained) is a reduction.','A metal atom that becomes a positive ion, or a non-metal ion that becomes an element, is oxidized.','A positive metal ion that becomes an atom, or a non-metal atom that becomes a negative ion, is reduced.','More oxygen in the product: oxidation. Less oxygen: reduction.'],chk:'An oxidation never happens alone: find the reduction that goes with it.'},
+  {q:'Write the half-reactions and the net redox reaction',s:['Write the reactants as entities, and remove the spectator ions (the same on both sides).','Find the half-reactions in the table of the data booklet. Read a row from left to right for a reduction, and from right to left for an oxidation.','Multiply the half-reactions so that the electrons lost equal the electrons gained.','Add them, and cancel the electrons.'],chk:'The net equation has no electrons, and its atoms and its charge balance.'},
+  {q:'Identify the oxidizing agent and the reducing agent',s:['The OA is the reactant that gains electrons: it is reduced.','The RA is the reactant that loses electrons: it is oxidized.'],chk:'The OA and the RA are both reactants, never products.'},
+  {q:'Find an amount or a mass from the net equation',s:['Find the moles of the given substance: n = m/M.','Multiply by the mole ratio from the coefficients of the net equation.','Find the mass of the other substance: m = nM.'],chk:'The electrons lost equal the electrons gained, but the masses are not equal.'}]};
+EC_REF.f.push(['Mole ratio of a redox reaction','Multiply the half-reactions so that e⁻ lost = e⁻ gained. The coefficients give the ratio: '+C('Cu(s) + 2Ag^+(aq) -> Cu^2+(aq) + 2Ag(s)')+', <i>n</i>(Ag) = 2<i>n</i>(Cu)'],['Amount of a pure substance','<i>n</i> = <i>m</i>/<i>M</i> &nbsp; and &nbsp; <i>m</i> = <i>nM</i>']);
+EC_REF.t.push(['Redox reaction','A chemical change in which electrons are transferred between the reactants. The oxidation and the reduction happen at the same time.'],
+  ['Oxidation','A loss of electrons (originally: an element combines with oxygen). The entity that is oxidized is the reducing agent.'],
+  ['Reduction','A gain of electrons (originally: a compound loses oxygen). The entity that is reduced is the oxidizing agent.'],
+  ['Oxidizing agent (OA)','The entity that gains (accepts) electrons. It is reduced, and it causes an oxidation.'],
+  ['Reducing agent (RA)','The entity that loses (donates) electrons. It is oxidized, and it causes a reduction.'],
+  ['LEO GER, OIL RIG','Lose Electrons: Oxidation, Gain Electrons: Reduction. Oxidation Is Losing, Reduction Is Gaining (electrons).']);
 }catch(e){console.error('[ec] slot 0 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 1 ----- */
 {try{
