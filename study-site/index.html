@@ -772,6 +772,12 @@ addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=sho
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
 /* showLesson, showHome and showTest call this when page L is on screen. It goes back to where the student left L, or to the top when L is new,
    rebuilt, chosen again (the current lesson's chip is a 'back to top') or opened with the pager. At load the browser keeps the place of a reload */
+/* ----- keyboard focus: a quiz card that renders again (after 'Clear my answers') replaces the button that had focus. Focus then goes to the card's
+   heading, instead of falling to the start of the page ----- */
+let fQuiz=null,fCard=null;
+document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('.card.quiz');fQuiz=c?e.target:null;fCard=c;});
+new MutationObserver(()=>{if(!fQuiz||fQuiz.isConnected)return;const c=fCard;fQuiz=fCard=null;const a=document.activeElement;
+  if((!a||a===document.body)&&c&&c.isConnected&&!c.closest('[hidden]'))focusTo(c,'h3');}).observe(document.getElementById('main'),{childList:true,subtree:true});
 function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;
   if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;}
 </script>
@@ -11522,7 +11528,7 @@ html{scroll-padding-top:62px}
       const m=document.createElement('button');m.type='button';m.className='cm-i'+(it.cur?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',it.cur?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
       /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
-      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{closeMenu();if(!it.cur)it.go();};menu.append(m);});
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();it.go();const L=document.querySelector('#main>.lesson:not([hidden])');if(L)focusTo(L,'h1');};menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
@@ -11535,7 +11541,7 @@ html{scroll-padding-top:62px}
     if(e.key==='Escape'){e.preventDefault();closeMenu(true);}
     else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;its[i<0?(d>0?0:n-1):(i+d+n)%n].focus();}
     else if(e.key==='Home'||e.key==='End'){e.preventDefault();its[e.key==='Home'?0:n-1].focus();}
-    else if(e.key==='Tab')closeMenu();});
+    else if(e.key==='Tab')closeMenu(true);});
   document.addEventListener('pointerdown',e=>{if(!menu.hidden&&!menu.contains(e.target)&&!(mBtn&&mBtn.contains(e.target)))closeMenu();},true);
   addEventListener('resize',()=>closeMenu());
   const upd=()=>{const c=crumbs(),key=c.map(x=>x.lv+':'+x.t).join('|')+'|'+(typeof curS!=='undefined'?curS:'');
