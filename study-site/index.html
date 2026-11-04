@@ -1465,24 +1465,32 @@ const cmix=(c1,c2,t)=>{const a=cparse(c1),b=cparse(c2);return `rgb(${[0,1,2].map
 const ctint=(c,t)=>cmix(c,'#ffffff',t),cshade=(c,t)=>cmix(c,'#000000',t);
 
 /* ---------- canvas: capped pixel ratio, coalesced resize, no drawing while off screen ---------- */
-const CANV=[];let CUR=null;
+const CANV=[];let CUR=null,PRINT=0;
 const IO=new IntersectionObserver(es=>es.forEach(e=>{const o=e.target._o;o.on=e.isIntersecting;if(o.on){if(o.stale)o.draw();kick();}}),{rootMargin:'150px'});
 function canvas(host,h,draw){
   const c=el('canvas',{class:'cv'});c.style.height=h+'px';host.append(c);
   const cd=host.closest&&host.closest('.card'),h3=cd&&cd.querySelector('h3');c.setAttribute('role','img');c.setAttribute('aria-label','Interactive diagram'+(h3?': '+h3.textContent:'')+'. The values are in the text below the diagram.');
   const ctx=c.getContext('2d');let rs=0;
   const o={c,ctx,w:0,h:0,d:1,on:true,stale:false,once:false,hov:null,hp:null,
-    draw(){if(!o.w)return;if(!o.on&&o.once){o.stale=true;return;}o.once=true;o.stale=false;ctx.setTransform(o.d,0,0,o.d,0,0);ctx.clearRect(0,0,o.w,o.h);o.hov=null;CUR=o;try{draw(ctx,o.w,o.h);}finally{CUR=null;}if(o.hov){if(o.hov.series.length)hoverBind(o);if(o.hp)cross(o);}},
+    draw(){if(!o.w||!c.width)return;if(!o.on&&o.once&&!PRINT){o.stale=true;return;}o.once=true;o.stale=false;ctx.setTransform(o.d,0,0,o.d,0,0);ctx.clearRect(0,0,o.w,o.h);o.hov=null;CUR=o;try{draw(ctx,o.w,o.h);}finally{CUR=null;}if(o.hov){if(o.hov.series.length)hoverBind(o);if(o.hp)cross(o);}},
     vis:()=>o.on&&c.offsetParent!==null};
   c._o=o;IO.observe(c);
-  /* layout size (border box), not getBoundingClientRect: that one includes the entrance animation's scale */
-  new ResizeObserver(es=>{const b=es[es.length-1].borderBoxSize;o.bb=b&&b[0];if(rs)return;rs=requestAnimationFrame(()=>{rs=0;const r=o.bb?{width:o.bb.inlineSize,height:o.bb.blockSize}:{width:c.offsetWidth,height:c.offsetHeight};if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();});}).observe(c);
+  /* layout size (border box), not getBoundingClientRect: that one includes the entrance animation's scale.
+     A hidden canvas (its lesson is not on screen) gives back its pixel buffer. When it is shown again it gets the buffer back in that same frame,
+     before paint, and is drawn at once if it is near the screen; the others are drawn when they come near, as before */
+  const fit=()=>{const r=o.bb?{width:o.bb.inlineSize,height:o.bb.blockSize}:{width:c.offsetWidth,height:c.offsetHeight};if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();};
+  new ResizeObserver(es=>{const b=es[es.length-1].borderBoxSize;o.bb=b&&b[0];
+    if(!(o.bb?o.bb.inlineSize:c.offsetWidth)){if(c.width){c.width=0;c.height=0;}return;}
+    if(!c.width){cancelAnimationFrame(rs);rs=0;const r=c.getBoundingClientRect();o.on=r.bottom>-150&&r.top<innerHeight+150;fit();return;}
+    if(rs)return;rs=requestAnimationFrame(()=>{rs=0;fit();});}).observe(c);
   CANV.push(o);return o;
 }
 const redrawAll=()=>CANV.forEach(o=>o.draw());
+/* print: every canvas on the page is drawn, also one that is off screen (stale, or blank after its lesson was hidden), and in the light colours of print */
+addEventListener('beforeprint',()=>{PRINT=1;CANV.forEach(o=>{if(o.stale&&o.c.offsetParent!==null)o.draw();});});addEventListener('afterprint',()=>{PRINT=0;});
 /* the pixel ratio can change with no resize (zoom on a wide window, a move to another screen): resize the backing stores */
 (function dprWatch(){const q=matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`),on=()=>{q.removeEventListener('change',on);const d=Math.min(2,window.devicePixelRatio||1);
-  CANV.forEach(o=>{if(!o.w||o.d===d)return;o.d=d;o.c.width=Math.round(o.w*d);o.c.height=Math.round(o.h*d);o.draw();});dprWatch();};q.addEventListener('change',on);})();
+  CANV.forEach(o=>{if(!o.w||o.d===d||!o.c.width)return;o.d=d;o.c.width=Math.round(o.w*d);o.c.height=Math.round(o.h*d);o.draw();});dprWatch();};q.addEventListener('change',on);})();
 /* one shared frame loop for the simulations that run continuously */
 const LOOPS=[];let _raf=0,_last=0;
 function loop(cv,fn){LOOPS.push({cv,fn});kick();}
