@@ -124,6 +124,10 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
 .modebtn:active{transform:scale(.9) rotate(20deg)}
 .modebtn.acct.on{color:var(--a1);border-color:var(--a2);background:color-mix(in srgb,var(--a2) 28%,var(--glass2))}
 .modebtn.acct:active{transform:scale(.9)}
+/* saving or syncing is not ok: a dot on the account button, and a card at the top of the Today page */
+.modebtn.acct{position:relative}.modebtn.acct.warn::after{content:'';position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--bg,#fff)}
+.card.syncline{border-color:color-mix(in srgb,var(--bad) 45%,var(--hair))}.syncline p{margin:.2em 0}
+.bkp{border-top:1px solid var(--hair);margin-top:.9em;padding-top:.5em}.bkb{display:flex;gap:.5em;flex-wrap:wrap}.card .bkp{border:0;margin:0;padding:0}
 dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--glass2);border:1px solid var(--hair);border-radius:6px;padding:.1em .4em}
 .seg{position:relative;display:flex;border-radius:999px;isolation:isolate}
 .seg.main button{display:flex;align-items:center;gap:.5em}
@@ -981,14 +985,38 @@ function bearing(x,y){
 }
 
 /* ---------- saved answers: this browser first, then the account store if the viewer grants it ---------- */
+/* RETIRE: questions that became a different question at the same position. Saved answers are keyed by position (unit_lesson_j, review items unit_lesson_rj),
+   thus the old answers of such an id would count for the new question. Add the id with the time of the change (ISO), for example
+   const RETIRE={'mom_1_11':'2026-11-05T18:00:00Z','ns_2_r4':'2026-11-05T18:00:00Z'};
+   The answer, spaced repetition, history and review entries of the id that were saved at or before that time are then cleared: at load, and in every copy
+   that arrives later from another tab, the account or a backup file. The clear is recorded as 'rt:<id>' and syncs like the other clears, thus every device
+   drops the same entries. Answers given after that time are kept. A reworded stem that asks the same question does not belong here. */
+const RETIRE={};
 const Store=(()=>{
-  const KEY='unit-study-site.v2',NOC='unit-study-site.noclaude',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},c:{},pos:null,u:null},lastW=null,canSave=true,warned=false;
-  try{const s=localStorage.getItem(KEY);lastW=s;if(s){const o=JSON.parse(s);if(o&&typeof o==='object'){MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
+  const KEY='unit-study-site.v2',NOC='unit-study-site.noclaude',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},c:{},pos:null,u:null},lastW=null,canSave=true,warned=0;
+  /* SCHEMA: the format of the saved copies. Every copy carries it as v (a copy without v is 3). A copy written by a newer page (v above SCHEMA) is still read,
+     but this page stops uploading and asks for a reload, so an old page left open never erases data it does not understand.
+     Top-level fields that this page does not know are kept: LX from the copy in this browser, X1 from the account copy. They are written back unchanged */
+  const SCHEMA=4,TOP=['v','c','pos','u','kind','saved'];let LX={},X1={},newer=0;
+  const extra=o=>{const x={};for(const k in o)if(!MAPS.includes(k)&&!TOP.includes(k))x[k]=o[k];return x;};
+  const gate=o=>{const v=o&&o.v;if(typeof v==='number'&&v>SCHEMA&&v>newer){newer=v;setTimeout(()=>{emit();toast('This page is out of date. Reload it to keep syncing. Your progress is kept on this device.');});}};
+  /* MIGRATIONS[n] turns a copy of format n-1 into format n. upgrade() runs the steps a copy needs: on the copy in this browser at load, and on every copy that arrives
+     (another tab, the account copy, a backup file). Changes to the content of a question are not format steps: they are clears with a fixed cut-off time
+     (RB2 below, RETIRE), which every copy that arrives passes through in fold() */
+  /* 4: the entries are unchanged; the account copy moved from one document to one document per section (see 'the account copy' below) */
+  const MIGRATIONS={4:o=>o},RTM=['a','h','s','r'],RTL=typeof RETIRE==='object'&&RETIRE||{};
+  const upgrade=o=>{for(let v=(typeof o.v==='number'?o.v:3)+1;v<=SCHEMA;v++)if(MIGRATIONS[v])o=MIGRATIONS[v](o)||o;return o;};
+  try{const s=localStorage.getItem(KEY);lastW=s;if(s){let o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);o=upgrade(o);LX=extra(o);MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,rt=0,mode='device',lastPull=0,pulled=false,uid=null,src='',unsub=null,err='',cur=Promise.resolve(true),scope=()=>null;
-  const emit=()=>subs.forEach(f=>{try{f();}catch(e){}});
+  /* one failing subscriber does not stop the others, and its error is reported (the page tests fail on console errors) */
+  const emit=()=>subs.forEach(f=>{try{f();}catch(e){console.error('[store] subscriber failed',e);}});
   /* entries compare as JSON with sorted keys. The newer entry wins; a fixed order breaks a tie, so every copy keeps the same one */
   const J=x=>JSON.stringify(x,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const nw=(a,b)=>(a.t||0)>(b.t||0)||((a.t||0)===(b.t||0)&&J(a)>J(b));
+  /* the same entry: equal times and equal fields. fold() skips such entries before mix() and J(), so merging a copy that is mostly equal is cheap */
+  /* values compare as their JSON text does (an undefined field is absent, NaN is null), thus an entry equals its own copy from the account */
+  const same=(a,b)=>{if(a===b)return true;if((a.t||0)!==(b.t||0))return false;let n=0;for(const k in a){const x=a[k],y=b[k];if(x!==undefined)n++;if(x===y)continue;if(!x||!y||typeof x!=='object'||typeof y!=='object'){if(J(x)===J(y))continue;return false;}
+    if(Array.isArray(x)){if(!Array.isArray(y)||x.length!==y.length||x.some((v,i)=>v!==y[i]&&J([v])!==J([y[i]])))return false;}else if(J(x)!==J(y))return false;}for(const k in b)if(b[k]!==undefined)n--;return !n;};
   const uni=(a,b,n)=>[...new Set([...(a||[]),...(b||[])])].sort().slice(-n),bt=(a,b)=>!a?b:!b?a:a.c/a.n>b.c/b.n||(a.c/a.n===b.c/b.n&&a.n>=b.n)?a:b;
   /* history, best results, study days, achievements and counters are combined, so neither copy loses progress. null: the newer entry wins */
   function mix(m,k,l,r){if(l.x||r.x)return null;const t=Math.max(l.t||0,r.t||0),o=x=>Object.assign({},nw(r,l)?r:l,x,{t});
@@ -1001,67 +1029,186 @@ const Store=(()=>{
     if(k.startsWith('ch_'))return o({ok:Math.max(l.ok||0,r.ok||0)});
     if(k.startsWith('boss_')){const x={won:[l.won,r.won].filter(Boolean).sort()[0]||0},a=l.best,b=r.best;if(a||b)x.best=!a?b:!b?a:a.c>b.c||(a.c===b.c&&a.ms<=b.ms)?a:b;return o(x);}
     return null;}
-  /* fold another copy R into D. Returns [D changed, R lacks something that D has] */
+  /* fold another copy R into D. Returns [D changed, R lacks something that D has, number of entries taken from R] */
   function fold(R,noUp){let ch=false;const rc=R.c||{},nc=[],nk=[];
     for(const k in rc){const l=D.c[k],r=rc[k];if(r&&(!l||(r.t||0)>(l.t||0))){D.c[k]=r;ch=true;nc.push(k);}}
-    MAPS.forEach(m=>{const rm=R[m]||{},lm=D[m];for(const k in rm){const l=lm[k],r=rm[k];if(!r||typeof r!=='object')continue;const v=l&&mix(m,k,l,r);
-      if(v){if(J(v)!==J(l)){lm[k]=v;ch=true;nk.push([m,k]);}}else if(!l||nw(r,l)){lm[k]=r;ch=true;nk.push([m,k]);}}});
+    MAPS.forEach(m=>{const rm=R[m]||{},lm=D[m];for(const k in rm){const l=lm[k],r=rm[k];if(!r||typeof r!=='object'||l&&same(l,r))continue;const v=l&&mix(m,k,l,r);
+      if(v){if(!same(v,l)){lm[k]=v;ch=true;nk.push([m,k]);}}else if(!l||nw(r,l)){lm[k]=r;ch=true;nk.push([m,k]);}}});
     /* a clear is a cut-off: the entries it covers that are older than it stay cleared, also ones that arrive later from another device
        (a clear new to this copy checks every entry, the others only the entries that just arrived) */
-    for(const id in D.c){const f=scope(id),T=D.c[id].t||0;if(!f)continue;const cut=(m,k)=>{const e=D[m][k];if(e&&!e.x&&(e.t||0)<=T&&f(m,k)){D[m][k]={x:1,t:T};ch=true;}};
+    for(const id in D.c){if(id.startsWith('rt:'))continue;const f=scope(id),T=D.c[id].t||0;if(!f)continue;const cut=(m,k)=>{const e=D[m][k];if(e&&!e.x&&(e.t||0)<=T&&f(m,k)){D[m][k]={x:1,t:T};ch=true;}};
       if(nc.includes(id))MAPS.forEach(m=>{for(const k in D[m])cut(m,k);});else nk.forEach(([m,k])=>cut(m,k));}
-    const up=!noUp&&(MAPS.some(m=>{const rm=R[m]||{},lm=D[m];return Object.keys(lm).some(k=>{const l=lm[k],r=rm[k];return !r||(mix(m,k,l,r)?J(l)!==J(r):nw(l,r));});})||Object.keys(D.c).some(k=>!rc[k]||(D.c[k].t||0)>(rc[k].t||0)));
-    return [ch,up];}
-  const warn=()=>{if(warned||mode==='account')return;warned=true;setTimeout(()=>toast('Your progress cannot be saved in this browser, because its site storage is blocked or full. It is lost when you reload the page.'+(window.SYNC&&window.SYNC.ready?' Sign in to keep it.':'')));};
+    /* a retired id (RETIRE): one look-up for each entry that arrived, and every entry of the id when its record is new */
+    const rcut=(m,k)=>{const c=RTM.includes(m)&&D.c['rt:'+k],e=c&&D[m][k];if(e&&!e.x&&(e.t||0)<=(c.t||0)){D[m][k]={x:1,t:c.t||0};ch=true;}};
+    nk.forEach(([m,k])=>rcut(m,k));nc.forEach(id=>{if(id.startsWith('rt:'))RTM.forEach(m=>rcut(m,id.slice(3)));});
+    const up=!noUp&&(MAPS.some(m=>{const rm=R[m]||{},lm=D[m];return Object.keys(lm).some(k=>{const l=lm[k],r=rm[k];return !r||!same(l,r)&&(nw(l,r)||!!mix(m,k,l,r));});})||Object.keys(D.c).some(k=>!rc[k]||(D.c[k].t||0)>(rc[k].t||0)));
+    return [ch,up,nk.length];}
+  /* storage blocked or full: said at load, and again after the first answer (a: the save followed an answer). status() keeps it on the account button and the Today page */
+  const warn=a=>{if(mode==='account'||warned>1||warned&&!a)return;warned++;setTimeout(()=>toast('Your progress cannot be saved in this browser, because its site storage is blocked or full. It is lost when you reload the page.'+(window.SYNC&&window.SYNC.ready?' Sign in to keep it.':'')+' You can also download a backup on the Today page.'));};
   /* another tab's copy o: progress of a different account replaces this copy, otherwise its newer entries are folded in */
-  function adopt(o,noUp){if(o.u&&D.u&&o.u!==D.u){MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.u=o.u;if(ref&&uid!==D.u)detach();return [true,false];}
+  /* progress kept on this device for another account: before a different account takes this copy over, it is kept under KEY@<account> (for the 3 accounts used last),
+     and folded back in when that account signs in here again. Thus changes that had not uploaded yet are not lost */
+  const AK=u=>KEY+'@'+u,cp=()=>{const o={v:SCHEMA,saved:Date.now()};MAPS.forEach(m=>{o[m]=D[m];});o.c=D.c;return o;};
+  function stash(){if(!D.u||!MAPS.some(m=>Object.keys(D[m]).length))return true;const k=AK(D.u);
+    try{let o=cp();const s=localStorage.getItem(k);if(s){const old=JSON.parse(s),keep=D;D=Object.assign({},old,{c:old.c||{}});MAPS.forEach(m=>{D[m]=D[m]||{};});try{fold(JSON.parse(JSON.stringify(o)),1);o=cp();}finally{D=keep;}}
+      localStorage.setItem(k,JSON.stringify(o));
+      const all=[];for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.startsWith(KEY+'@'))all.push(n);}
+      all.map(n=>{let t=0;try{t=JSON.parse(localStorage.getItem(n)).saved||0;}catch(e){}return [n,t];}).sort((a,b)=>b[1]-a[1]).slice(3).forEach(([n])=>localStorage.removeItem(n));return true;}
+    catch(e){setTimeout(()=>toast('The progress of the other account could not be kept on this device, because its storage is full.'));return false;}}
+  function unstash(u){try{const s=localStorage.getItem(AK(u));if(!s)return false;const o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);fold(upgrade(o),1);}localStorage.removeItem(AK(u));return true;}catch(e){return false;}}
+  function adopt(o,noUp){if(o.u&&D.u&&o.u!==D.u){stash();MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.u=o.u;retire();if(ref&&uid!==D.u)detach();return [true,false];}
     if(o.u&&!D.u)D.u=o.u;return fold(o,noUp);}
   /* save D. Another tab's newer entries are folded in first, so open tabs never erase each other's work */
-  const local=()=>{try{const s=localStorage.getItem(KEY);if(s&&s!==lastW){const o=JSON.parse(s);if(o&&typeof o==='object'&&adopt(o,1)[0])setTimeout(emit);}
-    const w=JSON.stringify(D);localStorage.setItem(KEY,w);lastW=w;canSave=true;}catch(e){canSave=false;warn();}};
-  const merge=(R,quiet)=>{const [ch,up]=fold(R&&typeof R==='object'?JSON.parse(JSON.stringify(R)):{});if(ch){local();emit();}if(up&&!quiet)later(800);};
-  const PAY=()=>JSON.parse(JSON.stringify({v:3,a:D.a,r:D.r,s:D.s,w:D.w,h:D.h,g:D.g,c:D.c})),SOFT=/^(unavailable|resource.exhausted|deadline.exceeded|aborted|internal|cancelled)$/;
+  let lq=0,la=0;const local=()=>{lq=0;const a=la;la=0;try{const s=localStorage.getItem(KEY);if(s&&s!==lastW){const o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);Object.assign(LX,extra(o));if(adopt(upgrade(o),1)[0])setTimeout(emit);}}
+    const w=JSON.stringify(Object.assign({},LX,D,{v:SCHEMA}));localStorage.setItem(KEY,w);lastW=w;if(!canSave){canSave=true;emit();}}catch(e){if(canSave){canSave=false;emit();}warn(a);}};
+  /* ----- the account copy -----
+     split (a remote with split:1, SCHEMA 4): one document per section, 'p_<section>', and 'meta' for the rest (study days, counters, achievements, clears).
+     A key goes to the section that its prefix names (docOf), thus new keys and new sections need no change here. Each entry is stored as its JSON text,
+     so that a merge write (update(), or setDoc with merge) replaces an entry whole. An upload writes only the entries that the account copy lacks or has older:
+     a mirror of each document is kept, from the listener and from the page's own writes. A document that does not exist yet is read first, then written whole.
+     The old single document (legacy) is still read and folded in, but never written: a page from before this change that is still open keeps writing it,
+     and nothing that it writes is lost, nor can it erase the sections.
+     single (a remote {get(),set(data)}, the format of SCHEMA 3): every upload reads and merges the document first, then replaces it whole. */
+  const LIM=250000,bytes=s=>{let n=s.length;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>127)n+=c>2047?2:1;}return n;};
+  let SECS=null;const RC=new Map(),secs=()=>{if(!SECS)try{SECS=new Set(ORDER);}catch(e){return null;}return SECS;};
+  /* the document of an entry: r is keyed by the section; other keys name it in their first or second part (mom_1_3, cnt_mom_1, mt_mom-2_1, boss_mom) */
+  const docOf=(m,k)=>{if(m==='c')return 'meta';const q=m+'\t'+k;let d=RC.get(q);if(d)return d;const S=secs();if(!S)return 'meta';
+    if(m==='r')d=S.has(k)?'p_'+k:'meta';else{const t=k.split(/[_-]/,2);d=S.has(t[0])?'p_'+t[0]:S.has(t[1])?'p_'+t[1]:'meta';}RC.set(q,d);return d;};
+  const dec=v=>{if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){return null;}}return v&&typeof v==='object'&&!Array.isArray(v)?v:null;};
+  /* a document as maps of entries (e) and its other top-level fields (x) */
+  const unpack=d=>{const e={},x={};for(const k in d){if(k==='v')continue;if(MAPS.includes(k)||k==='c'){const o={},s=d[k]&&typeof d[k]==='object'?d[k]:{};for(const q in s){const v=dec(s[q]);if(v)o[q]=v;}e[k]=o;}else x[k]=d[k];}return {e,x};};
+  const pack=E=>{const o={};for(const m in E){const s={};for(const k in E[m])s[k]=J(E[m][k]);o[m]=s;}return o;};
+  let SPL=false,LEG='',Mir=new Map(),Mx=new Map(),Msz=new Map(),DQ=new Set(),listed=false,live=false,wres=null,wt=0,V1=3,stop='',tries=0,noW=false,viewer=false,off='';
+  const dq=(m,k)=>{if(SPL)DQ.add(m+'\t'+k);};
+  const mget=id=>Mir.has(id)?Mir.get(id):listed?null:undefined;
+  /* R: the account copy (a single document). It passes the version gate, and its unknown top-level fields are kept for the next upload */
+  const merge=(R,quiet)=>{R=R&&typeof R==='object'?upgrade(JSON.parse(JSON.stringify(R))):{};gate(R);X1=extra(R);V1=typeof R.v==='number'?Math.min(R.v,SCHEMA):3;const [ch,up]=fold(R);if(ch){local();emit();}if(up&&!quiet)later(800);};
+  const PAY=()=>{const o=Object.assign({},X1,{v:Math.max(3,V1)});MAPS.forEach(m=>{o[m]=D[m];});o.c=D.c;return JSON.parse(JSON.stringify(o));};
+  /* a document of the split account copy arrived. sure: the server's version (not a cached view), thus the mirror can trust it. Returns: D changed */
+  function intake(id,data,sure){
+    if(id===LEG){if(!data)return false;const R=upgrade(JSON.parse(JSON.stringify(data)));gate(R);return fold(R,1)[0];}
+    if(!data){if(sure){Mir.set(id,null);Msz.set(id,0);}return false;}
+    gate(data);if(sure){const u=unpack(data);Mir.set(id,u.e);Mx.set(id,u.x);Msz.set(id,bytes(JSON.stringify(data)));}
+    const R=unpack(data).e;R.v=data.v;return fold(upgrade(R),1)[0];}
+  /* the entries that the account copy lacks or has older, in each document whose content is known. They wait in DQ for the next upload */
+  function ahead(){if(!SPL||!ref)return 0;let n=0;const chk=(m,lm)=>{for(const k in lm){const M=mget(docOf(m,k));if(M===undefined)continue;const r=M&&M[m]&&M[m][k];if(!r||!same(lm[k],r)){if(!DQ.has(m+'\t'+k)){DQ.add(m+'\t'+k);n++;}}}};
+    MAPS.forEach(m=>chk(m,D[m]));chk('c',D.c);if(n&&!busy)later(800);return n;}
+  /* a listing of the split account copy: {docs:[{id,data,pending}], sure}. A pending document (it holds this page's own write, not confirmed yet) is folded in too,
+     because a change from another device can arrive in it and a store need not send a confirmed copy later. Only a confirmed document updates the mirror */
+  function take(L){let ch=false;for(const d of L.docs||[])ch=intake(d.id,d.data,!d.pending&&L.sure!==false)||ch;if(L.sure!==false)listed=true;if(ch){local();emit();}ahead();}
+  /* write the waiting entries of the split account copy, one document at a time: a merge write of the entries that changed, or the whole document when it is new */
+  async function pushSplit(r,keys){const by=new Map();for(const q of keys){const i=q.indexOf('\t'),m=q.slice(0,i),k=q.slice(i+1),id=docOf(m,k);if(!by.has(id))by.set(id,[]);by.get(id).push([m,k]);}
+    for(const [id,list] of by){if(ref!==r)throw 0;let M=Mir.get(id);
+      if(!M){const s=await r.get(id);if(ref!==r)throw 0;if(intake(id,s&&s.exists?s.data():null,1)){local();emit();}M=Mir.get(id);ahead();}
+      if(newer)throw {code:'outdated'};
+      if(M){const P={};let n=0,sz=Msz.get(id)||0;for(const [m,k] of list){const e=m==='c'?D.c[k]:D[m]&&D[m][k],o=M[m]&&M[m][k];if(!e||o&&same(e,o))continue;
+          const t=J(e);(P[m]=P[m]||{})[k]=t;n++;sz+=bytes(t)-(o?bytes(J(o)):-bytes(k)-6);}
+        if(!n)continue;if(sz>LIM)throw {code:'too-large'};
+        try{await r.patch(id,P);}catch(e){Mir.delete(id);throw {code:e&&e.code,op:'patch'};}
+        for(const m in P){M[m]=M[m]||{};for(const k in P[m])M[m][k]=JSON.parse(P[m][k]);}Msz.set(id,sz);}
+      else{const E={};const add=(m,lm)=>{for(const k in lm)if(docOf(m,k)===id)(E[m]=E[m]||{})[k]=lm[k];};MAPS.forEach(m=>add(m,D[m]));add('c',D.c);
+        const body=Object.assign({},Mx.get(id)||{},pack(E),{v:SCHEMA}),txt=JSON.stringify(body),sz=bytes(txt);if(sz>LIM)throw {code:'too-large'};
+        try{await (r.create?r.create(id,body):r.set(id,body));}catch(e){Mir.delete(id);throw {code:e&&e.code,op:'set'};}
+        Mir.set(id,unpack(JSON.parse(txt)).e);Msz.set(id,sz);}}}
   const within=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(false),ms))]);
-  /* upload: the account copy is read and merged first, so a write never drops what another device added */
-  function push(){if(busy)return cur;if(!ref||!dirty)return Promise.resolve(true);const r=ref;busy=true;dirty=false;
-    return cur=(async()=>{let ok=false;
-      try{lastPull=Date.now();const s=await r.get();if(ref!==r)throw 0;pulled=true;merge(s&&s.exists?s.data():null,1);await r.set(PAY());ok=true;lastSync=Date.now();if(err){err='';emit();}}
-      catch(e){if(ref===r){dirty=true;const c=String(e&&e.code||'');if(!SOFT.test(c)&&!err){err=c||'error';emit();toast('Your latest progress could not be uploaded to your account. It is kept on this device and uploads with your next answer, or when you select Sync now.');}}}
-      busy=false;if(dirty&&ref&&!err){clearTimeout(timer);timer=setTimeout(push,4000);}return ok;})();}
+  /* errors: a permanent one stops the retries and says what to do; anything else is tried again with a growing wait (4 s, 8 s ... 5 min, with jitter) */
+  const HARD=/^(invalid.argument|quota.exceeded|permission.denied|failed.precondition|unauthenticated|revoked|not.granted|capability.(disabled|removed)|transform.error|out.of.range|unimplemented|data.loss|too.large)$/;
+  const wait=()=>{const b=Math.min(3e5,4000*2**Math.min(tries,7));tries++;return Math.round(b*(.75+Math.random()*.5));};
+  /* what the student is told once per page load, for each kind of problem. status() gives the lasting state for the account button, the dialog and the Today page */
+  const BK=' Download a backup on the Today page to keep a copy.',said=new Set();
+  const MSG={viewer:'This shared copy of the site cannot save progress to your Claude account. Your progress is saved in this browser only.'+BK,
+    full:'Your account copy is full, thus your latest progress was not uploaded. Trying again cannot fix this. Your progress is kept on this device.'+BK,
+    denied:'Your account did not accept the upload. Sign out, then sign in again. Your progress is kept on this device.',
+    off:'Syncing with your account stopped for this visit. Your progress is kept on this device.',
+    hard:'Your latest progress could not be uploaded to your account, and trying again cannot fix this. It is kept on this device.'+BK,
+    soft:'Your latest changes are not uploaded yet. They are kept on this device, and the site tries again.',
+    reach:'Your account cannot be reached right now. Your progress is kept on this device, and the site tries again.',
+    outdated:'This page is out of date. Reload it to keep syncing. Your progress is kept on this device.',
+    local:'This browser cannot save your progress, because its site storage is blocked or full. It is lost when you reload the page.'};
+  const kind=c=>c==='viewer'||c==='outdated'?c:/^(too.large|quota.exceeded)$/.test(c)?'full':/^(permission.denied|unauthenticated)$/.test(c)?'denied':/^(revoked|not.granted|capability.(disabled|removed))$/.test(c)?'off':HARD.test(c)?'hard':'soft';
+  const say=c=>{const k=kind(c);if(said.has(k))return;said.add(k);setTimeout(()=>toast(MSG[k]));};
+  function fail(e){const c=String(e&&e.code||'error');err=c;
+    if(c==='outdated'){emit();return;}
+    /* the Claude db rejects every write of a viewer who may not write here (a shared link opened by someone else, a Viewer or Commenter) with invalid_argument */
+    if(src==='claude'&&c==='invalid_argument'&&e.op==='set'){noW=viewer=true;say('viewer');detach();return;}
+    if(/^(revoked|not.granted|capability.(disabled|removed))$/.test(c)){noW=src==='claude';off=c;say(c);detach();return;}
+    if(HARD.test(c)&&!(c==='invalid_argument'&&e.op==='patch')){stop=c;emit();say(c);return;}
+    emit();}
+  /* upload. single: the account copy is read and merged first, so a write never drops what another device added. split: see pushSplit */
+  function push(){if(busy)return cur;if(!ref||!dirty)return Promise.resolve(true);if(newer||stop)return Promise.resolve(false);const r=ref;busy=true;dirty=false;
+    return cur=(async()=>{let ok=false;const keys=SPL?[...DQ]:null;if(keys)DQ.clear();
+      try{if(SPL)await pushSplit(r,keys);
+        else{lastPull=Date.now();const s=await r.get();if(ref!==r)throw 0;pulled=true;merge(s&&s.exists?s.data():null,1);if(newer)throw {code:'outdated'};await r.set(PAY());}
+        ok=true;tries=0;reached();if(!DQ.size)lastSync=Date.now();if(err){err='';emit();}}
+      catch(e){if(ref===r){if(keys)keys.forEach(q=>DQ.add(q));dirty=true;fail(e);}}
+      busy=false;if(ref===r&&(dirty||DQ.size)&&!stop&&!newer){dirty=true;clearTimeout(timer);timer=setTimeout(push,ok?1500:wait());}return ok;})();}
   const later=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(push,ms);};
-  const touch=()=>{local();if(ref)later(1500);};
+  /* one save per task: the writes of one answer (answer, history, counters, study days, spaced repetition) are saved together, in a microtask that still runs before the task ends */
+  const save=()=>{if(!lq){lq=1;Promise.resolve().then(()=>{if(lq)local();});}};
+  const touch=()=>{la=1;save();if(ref)later(1500);};
+  /* perr: the account copy has not answered since it was attached (offline, or the store does not answer within 10 s). status() then says so, instead of 'synced' */
+  let perr='';const unreached=c=>{if(!pulled&&!perr){perr=c||'unreached';emit();}},reached=()=>{if(perr){perr='';emit();}};
   async function pull(){if(!ref)return false;const r=ref;lastPull=Date.now();clearTimeout(rt);
-    try{const s=await r.get();if(ref!==r)return false;pulled=true;lastSync=Date.now();merge(s&&s.exists?s.data():null);return true;}
-    catch(e){if(ref===r&&!pulled)rt=setTimeout(pull,10000);return false;}}
+    try{if(SPL)take(await r.all());else{const s=await r.get();if(ref!==r)return false;merge(s&&s.exists?s.data():null);}
+      if(ref!==r)return false;pulled=true;reached();if(!dirty&&!busy)lastSync=Date.now();return true;}
+    catch(e){if(ref===r){const c=String(e&&e.code||'');if(HARD.test(c)&&c!=='invalid_argument')fail(e);else if(!pulled){unreached(c);rt=setTimeout(pull,wait());}}return false;}}
+  /* the listener of the split account copy: one for the whole collection, opened again after a transient error */
+  function watch(){const r=ref;if(!r||!r.watch||unsub)return;clearTimeout(wt);
+    const next=L=>{if(ref!==r)return;live=true;take(L);if(L.sure!==false){pulled=true;reached();if(!dirty&&!busy)lastSync=Date.now();if(wres){wres(true);wres=null;}}};
+    const bad=e=>{if(ref!==r)return;unsub=null;live=false;const c=String(e&&e.code||'');if(c==='revoked'||c==='permission-denied'||c==='unauthenticated'){fail(e);return;}if(!HARD.test(c))wt=setTimeout(watch,wait());};
+    try{unsub=r.watch(next,bad)||null;}catch(e){unsub=null;}}
+  const unwatch=()=>{clearTimeout(wt);if(unsub){try{unsub();}catch(e){}unsub=null;}live=false;};
   let label='',lastSync=0;
-  /* attach a remote document {get(),set(data)} and merge it with the data on this device. o.uid names the account: progress kept here for another account is not merged into it */
-  async function attach(r,o={}){if(unsub){unsub();unsub=null;}clearTimeout(timer);clearTimeout(rt);
-    const other=!!(o.uid&&D.u&&D.u!==o.uid);if(other){MAPS.forEach(m=>{D[m]={};});D.c={};dirty=false;}
-    if(o.uid&&D.u!==o.uid){D.u=o.uid;local();}
-    ref=r;uid=o.uid||null;src=o.src||'';label=o.label||'';mode='account';pulled=false;err='';lastSync=0;emit();
-    if(other)toast('The progress on this device belonged to another account, so it was not added to '+(label||'this account')+'.');
-    await pull();if(dirty&&ref===r)await push();}
+  /* attach the account copy and merge it with the data on this device. o.uid names the account: progress kept here for another account is not merged into it */
+  async function attach(r,o={}){unwatch();clearTimeout(timer);clearTimeout(rt);
+    const other=!!(o.uid&&D.u&&D.u!==o.uid);if(other){local();stash();MAPS.forEach(m=>{D[m]={};});D.c={};dirty=false;}
+    let back=false;if(o.uid&&D.u!==o.uid){D.u=o.uid;back=unstash(o.uid);if(other)retire();local();}
+    ref=r;SPL=!!(r&&r.split);LEG=SPL&&r.legacy||'';Mir=new Map();Mx=new Map();Msz=new Map();DQ=new Set();listed=false;stop='';tries=0;V1=3;X1={};
+    uid=o.uid||null;src=o.src||'';label=o.label||'';mode='account';pulled=false;err='';perr='';lastSync=0;emit();
+    if(other)toast('The progress on this device belonged to another account, so it was not added to '+(label||'this account')+'. It is kept on this device for that account.'+(back?' The progress kept here for '+(label||'this account')+' is back.':''));
+    /* split: the listener's first full view is the pull; without it (or after 10 s) the documents are listed once */
+    if(SPL&&r.watch){const w=new Promise(res=>{wres=res;});watch();await within(w,1e4);wres=null;if(ref===r&&!pulled){unreached();await pull();}}else await pull();
+    if(ref===r){ahead();if(dirty)await push();}}
   /* s: only detach when that source is attached */
-  function detach(s){if(s&&s!==src)return;if(unsub){unsub();unsub=null;}const was=!!ref||mode!=='device';ref=null;uid=null;src='';label='';mode='device';lastSync=0;err='';clearTimeout(timer);clearTimeout(rt);if(was)emit();}
-  /* a live update from the remote store (another device wrote) */
-  const remote=data=>{if(!ref)return;pulled=true;lastSync=Date.now();merge(data);};
-  async function sync(){if(!ref)return false;clearTimeout(timer);let ok=await within(pull(),1e4);
-    if(ok){if(busy)await within(cur,1e4);if(dirty&&ref)ok=await within(push(),1e4);}return !!ok&&!!ref&&!dirty&&!busy;}
+  function detach(s){if(s&&s!==src)return;unwatch();const was=!!ref||mode!=='device';ref=null;uid=null;src='';label='';mode='device';lastSync=0;err='';perr='';SPL=false;DQ=new Set();Mir=new Map();clearTimeout(timer);clearTimeout(rt);if(was)emit();}
+  /* a live update of a single-document account copy (another device wrote) */
+  const remote=data=>{if(!ref||SPL)return;pulled=true;lastSync=Date.now();merge(data);};
+  /* Sync now: also tries again after a permanent error */
+  async function sync(){if(!ref)return false;clearTimeout(timer);stop='';tries=0;let ok=await within(pull(),1e4);
+    if(ok){if(busy)await within(cur,1e4);if((dirty||DQ.size)&&ref){dirty=true;ok=await within(push(),1e4);}}return !!ok&&!!ref&&!dirty&&!busy;}
   /* upload what is waiting, for at most ms (before signing out) */
   async function flush(ms=4000){if(!ref)return true;clearTimeout(timer);if(busy)await within(cur,ms);if(dirty&&ref)await within(push(),ms);return !dirty&&!busy;}
-  /* the Claude account: skipped after the student signed out of it, unless force */
-  async function connect(force){try{if(!force&&localStorage.getItem(NOC))return false;}catch(e){}
+  /* the Claude account (data/users/<id>/: the sections, meta, and the old single document 'progress'): skipped after the student signed out of it, unless force */
+  async function connect(force){if(noW)return false;try{if(!force&&localStorage.getItem(NOC))return false;}catch(e){}
     try{if(!window.claude||typeof window.claude.use!=='function')return false;
       const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return false;
-      const id=await user.id();if(!id)return false;const d=db.doc('data/users/'+id+'/progress');
-      await attach(d,{label:'Claude account',uid:'claude:'+id,src:'claude'});
-      if(ref===d&&typeof d.onSnapshot==='function')unsub=d.onSnapshot(s=>{if(s&&s.exists&&!(s.metadata&&s.metadata.hasPendingWrites))remote(s.data());},()=>{});
-      try{localStorage.removeItem(NOC);}catch(e){}return true;}catch(e){return false;}}
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(dirty&&ref){clearTimeout(timer);push();}}else if(ref&&Date.now()-lastPull>60000)pull();});
+      const id=await user.id();if(!id)return false;
+      /* a viewer who may not write here: the platform says so up front (false), or only the first write tells (null).
+         can('data.write') speaks for the shared documents; it also holds for data/users/<id>/ only under the default access rules (no db rules declared),
+         which this site uses. If rules are ever declared, drop this check and let the first write decide */
+      let w=null;try{if(typeof user.can==='function')w=await user.can('data.write');}catch(e){}if(w===false){noW=viewer=true;say('viewer');emit();return false;}
+      /* one query and one listener for the whole collection. If the store refuses a query here, each known document is read and watched on its own (at most 2 + one per section, under the 64 listeners of a view) */
+      const col=db.collection('data/users/'+id),sure=q=>!(q&&q.metadata&&q.metadata.fromCache),pend=d=>!!(d.metadata&&d.metadata.hasPendingWrites);
+      const ids=()=>['progress','meta'].concat((secs()?[...secs()]:[]).map(k=>'p_'+k)),flat=e=>e instanceof TypeError||/^(invalid.argument|transform.error|capability.removed)$/.test(e&&e.code||'');let per=false;
+      await attach({split:1,legacy:'progress',
+        async all(){if(!per)try{const q=await col.get();return {sure:sure(q),docs:q.docs.map(d=>({id:d.id,data:d.exists===false?null:d.data()}))};}catch(e){if(!flat(e))throw e;per=true;}
+          const n=ids(),ss=await Promise.all(n.map(x=>col.doc(x).get()));return {sure:true,docs:ss.map((d,i)=>({id:n[i],data:d.exists?d.data():null}))};},
+        get:n=>col.doc(n).get(),set:(n,d)=>col.doc(n).set(d),patch:(n,d)=>col.doc(n).update(d),
+        watch(next,bad){let u=[];const each=()=>{u=ids().map(n=>col.doc(n).onSnapshot(d=>next({sure:sure(d),docs:[{id:n,data:d.exists?d.data():null,pending:pend(d)}]}),bad));};
+          if(per)each();else try{u=[col.onSnapshot(q=>next({sure:sure(q),docs:q.docChanges().map(c=>({id:c.doc.id,data:c.type==='removed'?null:c.doc.data(),pending:pend(c.doc)}))}),e=>{if(flat(e)&&!per){per=true;each();}else bad(e);})];}catch(e){if(!flat(e))throw e;per=true;each();}
+          return ()=>u.forEach(f=>f());}},
+        {label:'Claude account',uid:'claude:'+id,src:'claude'});
+      try{localStorage.removeItem(NOC);}catch(e){}return mode==='account';}catch(e){return false;}}
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){if((dirty||DQ.size)&&ref&&!stop){clearTimeout(timer);dirty=true;push();}}else if(ref&&!live&&Date.now()-lastPull>60000)pull();});
+  /* back online: try at once instead of waiting out the growing wait */
+  addEventListener('online',()=>{if(!ref)return;tries=0;if(SPL&&!unsub)watch();if(!pulled)pull();if((dirty||DQ.size)&&!stop){clearTimeout(timer);dirty=true;push();}});
   /* another tab saved: take its newer entries, so open tabs show each other's work */
-  addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;
-    const [ch,up]=adopt(o);if(ch)emit();if(up)local();}catch(_){}});
-  const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});touch();};
+  addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;gate(o);Object.assign(LX,extra(o));
+    const [ch,up]=adopt(upgrade(o));if(ch)emit();if(up)local();}catch(e){console.error('[store] the copy saved by another tab could not be read',e);}});
+  /* RETIRE: each listed id that has no record yet, or an older one. At load, and when this copy is replaced by another account's copy */
+  function retire(){let n=0;for(const id in RTL){const T=Date.parse(RTL[id]),c='rt:'+id;if(!(T>0)||D.c[c]&&(D.c[c].t||0)>=T)continue;D.c[c]={t:T};dq('c',c);n++;RTM.forEach(m=>{const e=D[m][id];if(e&&!e.x&&(e.t||0)<=T){D[m][id]={x:1,t:T};dq(m,id);}});}if(n)save();}
+  retire();
+  const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});dq(m,id);touch();};
   return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
     sr:id=>g('s',id),srSet:(id,o)=>p('s',id,o),srAll:()=>Object.keys(D.s).filter(k=>!D.s[k].x).map(k=>[k,D.s[k]]),
@@ -1069,9 +1216,21 @@ const Store=(()=>{
     x:(m,k)=>g(m,k),xs:(m,k,e)=>p(m,k,e),xk:m=>Object.keys(D[m]).filter(k=>!D[m][k].x),
     /* id records the clear as a cut-off that syncs (see setScope) */
     /* T: a fixed cut-off time. Only entries written at or before T are cleared, thus every device clears the same entries, whenever it runs the clear */
-    clear(f,id,T){let n=0;const t=T||Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&(!T||(D[m][k].t||0)<=T)&&f(m,k)){D[m][k]={x:1,t};n++;}});if(id)D.c[id]={t};if(n||id)touch();if(n)emit();return n;},cleared:id=>!!D.c[id],
-    pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy,
-    error:()=>err,canSave:()=>canSave,optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
+    clear(f,id,T){let n=0;const t=T||Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&(!T||(D[m][k].t||0)<=T)&&f(m,k)){D[m][k]={x:1,t};dq(m,k);n++;}});if(id){D.c[id]={t};dq('c',id);}if(n||id)touch();if(n)emit();return n;},cleared:id=>!!D.c[id],
+    pos:()=>D.pos,setPos(q){D.pos=q;save();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy||DQ.size>0,
+    error:()=>err,outdated:()=>newer>SCHEMA,canSave:()=>canSave,
+    /* a backup: every entry (cleared ones too, so that a restore repeats the clears) and the clears, with its format and time */
+    exportCopy:()=>JSON.parse(JSON.stringify(Object.assign({},LX,cp(),{kind:'unit-study-site-progress',v:SCHEMA,saved:Date.now()}))),
+    /* restore a backup: it is folded in like a copy from another device (the newer entry wins, history and counters combine), thus nothing is deleted.
+       A file from the other copy of the site or from another account merges too. Returns {n: entries taken} or {err: 'format'|'newer'} */
+    importCopy(R){if(!R||typeof R!=='object'||Array.isArray(R)||R.kind&&R.kind!=='unit-study-site-progress'||!MAPS.some(m=>R[m]&&typeof R[m]==='object'))return {err:'format'};
+      if(typeof R.v==='number'&&R.v>SCHEMA)return {err:'newer'};const o=upgrade(JSON.parse(JSON.stringify(R)));MAPS.concat('c').forEach(m=>{if(!o[m]||typeof o[m]!=='object'||Array.isArray(o[m]))o[m]={};});
+      const [ch,,n]=fold(o,1);if(ch){save();emit();if(ref){ahead();if(DQ.size||!SPL)later(800);}}return {n};},
+    /* the lasting state. local: ok|blocked. remote: off|ok|pending|retrying|unreached|stopped|outdated|viewer. text: what to tell the student, empty when all is well.
+       pending covers the time before the account copy first answers; unreached: it has not answered (offline, or no answer within 10 s) */
+    status(){const r=viewer?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':perr&&!pulled?'unreached':dirty||busy||DQ.size||!pulled?'pending':'ok';
+      const t=r==='viewer'||r==='outdated'?MSG[r]:r==='stopped'?MSG[kind(stop)]:r==='retrying'?MSG.soft:r==='unreached'?MSG.reach:'';
+      return {local:canSave?'ok':'blocked',remote:r,code:stop||err||perr||off,text:[canSave?'':MSG.local+(mode==='account'&&r==='ok'?' It is still saved to your account.':BK.replace('a copy','it')),t].filter(Boolean).join(' ')};},optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
 /* spaced repetition: a missed question comes back after 1, 3, 7, 16 and 35 days, then every 60 days (SRM), so that it is still known at the diploma.
    A wrong answer starts it again at 1 day. A correct answer before the due date does not move it. Box b waits SRI[b] days: boxes 0 to 2 keep their old meaning.
@@ -1389,12 +1548,14 @@ function makePDF(lines){const W=612,H=792,M=56,pages=[];let cur=[],y=H-M;const e
   obj.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`;});const xr=out.length;
   out+=`xref\n0 ${obj.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${obj.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
   const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u;}
-async function savePDF(name,lines){
-  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:new Blob([makePDF(lines)],{type:'application/pdf'})});return 'The PDF was sent to your downloads.';}}
+/* offer a file to the student: the artifact's downloads capability when there is one, else a normal download link. what: 'The PDF', 'The backup' */
+async function saveFile(name,blob,what='The file'){
+  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:blob});return what+' was sent to your downloads.';}}
   catch(e){if(e&&e.code==='declined')return 'The download was cancelled.';}
   /* a normal browser: a link to the file */
-  try{const u=URL.createObjectURL(new Blob([makePDF(lines)],{type:'application/pdf'})),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return 'The PDF was saved to your downloads.';}catch(e){}
+  try{const u=URL.createObjectURL(blob),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return what+' was saved to your downloads.';}catch(e){}
   return 'A download is not available in this view.';}
+const savePDF=(name,lines)=>saveFile(name,new Blob([makePDF(lines)],{type:'application/pdf'}),'The PDF');
 /* numeric-response format: 4 boxes, direct value or a.bc × 10^d */
 function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);/* a value below 1 leaves out the 0 before the decimal point, as the exam says: .456 fills the four boxes */if(!t.includes('e')&&(p===3?t.replace(/^0\./,'.'):t).length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
 /* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong */
@@ -1640,12 +1801,13 @@ function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeEl
   $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
   d.showModal();$('[data-x]',d).focus();}
 /* the account dialog: sign in, sign out, or an explanation when sync is not available */
-function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',S=window.SYNC||{},ready=!!S.ready,web=/^https?:$/.test(location.protocol);
+function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',S=window.SYNC||{},ready=!!S.ready,web=/^https?:$/.test(location.protocol),st=Store.status();
   const when=t=>{if(!t)return 'not yet';const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';};
   const sy=()=>{const s=window.SYNC||{};return !!s.ready+'|'+(s.error||'');},k0=sy();
   let body,row,err='';const ns=Store.canSave()?'':'<p class="hint">This browser cannot save your progress, because its site storage is blocked or full. It is lost when you reload the page.</p>';
-  if(on){body=`<h3 id="ac-h">Signed in</h3><p>Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device. Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.${Store.error()?' The last upload did not work. Your progress is kept on this device.':''}</p>`;
+  if(on){body=`<h3 id="ac-h">Signed in</h3><p>${/^(ok|pending)$/.test(st.remote)?`Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device.`:`You are signed in to <b>${Store.account()||'your account'}</b>. Your progress is saved on this device.`} Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.${st.text?' '+st.text:''}</p>`;
     row=`<button type="button" class="btn ghost" data-out>Sign out</button><button type="button" class="btn" data-sync>${icon('reset',15)}Sync now</button>`;}
+  else if(st.remote==='viewer'){body=`<h3 id="ac-h">Saved in this browser only</h3><p>${st.text}</p>`;row=`<button type="button" class="btn" data-x>Close</button>`;}
   else if(window.claude&&typeof window.claude.use==='function'){body=`<h3 id="ac-h">Sync with your Claude account</h3><p>Your progress is saved on this device only. Sign in to save it to your Claude account and see it on your other devices. The progress already on this device is kept and merged.</p>${ns}`;
     row=`<button type="button" class="btn ghost" data-x>Not now</button><button type="button" class="btn" data-cl>${icon('user',15)}Sign in</button>`;}
   else if(FIREBASE_CONFIG&&!web){body=`<h3 id="ac-h">Sync needs the web address</h3><p>${Store.canSave()?'Your progress is saved in this browser only. ':''}Google sign-in works only when the site is opened from its web address (https://…), not as a file on this device.</p>${ns}`;
@@ -1658,7 +1820,8 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
   else{body=S.error?`<h3 id="ac-h">Sign-in is not available right now</h3><p>${Store.canSave()?'Your progress is saved in this browser. ':''}The sign-in service could not be reached. Check the internet connection, then reload the page.</p>${ns}`
       :`<h3 id="ac-h">Connecting…</h3><p>Sign-in is still loading. This takes a moment.</p>`;err=S.error||'';
     row=`<button type="button" class="btn" data-x>Close</button>`;}
-  const d=el('dialog',{class:'confirm','aria-labelledby':'ac-h'},body+`<p class="hint" data-err role="alert"${err?'':' hidden'}></p><div class="row">${row}</div>`),m=$('[data-err]',d);m.textContent=err;
+  const d=el('dialog',{class:'confirm','aria-labelledby':'ac-h'},body+BKP+`<p class="hint" data-err role="alert"${err?'':' hidden'}></p><div class="row">${row}</div>`),m=$('[data-err]',d);m.textContent=err;
+  backupButtons(d,()=>close());
   /* the Firebase module fires sync-change when it is ready or has failed: show the new state */
   document.body.append(d);const re=()=>{if(sy()===k0||(i&&i.disabled)||(cb&&cb.disabled))return;close();accountDialog();},close=()=>{if(!d.isConnected)return;removeEventListener('sync-change',re);d.close();d.remove();if(back&&back.isConnected)back.focus();};
   if(!on&&FIREBASE_CONFIG&&web)addEventListener('sync-change',re);
@@ -1690,8 +1853,8 @@ function boot(){
   /* print in light mode (dark ink on white paper), then go back; the saved choice does not change */
   let prm=null;addEventListener('beforeprint',()=>{prm=document.documentElement.dataset.mode;if(prm==='dark')setMode('light');});addEventListener('afterprint',()=>{if(prm==='dark')setMode('dark');prm=null;});
   const ab=el('button',{type:'button',class:'modebtn acct',id:'acct'});$('.bar').append(ab);
-  const acctState=()=>{const on=Store.mode()==='account';ab.classList.toggle('on',on);ab.innerHTML=icon(on?'cloud':'user',17);
-    const t=on?(Store.error()?'Not synced: changes are waiting to upload to ':'Synced with ')+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
+  const acctState=()=>{const on=Store.mode()==='account',h=syncHead(Store.status());ab.classList.toggle('on',on);ab.classList.toggle('warn',!!h);ab.innerHTML=icon(on?'cloud':'user',17);
+    const t=h?h+'. Select for details.':on?'Synced with '+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
   acctState();Store.on(acctState);ab.onclick=accountDialog;
   if(!Store.cleared(RB2))Store.clear(rb2Scope,RB2,RB2T);
   const p=hashPos(Store.pos());if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
@@ -1705,7 +1868,7 @@ function boot(){
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',$('#top').offsetHeight+'px')).observe($('#top'));
   let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
-  Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();refreshLive();homeDot();unitMarks();});
+  Store.on(()=>{Object.keys(QUIZ).forEach(k=>{try{QUIZ[k]();}catch(e){console.error('[quiz] '+k+' could not be redrawn',e);}});chipProgress();refreshLive();homeDot();unitMarks();});
   migrateBadges();Store.on(()=>{if(!gv('achMig'))migrateBadges();});
   /* a page left open past midnight: redraw what depends on the date (Today, mastery cards, due counts, the Today dot) */
   let day0=today();const dayTick=()=>{if(document.hidden||today()===day0)return;day0=today();chipProgress();refreshLive();homeDot();};
@@ -11837,7 +12000,7 @@ const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')
 const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
 const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
-const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}});}
+const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
 /* Mastered needs two correct days at least MGAP calendar days apart, so that two rounds just before and just after midnight are not enough.
@@ -12173,7 +12336,32 @@ function showHome(){keepPlace();curS='home';document.body.dataset.s='home';chipB
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);courseCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);courseCard(g);achCard(g);backupCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+/* the state of saving and syncing, while it is not ok: first on the Today page, with what the student can do */
+const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':st.remote==='unreached'?'Your account cannot be reached right now':'';
+/* a backup of all progress: one JSON file. Restoring one adds it to the progress here, in another browser or in the other copy of the site, and never deletes */
+ICON.upload=ICON.upload||'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 19.5h14"/>';
+const BKK='unit-study-site.backup',BKP=`<div class="bkp"><p class="hint">A backup is a file with all of your progress. Restoring it adds to the progress here and never deletes anything.</p><div class="bkb"><button type="button" class="btn sm ghost" data-bk>${icon('save',15)}Download a backup</button><button type="button" class="btn sm ghost" data-rs>${icon('upload',15)}Restore from a backup</button></div></div>`;
+async function backupSave(){const msg=await saveFile('study-progress-'+today()+'.json',new Blob([JSON.stringify(Store.exportCopy())],{type:'application/json'}),'The backup');
+  if(/ was s/.test(msg))try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}toast(msg);refreshLive();}
+function backupLoad(){const i=el('input',{type:'file',accept:'.json,application/json',style:'display:none'});document.body.append(i);
+  i.addEventListener('change',async()=>{const f=i.files&&i.files[0];i.remove();if(!f)return;let o=null;try{o=JSON.parse(await f.text());}catch(e){}const r=o?Store.importCopy(o):{err:'format'};
+    toast(r.err==='newer'?'This backup was made by a newer version of the site. Reload the page, then restore it again.':r.err?'This file is not a backup of this study site.':r.n?`The backup is restored: ${r.n} saved ${r.n===1?'item was':'items were'} added or updated. Nothing was deleted.`:'The backup has nothing newer than the progress on this device.');
+    if(r.n)afterChange();});
+  i.click();}
+/* f: run first, for example to close the dialog that holds the buttons */
+function backupButtons(host,f){const b=$('[data-bk]',host),r=$('[data-rs]',host);if(b)b.onclick=()=>{if(f)f();backupSave();};if(r)r.onclick=()=>{if(f)f();backupLoad();};}
+/* the Today page: the backup buttons, and a reminder when the progress lives only in this browser and the last backup is older than a week (after 50 answers) */
+function backupCard(g){const st=Store.status(),acc=st.remote==='ok'||st.remote==='pending';let t=0;try{t=+localStorage.getItem(BKK)||0;}catch(e){}
+  const old=!acc&&Store.xk('a').length>=50&&Date.now()-t>7*864e5,c=card(g,'Backup',`<p>${acc?'Your progress is saved in this browser and in your account.':'Your progress is saved in this browser only.'} Download a backup to keep a copy, or to move your progress to another browser or to the other copy of the site.</p>${old?`<p class="hint"><b>${t?'Your last backup is more than a week old.':'You have not downloaded a backup yet.'}</b></p>`:t?`<p class="hint">Last backup: ${fmtDay(dayOf(t))}.</p>`:''}`+BKP.replace('A backup is a file with all of your progress. Restoring it','Restoring a backup'),'half');backupButtons(c);}
+function syncCard(g){const st=Store.status(),h=syncHead(st);if(!h)return;
+  const tx=(st.text.startsWith(h+'.')?st.text.slice(h.length+1).trim():st.text).replace(' on the Today page','');
+  const c=card(g,'',`<h3>${icon(st.remote==='viewer'?'user':'cloud',18)} ${h}</h3><p role="status">${tx}</p><div class="row"></div>`,'syncline'),row=$('.row',c);g.prepend(c);
+  const b=(t,f,cl)=>{const x=el('button',{type:'button',class:'btn sm'+(cl?' '+cl:'')},t);x.onclick=f;row.append(x);};
+  if(st.remote==='outdated')b(icon('reset',15)+'Reload',()=>location.reload());
+  else if(/^(retrying|stopped|unreached)$/.test(st.remote))b(icon('reset',15)+'Sync now',async()=>{const ok=await Store.sync();toast(ok?'Synced.':'Could not sync yet. Your progress is kept on this device.');});
+  if(st.local!=='ok'||/^(stopped|viewer)$/.test(st.remote))b(icon('save',15)+'Download a backup',backupSave,st.remote==='outdated'?'ghost':'');
+  b('Account',accountDialog,'ghost');}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
@@ -12466,7 +12654,8 @@ boot();
 </script>
 <script type="module">
 /* Google sign-in and cross-device sync. This runs only when FIREBASE_CONFIG above is filled in.
-   Progress is stored in Firestore at users/{uid}/progress/main, and merged with the data on this device. */
+   Progress is stored in Firestore in users/{uid}/progress: one document per section (p_<section>) and meta, merged with the data on this device.
+   users/{uid}/progress/main, the single document of older pages, is still read and folded in (see 'the account copy' in the Store). */
 window.SYNC={ready:false,error:''};
 if(FIREBASE_CONFIG&&!(window.claude&&typeof window.claude.use==='function')){
   try{
@@ -12474,7 +12663,6 @@ if(FIREBASE_CONFIG&&!(window.claude&&typeof window.claude.use==='function')){
     const [{initializeApp},A,F]=await Promise.all([import(U('app')),import(U('auth')),import(U('firestore'))]);
     const app=initializeApp(FIREBASE_CONFIG),auth=A.getAuth(app),db=F.getFirestore(app),provider=new A.GoogleAuthProvider();
     provider.setCustomParameters({prompt:'select_account'});
-    let unsub=null;
     const popupBlocked=e=>e&&['auth/popup-blocked','auth/operation-not-supported-in-this-environment','auth/cancelled-popup-request'].includes(e.code);
     window.SYNC={ready:true,error:'',
       async signIn(){try{await A.signInWithPopup(auth,provider);}catch(e){if(popupBlocked(e))await A.signInWithRedirect(auth,provider);else throw e;}},
@@ -12482,14 +12670,16 @@ if(FIREBASE_CONFIG&&!(window.claude&&typeof window.claude.use==='function')){
     dispatchEvent(new Event('sync-change'));
     try{await A.getRedirectResult(auth);}catch(e){window.SYNC.error=e.message||String(e);}
     A.onAuthStateChanged(auth,async user=>{
-      if(unsub){unsub();unsub=null;}
       if(!user){Store.detach('fb');return;}
-      const ref=F.doc(db,'users',user.uid,'progress','main');
-      await Store.attach({
-        async get(){const s=await F.getDoc(ref);return {exists:s.exists(),data:()=>s.data()};},
-        async set(data){await F.setDoc(ref,data);}
+      /* a merge write (setDoc with merge) replaces only the entries it names; a new document is made the same way, thus it never replaces one that another device just made.
+         The listener also reports when the server confirms this page's own writes (includeMetadataChanges), so a change from another device is never hidden behind them */
+      const col=F.collection(db,'users',user.uid,'progress'),dr=n=>F.doc(db,'users',user.uid,'progress',n),pend=d=>d.metadata.hasPendingWrites;
+      await Store.attach({split:1,legacy:'main',
+        async all(){const q=await F.getDocs(col);return {sure:!q.metadata.fromCache,docs:q.docs.map(d=>({id:d.id,data:d.data(),pending:pend(d)}))};},
+        async get(n){const s=await F.getDoc(dr(n));return {exists:s.exists(),data:()=>s.data()};},
+        set:(n,d)=>F.setDoc(dr(n),d),create:(n,d)=>F.setDoc(dr(n),d,{merge:true}),patch:(n,d)=>F.setDoc(dr(n),d,{merge:true}),
+        watch:(next,bad)=>F.onSnapshot(col,{includeMetadataChanges:true},q=>next({sure:!q.metadata.fromCache,docs:q.docChanges({includeMetadataChanges:true}).map(c=>({id:c.doc.id,data:c.type==='removed'?null:c.doc.data(),pending:pend(c.doc)}))}),bad)
       },{label:user.email||user.displayName||'Google account',uid:user.uid,src:'fb'});
-      unsub=F.onSnapshot(ref,s=>{if(s.exists()&&!s.metadata.hasPendingWrites)Store.remote(s.data());},()=>{});
     });
   }catch(e){window.SYNC={ready:false,error:(e&&e.message)||String(e)};}
 }
