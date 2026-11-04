@@ -4119,20 +4119,237 @@ EC_REF.t.push(['Spontaneous reaction','A reaction that occurs on its own. In a t
 }catch(e){console.error('[ec] slot 2 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 3 ----- */
 {try{
-/* placeholder of lesson 3 (written by the framework): the lesson agent replaces everything inside this try block. The diploma questions of lesson 3 are in slot 3d */
-ECL[3]={t:EC_T[3],h:'Predicting redox reactions',d:'List the entities present, find the strongest oxidizing agent and the strongest reducing agent, then write and balance the two half-reactions.',build(g){
-  card(g,'Steps to predict a redox reaction',`<p class="hint">Outcomes: 30–B1.5k, 30–B1.7k</p><ol><li>List all the entities present. Soluble ionic compounds dissociate, strong acids ionize, and water is always present in an aqueous solution.</li>
-    <li>Label each entity as an oxidizing agent (left side of the table) or a reducing agent (right side). Some need a partner: ${C('MnO4^-(aq)')} is a strong oxidizing agent only with ${C('H^+(aq)')}.</li>
-    <li>Find the strongest oxidizing agent (SOA) and the strongest reducing agent (SRA).</li><li>Write the reduction and the oxidation half-reactions, balance the electrons, and add them.</li>
-    <li>The reaction is spontaneous when the SOA is above the SRA.</li></ol>`);
-  const c=card(g,'Try it: find the SOA and the SRA',`<p>Aqueous potassium permanganate is mixed with an acidic iron(II) sulfate solution. The entities present are ${['K^+(aq)','MnO4^-(aq)','H^+(aq)','Fe^2+(aq)','SO4^2-(aq)','H2O(l)'].map(C).join(', ')}. They are underlined in the table.</p>`);
-  const ents=['K^+(aq)','MnO4^-(aq)','H^+(aq)','Fe^2+(aq)','SO4^2-(aq)','H2O(l)'],p=ecPredict(ents);
-  ecTable(c,ecRows(['MnO4^-(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Fe^3+(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','H^+(aq)','Fe^2+(aq)','H2O(l)','K^+(aq)']),{hl:ents,pick:true,slot:0,
-    w:`SOA: ${C(p.soa)}. SRA: ${C(p.sra)}. Reduction: ${p.redM}. Oxidation: ${p.oxM}. Net: ${p.net}, ${ecEs('net')} = ${ecV(p.E)}: spontaneous.`});
+/* ===== lesson 3: Predicting redox reactions (notes pages 13 to 15: the six steps, the permanganate example, practice questions 1 to 10). The diploma questions 7 to 27 are in slot 3d ===== */
+/* an equation as HTML that breaks only between its terms: each entity stays on one line */
+const ec3N=s=>String(s).split(/(\s+\+\s+|\s*->\s*|\s*<=>\s*)/).map(x=>/^\s*(\+|->|<=>)\s*$/.test(x)?C(x):x?'<span style="white-space:nowrap">'+C(x)+'</span>':'').join('');
+/* a list of entities, 'Cu(s), K^+(aq)': it breaks only after a comma */
+const ec3L=s=>String(s).split(/,\s*/).map(ec3N).join(', ');
+/* an equation with a word over its arrow, as the notes write it: spont. or nonspont. The arrow is drawn, thus the word fits over it */
+const ec3Eq=(s,w)=>{const [l,r]=s.split(/\s*->\s*/),t=r.split(/\s+\+\s+/);
+  return `${ec3N(l)} <span style="white-space:nowrap"><span class="ec3sp"><small>${w||'spont.'}</small><svg viewBox="0 0 44 10" role="img" aria-label="gives"><path d="M1 5H41M35 1.5L41.5 5L35 8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> ${ec3N(t[0])}</span>${t.length>1?' + '+ec3N(t.slice(1).join(' + ')):''}`;};
+/* the rows of the table in which an entity present is the first oxidizing agent or the first reducing agent. A row whose partner is missing stays in: the student must see that it cannot act */
+const ec3Rows=ents=>{const P=new Set(ents.map(ecK));return EC_E0.filter(r=>P.has(r.k)||P.has(r.r));};
+/* an entity with the partners of its side, as HTML: 'MnO₄⁻(aq) with H⁺(aq)' */
+const ec3With=side=>{const k=side[0][1],ps=side.slice(1).map(x=>x[1]).filter(x=>x!==k);return ec3N(k)+(ps.length?' with '+ps.map(ec3N).join(' and '):'');};
+const ec3OA=r=>ec3With(r.L)+' ('+ecV(r.E)+')',ec3RA=r=>ec3With(r.R)+' ('+ecV(r.E)+')';
+/* each entity once, at its strongest row (the lists are strongest first): SO₄²⁻ with H⁺ (+0.17 V) hides SO₄²⁻ with H₂O (−0.93 V) */
+const ec3Uniq=(rows,f)=>rows.filter((r,i)=>rows.findIndex(x=>x[f]===r[f])===i);
+/* the spontaneity rule: two small tables. The SOA (blue) and the SRA (orange) are joined by a line */
+const ec3Rule=()=>{const tb=(x0,ro,rr,t1,t2)=>{let s=svgText('OA',x0+30,20,{s:12,w:700})+svgText('RA',x0+126,20,{s:12,w:700});
+    for(let r=0;r<5;r++){const y=30+r*19,o=r===ro,q=r===rr;
+      s+=`<rect x="${x0}" y="${y}" width="60" height="14" rx="4.5" fill="${o?'var(--s1)':'var(--fig2)'}" stroke="${o?'none':'var(--gridc)'}"/><rect x="${x0+96}" y="${y}" width="60" height="14" rx="4.5" fill="${q?'var(--s2)':'var(--fig2)'}" stroke="${q?'none':'var(--gridc)'}"/>`;
+      if(o)s+=`<text class="lb s" x="${x0+30}" y="${y+10.6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">SOA</text>`;
+      if(q)s+=`<text class="lb s" x="${x0+126}" y="${y+10.6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">SRA</text>`;}
+    const y1=37+ro*19,y2=37+rr*19;
+    return s+`<path d="M${x0+63},${y1}L${x0+93},${y2}" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/><circle cx="${x0+63}" cy="${y1}" r="3" fill="var(--ink)"/><circle cx="${x0+93}" cy="${y2}" r="3" fill="var(--ink)"/>`+
+      svgText(t1,x0+78,142,{s:11.5,w:650,f:'ink'})+svgText(t2,x0+78,157,{s:11.5});};
+  return `<svg viewBox="0 0 330 164" role="img" aria-label="Two small pictures of the table of reduction half-reactions, with the oxidizing agents (OA) on the left and the reducing agents (RA) on the right. In the first, the SOA is in the second row and the SRA in the fourth row: the SOA is above the SRA, and the reaction is spontaneous. In the second, the SOA is in the fourth row and the SRA in the second row: the SOA is below the SRA, and no reaction occurs.">`+
+    tb(6,1,3,'SOA above SRA','spontaneous')+tb(168,3,1,'SOA below SRA','no reaction')+'</svg>';};
+/* the evidence of the permanganate example: a pale green tube of acidified iron(II) becomes yellow-brown when purple permanganate is added */
+const ec3Tubes=()=>{const tube=(cx,col)=>`<path d="M${cx-15},30V100a15 15 0 0 0 30,0V30" fill="var(--fig2)" fill-opacity=".5" stroke="var(--gl)" stroke-width="2.2"/><path d="M${cx-13},54V100a13 13 0 0 0 26,0V54Z" fill="${col}"/><path d="M${cx-19},30H${cx+19}" stroke="var(--gl)" stroke-width="2.8" stroke-linecap="round"/><path d="M${cx-7},60V96" stroke="#fff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 260 170" role="img" aria-label="Two test tubes. Before: the acidified iron(II) sulfate solution is pale green. Purple potassium permanganate solution is added and its colour fades. After: the solution is yellow-brown, from the iron(III) ions; the manganese(II) ions are almost colourless.">`+
+    tube(48,'color-mix(in srgb,var(--s3) 40%,var(--liq))')+tube(212,'color-mix(in srgb,var(--s4) 62%,var(--liq))')+
+    `<path d="M130,22c-6,8 -8,12 -8,15a8 8 0 0 0 16,0c0,-3 -2,-7 -8,-15Z" fill="var(--s6)"/>`+sArrow(84,76,176,76,'var(--ink2)',2)+
+    svgText('add KMnO₄(aq)',130,64,{s:11.5,w:650,f:'ink'})+svgText('purple fades',130,96,{s:11})+
+    svgText('before',48,132,{s:11.5,w:650,f:'ink'})+svgText('pale green',48,148,{s:11})+svgText('Fe²⁺(aq)',48,163,{s:11})+
+    svgText('after',212,132,{s:11.5,w:650,f:'ink'})+svgText('yellow-brown',212,148,{s:11})+svgText('Fe³⁺(aq)',212,163,{s:11})+'</svg>';};
+/* the practice questions of page 14 and 15: q the question, e the entities present (keys), n a short name, net the net equation (the same as ecPredict gives, in the usual order: checked by the test), x what to notice */
+const ec3PQ=[
+  {q:'Copper is dipped in hydrochloric acid.',e:['Cu(s)','H^+(aq)','Cl^-(aq)','H2O(l)'],n:'Copper in hydrochloric acid',net:'Cu(s) + 2H^+(aq) -> Cu^2+(aq) + H2(g)',
+    x:'Copper does not react with hydrochloric acid. Cl⁻(aq) is only a reducing agent, thus it cannot oxidize copper.'},
+  {q:'Copper is dipped in nitric acid.',e:['Cu(s)','H^+(aq)','NO3^-(aq)','H2O(l)'],n:'Copper in nitric acid',net:'Cu(s) + 2NO3^-(aq) + 4H^+(aq) -> Cu^2+(aq) + N2O4(g) + 2H2O(l)',
+    x:'Nitric acid is a strong acid: H⁺(aq) and NO₃⁻(aq). With H⁺(aq), the nitrate ion (+0.80 V) is a stronger oxidizing agent than H⁺(aq) (0.00 V), thus copper reacts with nitric acid but not with hydrochloric acid. Evidence: the solution turns blue (Cu²⁺) and a gas forms.'},
+  {q:'Iron is exposed to moist air.',e:['Fe(s)','O2(g)','H2O(l)'],n:'Iron in moist air',net:'2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)',
+    x:'Moist air is O₂(g) and H₂O(l), with no H⁺(aq). Thus the O₂ rows at +1.23 V and +0.70 V cannot act, and the SOA is O₂(g) with H₂O(l). The Fe²⁺ and OH⁻ ions go on to form rust (see the Corrosion lesson).'},
+  {q:'An aqueous solution of gold(III) chloride is mixed with hydrogen peroxide.',e:['Au^3+(aq)','Cl^-(aq)','H2O2(l)','H2O(l)'],n:'Gold(III) chloride and hydrogen peroxide',net:'2Au^3+(aq) + 3H2O2(l) -> 2Au(s) + 3O2(g) + 6H^+(aq)',
+    x:'In this table, H₂O₂(l) is only on the right side (O₂(g) + 2H⁺(aq) + 2e⁻ ⇌ H₂O₂(l), +0.70 V), thus here it is a reducing agent. Evidence: gold metal and bubbles of oxygen form.'},
+  {q:'Sodium is added to water.',e:['Na(s)','H2O(l)'],n:'Sodium in water',net:'2Na(s) + 2H2O(l) -> 2Na^+(aq) + H2(g) + 2OH^-(aq)',
+    x:'Water is the SOA: Na⁺ is far below water on the left side. Evidence: bubbles of hydrogen, and the solution becomes basic (OH⁻ forms).'},
+  {q:'Aluminum is added to water.',e:['Al(s)','H2O(l)'],n:'Aluminum in water',net:'2Al(s) + 6H2O(l) -> 2Al^3+(aq) + 3H2(g) + 6OH^-(aq)',
+    x:'The prediction is spontaneous. In practice, aluminum reacts very slowly with water, because a thin layer of aluminum oxide covers the metal and protects it.'},
+  {q:'Hydrogen gas is bubbled through a solution of iron(III) chloride.',e:['H2(g)','Fe^3+(aq)','Cl^-(aq)','H2O(l)'],n:'Hydrogen and iron(III) chloride',net:'2Fe^3+(aq) + H2(g) -> 2Fe^2+(aq) + 2H^+(aq)',
+    x:'H₂(g) is on the right side of two rows. The row at −0.83 V needs OH⁻(aq), which is not present, thus H₂(g) acts at 0.00 V. Evidence: the yellow-brown Fe³⁺(aq) becomes pale green Fe²⁺(aq), and the pH decreases (H⁺ forms).'},
+  {q:'Chlorine is bubbled through an aqueous solution of sodium bromide.',e:['Cl2(g)','Na^+(aq)','Br^-(aq)','H2O(l)'],n:'Chlorine and sodium bromide',net:'Cl2(g) + 2Br^-(aq) -> 2Cl^-(aq) + Br2(l)',
+    x:'Evidence: the colourless solution turns yellow-orange as bromine forms.'},
+  {q:'Bromine is bubbled through an aqueous solution of sodium chloride.',e:['Br2(l)','Na^+(aq)','Cl^-(aq)','H2O(l)'],n:'Bromine and sodium chloride',net:'2Br2(l) + 2H2O(l) -> 4Br^-(aq) + O2(g) + 4H^+(aq)',
+    x:'On the right side, H₂O(l) (+1.23 V) is lower than Cl⁻(aq) (+1.36 V), thus water is the SRA. Br₂(l) is below both, thus bromine does not oxidize chloride ions. This agrees with question 8: chlorine is a stronger oxidizing agent than bromine.'},
+  {q:'Solid lead and lead(IV) oxide plates are dipped in sulfuric acid.',e:['Pb(s)','PbO2(s)','H^+(aq)','SO4^2-(aq)','H2O(l)'],n:'Lead and lead(IV) oxide in sulfuric acid',net:'Pb(s) + PbO2(s) + 2SO4^2-(aq) + 4H^+(aq) -> 2PbSO4(s) + 2H2O(l)',
+    x:'Pb(s) is on the right side of two rows. With SO₄²⁻(aq) present, the lower row applies: Pb(s) + SO₄²⁻(aq) → PbSO₄(s) + 2e⁻ (−0.36 V). Both plates become coated with PbSO₄(s). This is the reaction of a lead-acid car battery (see Batteries and fuel cells).'}];
+/* the worked solution of one mixture, from the table: entities, OAs and RAs, SOA and SRA, the two half-reactions, the net equation and the decision. .ec3t is filled with the marked table */
+const ec3Sol=(d,i)=>{const p=ecPredict(d.e);
+  return `<p><b>Entities:</b> ${d.e.map(ec3N).join(', ')}.</p><p><b>Oxidizing agents</b>, strongest first: ${ec3Uniq(p.oas,'k').map(ec3OA).join(', ')}.<br><b>Reducing agents</b>, strongest first: ${ec3Uniq(p.ras,'r').map(ec3RA).join(', ')}.</p>
+    <p><b>SOA:</b> ${ec3With(p.rr.L)}. <b>SRA:</b> ${ec3With(p.or.R)}.</p><div class="ec3t" data-i="${i}"></div>
+    <p>Reduction: ${ec3N(p.redS)}${p.mr>1?' &nbsp; (× '+p.mr+')':''}<br>Oxidation: ${ec3N(p.oxS)}${p.mo>1?' &nbsp; (× '+p.mo+')':''}</p>
+    <p class="ec3eq">${ec3Eq(d.net,p.spont?'spont.':'nonspont.')}</p><p>${p.spont?'The SOA is above the SRA: the reaction is <b>spontaneous</b>.':'The SOA is below the SRA: <b>no reaction</b> occurs (nonspontaneous).'} ${d.x}</p>`;};
+const ec3WE=['K^+(aq)','MnO4^-(aq)','H^+(aq)','Fe^2+(aq)','SO4^2-(aq)','H2O(l)'];
+ECL[3]={t:EC_T[3],h:'Predicting redox reactions',
+  d:'In a mixture, the strongest oxidizing agent (SOA) reacts with the strongest reducing agent (SRA). The reaction is spontaneous when the SOA is above the SRA in the table of reduction half-reactions.',
+  build(g){
+  ecCSS(3,'#ec-3 .ec3sp{position:relative;display:inline-block;width:2.6em;height:.62em;margin:0 .2em;vertical-align:.02em}#ec-3 .ec3sp svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}'+
+    '#ec-3 .ec3sp small{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.6em;line-height:1;font-weight:650;color:var(--ink2);white-space:nowrap}'+
+    '#ec-3 .cf.ec3-tubes svg{max-width:340px}#ec-3 .ec3eq{line-height:2;margin:.4em 0}#ec-3 .ec3pq>p:first-child{margin-top:.2em}');
+  /* 1. the six steps of the notes */
+  const c1=card(g,'How to predict a redox reaction',`<p class="hint">Outcomes: 30–B1.5k, 30–B1.7k</p>
+    <p>You may be given a mixture of substances (ions and molecules) and asked which of them will react in a redox reaction. Use the table of reduction half-reactions of the data booklet: it is at the end of this card, and on the Formulas and terms page of this section.</p>
+    <ol><li><b>List all the entities present.</b><ul>
+      <li>Soluble ionic compounds dissociate into ions, the soluble ionic hydroxides too: ${ec3N('KMnO4(aq)')} is ${ec3N('K^+(aq)')} and ${ec3N('MnO4^-(aq)')}, and ${ec3N('NaOH(aq)')} is ${ec3N('Na^+(aq)')} and ${ec3N('OH^-(aq)')}.</li>
+      <li>Strong acids ionize: ${ec3N('HCl(aq)')} is ${ec3N('H^+(aq)')} and ${ec3N('Cl^-(aq)')}. An acidified (acidic) solution contains ${ec3N('H^+(aq)')}.</li>
+      <li>Water is always present in an aqueous solution: list ${ec3N('H2O(l)')}. A molten compound is a liquid with no water: molten NaCl is ${ec3N('Na^+(l)')} and ${ec3N('Cl^-(l)')}.</li>
+      <li>Metals, other elements and molecular compounds stay whole: ${ec3N('Cu(s)')}, ${ec3N('Cl2(g)')}, ${ec3N('H2O2(l)')}.</li></ul></li>
+     <li><b>Label each entity</b> as an oxidizing agent (OA, on the left side of the table) or a reducing agent (RA, on the right side). Some entities are both. Combine ions when a half-reaction needs a partner: ${ec3N('MnO4^-(aq)')} is a strong oxidizing agent only when ${ec3N('H^+(aq)')} is present.</li>
+     <li><b>Find the strongest oxidizing agent (SOA)</b>, the OA highest on the left side, and the <b>strongest reducing agent (SRA)</b>, the RA lowest on the right side. The reaction occurs between these two.</li>
+     <li><b>Write the two half-reactions</b> with forward arrows (→): the reduction of the SOA as it is written in the table, and the oxidation of the SRA, which is its row read from right to left.</li>
+     <li><b>Balance the electrons.</b> Multiply each half-reaction so that both have the lowest common multiple of the electrons. Add them, and cancel what is on both sides.</li>
+     <li><b>Decide if it is spontaneous.</b> When the SOA is above the SRA, the reaction is spontaneous: write “spont.” over the arrow. When the SOA is below the SRA, no reaction occurs (nonspontaneous).</li></ol>`+
+    ex('The table of reduction half-reactions (data booklet)','<p class="hint">Oxidizing agents are on the left, from the strongest (top) to the weakest. Reducing agents are on the right, from the weakest (top) to the strongest (bottom).</p><div class="ec3full"></div>'),'w7');
+  ecTable($('.ec3full',c1),EC_E0);
+  /* 2. entities that need a closer look, and the rule as a picture */
+  card(g,'Entities to watch',`<ul>
+    <li><b>Water</b> is an OA, ${ec3N('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')} (−0.83 V), and an RA, ${ec3N('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')} (+1.23 V). It is the SOA with very active metals such as sodium, and it is often the SRA.</li>
+    <li><b>On both sides:</b> ${ec3N('Fe^2+(aq)')} (OA −0.45 V, RA +0.77 V), ${ec3N('Sn^2+(aq)')} (OA −0.14 V, RA +0.15 V) and ${ec3N('H2O(l)')}.</li>
+    <li><b>Partners:</b> ${ec3N('MnO4^-')}, ${ec3N('Cr2O7^2-')}, ${ec3N('NO3^-')}, ${ec3N('ClO4^-')} and ${ec3N('IO3^-')} need ${ec3N('H^+(aq)')}. ${ec3N('O2(g)')} is +1.23 V with ${ec3N('H^+(aq)')}, but only +0.40 V in a neutral solution, with ${ec3N('H2O(l)')}. A row with a missing partner cannot act.</li>
+    <li><b>Chloride:</b> ${ec3N('Cl^-(aq)')} (+1.36 V) is above ${ec3N('H2O(l)')} (+1.23 V) on the right side, thus water is the stronger reducing agent.</li>
+    <li><b>Spectators:</b> ${ec3N('K^+')}, ${ec3N('Na^+')}, ${ec3N('Ca^2+')} and the other ions of the most active metals are OAs below water. They never react in an aqueous solution.</li>
+    <li><b>Words:</b> moist air is ${ec3N('O2(g)')} and ${ec3N('H2O(l)')}. In this table, ${ec3N('H2O2(l)')} is only a reducing agent (+0.70 V).</li></ul>
+    ${CF(ec3Rule(),'The SOA (blue) reacts with the SRA (orange). Left: the SOA is above the SRA, thus the reaction is spontaneous. Right: the SOA is below the SRA, thus no reaction occurs.')}
+    <p class="note">The farther the SOA is above the SRA, the more the reaction is favoured. The Cell potentials lesson gives this a number: <i>E</i>°<sub>net</sub>.</p>`,'w5');
+  /* 3. the worked example of page 13: a try-it first (slot et0), then the six steps */
+  const p0=ecPredict(ec3WE),R0=ec3Rows(ec3WE),s0=R0.indexOf(p0.rr),r0=R0.indexOf(p0.or);
+  const c3=card(g,'Worked example: permanganate and iron(II)',`<p><b>Aqueous potassium permanganate is mixed with an acidic iron(II) sulfate solution. Does a redox reaction take place?</b></p>
+    <p class="hint">Try it before you open the solution. The entities present (${ec3WE.map(ec3N).join(', ')}) are underlined in the table. Tap the SOA on the left side and the SRA on the right side, then Check.</p>`);
+  ecTable(c3,R0,{hl:ec3WE,pick:true,slot:0,w:`SOA: ${ec3OA(p0.rr)}. SRA: ${ec3RA(p0.or)}. The SOA is above the SRA, thus a reaction occurs. Open the solution for the half-reactions and the net equation.`});
+  c3.insertAdjacentHTML('beforeend',ex('Example. Aqueous potassium permanganate is mixed with an acidic iron(II) sulfate solution. Does a redox reaction take place?',
+    `<p><b>1. List the entities present.</b> ${ec3WE.map(ec3N).join(', ')}. ${ec3N('KMnO4')} and ${ec3N('FeSO4')} dissociate, the acid gives ${ec3N('H^+(aq)')}, and water is present.</p>
+    <p><b>2. Identify the oxidizing agents and the reducing agents.</b><br>OAs, strongest first: ${ec3Uniq(p0.oas,'k').map(ec3OA).join(', ')}.<br>RAs, strongest first: ${ec3Uniq(p0.ras,'r').map(ec3RA).join(', ')}.</p>
+    <p><b>3.</b> Strongest oxidizing agent: ${ec3N('MnO4^-(aq)')}, with ${ec3N('H^+(aq)')}. Strongest reducing agent: ${ec3N('Fe^2+(aq)')}.</p><div class="ec3w0"></div>
+    <p><b>4. Half-reactions:</b><br>reduction: ${ec3N('MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)')}<br>oxidation: ${ec3N('Fe^2+(aq) -> Fe^3+(aq) + e^-')} &nbsp; (× 5)</p>
+    <p><b>5. Net reaction</b> (5 electrons are lost and 5 are gained):</p><p class="ec3eq">${ec3Eq('MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)')}</p>
+    <p><b>6. Spontaneous or nonspontaneous?</b> Spontaneous: the SOA (+1.51 V) is above the SRA (+0.77 V). Yes, a redox reaction takes place. ${ec3N('K^+(aq)')} and ${ec3N('SO4^2-(aq)')} are spectators.</p>
+    <p><b>What evidence could confirm the reaction?</b> Ion colour: the purple colour of ${ec3N('MnO4^-(aq)')} disappears as it is added, because ${ec3N('Mn^2+(aq)')} is almost colourless (very pale pink), and the pale green ${ec3N('Fe^2+(aq)')} becomes yellow-brown ${ec3N('Fe^3+(aq)')}. pH: ${ec3N('H^+(aq)')} is used up (8 for each ${ec3N('MnO4^-')}), thus the pH increases.</p>
+    ${CF(ec3Tubes(),'The evidence: the purple colour of the permanganate fades, and the pale green solution turns yellow-brown.','ec3-tubes')}`));
+  ecTable($('.ec3w0',c3),R0,{hl:ec3WE,mark:{soa:s0,sra:r0},rows:[s0,r0],cap:'The entities present are underlined. The SOA is above the SRA.'});
+  /* 4. label the entities (step 2) and 5. the steps in order */
+  const c4=card(g,'Try it: oxidizing agent, reducing agent, or both?','<p class="hint">Find each entity in the table at the end of the first card. Is it only on the left side (an oxidizing agent), only on the right side (a reducing agent), or on both sides?</p>','half');
+  eqTable(c4,{cols:['Entity','Its role in the table'],opt:[['oxidizing agent only','reducing agent only','both']],
+    rows:[['Cu(s)',1],['Cu^2+(aq)',0],['Fe^2+(aq)',2],['H2O(l)',2],['Cl^-(aq)',1],['Cl2(g)',0],['Sn^2+(aq)',2],['H2(g)',1],['MnO4^-(aq)',0],['I^-(aq)',1],['Na^+(aq)',0],['O2(g)',0]].map(([k,a])=>[C(k),[a]]),
+    after:'An entity on the left side is an oxidizing agent and an entity on the right side is a reducing agent. Ions with a middle charge, such as Fe²⁺ (between Fe and Fe³⁺) and Sn²⁺ (between Sn and Sn⁴⁺), and water are on both sides. MnO₄⁻(aq) acts only with H⁺(aq), and O₂(g) only with H⁺(aq) or H₂O(l).'},0);
+  const c5=card(g,'Try it: the steps in order','<p class="hint">Put the steps for predicting a redox reaction in the correct order.</p>','half');
+  ordering(c5,['List all the entities present, with '+ec3N('H2O(l)')+' for an aqueous solution.','Label each entity as an oxidizing agent, a reducing agent, or both.','Find the SOA (highest on the left) and the SRA (lowest on the right).',
+    'Write the reduction half-reaction of the SOA and the oxidation half-reaction of the SRA.','Multiply the half-reactions so that the electrons balance, then add them.','Decide if the reaction is spontaneous: the SOA must be above the SRA.'],'',0);
+  /* 6. the practice questions as try-its (slots et1 to et10), and spontaneous or not (tb1) */
+  const c6=card(g,'Try it: practice questions 1 to 10','<p class="hint">Choose a question. Its entities are underlined in the table. Tap the SOA on the left side and the SRA on the right side, then Check. The worked solutions are in the next card.</p>');
+  const sh=el('div'),qb=el('div',{class:'ec3pq'});c6.append(sh,qb);
+  const showQ=i=>{const d=ec3PQ[i],p=ecPredict(d.e);qb.innerHTML=`<p><b>${i+1}.</b> ${d.q}</p><p class="hint">Entities present: ${d.e.map(ec3N).join(', ')}.</p>`;
+    ecTable(qb,ec3Rows(d.e),{hl:d.e,pick:true,slot:i+1,w:`SOA: ${ec3OA(p.rr)}. SRA: ${ec3RA(p.or)}. `+(p.spont?`The SOA is above the SRA: spontaneous. ${ec3Eq(d.net)}`:'The SOA is below the SRA: no reaction occurs.')});};
+  seg(sh,ec3PQ.map((d,i)=>String(i+1)),showQ);showQ(0);
+  c6.append(el('p',{class:'hint'},'Then decide for all ten mixtures: does a spontaneous redox reaction occur?'));
+  eqTable(c6,{cols:['Practice question','Spontaneous?'],opt:[['spontaneous','no reaction']],rows:ec3PQ.map((d,i)=>[(i+1)+'. '+d.n,[ecPredict(d.e).spont?0:1]]),
+    after:'Only questions 1 and 9 give no reaction: in both, the SOA is below the SRA. In the other eight, the SOA is above the SRA.'},1);
+  /* 7. the worked solutions of practice questions 1 to 10 */
+  const c7=card(g,'Practice questions 1 to 10: worked solutions','<p>For each question, apply the rules for predicting redox reactions: find the strongest oxidizing agent and the strongest reducing agent, and decide if the reaction is spontaneous or nonspontaneous. Use the example as a guide.</p>'+
+    ec3PQ.map((d,i)=>ex('Practice question '+(i+1)+'. '+d.q,ec3Sol(d,i))).join(''));
+  $$('.ec3t',c7).forEach(h=>{const d=ec3PQ[+h.dataset.i],p=ecPredict(d.e),R=ec3Rows(d.e),a=R.indexOf(p.rr),b=R.indexOf(p.or);
+    ecTable(h,R,{hl:d.e,mark:{soa:a,sra:b},rows:[a,b],cap:p.spont?'The SOA is above the SRA.':'The SOA is below the SRA.'});});
+  /* 8. diploma-style numerical response: the coefficients of a net equation */
+  const c8=card(g,'Diploma-style questions: the coefficients of a net equation','<p class="hint">Find the SOA and the SRA, write the two half-reactions, and balance the electrons with the lowest whole numbers.</p>');
+  nrCode(c8,{q:'<p>Aluminum is added to water (practice question 6). When the net equation is balanced with the lowest whole-number coefficients, the coefficients of '+ec3N('Al(s)')+', '+ec3N('H2O(l)')+', '+ec3N('Al^3+(aq)')+' and '+ec3N('H2(g)')+' are, in order, ____, ____, ____ and ____.</p><p class="hint">Record all four digits of your answer.</p>',a:'2623',
+    w:'The SOA is H₂O(l) (−0.83 V) and the SRA is Al(s) (−1.66 V). Reduction: 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq), × 3. Oxidation: Al(s) → Al³⁺(aq) + 3e⁻, × 2. Net: 2Al(s) + 6H₂O(l) → 2Al³⁺(aq) + 3H₂(g) + 6OH⁻(aq). Record 2623.'},0);
+  nrCode(c8,{q:'<p>Acidified potassium permanganate is mixed with iron(II) sulfate (the worked example). In the balanced net equation, the coefficients of '+ec3N('MnO4^-(aq)')+', '+ec3N('H^+(aq)')+', '+ec3N('Fe^2+(aq)')+' and '+ec3N('H2O(l)')+' are, in order, ____, ____, ____ and ____.</p><p class="hint">Record all four digits of your answer.</p>',a:'1854',
+    w:'Reduction: MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). Oxidation: Fe²⁺(aq) → Fe³⁺(aq) + e⁻, × 5. Net: MnO₄⁻(aq) + 8H⁺(aq) + 5Fe²⁺(aq) → Mn²⁺(aq) + 4H₂O(l) + 5Fe³⁺(aq). Record 1854.'},1);
 },qz:[
-  {q:'Chlorine is bubbled through aqueous sodium bromide. The strongest oxidizing agent is',o:[C('Cl2(g)'),C('Na^+(aq)'),C('Br^-(aq)'),C('H2O(l)')],a:0,w:'Cl₂(g) (+1.36 V) is above Na⁺(aq) and H₂O(l) in the table. Br⁻(aq) is only a reducing agent.'},
-  {q:'Copper is dipped in hydrochloric acid. What happens?',o:['No reaction occurs','Copper is oxidized by H⁺(aq)','Copper is oxidized by Cl⁻(aq)','Copper reduces the water'],a:0,w:'The SOA is H⁺(aq) (0.00 V) and the SRA is Cu(s) (+0.34 V). The SOA is below the SRA, thus the reaction is not spontaneous.'}]};
-EC_REF.t.push(['Strongest oxidizing agent (SOA)','The oxidizing agent present that is highest on the left side of the table. It is reduced.'],['Strongest reducing agent (SRA)','The reducing agent present that is lowest on the right side of the table. It is oxidized.']);
+  {q:'A strip of zinc is placed in aqueous copper(II) sulfate. The strongest oxidizing agent and the strongest reducing agent are',o:[ec3N('Cu^2+(aq)')+' and '+ec3N('Zn(s)'),ec3N('H2O(l)')+' and '+ec3N('Zn(s)'),ec3N('Cu^2+(aq)')+' and '+ec3N('H2O(l)'),ec3N('SO4^2-(aq)')+' and '+ec3N('Zn(s)')],a:0,
+    w:'The entities are Zn(s), Cu²⁺(aq), SO₄²⁻(aq) and H₂O(l). The highest OA on the left side is Cu²⁺(aq) (+0.34 V); SO₄²⁻(aq) is a strong oxidizing agent only with H⁺(aq), which is not present. The lowest RA on the right side is Zn(s) (−0.76 V). The SOA is above the SRA, thus zinc reacts.'},
+  {q:'Solid copper is placed in acidified potassium dichromate solution. Which list gives every entity present?',o:[ec3L('Cu(s), K^+(aq), Cr2O7^2-(aq), H^+(aq), H2O(l)'),ec3L('Cu(s), K2Cr2O7(aq), H^+(aq), H2O(l)'),ec3L('Cu(s), K^+(aq), Cr2O7^2-(aq), OH^-(aq), H2O(l)'),ec3L('Cu^2+(aq), K^+(aq), Cr2O7^2-(aq), H^+(aq), H2O(l)')],a:0,
+    w:'K₂Cr₂O₇ is a soluble ionic compound, thus it is listed as K⁺(aq) and Cr₂O₇²⁻(aq). “Acidified” means H⁺(aq) is present, not OH⁻(aq). Water is always present in an aqueous solution. The copper is the solid metal, Cu(s), until it reacts.'},
+  {q:'In which kind of solution is '+ec3N('MnO4^-(aq)')+' a strong oxidizing agent, as in its row at +1.51 V?',o:['An acidic solution, because the half-reaction needs H⁺(aq)','A basic solution, because the half-reaction needs OH⁻(aq) ions','Any aqueous solution, because water is always present','A molten salt, because water would react first with it'],a:0,
+    w:'The half-reaction is MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). A row acts only when every entity on its side is present. Without H⁺(aq), this row cannot be used.'},
+  {q:'A silver spoon is placed in a solution of copper(II) nitrate, and no change is observed. Why?',o:['The SOA, '+ec3N('Cu^2+(aq)')+', is below the SRA, '+ec3N('Ag(s)'),'The SOA, '+ec3N('Cu^2+(aq)')+', is above the SRA, '+ec3N('Ag(s)'),'The SOA, '+ec3N('NO3^-(aq)')+', is below the SRA, '+ec3N('Ag(s)'),'The SOA, '+ec3N('H2O(l)')+', is below the SRA, '+ec3N('Ag(s)')],a:0,
+    w:'The entities are Ag(s), Cu²⁺(aq), NO₃⁻(aq) and H₂O(l). NO₃⁻(aq) is an oxidizing agent only with H⁺(aq), thus the SOA is Cu²⁺(aq) (+0.34 V). The SRA is Ag(s) (+0.80 V): it is lower on the right side than H₂O(l) (+1.23 V). The SOA is below the SRA, thus no reaction occurs.'},
+  {q:'Which metal reacts spontaneously with 1.0 mol/L hydrochloric acid?',o:[ec3N('Zn(s)'),ec3N('Cu(s)'),ec3N('Ag(s)'),ec3N('Hg(l)')],a:0,
+    w:'The SOA in hydrochloric acid is H⁺(aq) (0.00 V). A metal reacts only if it is below H⁺(aq), lower on the right side: Zn(s) is at −0.76 V. Cu(s) (+0.34 V), Ag(s) (+0.80 V) and Hg(l) (+0.85 V) are above it.'},
+  {q:'In which solution is water the strongest reducing agent?',o:[ec3N('AgNO3(aq)'),ec3N('FeSO4(aq)'),ec3N('KI(aq)'),ec3N('SnCl2(aq)')],a:0,
+    w:'Fe²⁺(aq) (+0.77 V), I⁻(aq) (+0.54 V) and Sn²⁺(aq) (+0.15 V) are reducing agents below H₂O(l) (+1.23 V) on the right side, thus each of them is the SRA in its own solution. In AgNO₃(aq), Ag⁺(aq) and NO₃⁻(aq) are not reducing agents, thus H₂O(l) is the SRA.'},
+  {q:'Which entity can act as an oxidizing agent and also as a reducing agent?',o:[ec3N('Fe^2+(aq)'),ec3N('Fe^3+(aq)'),ec3N('Zn(s)'),ec3N('F^-(aq)')],a:0,
+    w:'Fe²⁺(aq) is on the left side (Fe²⁺ + 2e⁻ ⇌ Fe, −0.45 V) and on the right side (Fe³⁺ + e⁻ ⇌ Fe²⁺, +0.77 V) of the table. Fe³⁺(aq) is only on the left side. Zn(s) and F⁻(aq) are only on the right side.'},
+  {q:'A strip of lead is placed in each solution. In which solution does a spontaneous reaction occur?',o:[ec3N('Cu(NO3)2(aq)'),ec3N('Ni(NO3)2(aq)'),ec3N('Zn(NO3)2(aq)'),ec3N('Mg(NO3)2(aq)')],a:0,
+    w:'The SRA is Pb(s) (−0.13 V). A reaction occurs only when the SOA is above it. Cu²⁺(aq) (+0.34 V) is above Pb(s). Ni²⁺(aq) (−0.26 V) and Zn²⁺(aq) (−0.76 V) are below it, and in Mg(NO₃)₂(aq) the SOA is water (−0.83 V), also below it.'},
+  {q:'Aluminum foil is placed in aqueous copper(II) chloride. When the net equation is balanced, how many electrons are transferred?',n:6,u:'',tol:0,
+    w:'The SOA is Cu²⁺(aq) (+0.34 V) and the SRA is Al(s) (−1.66 V). Reduction: Cu²⁺(aq) + 2e⁻ → Cu(s). Oxidation: Al(s) → Al³⁺(aq) + 3e⁻. The lowest common multiple of 2 and 3 is 6: 3Cu²⁺(aq) + 2Al(s) → 3Cu(s) + 2Al³⁺(aq). Thus 6 electrons are transferred.'},
+  {q:'Acidified potassium permanganate oxidizes iron(II) ions: '+ec3N('MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)')+'. Calculate the amount of '+ec3N('Fe^2+(aq)')+' that reacts with 0.0200 mol of '+ec3N('MnO4^-(aq)')+'.',n:.1,u:'mol',tol:.01,
+    w:'In the net equation, 5 mol of Fe²⁺ react with 1 mol of MnO₄⁻. n(Fe²⁺) = 0.0200 mol × 5/1. n(Fe²⁺) = 0.100 mol.'},
+  {q:'Excess copper wire is placed in 100.0 mL of 0.250 mol/L '+ec3N('AgNO3(aq)')+'. Calculate the mass of copper that reacts.',n:.794,u:'g',tol:.01,
+    w:'The SOA is Ag⁺(aq) (+0.80 V) and the SRA is Cu(s) (+0.34 V): Cu(s) + 2Ag⁺(aq) → Cu²⁺(aq) + 2Ag(s). n(Ag⁺) = cV = (0.250 mol/L)(0.1000 L) = 0.0250 mol. n(Cu) = 0.0250 mol × 1/2 = 0.0125 mol. m = nM = (0.0125 mol)(63.55 g/mol) = 0.794 g.'}]};
+/* review bank: new diploma-level items (not repeats of the lesson questions) */
+EC_RQ[3]=[
+  {q:'Use the following information. A student prepares four mixtures. In which mixtures does a spontaneous redox reaction occur?',
+    fig:`<table><tr><th>Mixture</th><th>Contents</th></tr>${[['I','Cu(s) in FeSO4(aq)'],['II','Zn(s) in Pb(NO3)2(aq)'],['III','Cl2(g) bubbled into KI(aq)'],['IV','Ag(s) in HCl(aq)']].map(([a,b])=>`<tr><td>${a}</td><td>${C(b)}</td></tr>`).join('')}</table>`,
+    o:['II and III','I and II','I and IV','III and IV'],a:0,
+    w:'I: the SOA, Fe²⁺(aq) (−0.45 V), is below the SRA, Cu(s) (+0.34 V): no reaction. II: the SOA, Pb²⁺(aq) (−0.13 V), is above the SRA, Zn(s) (−0.76 V): spontaneous. III: the SOA, Cl₂(g) (+1.36 V), is above the SRA, I⁻(aq) (+0.54 V): spontaneous. IV: the SOA, H⁺(aq) (0.00 V), is below the SRA, Ag(s) (+0.80 V): no reaction.'},
+  {q:'A 1.0 mol/L solution of lead(II) nitrate must be stored in a metal container. Which metal can be used without a reaction?',o:['copper','zinc','iron','aluminum'],a:0,
+    w:'The SOA in the solution is Pb²⁺(aq) (−0.13 V). It reacts with every metal that is below it on the right side: zinc (−0.76 V), iron (−0.45 V) and aluminum (−1.66 V). Copper (+0.34 V) is above it, thus copper does not react.'},
+  {q:'Excess zinc powder is added to 250.0 mL of 0.200 mol/L '+ec3N('AgNO3(aq)')+'. Calculate the mass of zinc that reacts.',n:1.63,u:'g',tol:.01,
+    w:'The SOA is Ag⁺(aq) (+0.80 V) and the SRA is Zn(s) (−0.76 V). Net: Zn(s) + 2Ag⁺(aq) → Zn²⁺(aq) + 2Ag(s). n(Ag⁺) = (0.200 mol/L)(0.2500 L) = 0.0500 mol. n(Zn) = 0.0500 mol × 1/2 = 0.0250 mol. m = (0.0250 mol)(65.38 g/mol) = 1.63 g.'},
+  {q:'Use the following information. The table gives four reduction half-reactions of hypothetical metals. A piece of metal D is placed in a solution that contains '+ec3N('X^3+(aq)')+' and '+ec3N('Q^+(aq)')+'. Which balanced net equation represents the reaction that occurs?',
+    fig:ecTableH([['A^2+(aq) + 2e^- <=> A(s)',.62],['X^3+(aq) + 3e^- <=> X(s)',.11],['Q^+(aq) + e^- <=> Q(s)',-.45],['D^2+(aq) + 2e^- <=> D(s)',-1.2]]),
+    o:[ec3N('2X^3+(aq) + 3D(s) -> 2X(s) + 3D^2+(aq)'),ec3N('3X^3+(aq) + 2D(s) -> 3X(s) + 2D^2+(aq)'),ec3N('2Q^+(aq) + D(s) -> 2Q(s) + D^2+(aq)'),ec3N('X^3+(aq) + D(s) -> X(s) + D^2+(aq)')],a:0,
+    w:'The OAs present are X³⁺(aq) (+0.11 V) and Q⁺(aq) (−0.45 V), thus the SOA is X³⁺(aq). The SRA is D(s) (−1.20 V). Reduction: X³⁺ + 3e⁻ → X, × 2. Oxidation: D → D²⁺ + 2e⁻, × 3. Six electrons are transferred: 2X³⁺(aq) + 3D(s) → 2X(s) + 3D²⁺(aq). The charge is 6+ on each side.'},
+  {q:'Which entities are present in molten lithium bromide?',o:[ec3N('Li^+(l)')+' and '+ec3N('Br^-(l)'),ec3L('Li^+(aq), Br^-(aq)')+' and '+ec3N('H2O(l)'),ec3N('LiBr(l)')+' and '+ec3N('H2O(l)'),ec3N('Li(s)')+' and '+ec3N('Br2(l)')],a:0,
+    w:'Molten means melted: there is no water. The ionic compound separates into its ions, in the liquid state: Li⁺(l) and Br⁻(l). The elements Li and Br₂ form only if a redox reaction occurs, for example in an electrolysis.'},
+  {q:'Chlorine gas is bubbled through 200.0 mL of 0.150 mol/L '+ec3N('NaBr(aq)')+' until all of the bromide ions react. Calculate the mass of bromine that forms.',n:2.40,u:'g',tol:.01,
+    w:'The SOA is Cl₂(g) (+1.36 V) and the SRA is Br⁻(aq) (+1.07 V). Net: Cl₂(g) + 2Br⁻(aq) → 2Cl⁻(aq) + Br₂(l). n(Br⁻) = (0.150 mol/L)(0.2000 L) = 0.0300 mol. n(Br₂) = 0.0300 mol × 1/2 = 0.0150 mol. m = (0.0150 mol)(159.80 g/mol) = 2.40 g.'},
+  {q:'Use the following information. An acidified solution contains '+['K^+(aq)','Cr2O7^2-(aq)','Fe^2+(aq)','Sn^2+(aq)','Cl^-(aq)','SO4^2-(aq)'].map(ec3N).join(', ')+' and '+ec3N('H2O(l)')+'. The entity that is oxidized in the reaction that occurs is',
+    fig:ecTableH(ecRows(['Cl2(g)','Cr2O7^2-(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Fe^3+(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','Sn^4+(aq)','H^+(aq)','Sn^2+(aq)','Fe^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','K^+(aq)']),{hl:['K^+(aq)','Cr2O7^2-(aq)','H^+(aq)','Fe^2+(aq)','Sn^2+(aq)','Cl^-(aq)','SO4^2-(aq)','H2O(l)'],arrows:false}),
+    o:[ec3N('Sn^2+(aq)'),ec3N('Fe^2+(aq)'),ec3N('Cl^-(aq)'),ec3N('H2O(l)')],a:0,
+    w:'The SOA is Cr₂O₇²⁻(aq) with H⁺(aq) (+1.23 V). On the right side, the reducing agents present are Cl⁻(aq) (+1.36 V), H₂O(l) (+1.23 V), Fe²⁺(aq) (+0.77 V) and Sn²⁺(aq) (+0.15 V). The lowest is Sn²⁺(aq), thus it is the SRA, and it is oxidized to Sn⁴⁺(aq).'},
+  {q:'Acidified potassium dichromate is added to a solution of tin(II) chloride. Which observation is evidence that the predicted reaction occurs?',o:['The orange solution turns green','The green solution turns orange','A grey solid forms in the beaker','Bubbles of hydrogen gas form'],a:0,
+    w:'The SOA is Cr₂O₇²⁻(aq) with H⁺(aq) (+1.23 V) and the SRA is Sn²⁺(aq) (+0.15 V). Net: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 3Sn²⁺(aq) → 2Cr³⁺(aq) + 7H₂O(l) + 3Sn⁴⁺(aq). The orange dichromate ion is reduced to the green chromium(III) ion. No metal and no gas forms.'},
+  {q:'Aluminum reacts with excess copper(II) ions: '+ec3N('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)')+'. Calculate the amount of electrons transferred when 0.150 mol of aluminum reacts.',n:.45,u:'mol',tol:.01,
+    w:'Each aluminum atom loses 3 electrons: Al(s) → Al³⁺(aq) + 3e⁻. n(e⁻) = 0.150 mol × 3. n(e⁻) = 0.450 mol, and the 0.225 mol of Cu²⁺ that react gain the same 0.450 mol of electrons.'},
+  {q:'Sodium metal is stored under oil. Why?',o:['Na(s) is a very strong reducing agent, and water is an oxidizing agent above it','Na⁺(aq) is a very strong oxidizing agent, and it reacts with water','Na(s) is a very strong oxidizing agent, and water is a strong reducing agent below it','Oil is a stronger reducing agent than sodium, thus it reacts first'],a:0,
+    w:'Na(s) is near the bottom of the right side (−2.71 V). In moist air or in water, H₂O(l) (−0.83 V) and O₂(g) are oxidizing agents above it, thus sodium reacts spontaneously: 2Na(s) + 2H₂O(l) → 2Na⁺(aq) + H₂(g) + 2OH⁻(aq). The oil keeps the water and the oxygen away.'}];
+/* challenge: predict, find the limiting reagent, then the mass change */
+EC_CH[3]={q:'A 2.50 g copper wire is placed in 100.0 mL of 0.150 mol/L '+ec3N('AgNO3(aq)')+' and left until the reaction stops. All of the silver that forms sticks to the wire. Calculate the mass of the wire (copper and silver) at the end.',n:3.64,u:'g',tol:.01,
+  w:'The SOA is Ag⁺(aq) (+0.80 V) and the SRA is Cu(s) (+0.34 V): Cu(s) + 2Ag⁺(aq) → Cu²⁺(aq) + 2Ag(s). n(Cu) = 2.50 g ÷ 63.55 g/mol = 0.0393 mol, and n(Ag⁺) = (0.150 mol/L)(0.1000 L) = 0.0150 mol. The Ag⁺ needs only 0.00750 mol of Cu, thus Ag⁺ is the limiting reagent. Copper lost: (0.00750 mol)(63.55 g/mol) = 0.477 g. Silver gained: (0.0150 mol)(107.87 g/mol) = 1.618 g. Final mass = 2.50 g − 0.477 g + 1.618 g = 3.64 g.'};
+/* written response for the timed exam: choose a container from predictions */
+EC_WRQ.push({q:'A technician must store a 1.0 mol/L solution of nickel(II) nitrate. Containers made of copper, iron, tin and zinc are available. (a) List the entities present in the solution and identify the strongest oxidizing agent. (b) For each metal, identify the strongest reducing agent and predict whether a spontaneous reaction occurs. (c) Write the balanced net equation for each reaction that occurs. (d) Which containers can be used?',
+  marks:['(a) The entities are Ni²⁺(aq), NO₃⁻(aq) and H₂O(l). The SOA is Ni²⁺(aq) (−0.26 V): NO₃⁻ needs H⁺ to act, and water (−0.83 V) is lower','(b) The SRA is the metal each time: Cu(s) (+0.34 V) and Sn(s) (−0.14 V) are above Ni²⁺(aq), thus no reaction','(b) Fe(s) (−0.45 V) and Zn(s) (−0.76 V) are below Ni²⁺(aq), thus a spontaneous reaction occurs','(c) Ni²⁺(aq) + Fe(s) → Ni(s) + Fe²⁺(aq) and Ni²⁺(aq) + Zn(s) → Ni(s) + Zn²⁺(aq)','(d) Copper or tin containers can be used'],
+  model:'<p>(a) Ni(NO₃)₂ dissociates: Ni²⁺(aq) and NO₃⁻(aq), with H₂O(l). The oxidizing agents are Ni²⁺(aq) (−0.26 V) and H₂O(l) (−0.83 V); NO₃⁻(aq) is an oxidizing agent only with H⁺(aq). The SOA is Ni²⁺(aq).</p><p>(b) The metal of the container is the SRA, because it is lower on the right side than water (+1.23 V). Copper (+0.34 V) and tin (−0.14 V) are above Ni²⁺(aq): no reaction. Iron (−0.45 V) and zinc (−0.76 V) are below Ni²⁺(aq): spontaneous.</p><p>(c) Ni²⁺(aq) + Fe(s) → Ni(s) + Fe²⁺(aq) and Ni²⁺(aq) + Zn(s) → Ni(s) + Zn²⁺(aq). Nickel metal would plate out and the container would dissolve.</p><p>(d) A copper or a tin container can be used.</p>'});
+/* generators: a metal ion above water (the SOA) and a different metal at least 0.10 V lower (the SRA), in a nitrate solution. The nitrate ion and water are spectators */
+const ec3GM=[['Ag^+(aq)','Ag(s)',1,'AgNO3','silver'],['Cu^2+(aq)','Cu(s)',2,'Cu(NO3)2','copper'],['Pb^2+(aq)','Pb(s)',2,'Pb(NO3)2','lead'],['Ni^2+(aq)','Ni(s)',2,'Ni(NO3)2','nickel'],
+  ['Co^2+(aq)','Co(s)',2,'Co(NO3)2','cobalt'],['Cd^2+(aq)','Cd(s)',2,'Cd(NO3)2','cadmium'],['Fe^2+(aq)','Fe(s)',2,'Fe(NO3)2','iron'],['Zn^2+(aq)','Zn(s)',2,'Zn(NO3)2','zinc'],
+  ['Sn^2+(aq)','Sn(s)',2,'','tin'],['Al^3+(aq)','Al(s)',3,'','aluminum'],['Mg^2+(aq)','Mg(s)',2,'','magnesium']];
+const ec3Pair=()=>{for(let t=0;t<500;t++){const a=ec3GM[RN(0,7)],b=ec3GM[RN(1,10)],Ea=ecRow(a[0]).E,Eb=ecRow(b[0]).E;if(a===b||Ea-Eb<.095)continue;
+    const L=a[2]*b[2]/ecGcd(a[2],b[2]),ci=L/a[2],cm=L/b[2],k=c=>c>1?c:'';
+    return {a,b,Ea,Eb,L,ci,cm,net:`${k(ci)}${a[0]} + ${k(cm)}${b[1]} -> ${k(ci)}${a[1]} + ${k(cm)}${b[0]}`,red:`${a[0]} + ${k(a[2])}e^- -> ${a[1]}`,ox:`${b[1]} -> ${b[0]} + ${k(b[2])}e^-`,
+      who:`The SOA is ${ecU(a[0])} (${ecV(Ea)}) and the SRA is ${ecU(b[1])} (${ecV(Eb)}).`};}
+  throw new Error('ec3Pair: no pair');};
+EC_GEN[3]=[
+  /* the amount of metal that reacts with an amount of ion: the mole ratio of the net equation */
+  ()=>{const P=ec3Pair(),x=+RN(.02,.3,.0005).toPrecision(3),n=x*P.cm/P.ci;
+    return {q:`A strip of ${P.b[4]} is placed in a solution that contains ${sig(x)} mol of ${ec3N(P.a[0])}. The metal is in excess. Calculate the amount of ${P.b[4]} that reacts.`,n,u:'mol',tol:.01,
+      w:`${P.who} Reduction: ${ecU(P.red)}. Oxidation: ${ecU(P.ox)}. Net: ${ecU(P.net)}. The mole ratio is ${P.cm} mol of ${ecU(P.b[1])} for ${P.ci} mol of ${ecU(P.a[0])}. n = ${sig(x)} mol × ${P.cm}/${P.ci} = ${sig(n)} mol.`};},
+  /* the mass of metal that reacts, or that forms, from a volume and a concentration */
+  ()=>{const P=ec3Pair(),V=RN(50,250,5),c=RN(.1,.5,.005),ni=c*V/1000,form=Math.random()<.5,nm=form?ni:ni*P.cm/P.ci,M=ecMolar(form?P.a[1]:P.b[1]),m=nm*M;
+    return {q:`Excess ${P.b[4]} is placed in ${V.toFixed(1)} mL of ${c.toFixed(3)} mol/L ${ec3N(P.a[3]+'(aq)')}. Calculate the mass of ${form?P.a[4]+' metal that forms':P.b[4]+' that reacts'}.`,n:m,u:'g',tol:.01,
+      w:`${P.who} Net: ${ecU(P.net)}. n(${ecU(P.a[0])}) = cV = (${c.toFixed(3)} mol/L)(${(V/1000).toFixed(4)} L) = ${sig(ni)} mol. `+(form?`Each ion forms one atom: n(${ecU(P.a[1])}) = ${sig(nm)} mol.`:`n(${ecU(P.b[1])}) = ${sig(ni)} mol × ${P.cm}/${P.ci} = ${sig(nm)} mol.`)+` m = nM = (${sig(nm)} mol)(${M.toFixed(2)} g/mol) = ${sig(m)} g.`};},
+  /* a whole number from the balanced net equation: the electrons transferred, or a coefficient */
+  ()=>{const P=ec3Pair(),k=RN(0,2),ask=[`how many electrons are transferred`,`what is the coefficient of ${ec3N(P.a[0])}`,`what is the coefficient of ${ec3N(P.b[1])}`][k],n=[P.L,P.ci,P.cm][k];
+    return {q:`A piece of ${P.b[4]} is placed in ${ec3N(P.a[3]+'(aq)')}. When the net equation is balanced with the lowest whole numbers, ${ask}?`,n,u:'',tol:0,
+      w:`${P.who} Reduction: ${ecU(P.red)}. Oxidation: ${ecU(P.ox)}. The lowest common multiple of the electrons is ${P.L}. Net: ${ecU(P.net)}. `+['The number of electrons transferred is ','The coefficient of '+ecU(P.a[0])+' is ','The coefficient of '+ecU(P.b[1])+' is '][k]+n+'.'};}];
+EC_METHOD[3]='Find the SOA and the SRA, then write the net equation: multiply the half-reactions to the lowest common multiple of the electrons. For an amount, use n = cV or n = m/M, the mole ratio of the net equation, and m = nM.';
+EC_HT[3]={pre:'Every half-reaction in the table is a reduction. Oxidizing agents are on the left, the strongest at the top. Reducing agents are on the right, the strongest at the bottom. A reaction is spontaneous when the SOA is above the SRA.',items:[
+  {q:'List the entities present',s:['Metals, other elements and molecular compounds stay whole: Cu(s), Cl₂(g), H₂O₂(l).','A soluble ionic compound dissociates: KMnO₄(aq) gives K⁺(aq) and MnO₄⁻(aq).','A strong acid ionizes: HNO₃(aq) gives H⁺(aq) and NO₃⁻(aq). “Acidified” means H⁺(aq) is present.','Add H₂O(l) for any aqueous solution. A molten compound has no water: its ions are (l).'],chk:'Moist air is O₂(g) and H₂O(l). Do not write the formula of an ionic compound as one entity in solution.'},
+  {q:'Find the SOA and the SRA',s:['Find each entity on the left side (OA) and on the right side (RA). H₂O, Fe²⁺ and Sn²⁺ are on both sides.','Use a row with a partner only when the partner is present: MnO₄⁻, Cr₂O₇²⁻ and NO₃⁻ need H⁺(aq).','SOA: the OA highest on the left. SRA: the RA lowest on the right.'],chk:'K⁺, Na⁺ and the other ions of the most active metals are below water on the left side, thus water is the stronger OA in any aqueous solution.'},
+  {q:'Write the net equation',s:['Reduction: the row of the SOA as written, with →.','Oxidation: the row of the SRA read from right to left, with the electrons on the right.','Multiply to the lowest common multiple of the electrons, add, and cancel what is on both sides.','Check the atoms and the charge.'],chk:'In 2Al(s) + 3Cu²⁺(aq) → 2Al³⁺(aq) + 3Cu(s), 6 electrons are lost and 6 are gained, and the charge is 6+ on each side.'},
+  {q:'Spontaneous or not?',s:['SOA above the SRA: spontaneous. Write “spont.” over the arrow.','SOA below the SRA: no reaction (nonspontaneous).'],chk:'Copper in hydrochloric acid: the SOA, H⁺(aq) (0.00 V), is below the SRA, Cu(s) (+0.34 V), thus no reaction.'},
+  {q:'Which solution shows which metal is the stronger reducing agent?',s:['Find the two metals on the right side of the table.','Choose an oxidizing agent that is between them: it reacts with the lower metal (the stronger RA) and not with the higher one.'],chk:'For zinc (−0.76 V) and lead (−0.13 V), Ni²⁺(aq) (−0.26 V) reacts with zinc but not with lead. Cu²⁺(aq) reacts with both, thus it does not tell them apart.'},
+  {q:'Which container can store a solution?',s:['Find the SOA of the solution.','A metal above the SOA on the right side does not react: it can be used. A metal below it reacts.'],chk:'Pb²⁺(aq) (−0.13 V) can be stored in copper (+0.34 V), but it reacts with iron, zinc and aluminum.'},
+  {q:'Calculate an amount or a mass from the reaction',s:['Write the balanced net equation.','n = cV or n = m/M for the known entity.','Use the mole ratio of the net equation.','m = nM for the unknown.'],chk:'Cu(s) + 2Ag⁺(aq) → Cu²⁺(aq) + 2Ag(s): 0.0250 mol of Ag⁺ reacts with only 0.0125 mol of Cu.'},
+  {q:'What evidence shows that the reaction occurs?',s:['A colour change: purple MnO₄⁻ fades to almost colourless Mn²⁺, orange Cr₂O₇²⁻ turns green (Cr³⁺), pale green Fe²⁺ turns yellow-brown (Fe³⁺), blue Cu²⁺ fades.','A solid forms (a metal coats the other metal), a gas forms (bubbles of H₂ or O₂), or the pH changes (H⁺ used up or OH⁻ formed: the pH increases).'],chk:'No change at all is the evidence of no reaction, as for copper in hydrochloric acid.'}]};
+EC_REF.t.push(['Entity','Any atom, ion or molecule present in a mixture, with its state: Cu(s), H⁺(aq), H₂O(l). A soluble ionic compound is listed as its ions.'],
+  ['Strongest oxidizing agent (SOA)','The oxidizing agent present that is highest on the left side of the table of reduction half-reactions. It is reduced.'],
+  ['Strongest reducing agent (SRA)','The reducing agent present that is lowest on the right side of the table. It is oxidized.']);
+EC_REF.f.push(['Predicting a redox reaction','SOA + SRA: spontaneous when the SOA is above the SRA in the table; no reaction when it is below']);
 }catch(e){console.error('[ec] slot 3 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 4 ----- */
 {try{
