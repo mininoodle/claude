@@ -4304,8 +4304,8 @@ const EC5_ON=[
 [...EC5_HR,...EC5_PR,...EC5_ON].forEach(p=>{const b=ecBal(p.a);if(b)ec5Err(p.n+' ('+p.a+') does not balance: '+b);if(!p.L.concat(p.R).every(k=>ec5Key(p.a).includes(k+':')))ec5Err(p.n+': the answer does not contain every entity of the skeleton');});
 /* the worked example on p. 25, and the two examples of the oxidation-number method on p. 28 */
 const EC5_EX={red:'CrO4^2-(aq) + 8H^+(aq) + 3e^- -> Cr^3+(aq) + 4H2O(l)',ox:'Cl^-(aq) + 2H2O(l) -> ClO2^-(aq) + 4H^+(aq) + 4e^-',red4:'4CrO4^2-(aq) + 32H^+(aq) + 12e^- -> 4Cr^3+(aq) + 16H2O(l)',ox3:'3Cl^-(aq) + 6H2O(l) -> 3ClO2^-(aq) + 12H^+(aq) + 12e^-',a:'4CrO4^2-(aq) + 3Cl^-(aq) + 20H^+(aq) -> 4Cr^3+(aq) + 3ClO2^-(aq) + 10H2O(l)',
-  on1:'SeO3^2-(aq) + Cl2(aq) + H2O(l) -> SeO4^2-(aq) + 2Cl^-(aq) + 2H^+(aq)',on2:'8H^+(aq) + MnO4^-(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)'};
-if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a)||ec5Add(EC5_EX.red4,1,EC5_EX.ox3,1)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2,EC5_EX.red4,EC5_EX.ox3].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});
+  on1:'SeO3^2-(aq) + Cl2(aq) + H2O(l) -> SeO4^2-(aq) + 2Cl^-(aq) + 2H^+(aq)',on2:'8H^+(aq) + MnO4^-(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)',nr:'Cr2O7^2-(aq) + 3C2O4^2-(aq) + 14H^+(aq) -> 2Cr^3+(aq) + 6CO2(g) + 7H2O(l)'};
+if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a)||ec5Add(EC5_EX.red4,1,EC5_EX.ox3,1)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2,EC5_EX.red4,EC5_EX.ox3,EC5_EX.nr].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});
 
 /* ---------- "Use the following information" boxes of the diploma questions ---------- */
 const ec5I=(...ps)=>`<div style="padding:.15em .45em .3em;line-height:1.5;font-size:.95rem">${ps.join('')}</div>`,ec5P=h=>`<p style="margin:.35em 0">${h}</p>`,ec5Q=s=>`<p style="margin:.45em 0;text-align:center">${C(s)}</p>`;
@@ -4391,7 +4391,11 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
   card(g,'Masses from a balanced redox equation',`<p>The coefficients of a balanced redox equation are the mole ratio, as in any stoichiometry problem: <i>n</i> = <i>m</i>/<i>M</i> of the given entity, the mole ratio, then <i>m</i> = <i>nM</i> of the wanted entity.</p>`+
     ex('What mass of carbon dioxide forms when 2.30 g of ethanol, '+C('C2H6O(l)')+', is oxidized by excess acidified bromate ions? Use the balanced equation of practice question 4.',
       `<p>${C('C2H6O(l) + 2BrO3^-(aq) -> 2CO2(g) + 2Br^-(aq) + 3H2O(l)')}</p><p><i>n</i>(${C('C2H6O')}) = 2.30 g ÷ ${M1.toFixed(2)} g/mol = ${sig(n1,4)} mol</p><p>The mole ratio is 2 ${C('CO2')} : 1 ${C('C2H6O')}: <i>n</i>(${C('CO2')}) = 2 × ${sig(n1,4)} mol = ${sig(n2,4)} mol</p><p><i>m</i> = (${sig(n2,4)} mol)(${M2.toFixed(2)} g/mol) = <b>${sig(n2*M2)} g</b></p>`));
-  /* 10. try-it: the order of the steps */
+  /* 10. try-it: a coefficient question in the four boxes of the diploma */
+  const nr=card(g,'Diploma-style numerical response','<p class="hint">On the diploma, a numerical-response answer goes in four boxes. For a coefficient question, record the coefficients in the order that the question asks for them, and record a coefficient of 1 as 1.</p>');
+  nrCode(nr,{q:'When the equation '+C('Cr2O7^2-(aq) + C2O4^2-(aq) -> Cr^3+(aq) + CO2(g)')+' is balanced in acidic solution with the lowest whole-number coefficients, the coefficients of '+C('Cr2O7^2-(aq)')+', '+C('C2O4^2-(aq)')+', '+C('Cr^3+(aq)')+' and '+C('CO2(g)')+' are __, __, __ and __.',a:'1326',
+    w:'Reduction: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 6e⁻ → 2Cr³⁺(aq) + 7H₂O(l). Oxidation: C₂O₄²⁻(aq) → 2CO₂(g) + 2e⁻, multiplied by 3 so that 6e⁻ are lost. Net: '+ecU(EC5_EX.nr)+'. Record 1326.'},0);
+  /* 11. try-it: the order of the steps */
   const c4=card(g,'Try it: the steps in order','');
   ordering(c4,['Split the reaction into two half-reactions.','Balance the atoms other than O and H.','Balance O with H₂O(l).','Balance H with H⁺(aq).','Balance the charge with electrons.','Multiply the half-reactions so that the electrons are equal, then add them and cancel.','Check the atoms and the charge.'],'Put the steps of the half-reaction method (acidic solution) in order.',0);
 },qz:[
