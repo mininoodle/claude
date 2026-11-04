@@ -1504,6 +1504,17 @@ document.addEventListener('visibilitychange',kick);
   const each=(n,fn,gone)=>{if(n.nodeType!==1)return;if(gone?n.classList.contains('card'):n.matches(SEL))fn(n);
     else if(n.matches(gone?'.lesson,.grid':'.lesson,.lesson>.grid'))n.querySelectorAll('.card').forEach(c=>{if(gone||c.matches(SEL))fn(c);});};
   new MutationObserver(ms=>ms.forEach(m=>{m.removedNodes.forEach(n=>each(n,c=>ro.unobserve(c),1));m.addedNodes.forEach(n=>each(n,c=>ro.observe(c)));})).observe($('#main'),{childList:true,subtree:true});}
+/* drawings that loop (the hormone flows of en-2 and en-6, the organs of ns-7, the nerve impulse): their CSS animations repaint on the main thread
+   on every frame. They play only while their drawing is on screen, for about 5 s, then rest (paused). They play again when the drawing comes back
+   into view, when the student selects something in its card, and when the drawing starts a new animation (another gland, another slider value) */
+{const LOOP=new Set(['en2-move','en6-move','hb','gut','glu','epi','fire']),RUN=5000;
+  const loops=s=>s.getAnimations({subtree:true}).filter(a=>LOOP.has(a.animationName));
+  const rest=s=>{clearTimeout(s._lt);s._lt=0;loops(s).forEach(a=>{if(a.playState==='running')a.pause();});};
+  const run=s=>{loops(s).forEach(a=>{if(a.playState==='paused'||a.playState==='finished')a.play();});clearTimeout(s._lt);s._lt=setTimeout(()=>rest(s),RUN);};
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const s=e.target;s._in=e.isIntersecting;if(s._in)run(s);else rest(s);}));
+  document.addEventListener('animationstart',e=>{if(!LOOP.has(e.animationName))return;const s=e.target.closest('svg')||e.target;
+    if(!s._lo){s._lo=1;io.observe(s);}else if(s._in)run(s);else rest(s);},true);
+  document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card');if(c)c.querySelectorAll('svg').forEach(s=>{if(s._lo&&s._in)run(s);});},true);}
 function dragOn(o,hit,move){
   let h=null;const pos=e=>{const r=o.c.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
   o.c.style.cursor='grab';
