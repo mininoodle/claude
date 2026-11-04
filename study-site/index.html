@@ -4239,9 +4239,10 @@ function ec7SHE(){const T=(t,x,y,q={})=>svgText(t,x,y,Object.assign({s:12,w:600,
     `<rect x="151" y="172" width="18" height="28" rx="1.5" fill="${EC_ELC.Pt}" stroke="var(--ink2)" stroke-width="1.1"/>`+bub+
     T('H₂(g)',240,72,{a:'start',c:'l'})+T('101.325 kPa',240,88,{a:'start',s:11,w:500,f:'ink2',c:'l'})+T('Pt(s)',128,150,{a:'end',c:'r'})+
     T('wire to the voltmeter',168,24,{a:'start',s:11,w:500,f:'ink2',c:'l'})+T('glass tube',140,64,{a:'end',s:11,w:500,f:'ink2',c:'r'})+T('1.0 mol/L H⁺(aq), 25 °C',160,248,{w:500,c:'s'})+'</svg>';}
-/* text helpers of this lesson. W7: no line break between a charge and its state (Zn²⁺|(aq)), and none between a value and V. cue7: the scroll fade cue of the static tables in a box */
+/* text helpers of this lesson. W7: no line break between a charge and its state (Zn²⁺|(aq)): a nowrap span, not a word joiner, which the PDF of the test results prints as '?'.
+   W7 also keeps a value with its V, and it can run twice on the same HTML. cue7: the scroll fade cue of the static tables in a box */
 const card7=(g,t,h,c)=>card(g,t,W7(h),c),ex7=(t,h)=>ex(W7(t),W7(h)),ins7=(host,h)=>host.insertAdjacentHTML('beforeend',W7(h));
-const W7=h=>String(h).replace(/<\/sup>(?=\()/g,'</sup>\u2060').replace(/(\d\.\d\d) V(?![\w])/g,'$1\u00a0V'),cue7=b=>$$('.ec-tbx>.tw',b).forEach(t=>{if(!t.dataset.c7){t.dataset.c7='1';tblCue(t);}});
+const W7=h=>String(h).replace(/(<span style="white-space:nowrap">)?<sup>([^<]*)<\/sup>\((aq|s|l|g)\)/g,(m,p,c,st)=>p?m:`<span style="white-space:nowrap"><sup>${c}</sup>(${st})</span>`).replace(/(\d\.\d\d) V(?![\w])/g,'$1\u00a0V'),cue7=b=>$$('.ec-tbx>.tw',b).forEach(t=>{if(!t.dataset.c7){t.dataset.c7='1';tblCue(t);}});
 const u7=s=>ecU(s),r7=k=>ecRow(k),hc7={'Au^3+(aq)':'gold','Cl2(g)':'chlorine','Br2(l)':'bromine','Ag^+(aq)':'silver','Fe^3+(aq)':'iron(III)','I2(s)':'iodine','Cu^2+(aq)':'copper','H^+(aq)':'hydrogen',
   'Pb^2+(aq)':'lead','Sn^2+(aq)':'tin','Ni^2+(aq)':'nickel','Co^2+(aq)':'cobalt','Cd^2+(aq)':'cadmium','Zn^2+(aq)':'zinc','Cr^2+(aq)':'chromium','Al^3+(aq)':'aluminum','Mg^2+(aq)':'magnesium','F2(g)':'fluorine','Na^+(aq)':'sodium','Li^+(aq)':'lithium'};
 const nt7={'Au^3+(aq)':'Au(s) | Au^3+(aq)','Cl2(g)':'Pt(s) | Cl2(g), Cl^-(aq)','Br2(l)':'Pt(s) | Br2(l), Br^-(aq)','Ag^+(aq)':'Ag(s) | Ag^+(aq)','Fe^3+(aq)':'Pt(s) | Fe^3+(aq), Fe^2+(aq)','I2(s)':'Pt(s) | I2(s), I^-(aq)',
