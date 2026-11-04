@@ -70,7 +70,7 @@ const CLAUDE_SHIM=cfg=>{const call=(op,a)=>window.__db(op,a);const L=new Map();
 const FB_APP=`export const initializeApp=c=>({c});`;
 const FB_AUTH=`let cb=[],cur=null;export const getAuth=()=>({});export class GoogleAuthProvider{setCustomParameters(){}}
 export const onAuthStateChanged=(a,f)=>{cb.push(f);setTimeout(()=>f(cur),0);return ()=>{};};
-export const signInWithPopup=async()=>{cur={uid:'fbU1',email:'student@example.com'};cb.forEach(f=>f(cur));return {user:cur};};
+export const signInWithPopup=async()=>{const u=window.__nextUser||'fbU1';cur={uid:u,email:u+'@example.com'};cb.forEach(f=>f(cur));return {user:cur};};
 export const signInWithRedirect=signInWithPopup;export const getRedirectResult=async()=>null;export const signOut=async()=>{cur=null;cb.forEach(f=>f(null));};`;
 const FB_STORE=`const call=(op,a)=>window.__db(op,a).catch(e=>{throw {code:e&&e.code||String(e),message:e&&e.message||''};});const L=new Map();
 export const getFirestore=()=>({});
@@ -222,6 +222,14 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   ok('Firestore: every old entry is kept and stored in the new documents',fm===0&&fsm===0,{missing:fm,notInAccount:fsm,docs:[...server.docs.keys()].filter(p=>p.startsWith('users/fbU1/')).length});
   await cost(G,'th',2);const g2=await cost(G,'th',2);ok('Firestore: one answer is a small merge write',g2.bytes<1024,g2);
   ok('Firestore: the old document is not written',JSON.stringify(server.docs.get('users/fbU1/progress/main'))===JSON.stringify(fbLegacy));
+  /* another account signs in on this browser while fbU1 has answers that did not upload: they are kept for fbU1, not given to fbU2, and upload when fbU1 is back */
+  G.offline=true;await answer(G,'mom',3,2);const gi=await ev(G,()=>Store.xk('a').filter(k=>k.startsWith('mom_3_')).sort((x,y)=>Store.get(y).t-Store.get(x).t).slice(0,2));
+  await ev(G,async()=>{await Store.flush(800);await window.SYNC.signOut();});G.offline=false;
+  await ev(G,()=>{window.__nextUser='fbU2';return window.SYNC.signIn();});await until(G,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+  const onB=await ev(G,ids=>ids.filter(i=>Store.get(i)).length,gi),inB=Object.keys(unshard('users/fbU2/progress/').a||{}).filter(k=>gi.includes(k)).length;
+  await ev(G,async()=>{await window.SYNC.signOut();window.__nextUser='fbU1';return window.SYNC.signIn();});await until(G,()=>Store.mode()==='account'&&!Store.pending(),null,15000);await sleep(500);
+  const back=await ev(G,ids=>ids.filter(i=>Store.get(i)).length,gi),up=gi.filter(i=>(unshard('users/fbU1/progress/').a||{})[i]).length;
+  ok('another account on this browser: answers that did not upload are kept for their account, and upload when it is back',gi.length===2&&onB===0&&inB===0&&back===2&&up===2,{answered:gi.length,onDeviceForB:onB,inBsAccount:inB,backForA:back,uploaded:up});
   ok('no page errors (G)',G.errors.length===0,G.errors.slice(0,3));
   await close(G);
   }catch(e){ok('the test ran to the end',false,String(e&&e.stack||e).slice(0,600));}
