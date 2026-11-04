@@ -4161,7 +4161,7 @@ const ec5Add=(x,mx,y,my)=>{const t=new Map();[[x,mx],[y,my]].forEach(([s,m])=>{c
 const ec5T=([c,k])=>(c===1?'':c)+ecU(k);
 
 /* ---------- the working of a half-reaction in acidic solution, made from its balanced form (steps 2 to 5 of the method) ---------- */
-function ec5HalfW(a){const q=ecParse(a),S={L:q.L,R:q.R},xtra=['H2O(l)','H^+(aq)','e^-'],main=s=>S[s].filter(([c,k])=>!xtra.includes(k)),nm={L:'left',R:'right'};
+function ec5HalfS(a){const q=ecParse(a),S={L:q.L,R:q.R},xtra=['H2O(l)','H^+(aq)','e^-'],main=s=>S[s].filter(([c,k])=>!xtra.includes(k)),nm={L:'left',R:'right'};
   const find=k=>{for(const s of ['L','R']){const x=S[s].find(y=>y[1]===k);if(x)return [s,x[0]];}return [null,0];},cnt=(arr,e)=>arr.reduce((t,[c,k])=>t+c*(ecAtoms(k).a[e]||0),0),chg=arr=>arr.reduce((t,[c,k])=>t+c*ecAtoms(k).q,0);
   const sg=x=>x>0?'+'+x:x<0?'−'+(-x):'0',ml=main('L'),mr=main('R'),els=[...new Set(ml.concat(mr).flatMap(([c,k])=>Object.keys(ecAtoms(k).a)).filter(e=>e!=='O'&&e!=='H'))];
   const [ws,wn]=find('H2O(l)'),[hs,hn]=find('H^+(aq)'),[es,en]=find('e^-'),out=[];
@@ -4170,7 +4170,8 @@ function ec5HalfW(a){const q=ecParse(a),S={L:q.L,R:q.R},xtra=['H2O(l)','H^+(aq)'
   const oL=cnt(ml,'O'),oR=cnt(mr,'O');out.push(wn?`O: ${oL} on the left and ${oR} on the right. Add ${ec5T([wn,'H2O(l)'])} to the ${nm[ws]}.`:`O: ${oL} on each side.`);
   const hL=cnt(ml,'H')+(ws==='L'?2*wn:0),hR=cnt(mr,'H')+(ws==='R'?2*wn:0);out.push(hn?`H: ${hL} on the left and ${hR} on the right. Add ${ec5T([hn,'H^+(aq)'])} to the ${nm[hs]}.`:hL?`H: ${hL} on each side.`:'No hydrogen to balance.');
   const qL=chg(ml)+(hs==='L'?hn:0),qR=chg(mr)+(hs==='R'?hn:0);out.push(`Charge: ${sg(qL)} on the left and ${sg(qR)} on the right. Add ${ec5T([en,'e^-'])} to the ${nm[es]}.`);
-  return `<ol start="2">${out.map(t=>'<li>'+t+'</li>').join('')}</ol><p>${C(a)}</p><p class="hint">The electrons are on the ${nm[es]}: this is ${es==='L'?'a reduction':'an oxidation'}.</p>`;}
+  return {s:out,red:es==='L'};}
+const ec5HalfW=a=>{const h=ec5HalfS(a);return `<ol start="2">${h.s.map(t=>'<li>'+t+'</li>').join('')}</ol><p>${C(a)}</p><p class="hint">The electrons are on the ${h.red?'left: this is a reduction':'right: this is an oxidation'}.</p>`;};
 
 /* ---------- the balancing try-it ----------
    ec5Bal(host, problems, o): the student types the coefficient in front of each entity, then Check. A problem is {n: its label, L, R: the keys of the skeleton,
@@ -4532,6 +4533,13 @@ EC_GEN[5]=[()=>{const [o,r]=EC5_PAIRS[RN(0,EC5_PAIRS.length-1)];
     return {q:`In acidic solution, ${C(eq)}. Calculate the mass of ${Wn[0]}, ${C(Wn[1])}, that ${vb} ${m.toFixed(2)} g of ${G[0]}, ${C(G[1])}.`,n:x,u:'g',tol:.01,
       w:`n(${ecU(G[1].replace(/\(.*\)$/,''))}) = ${m.toFixed(2)} g ÷ ${M1.toFixed(2)} g/mol = ${sig(n1,4)} mol. The mole ratio is ${Wn[2]} ${ecU(Wn[1].replace(/\(.*\)$/,''))} : ${G[2]} ${ecU(G[1].replace(/\(.*\)$/,''))}, thus n(${ecU(Wn[1].replace(/\(.*\)$/,''))}) = ${sig(n1,4)} mol × ${Wn[2]}/${G[2]} = ${sig(n2,4)} mol. m = (${sig(n2,4)} mol)(${M2.toFixed(2)} g/mol) = ${sig(x)} g.`};}];
 ['MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)','Cr2O7^2-(aq) + 14H^+(aq) + 6Fe^2+(aq) -> 2Cr^3+(aq) + 7H2O(l) + 6Fe^3+(aq)','2AuCl4^-(aq) + 3C2O4^2-(aq) -> 2Au(s) + 8Cl^-(aq) + 6CO2(g)'].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+' does not balance: '+b);});
+/* 3. one half-reaction of the data booklet, balanced from its skeleton (the entity and what it becomes): the electrons, or the coefficient of H⁺(aq) or H₂O(l) */
+const EC5_HX=['MnO4^-(aq)','Cr2O7^2-(aq)','IO3^-(aq)','ClO4^-(aq)','MnO2(s)','HNO2(aq)','NO3^-(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','H3PO4(aq)','S(s)'].map(k=>ecRow(k));
+if(EC5_HX.some(r=>!r||r.R[0][1]==='H2O(l)'))ec5Err('a half-reaction of generator 3 is not in EC_E0');
+EC_GEN[5].push(()=>{const r=EC5_HX[RN(0,EC5_HX.length-1)],eq=r.s.replace('<=>','->'),q=ecParse(eq),co=(arr,k)=>(arr.find(x=>x[1]===k)||[0])[0],
+    asks=[['e',r.n],['H^+(aq)',co(q.L,'H^+(aq)')]].concat(co(q.R,'H2O(l)')?[['H2O(l)',co(q.R,'H2O(l)')]]:[]),[k,n]=asks[RN(0,asks.length-1)],sk=r.L[0][1]+' -> '+r.R[0][1];
+  return {q:`Balance the half-reaction ${C(sk)} in acidic solution with the lowest whole-number coefficients. ${k==='e'?'How many electrons are in the balanced half-reaction?':'What is the coefficient of '+C(k)+'?'}`,n,u:'',tol:0,
+    w:`${ec5HalfS(eq).s.join(' ')} The balanced half-reaction is ${ecU(eq)}, the same as the data booklet row (${r.Es} V), thus ${k==='e'?'it has '+n+' electrons':'the coefficient of '+ecU(k)+' is '+n}.`};});
 EC_METHOD[5]='Balance the equation first: balance each half-reaction (atoms, O with H₂O, H with H⁺, charge with e⁻), then make the electrons lost equal the electrons gained. For a mass, use the coefficients as the mole ratio.';
 EC_HT[5]={pre:'A balanced redox equation balances the atoms, the charge and the electrons. The electrons lost in the oxidation must equal the electrons gained in the reduction.',items:[
   {q:'Balance a half-reaction in acidic solution',s:['Write the skeleton: the entity and what it becomes.','Balance the atoms other than O and H.','Balance O: add H₂O(l) to the side that needs oxygen.','Balance H: add H⁺(aq) to the side that needs hydrogen.','Balance the charge: add electrons to the more positive side.'],chk:'Electrons on the left: a reduction. Electrons on the right: an oxidation.'},
