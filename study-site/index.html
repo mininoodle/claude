@@ -673,6 +673,127 @@ p.legend>span{white-space:normal;min-width:0}
   .sum .knob{fill:var(--c);fill-opacity:.3}.sum .syn:hover .knob{fill-opacity:.55}.sum .syn.on .knob{fill-opacity:1}
 }
 </style>
+<style id="sidebar-skin">
+:root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
+  --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
+  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
+  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
+  --cap:1000px;--pad:40px}
+:root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
+  --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
+body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
+[data-mode="dark"] body,[data-mode="dark"] body[data-s]{--a1:#5a9cf0;--a2:#5a5a58;--a3:#3a3a3a}
+.bg,#top{display:none!important}
+html{scroll-padding-top:62px}
+#shell{display:flex;align-items:flex-start;min-height:100vh}
+#rail{flex:none;width:var(--railw);position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);border-right:1px solid var(--hair);padding:14px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.rail-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;font-size:14px}
+.rail-logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;display:grid;place-items:center}
+.rail-h,#rail .ulabel{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:14px 8px 4px;margin:0}
+#rail .seg{display:flex;flex-direction:column;gap:1px;border-radius:0;background:none;border:0;padding:0;box-shadow:none;max-width:none;overflow:visible;isolation:isolate}
+#rail .seg button{justify-content:flex-start;font-size:13.5px;font-weight:500;padding:6px 8px;border-radius:6px;white-space:normal;text-align:left;color:var(--ink);gap:.5em}
+#rail .seg button[aria-selected="true"]{font-weight:600}
+#rail .seg .thumb{border-radius:6px;background:var(--hov);border:0;box-shadow:none;top:0;bottom:auto}
+#rail .seg.main .sm{display:none}#rail .seg.main .lg{display:inline}
+#rail .units{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:2px;padding:0}
+#rail .units .uclear{margin:10px 8px 0;align-self:flex-start}
+#rail .units .usec{flex-direction:column;flex-basis:auto;align-items:stretch;gap:2px}
+#rail .chips{display:flex;flex-direction:column;gap:1px;padding:0 0 0 12px;background:none;border:0;max-width:none;overflow:visible;border-radius:0;flex-wrap:nowrap;justify-content:flex-start}
+#rail .chips button{font-size:13px;font-weight:500;padding:5px 8px;border-radius:6px;text-align:left;white-space:normal;color:var(--ink2);display:flex;align-items:center;transform:none}
+#rail .chips button .ic{flex:none}
+#rail .chips button[aria-selected="true"]{background:var(--hov);color:var(--ink);box-shadow:none;font-weight:600}
+#rail .chips button .pr{margin-left:auto;flex:none}
+#rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
+.rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
+.modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
+#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
+/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
+.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
+.crumb b{color:var(--ink);font-weight:500}
+.crumb-sep{margin:0 2px;color:var(--a3);flex:none}
+/* each part of the breadcrumb opens a menu of the places at its level */
+.crumb-path{display:flex;align-items:center;min-width:0;flex:1 1 auto}
+.crumb-right{flex:none;white-space:nowrap}
+.crumb-b{appearance:none;border:0;background:none;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:3px;min-width:0;flex:0 1 auto;padding:3px 6px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s}
+.crumb-b:first-child{margin-left:-6px}
+.crumb-b>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.crumb-b .ic{flex:none;opacity:.45;transition:opacity .15s}
+.crumb-b:hover,.crumb-b[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
+.crumb-b:hover .ic,.crumb-b[aria-expanded="true"] .ic{opacity:1}
+.crumb-b.cur{color:var(--ink);flex-shrink:6}
+.crumb-b[data-lv="s"]:not(.cur){flex-shrink:0}
+/* a phone: the lesson header just below shows the level, thus the breadcrumb gets the whole width; the current page (also the heading below) is shortened first */
+@media(max-width:600px){.crumb-right{display:none}}
+.crumb-menu{position:absolute;z-index:6;min-width:13rem;max-width:min(22rem,calc(100% - 16px));max-height:min(60vh,27rem);overflow-y:auto;padding:5px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);display:grid;gap:1px}
+.cm-h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:8px 8px 3px}
+.cm-i{appearance:none;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:.6em;width:100%;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer}
+.cm-i>span{flex:1;min-width:0}
+.cm-i .ic{flex:none}
+.cm-i:hover,.cm-i:focus-visible{background:var(--hov)}
+.cm-i.on{font-weight:600}
+.lesson{max-width:var(--cap);margin-inline:auto}
+.glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.card{border-radius:10px;padding:18px 20px}
+.lhead{padding:24px 0 16px}
+.lhead h1{font-size:2.2rem;letter-spacing:-.02em}
+.fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
+.btn{box-shadow:none;border-radius:6px}
+.btn.ghost{box-shadow:none;border-radius:6px}
+.note{background:var(--notebg);border-color:#e8d79a}
+[data-mode="dark"] .note{border-color:#5a4d1e}
+.seg.in{background:var(--glass2);border-color:var(--hair);border-radius:8px}
+.seg.in .thumb{border-radius:6px;background:var(--glass);box-shadow:0 1px 2px rgba(0,0,0,.1);border:1px solid var(--hair)}
+.tile{border-radius:8px;box-shadow:none}
+@media(max-width:900px){
+  #shell{display:block}
+  #rail{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px 12px 12px;gap:6px}
+  #rail .seg,#rail .chips,#rail .units,#rail .units .usec{flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
+  #rail .chips{padding:0}
+  .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
+  #rail .units .uclear{margin:0 0 0 auto}
+  .rail-tools{margin-top:0;padding:4px 0 0}
+  :root{--pad:16px}
+  #main{padding-bottom:60px}
+  .crumb{height:40px;position:relative}
+  .rail-brand,.rail-h{display:none}
+  #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
+  #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
+  #rail .seg.main button,#rail .chips button{flex:none;white-space:nowrap}
+  #rail .seg.main button{flex-direction:row}
+  #rail .ulabel{flex-basis:100%}
+}
+/* rows of cards, from 880 px (where cards first sit side by side): wrapping rows instead of a fixed grid. A full row fills the column exactly,
+   and a row that is not full sits in the middle, thus a lone half card is centred, not pushed to the left. A card that is n columns wide is
+   n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way.
+   From 880 px to 1599 px the widths are those of the 12-column grid (half 6, w7 7, w5 5), and the cards of a row keep one height, as before */
+@media(min-width:880px){
+  :root{--cols:12;--gap:16px}
+  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:var(--gap)}
+  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
+  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid .card.half{--n:6}#main .grid .card.w7{--n:7}#main .grid .card.w5{--n:5}
+  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
+}
+/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
+   The column is capped and centred, thus the card order stays as written and the margins stay even */
+@media(min-width:1600px){
+  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
+  #main .grid,#main .grid>div:not(.card){align-items:flex-start}
+  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
+  .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
+}
+@media(min-width:2200px){html{font-size:17px}
+  #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
+@media(min-width:2400px){
+  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
+  .lhead h1{font-size:2.8rem}
+}
+@media(min-width:3000px){html{font-size:18px}}
+@media(min-width:3200px){
+  :root{--railw:320px;--cap:2900px;--gap:22px}
+}
+@media print{#rail,.crumb{display:none}}
+</style>
 <div class="bg" aria-hidden="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <filter id="f-astig"><feGaussianBlur stdDeviation="5 0"/></filter>
@@ -1278,7 +1399,6 @@ function showUnit(k,first){
   curS=k;document.body.dataset.s=k;_col=null;const nav=$('#chips');nav.innerHTML='';
   chipBtns=SUBJ[k].lessons.map((le,i)=>{const b=el('button',{type:'button',role:'tab',id:'tab-'+k+'-'+i,'aria-controls':k+'-'+i},icon(le.ic||LIC[le.t]||k,14)+le.t+(le.qz?'<i class="pr"></i>':''));b.onclick=()=>showLesson(i);nav.append(b);return b;});
   sectBar(k);showLesson(curL[k],{first});chipProgress();
-  setTimeout(()=>{_col=null;redrawAll();},960);
 }
 /* section bar: a grouped unit gets a row of its own for its sections, under the unit bar.
    Clear answers moves into this row, because it clears the open section only. */
@@ -1368,7 +1488,7 @@ function boot(){
     if(REF[k]){const rt=REF[k].rt||(REF[k].f&&REF[k].f.length?'Formulas and terms':'Key terms');S.lessons.push({t:rt,ic:'book',h:S.name+': '+rt.toLowerCase(),d:'A reference sheet for this section. Use the search box to find a term.',build(g){refUI(g,REF[k]);}});}
     S.lessons.push({t:'Review',rv:1,ic:'target',h:S.name+' review',d:'See your results, practise the questions that are due, take a mixed test or do a timed exam.',build(g,le){reviewUI(g,k,le);}});});
   const mb=el('button',{type:'button',class:'modebtn',id:'mode'});$('.bar').append(mb);
-  const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();setTimeout(()=>{_col=null;redrawAll();},960);};
+  const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();};
   let m0=null;try{m0=localStorage.getItem('unit-study-site.mode');}catch(e){}setMode(m0==='dark'||m0==='light'?m0:sysMode());
   /* the viewer's theme changes: an explicit change in an artifact viewer is followed at once; a system change only when the student made no choice */
   new MutationObserver(()=>setMode(sysMode())).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
@@ -11312,127 +11432,6 @@ dispatchEvent(new Event('sync-change'));
 
 
 <!-- ===== Sidebar layout: a navigation rail on the left, a breadcrumb bar, and a centred lesson column. It moves the existing bars into the rail at load ===== -->
-<style id="sidebar-skin">
-:root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
-  --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
-  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
-  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
-  --cap:1000px;--pad:40px}
-:root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
-  --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
-body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
-[data-mode="dark"] body,[data-mode="dark"] body[data-s]{--a1:#5a9cf0;--a2:#5a5a58;--a3:#3a3a3a}
-.bg,#top{display:none!important}
-html{scroll-padding-top:62px}
-#shell{display:flex;align-items:flex-start;min-height:100vh}
-#rail{flex:none;width:var(--railw);position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);border-right:1px solid var(--hair);padding:14px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
-.rail-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;font-size:14px}
-.rail-logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;display:grid;place-items:center}
-.rail-h,#rail .ulabel{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:14px 8px 4px;margin:0}
-#rail .seg{display:flex;flex-direction:column;gap:1px;border-radius:0;background:none;border:0;padding:0;box-shadow:none;max-width:none;overflow:visible;isolation:isolate}
-#rail .seg button{justify-content:flex-start;font-size:13.5px;font-weight:500;padding:6px 8px;border-radius:6px;white-space:normal;text-align:left;color:var(--ink);gap:.5em}
-#rail .seg button[aria-selected="true"]{font-weight:600}
-#rail .seg .thumb{border-radius:6px;background:var(--hov);border:0;box-shadow:none;top:0;bottom:auto}
-#rail .seg.main .sm{display:none}#rail .seg.main .lg{display:inline}
-#rail .units{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:2px;padding:0}
-#rail .units .uclear{margin:10px 8px 0;align-self:flex-start}
-#rail .units .usec{flex-direction:column;flex-basis:auto;align-items:stretch;gap:2px}
-#rail .chips{display:flex;flex-direction:column;gap:1px;padding:0 0 0 12px;background:none;border:0;max-width:none;overflow:visible;border-radius:0;flex-wrap:nowrap;justify-content:flex-start}
-#rail .chips button{font-size:13px;font-weight:500;padding:5px 8px;border-radius:6px;text-align:left;white-space:normal;color:var(--ink2);display:flex;align-items:center;transform:none}
-#rail .chips button .ic{flex:none}
-#rail .chips button[aria-selected="true"]{background:var(--hov);color:var(--ink);box-shadow:none;font-weight:600}
-#rail .chips button .pr{margin-left:auto;flex:none}
-#rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
-.rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
-.modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
-#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
-/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
-.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
-.crumb b{color:var(--ink);font-weight:500}
-.crumb-sep{margin:0 2px;color:var(--a3);flex:none}
-/* each part of the breadcrumb opens a menu of the places at its level */
-.crumb-path{display:flex;align-items:center;min-width:0;flex:1 1 auto}
-.crumb-right{flex:none;white-space:nowrap}
-.crumb-b{appearance:none;border:0;background:none;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:3px;min-width:0;flex:0 1 auto;padding:3px 6px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s}
-.crumb-b:first-child{margin-left:-6px}
-.crumb-b>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.crumb-b .ic{flex:none;opacity:.45;transition:opacity .15s}
-.crumb-b:hover,.crumb-b[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
-.crumb-b:hover .ic,.crumb-b[aria-expanded="true"] .ic{opacity:1}
-.crumb-b.cur{color:var(--ink);flex-shrink:6}
-.crumb-b[data-lv="s"]:not(.cur){flex-shrink:0}
-/* a phone: the lesson header just below shows the level, thus the breadcrumb gets the whole width; the current page (also the heading below) is shortened first */
-@media(max-width:600px){.crumb-right{display:none}}
-.crumb-menu{position:absolute;z-index:6;min-width:13rem;max-width:min(22rem,calc(100% - 16px));max-height:min(60vh,27rem);overflow-y:auto;padding:5px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);display:grid;gap:1px}
-.cm-h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:8px 8px 3px}
-.cm-i{appearance:none;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:.6em;width:100%;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer}
-.cm-i>span{flex:1;min-width:0}
-.cm-i .ic{flex:none}
-.cm-i:hover,.cm-i:focus-visible{background:var(--hov)}
-.cm-i.on{font-weight:600}
-.lesson{max-width:var(--cap);margin-inline:auto}
-.glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-.card{border-radius:10px;padding:18px 20px}
-.lhead{padding:24px 0 16px}
-.lhead h1{font-size:2.2rem;letter-spacing:-.02em}
-.fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
-.btn{box-shadow:none;border-radius:6px}
-.btn.ghost{box-shadow:none;border-radius:6px}
-.note{background:var(--notebg);border-color:#e8d79a}
-[data-mode="dark"] .note{border-color:#5a4d1e}
-.seg.in{background:var(--glass2);border-color:var(--hair);border-radius:8px}
-.seg.in .thumb{border-radius:6px;background:var(--glass);box-shadow:0 1px 2px rgba(0,0,0,.1);border:1px solid var(--hair)}
-.tile{border-radius:8px;box-shadow:none}
-@media(max-width:900px){
-  #shell{display:block}
-  #rail{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px 12px 12px;gap:6px}
-  #rail .seg,#rail .chips,#rail .units,#rail .units .usec{flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
-  #rail .chips{padding:0}
-  .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
-  #rail .units .uclear{margin:0 0 0 auto}
-  .rail-tools{margin-top:0;padding:4px 0 0}
-  :root{--pad:16px}
-  #main{padding-bottom:60px}
-  .crumb{height:40px;position:relative}
-  .rail-brand,.rail-h{display:none}
-  #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
-  #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
-  #rail .seg.main button,#rail .chips button{flex:none;white-space:nowrap}
-  #rail .seg.main button{flex-direction:row}
-  #rail .ulabel{flex-basis:100%}
-}
-/* rows of cards, from 880 px (where cards first sit side by side): wrapping rows instead of a fixed grid. A full row fills the column exactly,
-   and a row that is not full sits in the middle, thus a lone half card is centred, not pushed to the left. A card that is n columns wide is
-   n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way.
-   From 880 px to 1599 px the widths are those of the 12-column grid (half 6, w7 7, w5 5), and the cards of a row keep one height, as before */
-@media(min-width:880px){
-  :root{--cols:12;--gap:16px}
-  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:var(--gap)}
-  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
-  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
-  #main .grid .card.half{--n:6}#main .grid .card.w7{--n:7}#main .grid .card.w5{--n:5}
-  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
-}
-/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
-   The column is capped and centred, thus the card order stays as written and the margins stay even */
-@media(min-width:1600px){
-  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
-  #main .grid,#main .grid>div:not(.card){align-items:flex-start}
-  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
-  .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
-}
-@media(min-width:2200px){html{font-size:17px}
-  #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
-@media(min-width:2400px){
-  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
-  .lhead h1{font-size:2.8rem}
-}
-@media(min-width:3000px){html{font-size:18px}}
-@media(min-width:3200px){
-  :root{--railw:320px;--cap:2900px;--gap:22px}
-}
-@media print{#rail,.crumb{display:none}}
-</style>
 <script>
 (function(){
   const $id=i=>document.getElementById(i);
