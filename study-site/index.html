@@ -4095,15 +4095,349 @@ EC_REF.t.push(['Oxidation','A loss of electrons. The entity that is oxidized is 
 }catch(e){console.error('[ec] slot 0 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 1 ----- */
 {try{
-/* placeholder of lesson 1 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[1]={t:EC_T[1],h:'Oxidation numbers',d:'An oxidation number is the charge that an atom would have if the electrons of each bond belonged to the more electronegative atom.',build(g){
-  card(g,'Rules for oxidation numbers',`<p class="hint">Outcomes: 30–B1.2k, 30–B1.3k</p><ul><li>An atom in a pure element: 0 (${C('Fe(s)')}, ${C('Cl2(g)')}, ${C('P4(s)')}).</li><li>A monatomic ion: its charge (${C('Ca^2+')} is +2).</li>
-    <li>Hydrogen: +1 (−1 in a metal hydride). Oxygen: −2 (−1 in a peroxide).</li><li>The sum is 0 in a compound, and equal to the charge in a polyatomic ion.</li></ul>
-    <p class="note">The sign comes before the number: the ion Li⁺ has a charge of 1+ and an oxidation number of +1. An increase in oxidation number is oxidation; a decrease is reduction.</p>`);
+/* ===== lesson 1: Oxidation numbers (notes pages 5 to 9). Page 5: the definition and the rules. Page 6: the sum rules, the example, the oxidation number changes,
+   the example and the two practice reactions. Page 7: the practice table (a typed try-it). Pages 8 and 9: diploma questions 1 to 6 (key on page 85) in EC_DIP[1] ===== */
+/* an oxidation number as text, with its sign first: +6, −2, 0. A value that is not a whole number is shown as a fraction with the denominator d: +8/3 */
+const ec1S=(x,d)=>{if(Math.abs(x)<1e-9)return '0';const s=x>0?'+':'−',a=Math.abs(x),r=Math.round(a);if(Math.abs(a-r)<1e-9)return s+r;if(!d)return s+a.toFixed(2);const n=Math.round(a*d),g=ecGcd(n,d);return s+n/g+'/'+d/g;};
+/* the colours of the oxidation numbers written above a formula: o oxidized (orange), r reduced (blue), n no change, a the accent. Mixed with the ink, they keep their contrast in both themes */
+const EC1_C={o:'color-mix(in srgb,var(--s2) 70%,var(--ink))',r:'color-mix(in srgb,var(--s1) 78%,var(--ink))',n:'var(--ink2)',a:'var(--at)'};
+/* a formula (C notation) with the oxidation number of each element written above its symbol: ec1A('K2SO4(aq)',['+1','+6','−2']). ons: one entry for each element symbol,
+   in order: a text, or [text, colour key of EC1_C]. Inline styles only: the same HTML is used in question figures, which are also shown outside the lesson (review, tests).
+   The line that holds it needs a line-height of about 2.5 (ec1Eq and .ec1on give it) */
+const ec1A=(f,ons=[])=>{const m=String(f).match(/^(\d*)(.*?)(\((?:s|l|g|aq)\))?$/);let b=m[2],ch='',k=0,h='';const q=b.match(/\^(\d*[+-])$/);if(q){ch=q[1];b=b.slice(0,q.index);}
+  b.replace(/([A-Z][a-z]?)(\d*)|([()])(\d*)|([^])/g,(x,e,n,p,pn,o)=>{
+    if(e){const v=ons[k++],t=Array.isArray(v)?v[0]:v,c=EC1_C[Array.isArray(v)?v[1]:'a'];
+      h+=t!=null&&t!==''?`<span style="position:relative;display:inline-block;line-height:1;padding:0 .1em">${e}<span style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.64em;font-weight:700;line-height:1.05;white-space:nowrap;color:${c}">${t}</span></span>`:e;
+      if(n)h+='<sub>'+n+'</sub>';}
+    else if(p)h+=p+(pn?'<sub>'+pn+'</sub>':'');else h+=o;return '';});
+  return `<span style="white-space:nowrap">${m[1]}${h}${ch?'<sup>'+ch.replace('-','−')+'</sup>':''}${m[3]||''}</span>`;};
+/* an equation (C notation, with ->) with oxidation numbers above its elements: ons has one list for each term, in order (an empty list for a term without numbers) */
+const ec1Eq=(s,ons)=>{const [l,r]=String(s).split(/\s*->\s*/);let k=0;const side=t=>t.split(/\s+\+\s+/).map(x=>ec1A(x,ons[k++]||[])).join(' + ');
+  return `<span style="display:inline-block;line-height:2.6;max-width:100%">${side(l)} → ${side(r)}</span>`;};
+/* an equation as HTML that breaks only between its terms */
+const ec1N=s=>String(s).split(/(\s+\+\s+|\s*->\s*|\s*<=>\s*)/).map(x=>/^\s*(\+|->|<=>)\s*$/.test(x)?C(x):x?'<span style="white-space:nowrap">'+C(x)+'</span>':'').join('');
+/* an arrow with words over it and under it, as the notes write the conditions of a reaction. The arrow is drawn: it stretches under the words. eqm: the equilibrium arrow */
+const ec1Arr=(t,b,eqm)=>`<span style="display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;line-height:1.15;margin:0 .35em;font-size:.74em;text-align:center"><span>${t||'&nbsp;'}</span>`+
+  `<svg viewBox="0 0 60 12" preserveAspectRatio="none" style="display:block;width:100%;min-width:3.4em;height:.95em" role="img" aria-label="${eqm?'is in equilibrium with':'gives'}"><path d="${eqm?'M2,4H58M51,1L58,4M58,8H2M9,11L2,8':'M2,6H58M51,2L58,6L51,10'}" fill="none" stroke="currentColor" stroke-width="1.3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${b||'&nbsp;'}</span></span>`;
+/* the worked sum of one entity: r = {f: the entity (C notation), x: the element, v: its oxidation number, and one of: el (a pure element), ion (a monatomic ion), t (the rule
+   that gives the value, as text), k ({element: oxidation number} of the other atoms: the sum rule); s: the entity used for the sum when it is one ion of a compound; pre, post: more text} */
+const EC1_G1=['Li','Na','K'],EC1_G2=['Mg','Ca','Ba'];
+const ec1And=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const ec1Work=r=>{const F=ecU(r.f);
+  if(r.el)return `${F} is a pure element: every atom is 0.`;
+  if(r.ion)return `${F} is a monatomic ion: its oxidation number is its charge, ${ec1S(r.v)}.`;
+  if(r.t)return r.t;
+  const A=ecAtoms(r.s||r.f),parts=[],kn=[];
+  Object.keys(A.a).forEach(e=>{const n=A.a[e];if(e===r.x){parts.push((n>1?n:'')+r.x);return;}const v=r.k[e];kn.push(e+' is '+ec1S(v)+(EC1_G1.includes(e)?' (Group 1)':EC1_G2.includes(e)?' (Group 2)':''));parts.push((n>1?n:'')+'('+ec1S(v)+')');});
+  return `${r.pre?r.pre+' ':''}${ec1And(kn)}. ${parts.join(' + ')} = ${ec1S(A.q)}, thus ${r.x} = ${ec1S(r.v,A.a[r.x])}.${r.post?' '+r.post:''}`;};
+/* the value that the sum rule gives (a check of the data: the validator below compares it with v) */
+const ec1Sum=r=>{const A=ecAtoms(r.s||r.f);let t=A.q;Object.keys(A.a).forEach(e=>{if(e!==r.x)t-=A.a[e]*r.k[e];});return t/A.a[r.x];};
+/* the practice table of page 7, by element. mix: each row names its own element */
+const EC1_PT=[
+  {n:'S',name:'Sulfur',x:'S',r:[{f:'H2S',v:-2,k:{H:1}},{f:'S8',v:0,el:1},{f:'S2Cl2',v:1,k:{Cl:-1},post:'Cl is more electronegative than S.'},{f:'SO2',v:4,k:{O:-2}},{f:'SO3^2-',v:4,k:{O:-2}},{f:'SO4^2-',v:6,k:{O:-2}},{f:'HSO4^-',v:6,k:{H:1,O:-2}}]},
+  {n:'P',name:'Phosphorus',x:'P',r:[{f:'H3P',v:-3,k:{H:1}},{f:'P4',v:0,el:1},{f:'P2Cl4',v:2,k:{Cl:-1}},{f:'PF3',v:3,k:{F:-1}},{f:'Na3P',v:-3,k:{Na:1}},{f:'PO3^3-',v:3,k:{O:-2}},{f:'PO4^3-',v:5,k:{O:-2}},{f:'HPO4^2-',v:5,k:{H:1,O:-2}}]},
+  {n:'Mn',name:'Manganese',x:'Mn',r:[{f:'Mn',v:0,el:1},{f:'MnO2',v:4,k:{O:-2}},{f:'MnCl2',v:2,k:{Cl:-1}},{f:'Mn3O4',v:8/3,k:{O:-2},post:'A fraction is an average: Mn₃O₄ contains one Mn²⁺ ion and two Mn³⁺ ions.'},
+    {f:'MnO4^2-',v:6,k:{O:-2}},{f:'MnO4^-',v:7,k:{O:-2}},{f:'MnSO4',v:2,t:'MnSO₄ is made of the ions Mn²⁺ and SO₄²⁻, thus Mn is +2. Check: (+2) + (+6) + 4(−2) = 0.'}]},
+  {n:'Cl',name:'Chlorine',x:'Cl',r:[{f:'HCl',v:-1,k:{H:1}},{f:'Cl2',v:0,el:1},{f:'OCl2',v:1,k:{O:-2},post:'O is more electronegative than Cl, thus O keeps −2 and Cl is positive.'},{f:'PCl3',v:-1,t:'Cl is a halogen, and it is more electronegative than P: −1. Then P is +3.'},
+    {f:'MgCl2',v:-1,k:{Mg:2}},{f:'ClO^-',v:1,k:{O:-2}},{f:'ClO3^-',v:5,k:{O:-2}},{f:'ClF3',v:3,k:{F:-1},post:'F is always −1, even with another halogen.'}]},
+  {n:'N',name:'Nitrogen',x:'N',r:[{f:'K3N',v:-3,k:{K:1}},{f:'N2',v:0,el:1},{f:'N2H4',v:-2,k:{H:1}},{f:'NH3',v:-3,k:{H:1}},{f:'N2O',v:1,k:{O:-2}},{f:'NO',v:2,k:{O:-2}},{f:'NO2',v:4,k:{O:-2}},
+    {f:'NH4NO3',v:-3,k:{H:1},s:'NH4^+',lab:'N in NH₄⁺',pre:'NH₄NO₃ is made of the ions NH₄⁺ and NO₃⁻. In NH₄⁺:'},{f:'NH4NO3',v:5,k:{O:-2},s:'NO3^-',lab:'N in NO₃⁻',pre:'NH₄NO₃ is made of the ions NH₄⁺ and NO₃⁻. In NO₃⁻:'},
+    {f:'NO2^-',v:3,k:{O:-2}},{f:'NO3^-',v:5,k:{O:-2}}]},
+  {n:'Cr',name:'Chromium',x:'Cr',r:[{f:'Cr',v:0,el:1},{f:'CrCl3',v:3,k:{Cl:-1}},{f:'PbCrO4',v:6,k:{O:-2},s:'CrO4^2-',pre:'PbCrO₄ is made of the ions Pb²⁺ and CrO₄²⁻. In CrO₄²⁻:'},{f:'Cr2O3',v:3,k:{O:-2}},{f:'CrO4^2-',v:6,k:{O:-2}},{f:'Cr2O7^2-',v:6,k:{O:-2}}]},
+  {n:'O, H',name:'Oxygen and hydrogen',mix:1,r:[{f:'O3',x:'O',v:0,el:1},{f:'H^+',x:'H',v:1,ion:1},{f:'H2O2',x:'O',v:-1,k:{H:1},post:'H₂O₂ is a peroxide.'},{f:'H2O2',x:'H',v:1,t:'H is +1: H₂O₂ is not a metal hydride. Then each O is −1.'},
+    {f:'LiH',x:'H',v:-1,k:{Li:1},post:'LiH is an ionic hydride.'},{f:'CaO',x:'O',v:-2,k:{Ca:2}},{f:'PbO2',x:'O',v:-2,t:'O is −2: PbO₂ is not a peroxide. Then Pb is +4.'},{f:'OCl2',x:'O',v:-2,t:'O is more electronegative than Cl, thus O keeps −2. Then each Cl is +1.'}]},
+  {n:'C',name:'Carbon',x:'C',r:[{f:'CH4',v:-4,k:{H:1}},{f:'CaC2',v:-1,k:{Ca:2}},{f:'CO2',v:4,k:{O:-2}},{f:'C2H5OH',v:-2,k:{H:1,O:-2},post:'This is the average of the two C atoms (−3 and −1).'},{f:'CH3CO2^-',v:0,k:{H:1,O:-2},post:'This is the average of the two C atoms (−3 and +3).'}]},
+  {n:'F, Br, I',name:'Fluorine, bromine and iodine',mix:1,r:[{f:'CuF2',x:'F',v:-1,t:'F is always −1. Then Cu is +2.'},{f:'CH3Br',x:'Br',v:-1,t:'Br is a halogen: −1. Then C is −2: C + 3(+1) + (−1) = 0.'},
+    {f:'IBr2',x:'I',v:2,k:{Br:-1},post:'Br is more electronegative than I.'},{f:'IBr2',x:'Br',v:-1,t:'Br is more electronegative than I, thus each Br is −1. Then I is +2.'},{f:'OF2',x:'F',v:-1,t:'F is always −1. Then O is +2: OF₂ is an exception to the oxygen rule.'}]}];
+EC1_PT.forEach(G=>G.r.forEach(r=>{if(!r.x)r.x=G.x;if(r.k&&Math.abs(ec1Sum(r)-r.v)>1e-9)console.error('[ec] lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);}));
+/* the practice table as a try-it (a lesson-local helper: the framework has no typed fill-in table). The student chooses an element, types the oxidation number of that element
+   in each entity (+6, −2, 0, or a fraction such as 8/3), then Check. Show the answers fills in the answers and the working of each box. Clear empties the boxes of the element shown.
+   One saved object for all the groups, {"group-row": text}, under an mt_ key: Clear answers for the section removes it */
+function ec1Grid(host,groups,slot){
+  const lid=(host.closest('.lesson')||{}).id||'x',key='mt_'+lid+'_on'+(slot||0),box=el('div',{class:'ec1g'});host.append(box);
+  const valid=v=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>/^\d+-\d+$/.test(k)&&typeof v[k]==='string');
+  let S=valid(Store.w(key))?Object.assign({},Store.w(key)):{},gi=0,seen=JSON.stringify(S);
+  const save=()=>{const o={};Object.keys(S).forEach(k=>{if(S[k])o[k]=S[k].slice(0,12);});seen=JSON.stringify(o);Store.wSet(key,o);};
+  const sh=el('div'),body=el('div'),bar=el('div',{class:'row'},'<button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span>');
+  box.append(sh,body,bar);const lv=$('[aria-live]',bar),rows=()=>groups[gi].r;
+  /* a typed answer: its value (NaN when it is not a number), and post: the sign is written after the number (2+), the way a charge is written */
+  const read=t=>{const s=String(t||'').trim();return /^\d+(\.\d+)?\s*[+\-−]$/.test(s)?{x:NaN,post:true}:{x:parseNum(s),post:false};};
+  const okv=(t,v)=>{const a=read(t);return isFinite(a.x)&&Math.abs(a.x-v)<=.011;};
+  const wOf=inp=>inp.closest('.ec1c').querySelector('.ec1w');
+  function render(){const G=groups[gi];
+    body.innerHTML=`<p class="hint">${G.name}: type the oxidation number of ${G.mix?'the element named in each box':G.x+' in each entity'}. Write the sign first (+2, −1). A fraction can be typed as 8/3.</p><div class="ec1cells">${G.r.map((r,i)=>
+      `<div class="ec1c"><label><span class="ec1e">${C(r.f)}${r.lab?`<small>${r.lab}</small>`:''}</span><span class="ec1in">${G.mix?`<span class="ec1x">${r.x}</span>`:''}<input type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-i="${i}" aria-label="Oxidation number of ${r.x} in ${ecU(r.f)}${r.lab?', '+r.lab:''}"></span></label><div class="ec1w" hidden></div></div>`).join('')}</div>`;
+    $$('input',body).forEach(inp=>{const k=gi+'-'+inp.dataset.i;inp.value=S[k]||'';
+      inp.addEventListener('input',()=>{S[k]=inp.value.trim();save();inp.classList.remove('ok','bad');inp.removeAttribute('aria-invalid');wOf(inp).hidden=true;lv.textContent='';});
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter')check();});});
+    lv.textContent=G.r.some((r,i)=>S[gi+'-'+i])?'Your last answers are restored.':'';}
+  const paint=show=>$$('input',body).forEach(inp=>{const r=rows()[+inp.dataset.i],t=inp.value.trim(),ok=okv(t,r.v),w=wOf(inp),a=read(t);
+    inp.classList.toggle('ok',ok);inp.classList.toggle('bad',!ok);inp.setAttribute('aria-invalid',String(!ok));
+    if(show){w.innerHTML=ec1Work(r);w.hidden=false;return;}
+    w.textContent=!t||ok?'':a.post?'Write the sign before the number: +2, not 2+.':isFinite(a.x)&&Math.abs(Math.abs(a.x)-Math.abs(r.v))<.011?'Check the sign.':'';w.hidden=!w.textContent;});
+  function check(){const R=rows(),ins=$$('input',body);if(ins.every(x=>!x.value.trim())){lv.textContent='Type an oxidation number in each box first.';return;}
+    paint(false);markStudy();const n=ins.filter(x=>okv(x.value,R[+x.dataset.i].v)).length,e=ins.filter(x=>!x.value.trim()).length,
+      ns=ins.some(x=>{const v=R[+x.dataset.i].v,t=x.value.trim();return v>0&&okv(t,v)&&!/^\+/.test(t);});
+    lv.textContent=(n===ins.length?'All '+n+' are correct.':n+' of '+ins.length+' are correct.'+(e?' '+e+(e===1?' box is':' boxes are')+' empty.':''))+(ns?' Write a + sign before a positive oxidation number (+6, not 6).':'');}
+  $('[data-a=check]',bar).onclick=check;
+  $('[data-a=show]',bar).onclick=()=>{rows().forEach((r,i)=>{S[gi+'-'+i]=ec1S(r.v,ecAtoms(r.s||r.f).a[r.x]);});save();$$('input',body).forEach(inp=>{inp.value=S[gi+'-'+inp.dataset.i];});paint(true);lv.textContent='These are the answers, with the working under each box.';};
+  $('[data-a=clear]',bar).onclick=()=>{rows().forEach((r,i)=>{delete S[gi+'-'+i];});save();render();lv.textContent='';};
+  seg(sh,groups.map(G=>G.n),i=>{gi=i;render();});render();
+  /* newer synced answers (another device, a remote clear) replace the ones on screen, except the box being edited */
+  const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),o=valid(v)?v:{},j=JSON.stringify(o);if(j===seen)return;seen=j;S=Object.assign({},o);
+    $$('input',body).forEach(inp=>{if(inp===document.activeElement)return;const t=S[gi+'-'+inp.dataset.i]||'';if(inp.value!==t){inp.value=t;inp.classList.remove('ok','bad');inp.removeAttribute('aria-invalid');wOf(inp).hidden=true;}});};
+  LIVE.add(view);return box;}
+/* water: the electrons of each O-H bond are given to the more electronegative O atom */
+const ec1Water=()=>{const T=(t,x,y,o)=>svgText(t,x,y,Object.assign({s:15,w:700,f:'ink'},o)),dot=([x,y])=>`<circle cx="${x}" cy="${y}" r="3.2" fill="var(--s1)"/>`,
+    at=(x,y,r,t)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.5"/>`+svgText(t,x,y+(r>20?6:5),{s:r>20?17:14,w:700,f:'ink'});
+  let s=`<ellipse cx="150" cy="80" rx="47" ry="49" fill="color-mix(in srgb,var(--s1) 10%,transparent)" stroke="var(--s1)" stroke-width="1.6" stroke-dasharray="5 4"/>`+
+    `<path d="M132.3,94.2L93.8,129.2M167.7,94.2L206.2,129.2" stroke="var(--mute)" stroke-width="1.5"/>`+at(150,78,24,'O')+at(82,140,16,'H')+at(218,140,16,'H');
+  [[126.1,105.3],[120.7,99.3],[173.9,105.3],[179.3,99.3],[132.8,48.4],[126.4,53.2],[173.6,53.2],[167.2,48.4]].forEach(p=>{s+=dot(p);});
+  s+=T('−2',222,40)+T('+1',82,179)+T('+1',218,179)+svgText('8 e⁻',222,58,{s:11.5,w:600,f:'ink2'})+svgText('0 e⁻',54,124,{s:11.5,w:600,f:'ink2'})+svgText('0 e⁻',246,124,{s:11.5,w:600,f:'ink2'});
+  return `<svg viewBox="0 0 300 190" style="max-width:340px" role="img" aria-label="A water molecule: an O atom in the middle and an H atom on each side. The two electrons of each O-H bond are drawn next to the O atom, with its two lone pairs. All eight electrons are inside a dashed line around O. O is labelled −2 (8 electrons instead of 6) and each H is labelled +1 (0 electrons instead of 1).">${s}</svg>`;};
+/* the oxidation numbers of nitrogen on a number line: oxidation moves to the right (the oxidation number increases), reduction to the left */
+const ec1Line=()=>{const L=30,R=330,lo=-3,hi=5,X=v=>f1(L+(v-lo)*(R-L)/(hi-lo)),ay=96,T=(t,x,y,o)=>svgText(t,x,y,Object.assign({s:12.5,w:650,f:'ink',c:'s'},o));
+  let s=T('Oxidation numbers of nitrogen',180,16,{s:12,w:600,f:'ink2'})+`<path d="M${L-14},${ay}H${R+14}" stroke="var(--ink2)" stroke-width="1.6"/>`;
+  for(let v=lo;v<=hi;v++)s+=`<path d="M${X(v)},${ay-5}V${ay+5}" stroke="var(--ink2)" stroke-width="1.4"/>`+T(ec1S(v),X(v),ay+21,{s:11.5,w:600,f:'ink2'});
+  [['NH₃',-3],['N₂H₄',-2],['N₂',0],['N₂O',1],['NO',2],['NO₂⁻',3],['NO₂',4],['NO₃⁻',5]].forEach(([t,v],i)=>{const y=i%2?40:62;
+    s+=`<path d="M${X(v)},${y+6}V${ay-6}" stroke="var(--mute)" stroke-width="1" stroke-dasharray="2 2.5"/><circle cx="${X(v)}" cy="${ay}" r="4" fill="var(--s1)"/>`+T(t,X(v),y);});
+  s+=sArrow(L+4,ay+56,R-4,ay+56,EC1_C.o,2.2)+T('oxidation: the number increases',180,ay+47,{s:12,w:600})+T('(electrons are lost)',180,ay+74,{s:11.5,w:500,f:'ink2'});
+  s+=sArrow(R-4,ay+110,L+4,ay+110,EC1_C.r,2.2)+T('reduction: the number decreases',180,ay+101,{s:12,w:600})+T('(electrons are gained)',180,ay+128,{s:11.5,w:500,f:'ink2'});
+  return `<svg viewBox="0 0 360 ${ay+138}" role="img" aria-label="A number line of the oxidation numbers of nitrogen, from −3 to +5: NH₃ −3, N₂H₄ −2, N₂ 0, N₂O +1, NO +2, NO₂⁻ +3, NO₂ +4, NO₃⁻ +5. An arrow to the right: oxidation, the oxidation number increases and electrons are lost. An arrow to the left: reduction, the oxidation number decreases and electrons are gained.">${s}</svg>`;};
+/* ---------- the information of the diploma questions (inline styles: the figures are also shown in the review and the tests) ---------- */
+const ec1P=h=>`<p style="margin:.35em .5em;line-height:1.5">${h}</p>`;
+/* numbered equations, one for each line */
+const ec1List=(a,nums)=>`<div style="display:grid;grid-template-columns:auto 1fr;gap:.45em .8em;align-items:baseline;padding:.35em .5em;line-height:1.5">${a.map((e,i)=>`<b>${nums?nums[i]:i+1}</b><span>${ec1N(e)}</span>`).join('')}</div>`;
+const EC1_Q1=['HSO3^-(aq) + HCO3^-(aq) -> H2CO3(aq) + SO3^2-(aq)','C6H12O6(aq) + 6O2(g) -> 6CO2(g) + 6H2O(l)','Ni^2+(aq) + Fe(s) -> Fe^2+(aq) + Ni(s)','Co^2+(aq) + 2Fe^2+(aq) -> 2Fe^3+(aq) + Co(s)','6CO2(g) + 6H2O(l) -> C6H12O6(aq) + 6O2(g)'];
+const EC1_Q3=['Fe^2+(aq) + Cr^3+(aq) -> Fe^3+(aq) + Cr^2+(aq)','NH3(aq) + H2O(l) -> NH4^+(aq) + OH^-(aq)','2NH3(g) + 7/2 O2(g) -> 2NO2(g) + 3H2O(g)','Mg^2+(aq) + 2OH^-(aq) -> Mg(OH)2(s)','Sn^2+(aq) + 2NO3^-(aq) + 4H^+(aq) -> Sn^4+(aq) + 2NO2(g) + 2H2O(l)','PbSO4(s) + SO3^2-(aq) + 2OH^-(aq) -> H2O(l) + Pb(s) + 2SO4^2-(aq)'];
+const EC1_F1=ec1List(EC1_Q1)+`<p style="margin:.7em .5em .25em"><b>Descriptions</b>, in the order to record:</p><div style="margin:0 .5em .35em;line-height:1.6">${['A biological redox reaction carried out in a plant cell but not in an animal cell','A biological redox reaction carried out in both animal and plant cells','A spontaneous, non-biological redox reaction','A nonspontaneous, non-biological redox reaction'].map(t=>t+' ____').join('<br>')}</div>`;
+const EC1_F4=ec1P(`When you drink alcoholic beverages, only 5% of the alcohol is removed through functions such as breathing and sweating. Your liver is responsible for eliminating the other 95%. The alcohol reacts with ${C('NAD^+(aq)')}, a substance present in the liver. The reaction is catalyzed by an enzyme called alcohol dehydrogenase and is represented by the equation`)+
+  `<p style="margin:.4em .5em;text-align:center;line-height:2">${ec1N('C2H5OH(l) + NAD^+(aq)')}${ec1Arr('alcohol','dehydrogenase')}${ec1N('CH3CHO(aq) + NADH(aq) + H^+(aq)')} + energy</p>`;
+const EC1_F5=ec1P('In an experiment, dilute hydrochloric acid was added to a test tube containing several small pieces of zinc metal.');
+const EC1_F6=ec1P('The oil that Syncrude mines from the Athabasca Tar Sands contains large amounts of undesirable sulfur. To remove most of the sulfur, Syncrude uses a chemical process known as the Claus process, which results in a low-sulfur “sweet” crude oil. Two steps involved in the Claus process are shown below.')+
+  `<p style="margin:.5em .5em;line-height:2.1;text-align:center"><b>Step I</b>&ensp;${ec1N('H2S(g) + 3/2 O2(g)')}${ec1Arr('950 °C to 1200 °C','',1)}${ec1N('SO2(g) + H2O(g)')}&ensp;<span style="white-space:nowrap">Δ<i>H</i> = −518 kJ</span><br>`+
+  `<b>Step II</b>&ensp;${ec1N('SO2(g) + 2H2S(g)')}${ec1Arr('170 °C to 370 °C','catalyst',1)}${ec1N('3S(l) + 2H2O(g)')}&ensp;<span style="white-space:nowrap">Δ<i>H</i> = −93 kJ</span></p>`+
+  ec1P('Syncrude solidifies and stores approximately 1.36 Gg of sulfur per day.');
+/* the rows of the "redox or not" try-it: [equation, 0 redox or 1 not redox] */
+const EC1_RX=[['Mg(s) + 2HCl(aq) -> MgCl2(aq) + H2(g)',0],['HCl(aq) + NaOH(aq) -> NaCl(aq) + H2O(l)',1],['AgNO3(aq) + NaCl(aq) -> AgCl(s) + NaNO3(aq)',1],['CaCO3(s) -> CaO(s) + CO2(g)',1],
+  ['2H2O2(l) -> 2H2O(l) + O2(g)',0],['2Na(s) + Cl2(g) -> 2NaCl(s)',0],['2CrO4^2-(aq) + 2H^+(aq) -> Cr2O7^2-(aq) + H2O(l)',1],['4Fe(s) + 3O2(g) -> 2Fe2O3(s)',0]];
+/* the example of page 6: [entity, oxidation numbers of its elements, how] */
+const EC1_E6=[['Cl2',['0'],'A pure element (diatomic): 0.'],['Fe',['0'],'A pure element: 0.'],['P4',['0'],'A pure element (polyatomic): 0.'],
+  ['SO2',['+4','−2'],'O is −2. S + 2(−2) = 0, thus S = +4.'],['O2^2-',['−1'],'The peroxide ion: 2O = −2, thus each O is −1.'],
+  ['CaH2',['+2','−1'],'Ca is +2 (Group 2). CaH₂ is an ionic hydride: (+2) + 2H = 0, thus H = −1.'],['CO3^2-',['+4','−2'],'O is −2. C + 3(−2) = −2, thus C = +4.'],
+  ['K2SO4',['+1','+6','−2'],'K is +1 (Group 1) and O is −2. 2(+1) + S + 4(−2) = 0, thus S = +6.']];
+ECL[1]={t:EC_T[1],h:'Oxidation numbers',
+  d:'An oxidation number is the charge that an atom would have if the electrons of each bond belonged to the more electronegative atom. When it increases, the atom is oxidized. When it decreases, the atom is reduced.',
+  build(g){
+  ecCSS(1,'#ec-1 .ec1on{line-height:2.6}#ec-1 td.ec1on{padding-top:.95em;white-space:nowrap}#ec-1 .ec1eq{text-align:center;margin:.3em 0}'+
+    '#ec-1 .ec1cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(9.6rem,1fr));gap:.5em;margin:.5em 0 .6em}'+
+    '#ec-1 .ec1c{border:1px solid var(--hair);border-radius:14px;padding:.45em .55em;background:var(--glass2)}'+
+    '#ec-1 .ec1c label{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.3em .45em;cursor:text}'+
+    '#ec-1 .ec1e{font-size:1.02rem;min-width:0}#ec-1 .ec1e small{display:block;font-size:.74rem;color:var(--ink2);line-height:1.25}'+
+    '#ec-1 .ec1in{display:flex;align-items:center;gap:.3em;flex:none;margin-left:auto}#ec-1 .ec1x{font-weight:650;font-size:.88rem;color:var(--ink2)}'+
+    '#ec-1 .ec1c input{width:4.3em;text-align:center;padding:.32em .3em}'+
+    '#ec-1 .ec1c input.ok{border-color:var(--ok);background:var(--okb)}#ec-1 .ec1c input.bad{border:2px dashed var(--bad);background:var(--badb)}'+
+    '#ec-1 .ec1w{font-size:.8rem;color:var(--ink2);margin-top:.35em;line-height:1.45}#ec-1 .ec1nr{margin-top:1.1em;padding-top:.7em;border-top:1px solid var(--hair)}'+
+    /* each row of the page-6 tables puts its name on top and its three choices under it: the table fits a half card and a phone without scrolling sideways */
+    '#ec-1 .ec1tb .eq-tb,#ec-1 .ec1tb .eq-tb tbody{display:block}#ec-1 .ec1tb .eq-tb tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.7fr);gap:.35em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--hair)}'+
+    '#ec-1 .ec1tb .eq-tb th,#ec-1 .ec1tb .eq-tb td{border:0;padding:0}#ec-1 .ec1tb .eq-tb tr:first-child th:first-child{display:none}#ec-1 .ec1tb .eq-tb th.rn{grid-column:1/-1}#ec-1 .ec1tb .eq-tb select{width:100%}');
+  /* 1. what an oxidation number is (page 5) */
+  card(g,'What an oxidation number is',`<p class="hint">Outcomes: 30–B1.2k, 30–B1.3k</p>
+    <p>An <span class="key">oxidation number</span> is a positive or negative number given to an atom in a molecule or in a polyatomic ion. It is based mainly on electronegativity.</p>
+    <ul><li>It is the charge that the atom would have if the electrons of each bond were given to the more electronegative atom.</li>
+    <li>Oxidation numbers show which atoms are oxidized and which are reduced. They are also used to balance redox equations (see Balancing redox equations).</li>
+    <li><b>Ionic compounds:</b> the oxidation numbers equal the ion charges. In ${C('CaCl2')} and ${C('NaCl')}, Ca is +2, Na is +1 and Cl is −1.</li>
+    <li><b>Simple molecular compounds</b>, such as water: the electrons are only partly transferred, but the numbers are given as if the transfer were complete. In ${C('H2O')}, O is −2 and each H is +1.</li>
+    <li><b>The sign comes first.</b> The charge on a lithium ion is 1+, and its oxidation number is +1.</li></ul>
+    ${CF(ec1Water(),'Water. O (electronegativity 3.4 in the data booklet) is more electronegative than H (2.2), thus the electrons of each O-H bond are given to O. O then has 8 valence electrons instead of 6: −2. Each H has 0 instead of 1: +1.')}`,'w5');
+  /* 2. the rules (pages 5 and 6) */
+  card(g,'The rules (learn these)',`<p>Give each atom its oxidation number with these rules.</p>
+    <table class="t3"><tr><th>Chemical species</th><th>Oxidation number</th><th>Example</th></tr>
+    <tr><td>Pure element, also a diatomic or polyatomic element</td><td>0</td><td>${C('Fe(s)')}, ${C('Cl2(g)')}, ${C('P4(s)')}, ${C('S8(s)')}</td></tr>
+    <tr><td>Monatomic ion</td><td>its charge</td><td>${C('Fe^3+')} is +3, ${C('S^2-')} is −2</td></tr>
+    <tr><td>Alkali metal (Group 1)</td><td>+1</td><td>Na in ${C('NaCl')}</td></tr>
+    <tr><td>Alkaline earth metal (Group 2)</td><td>+2</td><td>Ca in ${C('CaCl2')}</td></tr>
+    <tr><td>Halogen (Group 17)</td><td>−1<br><small>F is always −1. Cl, Br and I are positive with O or with a more electronegative halogen: Cl is +1 in ${C('ClO^-')}.</small></td><td>Cl in ${C('MgCl2')}</td></tr>
+    <tr><td>Hydrogen</td><td>+1<br><small>Exception: −1 in an ionic hydride (H with a metal), as in ${C('LiH')} and ${C('CaH2')}.</small></td><td>H in ${C('H2O')}</td></tr>
+    <tr><td>Oxygen</td><td>−2<br><small>Exception: −1 in a peroxide, as in ${C('H2O2')} and ${C('O2^2-')}. With F it is positive: +2 in ${C('OF2')}.</small></td><td>O in ${C('CO2')}</td></tr></table>
+    <p><b>For everything else, the sum of the oxidation numbers follows these rules:</b></p>
+    <table class="t3"><tr><th>Entity</th><th>Sum of the oxidation numbers</th><th>Example</th></tr>
+    <tr><td>Neutral compound</td><td>0</td><td>${C('H2SO4')}: 2(+1) + (+6) + 4(−2) = 0</td></tr>
+    <tr><td>Polyatomic ion</td><td>the ion charge</td><td>${C('SO4^2-')}: (+6) + 4(−2) = −2</td></tr></table>
+    <p class="note">When two rules disagree, the rule that comes first in this list wins: F; the Group 1 and Group 2 metals; H; O; the other halogens. The last element gets the value that makes the sum right.</p>`,'w7');
+  /* 3. the example of page 6, and two harder cases */
+  card(g,'Worked examples: assign oxidation numbers',
+    ex('Example. What is the oxidation number of each element in the following? '+EC1_E6.map(x=>C(x[0])).join(', '),
+      `<table><tr><th>Entity</th><th>How</th></tr>${EC1_E6.map(([f,o,w])=>`<tr><td class="ec1on">${ec1A(f,o)}</td><td>${w}</td></tr>`).join('')}</table><p class="hint">Each number above a symbol is the oxidation number of one atom of that element.</p>`)+
+    ex('Two ions in one formula: '+C('NH4NO3')+' and '+C('PbCrO4'),
+      `<p>Split the compound into its ions, and use the sum rule for each ion.</p><p class="ec1eq">${ec1A('NH4^+',['−3','+1'])} &emsp; ${ec1A('NO3^-',['+5','−2'])}</p>
+      <p>In ${C('NH4^+')}: N + 4(+1) = +1, thus N = −3. In ${C('NO3^-')}: N + 3(−2) = −1, thus N = +5. The two N atoms of ammonium nitrate have different oxidation numbers.</p>
+      <p>${C('PbCrO4')} is made of ${C('Pb^2+')} and the chromate ion, ${C('CrO4^2-')}: Cr + 4(−2) = −2, thus Cr = +6, and Pb is +2.</p>`)+
+    ex('An oxidation number that is a fraction: '+C('Fe3O4'),
+      `<p class="ec1eq">${ec1A('Fe3O4',['+8/3','−2'])}</p><p>O is −2. 3Fe + 4(−2) = 0, thus 3Fe = +8 and Fe = +8/3 (about +2.67).</p>
+      <p>A fraction is an <b>average</b>. Fe₃O₄ (magnetite) contains one Fe²⁺ ion and two Fe³⁺ ions: (2 + 3 + 3) ÷ 3 = 8/3. In the same way, the two C atoms of ethanol, ${C('C2H5OH')}, are −3 and −1, and the sum rule gives their average, −2.</p>`));
+  /* 4. the practice table of page 7 (a typed try-it), and a diploma-style numerical response */
+  const pc=card(g,'Try it: practice assigning oxidation numbers (page 7)','<p class="hint">Choose an element. Type its oxidation number in each entity, then Check. Show the answers gives the working of each box.</p>');
+  ec1Grid(pc,EC1_PT,0);
+  const nr=el('div',{class:'ec1nr'},'<h4>Diploma-style question</h4>');pc.append(nr);
+  nrCode(nr,{q:`<p>Use the entities below.</p><p class="ec1eq">${[['1','CO2(g)'],['2','CH4(g)'],['3','CH3OH(l)'],['4','HCOOH(aq)']].map(([n,f])=>`<span style="white-space:nowrap;margin:0 .6em"><b>${n}</b> ${C(f)}</span>`).join(' ')}</p><p>Listed in order of increasing oxidation number of carbon, the entities are ____, ____, ____ and ____.</p>`,a:'2341',
+    w:'CH₄: C + 4(+1) = 0, thus C = −4. CH₃OH: C + 4(+1) + (−2) = 0, thus C = −2. HCOOH: C + 2(+1) + 2(−2) = 0, thus C = +2. CO₂: C + 2(−2) = 0, thus C = +4. From −4 to +4: 2, 3, 4, 1. Record 2341.'},0);
+  /* 5. oxidation number changes (page 6) and the example */
+  const ag=ec1Eq('2AgNO3(aq) + Cu(s) -> Cu(NO3)2(aq) + 2Ag(s)',[[['+1','r'],['+5','n'],['−2','n']],[['0','o']],[['+2','o'],['+5','n'],['−2','n']],[['0','r']]]);
+  card(g,'Oxidation number changes',`<p>Compare the oxidation number of each element before and after a reaction.</p>
+    <table class="t3"><tr><th>If an oxidation number</th><th>Electrons are</th><th>Which indicates</th></tr>
+    <tr><td><b>increases</b></td><td>lost</td><td>oxidation<br><small>Example: ${C('Cu(s)')} → ${C('Cu^2+(aq)')}, 0 to +2</small></td></tr>
+    <tr><td><b>decreases</b></td><td>gained</td><td>reduction<br><small>Example: ${C('Ag^+(aq)')} → ${C('Ag(s)')}, +1 to 0</small></td></tr></table>
+    <p>Electrons are negative, thus an atom that loses electrons becomes more positive. The change for one atom is the number of electrons that it loses or gains.</p>
+    ${CF(ec1Line(),'Moving to the right is oxidation, and moving to the left is reduction. Nitrogen has oxidation numbers from −3 (in NH₃) to +5 (in NO₃⁻).')}`+
+    ex('Example. Use the change in oxidation numbers to identify which elements are oxidized and reduced: '+C('2AgNO3(aq) + Cu(s) -> Cu(NO3)2(aq) + 2Ag(s)'),
+      `<p>1. Write the oxidation number of each element above it.</p><p class="ec1eq">${ag}</p>
+      <p>2. Compare each element. Ag: +1 to 0, a decrease of 1. Each Ag⁺ gains 1 electron, thus silver is <b>reduced</b>. Cu: 0 to +2, an increase of 2. Each Cu atom loses 2 electrons, thus copper is <b>oxidized</b>. N (+5) and O (−2) do not change: the nitrate ion is a spectator.</p>
+      <p>3. Check the electrons: two Ag⁺ ions gain 2 × 1 = 2 electrons, and one Cu atom loses 2 electrons.</p>
+      <p>${C('AgNO3')} (the ${C('Ag^+')} ion) is the oxidizing agent, and Cu is the reducing agent. The net ionic equation is ${ec1N('2Ag^+(aq) + Cu(s) -> Cu^2+(aq) + 2Ag(s)')}.</p>`)+
+    ex('Oxidation numbers in the half-reactions of the data booklet',`<p>In a reduction half-reaction, the number of electrons equals the decrease in oxidation number of all the atoms that change.</p>`+
+      ecTableH(ecRows(['MnO4^-(aq)','Cr2O7^2-(aq)','NO3^-(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)']),{arrows:false})+
+      `<ul><li>${C('MnO4^-')} → ${C('Mn^2+')}: Mn goes from +7 to +2, a decrease of 5: 5e⁻.</li><li>${C('Cr2O7^2-')} → 2${C('Cr^3+')}: each Cr goes from +6 to +3, and there are two Cr atoms: 2 × 3 = 6e⁻.</li>
+      <li>2${C('NO3^-')} → ${C('N2O4')}: each N goes from +5 to +4, and there are two N atoms: 2e⁻.</li><li>${C('SO4^2-')} → ${C('H2SO3')}: S goes from +6 to +4: 2e⁻.</li></ul>
+      <p class="hint">H stays +1 and O stays −2: ${C('H^+')} and ${C('H2O')} only balance the atoms. An oxidation is a row read from right to left: the oxidation number increases, and the electrons are on the right.</p>`),'w7');
+  /* 6. redox in living things (for diploma questions 1, 2 and 4) */
+  card(g,'Redox in living things',`<p>Two important redox reactions happen in living cells. Each one is the reverse of the other.</p>
+    <p><b>Photosynthesis</b> happens in plant cells (in the chloroplasts), not in animal cells. It needs light energy: it is nonspontaneous.</p>
+    <p class="ec1eq">${ec1Eq('6CO2(g) + 6H2O(l) -> C6H12O6(aq) + 6O2(g)',[[['+4','r'],['−2','n']],[['+1','n'],['−2','o']],[['0','r'],['+1','n'],['−2','n']],[['0','o']]])}</p>
+    <p>C goes from +4 to 0: it is reduced. The O of water goes from −2 to 0: it is oxidized.</p>
+    <p><b>Cellular respiration</b> happens in both plant and animal cells (in the mitochondria). It releases energy: it is spontaneous.</p>
+    <p class="ec1eq">${ec1Eq('C6H12O6(aq) + 6O2(g) -> 6CO2(g) + 6H2O(l)',[[['0','o'],['+1','n'],['−2','n']],[['0','r']],[['+4','o'],['−2','r']],[['+1','n'],['−2','r']]])}</p>
+    <p>C goes from 0 to +4: it is oxidized. O goes from 0 to −2: it is reduced.</p>
+    <p class="note">In glucose, 6C + 12(+1) + 6(−2) = 0, thus the average oxidation number of C is 0. Enzymes are biological catalysts: they speed up these reactions in the cell without being used up.</p>`,'w5');
+  /* 7. the two practice reactions of page 6 (tb0, tb1) */
+  const ONS=['−4','−3','−2','−1','0','+1','+2','+3','+4','+5'],oi=t=>ONS.indexOf(t),RES=['oxidized','reduced','unchanged'],cols=['Element','Before','After','The element is'];
+  const pr=card(g,'Try it: practice (page 6)','<p class="hint">Use the change in oxidation number to identify which elements are oxidized and reduced. Choose the oxidation number of each element before and after the reaction.</p>','half');
+  pr.insertAdjacentHTML('beforeend',`<p><b>Practice 1.</b> ${ec1N('Cl2(g) + 2HBr(aq) -> 2HCl(aq) + Br2(l)')}</p>`);
+  const t0=el('div',{class:'ec1tb'});pr.append(t0);
+  eqTable(t0,{cols,opt:[ONS,ONS,RES],rows:[['Cl: '+C('Cl2')+' to '+C('HCl'),[oi('0'),oi('−1'),1]],['H: '+C('HBr')+' to '+C('HCl'),[oi('+1'),oi('+1'),2]],['Br: '+C('HBr')+' to '+C('Br2'),[oi('−1'),oi('0'),0]]],
+    after:`<span class="ec1eq" style="display:block">${ec1Eq('Cl2(g) + 2HBr(aq) -> 2HCl(aq) + Br2(l)',[[['0','r']],[['+1','n'],['−1','o']],[['+1','n'],['−1','r']],[['0','o']]])}</span>Cl goes from 0 to −1: it gains electrons and is <b>reduced</b>. Br goes from −1 to 0: it loses electrons and is <b>oxidized</b>. H stays +1. Cl₂ is the oxidizing agent and HBr is the reducing agent.`},0);
+  pr.insertAdjacentHTML('beforeend',`<p><b>Practice 2.</b> ${ec1N('C(s) + O2(g) -> CO2(g)')}</p>`);
+  const t1=el('div',{class:'ec1tb'});pr.append(t1);
+  eqTable(t1,{cols,opt:[ONS,ONS,RES],rows:[['C: '+C('C')+' to '+C('CO2'),[oi('0'),oi('+4'),0]],['O: '+C('O2')+' to '+C('CO2'),[oi('0'),oi('−2'),1]]],
+    after:`<span class="ec1eq" style="display:block">${ec1Eq('C(s) + O2(g) -> CO2(g)',[[['0','o']],[['0','r']],[['+4','o'],['−2','r']]])}</span>C goes from 0 to +4: it loses 4 electrons and is <b>oxidized</b>. O goes from 0 to −2: each O atom gains 2 electrons and is <b>reduced</b>. O₂ is the oxidizing agent and C is the reducing agent.`},1);
+  /* 8. redox or not (outcome 30–B1.3k) (tb2) */
+  const rc=card(g,'Redox or not?',`<p>A reaction is a <b>redox reaction</b> only if the oxidation number of at least one element changes. Then one element goes up (oxidation) and one goes down (reduction).</p>
+    <ul><li><b>Not redox:</b> acid-base reactions (a proton moves), neutralization, precipitation, and many decompositions. No oxidation number changes.</li>
+    <li><b>Redox:</b> almost every reaction with an uncombined element as a reactant or a product: single replacement, formation from the elements, combustion, corrosion.</li></ul>
+    <p class="hint">Try it: decide for each reaction.</p>`,'half');
+  eqTable(rc,{cols:['Reaction','Redox?'],opt:[['redox','not redox']],rows:EC1_RX.map(([e,a],i)=>[(i+1)+'. '+ec1N(e),[a]]),
+    after:'Redox: 1 (Mg 0 to +2, H +1 to 0), 5 (O −1 to −2 in H₂O and −1 to 0 in O₂: the same element is reduced and oxidized), 6 (Na 0 to +1, Cl 0 to −1) and 8 (Fe 0 to +3, O 0 to −2). Not redox: 2 is a neutralization, 3 is a precipitation, 4 keeps Ca at +2, C at +4 and O at −2, and 7 keeps Cr at +6. In 7 the colour changes from yellow to orange, but no electrons move.'},2);
 },qz:[
-  {q:'Calculate the oxidation number of sulfur in '+C('SO4^2-(aq)')+'.',n:6,u:'',tol:0,w:'Oxygen is −2, and four oxygen atoms give −8. The sum must equal the ion charge, −2: S + (−8) = −2. Thus S = +6.'},
-  {q:'The oxidation number of oxygen in '+C('H2O2(l)')+' is',o:['−1','−2','+1','0'],a:0,w:'Hydrogen peroxide is a peroxide: each H is +1, thus each O is −1.'}]};
-EC_REF.t.push(['Oxidation number','The charge that an atom would have if the electrons of each bond were given to the more electronegative atom.']);
+  {q:'Calculate the oxidation number of sulfur in '+C('SO4^2-(aq)')+'.',n:6,u:'',tol:0,ans:'+6',w:'O is −2, and four O atoms give 4(−2) = −8. The sum equals the charge of the ion: S + (−8) = −2. S = +6.'},
+  {q:'The oxidation number of oxygen in '+C('H2O2(l)')+' is',o:['−1','−2','+1','0'],a:0,w:'Hydrogen peroxide is a peroxide. Each H is +1: 2(+1) + 2O = 0, thus each O is −1.'},
+  {q:'Calculate the oxidation number of chromium in the dichromate ion, '+C('Cr2O7^2-(aq)')+'.',n:6,u:'',tol:0,ans:'+6',w:'O is −2, and seven O atoms give −14. The sum equals the charge of the ion: 2Cr + (−14) = −2. 2Cr = +12. Cr = +6.'},
+  {q:'Calculate the oxidation number of manganese in potassium permanganate, '+C('KMnO4(s)')+'.',n:7,u:'',tol:0,ans:'+7',w:'K is +1 (Group 1) and O is −2. The sum is 0: (+1) + Mn + 4(−2) = 0. Mn = +7.'},
+  {q:'Calculate the oxidation number of phosphorus in the dihydrogen phosphate ion, '+C('H2PO4^-(aq)')+'.',n:5,u:'',tol:0,ans:'+5',w:'H is +1 and O is −2. The sum equals the charge of the ion: 2(+1) + P + 4(−2) = −1. P = +5.'},
+  {q:'In which entity does nitrogen have an oxidation number of +3?',o:[C('NO2^-(aq)'),C('NO2(g)'),C('NO3^-(aq)'),C('N2O(g)')],a:0,w:'In NO₂⁻: N + 2(−2) = −1, thus N = +3. In NO₂, N is +4. In NO₃⁻, N is +5. In N₂O, N is +1.'},
+  {q:'When the oxidation number of an atom increases by 3, the atom',o:['loses 3 electrons and is oxidized','gains 3 electrons and is oxidized','loses 3 electrons and is reduced','gains 3 electrons and is reduced'],a:0,
+    w:'Electrons are negative: an atom that loses electrons becomes more positive. An increase of 3 is a loss of 3 electrons, and a loss of electrons is oxidation (LEO).'},
+  {q:'Which equation does <b>not</b> represent a redox reaction?',o:[ec1N('SO3(g) + H2O(l) -> H2SO4(aq)'),ec1N('Zn(s) + CuSO4(aq) -> ZnSO4(aq) + Cu(s)'),ec1N('2K(s) + Br2(l) -> 2KBr(s)'),ec1N('2H2(g) + O2(g) -> 2H2O(l)')],a:0,
+    w:'In SO₃ + H₂O → H₂SO₄, S stays +6, O stays −2 and H stays +1: no oxidation number changes. In each of the other three, an uncombined element (Zn, K, H₂) becomes an ion or a compound: its oxidation number changes.'},
+  {q:'In the reaction '+ec1N('MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)')+', the element that is reduced is',o:['Mn, which goes from +7 to +2','Fe, which goes from +2 to +3','O, which goes from −2 to −1','H, which goes from +1 to 0'],a:0,
+    w:'Mn is +7 in MnO₄⁻ and +2 in Mn²⁺: a decrease, thus Mn is reduced and MnO₄⁻ is the oxidizing agent. Fe goes from +2 to +3: it is oxidized. O stays −2 and H stays +1.'},
+  {q:'Copper reacts with nitric acid: '+ec1N('3Cu(s) + 8HNO3(aq) -> 3Cu(NO3)2(aq) + 2NO(g) + 4H2O(l)')+'. How many electrons does each nitrogen atom that is reduced gain?',n:3,u:'',tol:0,ans:'3',
+    w:'N is +5 in HNO₃. In NO, O is −2, thus N is +2. The N atoms that form NO go from +5 to +2. Each one gains 3 electrons.'},
+  {q:'The oxidation number of oxygen in oxygen difluoride, '+C('OF2(g)')+', is',o:['+2','−2','−1','0'],a:0,w:'F is always −1, and two F atoms give −2. The sum is 0: O + (−2) = 0, thus O = +2. OF₂ is an exception to the rule that O is −2.'},
+  {q:'Calculate the average oxidation number of carbon in glucose, '+C('C6H12O6(aq)')+'.',n:0,u:'',tol:0,ans:'0',w:'H is +1 and O is −2. The sum is 0: 6C + 12(+1) + 6(−2) = 0. 6C + 12 − 12 = 0, thus 6C = 0. C = 0.'},
+  {q:'The aluminum ion, '+C('Al^3+(aq)')+', has',o:['a charge of 3+ and an oxidation number of +3','a charge of +3 and an oxidation number of 3+','a charge of 3+ and an oxidation number of 0','a charge of 0 and an oxidation number of +3'],a:0,
+    w:'For a monatomic ion, the oxidation number equals the charge. A charge is written with the number first (3+). An oxidation number is written with the sign first (+3).'}]};
+/* the diploma practice questions 1 to 6 (pages 8 and 9, key on page 85). The options keep the order of the notes (a = the key letter) */
+EC_DIP[1]=[
+  {q:'Numerical response. Use the equations and the descriptions below. Match each description with the number of its equation. Record the equation numbers in the order of the descriptions (four digits).',fig:EC1_F1,n:5234,ans:'5234',tol:0,abs:0,
+    w:'Equation 1 is an acid-base reaction: HSO₃⁻ gives a proton to HCO₃⁻, and no oxidation number changes (S stays +4 and C stays +4). Thus it is not a redox reaction, and it matches no description. Equation 5 is photosynthesis: it happens in plant cells, with light energy, but not in animal cells. Equation 2 is cellular respiration: it happens in both animal and plant cells. Equation 3 is spontaneous: the oxidizing agent Ni²⁺(aq) (−0.26 V) is above the reducing agent Fe(s) (−0.45 V) in the table of reduction half-reactions. Equation 4 is nonspontaneous: the oxidizing agent Co²⁺(aq) (−0.28 V) is below the reducing agent Fe²⁺(aq) (+0.77 V). Record 5234.'},
+  {q:'Oxidation-reduction reactions occur in biological systems. A net oxidation-reduction reaction that occurs in the body is',
+    o:[ec1N('Mg^2+(aq) + 2OH^-(aq) -> Mg(OH)2(s)'),ec1N('HCO3^-(aq) + H3O^+(aq) -> H2CO3(aq) + H2O(l)'),ec1N('CH4(g) + 2O2(g) -> CO2(g) + 2H2O(g)'),ec1N('C6H12O6(aq) + 6O2(g) -> 6CO2(g) + 6H2O(l)')],a:3,
+    w:'Cellular respiration happens in the cells of the body. It is a redox reaction: the average oxidation number of C goes from 0 in glucose to +4 in CO₂ (oxidized), and O goes from 0 to −2 (reduced). The precipitation of Mg(OH)₂ and the acid-base reaction of HCO₃⁻ are not redox reactions: no oxidation number changes. The combustion of methane is a redox reaction, but it does not happen in the body.'},
+  {q:'Numerical response. Use the equations below. The equations that represent oxidation-reduction reactions are ____, ____, ____ and ____. (The diploma exam accepts them in any order. Here, record them in increasing order.)',fig:ec1List(EC1_Q3),n:1356,ans:'1356',tol:0,abs:0,
+    w:'A redox reaction has elements whose oxidation numbers change. 1: Fe goes from +2 to +3 (oxidized) and Cr from +3 to +2 (reduced). 3: N goes from −3 to +4 (oxidized) and O from 0 to −2 (reduced). 5: Sn goes from +2 to +4 (oxidized) and N from +5 to +4 (reduced). 6: S goes from +4 to +6 (oxidized) and Pb from +2 to 0 (reduced). Equation 2 is an acid-base reaction (N stays −3) and equation 4 is a precipitation (Mg stays +2): no oxidation number changes. Record 1356.'},
+  {q:'Use the information below. If you had a low level of the biological catalyst, alcohol dehydrogenase,',fig:EC1_F4,
+    o:['you would feel hotter than normal','the concentration of NADH(aq) would increase','your blood alcohol level would decrease at a faster rate than normal','your blood alcohol level would stay high for longer than normal'],a:3,
+    w:'Alcohol dehydrogenase is a catalyst: it speeds up the reaction that removes alcohol in the liver. With less of the catalyst, the reaction is slower, thus the alcohol is removed more slowly and the blood alcohol level stays high for longer. NADH(aq) and energy are produced more slowly, not faster. In this reaction, ethanol is oxidized (the average oxidation number of C goes from −2 to −1) and NAD⁺ is the oxidizing agent.'},
+  {q:'Use the information below. Which of the following observations could have been made during this experiment?',fig:EC1_F5,
+    o:['There was no reaction.','A thick white precipitate formed.','A colourless gas was produced and the test tube cooled off.','A colourless gas was produced and the test tube warmed up.'],a:3,
+    w:'H⁺(aq) (0.00 V) is above Zn(s) (−0.76 V) in the table, thus zinc reacts: Zn(s) + 2H⁺(aq) → Zn²⁺(aq) + H₂(g). Zn goes from 0 to +2 (oxidized) and H from +1 to 0 (reduced). The gas, hydrogen, is colourless. The reaction is exothermic, thus the test tube warms up. Zinc chloride is soluble, thus no precipitate forms.'},
+  {q:'Use the information below. As the '+C('H2S(g)')+' forms '+C('S(l)')+', the sulfur atoms',fig:EC1_F6,
+    o:['gain 2 e⁻ and are oxidized','lose 2 e⁻ and are oxidized','gain 2 e⁻ and are reduced','lose 2 e⁻ and are reduced'],a:1,
+    w:'In H₂S, each H is +1, thus S is −2. In S(l), a pure element, S is 0. The oxidation number of S increases by 2: each S atom loses 2 electrons and is oxidized. In Step II, the S atom of SO₂ (+4) is reduced to 0 at the same time.'}];
+/* review bank: new diploma-level items */
+EC_RQ[1]=[
+  {q:'Numerical response. Use the sulfur compounds below. Listed in order of increasing oxidation number of sulfur, the compounds are ____, ____, ____ and ____. (Record all four digits.)',
+    fig:`<p style="margin:.45em .5em;text-align:center;line-height:1.9">${['SO3(g)','S8(s)','H2S(g)','Na2SO3(s)'].map((f,i)=>`<span style="white-space:nowrap;margin:0 .6em"><b>${i+1}</b>&ensp;${C(f)}</span>`).join(' ')}</p>`,n:3241,ans:'3241',tol:0,abs:0,
+    w:'H₂S: H is +1, thus S is −2. S₈ is an element: 0. Na₂SO₃: 2(+1) + S + 3(−2) = 0, thus S = +4. SO₃: S + 3(−2) = 0, thus S = +6. From −2 to +6: H₂S, S₈, Na₂SO₃, SO₃. Record 3241.'},
+  {q:'Calculate the oxidation number of iodine in the periodate ion, '+C('IO4^-(aq)')+'.',n:7,u:'',tol:0,ans:'+7',w:'O is −2, and four O atoms give −8. The sum equals the charge of the ion: I + (−8) = −1. I = +7.'},
+  {q:'When potassium chlorate is heated, it decomposes: '+ec1N('2KClO3(s) -> 2KCl(s) + 3O2(g)')+'. In this reaction,',o:['Cl is reduced and O is oxidized','Cl is oxidized and O is reduced','K is oxidized and Cl is reduced','K is reduced and O is oxidized'],a:0,
+    w:'K is +1 on both sides. Cl goes from +5 in KClO₃, (+1) + Cl + 3(−2) = 0, to −1 in KCl: a decrease, thus Cl is reduced. O goes from −2 to 0 in O₂: an increase, thus O is oxidized. One compound contains both the atom that is oxidized and the atom that is reduced.'},
+  {q:'Based on the oxidation number of manganese, which entity can act only as an oxidizing agent?',o:[C('MnO4^-(aq)'),C('MnO4^2-(aq)'),C('MnO2(s)'),C('Mn(s)')],a:0,
+    w:'Mn has 7 valence electrons, thus +7 is its highest oxidation number. In MnO₄⁻, Mn is +7: it can only gain electrons, thus MnO₄⁻ can only be an oxidizing agent. In Mn(s), Mn is 0: a metal atom can only lose electrons. In MnO₄²⁻ (+6) and MnO₂ (+4), Mn can go up or down.'},
+  {q:'Use the information below. In this reaction, nitrogen is',fig:ec1P('In polluted air, nitrogen dioxide reacts with water to form acid rain:')+`<p style="margin:.4em .5em;text-align:center">${ec1N('3NO2(g) + H2O(l) -> 2HNO3(aq) + NO(g)')}</p>`,
+    o:['both oxidized and reduced','only oxidized','only reduced','neither oxidized nor reduced'],a:0,
+    w:'N is +4 in NO₂, +5 in HNO₃ and +2 in NO. Two N atoms go from +4 to +5: they are oxidized. One N atom goes from +4 to +2: it is reduced. The same element is both oxidized and reduced: this is a disproportionation (see Disproportionation and voltaic cells). H (+1) and O (−2) do not change.'},
+  {q:'Ammonia burns in oxygen: '+ec1N('4NH3(g) + 5O2(g) -> 4NO(g) + 6H2O(g)')+'. How many electrons does each nitrogen atom lose?',n:5,u:'',tol:0,ans:'5',
+    w:'In NH₃, H is +1, thus N is −3. In NO, O is −2, thus N is +2. N goes from −3 to +2. Each N atom loses 5 electrons.'},
+  {q:'Use the information below. Calculate the total number of electrons transferred in the equation as written.',
+    fig:ec1P(`Hydrazine, ${C('N2H4(l)')}, and hydrogen peroxide, ${C('H2O2(l)')}, are used together as a rocket fuel:`)+`<p style="margin:.4em .5em;text-align:center">${ec1N('N2H4(l) + 2H2O2(l) -> N2(g) + 4H2O(g)')}</p>`,n:4,u:'',tol:0,ans:'4',
+    w:'N is −2 in N₂H₄ and 0 in N₂. Each N atom loses 2 electrons, and there are two N atoms. O is −1 in H₂O₂ and −2 in H₂O. Each O atom gains 1 electron, and the two H₂O₂ have four O atoms. Thus 4 electrons are transferred.'},
+  {q:'In photosynthesis, '+ec1N('6CO2(g) + 6H2O(l) -> C6H12O6(aq) + 6O2(g)')+', the average oxidation number of carbon',
+    o:['decreases from +4 to 0, thus carbon is reduced','increases from 0 to +4, thus carbon is oxidized','decreases from +4 to 0, thus carbon is oxidized','increases from −4 to 0, thus carbon is reduced'],a:0,
+    w:'In CO₂, C + 2(−2) = 0, thus C is +4. In glucose, 6C + 12(+1) + 6(−2) = 0, thus the average C is 0. A decrease is a gain of electrons: carbon is reduced. The energy for this nonspontaneous reaction comes from light.'},
+  {q:'Use the information below. Which of the reactions are redox reactions?',
+    fig:ec1List(['2Al(s) + 3Cl2(g) -> 2AlCl3(s)','Pb(NO3)2(aq) + 2KI(aq) -> PbI2(s) + 2KNO3(aq)','Fe2O3(s) + 3CO(g) -> 2Fe(s) + 3CO2(g)','H2SO4(aq) + 2KOH(aq) -> K2SO4(aq) + 2H2O(l)'],['I','II','III','IV']),
+    o:['I and III','II and IV','I, II and III','III and IV'],a:0,
+    w:'I: Al goes from 0 to +3 and Cl from 0 to −1: redox. III: Fe goes from +3 to 0, and C goes from +2 in CO to +4 in CO₂: redox. II is a precipitation and IV is a neutralization: every element keeps its oxidation number (Pb +2, N +5, K +1, I −1, S +6, O −2, H +1).'},
+  {q:'Calculate the average oxidation number of carbon in propane, '+C('C3H8(g)')+'.',n:-8/3,u:'',tol:0,abs:.01,ans:'−8/3 (−2.67)',
+    w:'H is +1, and eight H atoms give +8. The sum is 0: 3C + 8(+1) = 0. 3C = −8. C = −8/3, or −2.67: the average of the two end C atoms (−3 each) and the middle C atom (−2).'}];
+/* challenge: the Claus process of diploma question 6, from the oxidation numbers to the amount of electrons */
+EC_CH[1]={q:'Use the information below. In the Claus process, every sulfur atom starts in '+C('H2S(g)')+' and ends in '+C('S(l)')+'. Syncrude stores 1.36 Gg of sulfur per day. Calculate the amount of electrons, in mol, that the sulfur atoms lose overall each day.',fig:EC1_F6,n:2*1.36e9/EC_M.S,u:'mol',tol:.01,
+  w:'S is −2 in H₂S and 0 in S(l): overall, each S atom loses 2 electrons. The S atoms that go through SO₂ lose 6 electrons in Step I and gain 4 back in Step II, a net loss of 2 as well. 1.36 Gg = 1.36 × 10⁹ g. n(S) = 1.36 × 10⁹ g ÷ 32.06 g/mol = 4.24 × 10⁷ mol. n(e⁻) = 2 × 4.24 × 10⁷ mol = 8.48 × 10⁷ mol.'};
+/* written response for the timed exam: oxidation numbers in the Claus process */
+EC_WRQ.push({q:'In the Claus process, sulfur is removed from crude oil in two steps. Step I: '+ec1N('H2S(g) + 3/2 O2(g) -> SO2(g) + H2O(g)')+'. Step II: '+ec1N('SO2(g) + 2H2S(g) -> 3S(l) + 2H2O(g)')+'. A plant stores 1.36 Gg of sulfur per day. (a) Give the oxidation number of sulfur in H₂S(g), SO₂(g) and S(l). (b) For each step, identify the oxidizing agent and the reducing agent, and use oxidation numbers to explain. (c) What is unusual about Step II? (d) Assume that all of the sulfur forms in Step II. Calculate the mass of SO₂(g) that reacts each day.',
+  marks:['(a) S is −2 in H₂S, +4 in SO₂ and 0 in S(l)','(b) Step I: O₂ is the oxidizing agent (O: 0 to −2) and H₂S is the reducing agent (S: −2 to +4)','(b) Step II: SO₂ is the oxidizing agent (S: +4 to 0) and H₂S is the reducing agent (S: −2 to 0)','(c) The same element, sulfur, is both oxidized and reduced, and both end as S(l): 4 electrons lost by two H₂S, 4 gained by one SO₂','(d) n(S) = 4.24 × 10⁷ mol, n(SO₂) = 1.41 × 10⁷ mol, m(SO₂) = 9.06 × 10⁸ g (0.906 Gg)'],
+  model:'<p>(a) In H₂S, H is +1, thus S is −2. In SO₂, O is −2, thus S is +4. S(l) is an element: 0.</p><p>(b) Step I: O goes from 0 in O₂ to −2 in SO₂ and H₂O, thus O₂ is reduced: it is the oxidizing agent. S goes from −2 to +4, thus H₂S is oxidized: it is the reducing agent. Step II: S in SO₂ goes from +4 to 0, thus SO₂ is the oxidizing agent. S in H₂S goes from −2 to 0, thus H₂S is the reducing agent.</p><p>(c) In Step II, the same element is both oxidized and reduced. Sulfur atoms from two compounds meet at the same oxidation number, 0: two H₂S lose 2 × 2 = 4 electrons, and one SO₂ gains 4 electrons. It is the reverse of a disproportionation.</p><p>(d) n(S) = 1.36 × 10⁹ g ÷ 32.06 g/mol = 4.24 × 10⁷ mol. In Step II, 1 mol of SO₂ gives 3 mol of S: n(SO₂) = 4.24 × 10⁷ mol ÷ 3 = 1.41 × 10⁷ mol. m = nM = 1.41 × 10⁷ mol × 64.06 g/mol = 9.06 × 10⁸ g, or 0.906 Gg each day.</p>'});
+/* generators. 1: the oxidation number of one element in an entity (the sum-rule rows of the practice table, and more entities). 2: the electrons lost or gained when one entity changes to another */
+const EC1_NM={S:'sulfur',P:'phosphorus',Mn:'manganese',Cl:'chlorine',N:'nitrogen',Cr:'chromium',O:'oxygen',H:'hydrogen',C:'carbon',F:'fluorine',Br:'bromine',I:'iodine',Fe:'iron',Cu:'copper',Sn:'tin',V:'vanadium',Se:'selenium',As:'arsenic',U:'uranium',Mo:'molybdenum',Ti:'titanium',Pb:'lead',Ag:'silver'};
+const EC1_GX=[{f:'K2Cr2O7',x:'Cr',v:6,k:{K:1,O:-2}},{f:'KMnO4',x:'Mn',v:7,k:{K:1,O:-2}},{f:'H2SO4',x:'S',v:6,k:{H:1,O:-2}},{f:'HNO3',x:'N',v:5,k:{H:1,O:-2}},{f:'HNO2',x:'N',v:3,k:{H:1,O:-2}},
+  {f:'NaClO4',x:'Cl',v:7,k:{Na:1,O:-2}},{f:'KIO3',x:'I',v:5,k:{K:1,O:-2}},{f:'H3PO4',x:'P',v:5,k:{H:1,O:-2}},{f:'Fe2O3',x:'Fe',v:3,k:{O:-2}},{f:'Fe(OH)2',x:'Fe',v:2,k:{O:-2,H:1}},
+  {f:'Cu2O',x:'Cu',v:1,k:{O:-2}},{f:'SnCl4',x:'Sn',v:4,k:{Cl:-1}},{f:'N2O4',x:'N',v:4,k:{O:-2}},{f:'N2O5',x:'N',v:5,k:{O:-2}},{f:'Na2O2',x:'O',v:-1,k:{Na:1},post:'Na₂O₂ is a peroxide.'},
+  {f:'BaO2',x:'O',v:-1,k:{Ba:2},post:'BaO₂ is a peroxide.'},{f:'CaH2',x:'H',v:-1,k:{Ca:2},post:'CaH₂ is an ionic hydride.'},{f:'NaH',x:'H',v:-1,k:{Na:1},post:'NaH is an ionic hydride.'},
+  {f:'CrO3',x:'Cr',v:6,k:{O:-2}},{f:'K2MnO4',x:'Mn',v:6,k:{K:1,O:-2}},{f:'NH2OH',x:'N',v:-1,k:{H:1,O:-2}},{f:'H2SO3',x:'S',v:4,k:{H:1,O:-2}},{f:'NaHSO3',x:'S',v:4,k:{Na:1,H:1,O:-2}},
+  {f:'ClO2',x:'Cl',v:4,k:{O:-2}},{f:'Cl2O7',x:'Cl',v:7,k:{O:-2}},{f:'BrO3^-',x:'Br',v:5,k:{O:-2}},{f:'IO3^-',x:'I',v:5,k:{O:-2}},{f:'ClO4^-',x:'Cl',v:7,k:{O:-2}},
+  {f:'C2O4^2-',x:'C',v:3,k:{O:-2}},{f:'HCOOH',x:'C',v:2,k:{H:1,O:-2}},{f:'CH3OH',x:'C',v:-2,k:{H:1,O:-2}},{f:'CH2O',x:'C',v:0,k:{H:1,O:-2}},{f:'C2H6',x:'C',v:-3,k:{H:1}},
+  {f:'C2H4',x:'C',v:-2,k:{H:1}},{f:'C2H2',x:'C',v:-1,k:{H:1}},{f:'CCl4',x:'C',v:4,k:{Cl:-1}},{f:'VO2^+',x:'V',v:5,k:{O:-2}},{f:'VO^2+',x:'V',v:4,k:{O:-2}},{f:'TiCl4',x:'Ti',v:4,k:{Cl:-1}},
+  {f:'UO2^2+',x:'U',v:6,k:{O:-2}},{f:'MoO4^2-',x:'Mo',v:6,k:{O:-2}},{f:'AsO4^3-',x:'As',v:5,k:{O:-2}},{f:'H3AsO3',x:'As',v:3,k:{H:1,O:-2}},{f:'SeO4^2-',x:'Se',v:6,k:{O:-2}},{f:'SeO3^2-',x:'Se',v:4,k:{O:-2}},
+  {f:'Cr(OH)3',x:'Cr',v:3,k:{O:-2,H:1}},{f:'MnO4^-',x:'Mn',v:7,k:{O:-2}},{f:'S2O3^2-',x:'S',v:2,k:{O:-2},post:'This is the average of the two S atoms.'}];
+EC1_GX.forEach(r=>{if(Math.abs(ec1Sum(r)-r.v)>1e-9)console.error('[ec] lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);});
+/* the pool of generator 1: every sum-rule row with a whole-number answer */
+const EC1_POOL=EC1_PT.flatMap(G=>G.r).filter(r=>r.k&&Number.isInteger(r.v)).concat(EC1_GX);
+/* [element, from, to, oxidation number in from, oxidation number in to] */
+const EC1_CV=[['Mn','MnO4^-','Mn^2+',7,2],['Mn','MnO4^-','MnO2',7,4],['Cr','Cr2O7^2-','Cr^3+',6,3],['N','NO3^-','NO',5,2],['N','NO3^-','NO2',5,4],['N','HNO2','NO',3,2],['S','SO4^2-','H2SO3',6,4],
+  ['S','SO3^2-','SO4^2-',4,6],['S','H2S','S8',-2,0],['Fe','Fe^2+','Fe^3+',2,3],['Sn','Sn^2+','Sn^4+',2,4],['Cl','ClO3^-','Cl^-',5,-1],['Cl','ClO^-','Cl^-',1,-1],['Cl','Cl2','Cl^-',0,-1],['I','IO3^-','I2',5,0],
+  ['I','I^-','I2',-1,0],['O','H2O2','O2',-1,0],['O','H2O2','H2O',-1,-2],['C','C2O4^2-','CO2',3,4],['N','NH3','NO',-3,2],['N','N2H4','N2',-2,0],['Cu','Cu','Cu^2+',0,2],['Ag','Ag^+','Ag',1,0],
+  ['Br','Br^-','Br2',-1,0],['Pb','PbO2','PbSO4',4,2],['C','CH3OH','HCOOH',-2,2],['V','VO2^+','VO^2+',5,4],['As','H3AsO3','H3AsO4',3,5],['Cr','CrO4^2-','Cr(OH)3',6,3],['Mn','Mn^2+','MnO2',2,4]];
+EC_GEN[1]=[
+  ()=>{const r=EC1_POOL[RN(0,EC1_POOL.length-1)];
+    return {q:`Calculate the oxidation number of ${EC1_NM[r.x]} in ${C(r.f)}.`,n:r.v,u:'',tol:0,ans:ec1S(r.v),w:ec1Work(r)};},
+  ()=>{const [x,a,b,va,vb]=EC1_CV[RN(0,EC1_CV.length-1)],k=ecAtoms(a).a[x],d=vb-va,n=k*Math.abs(d),up=d>0;
+    return {q:`In a reaction, ${C(a)} changes to ${C(b)}. How many electrons does one ${C(a)} lose or gain?`,n,u:'',tol:0,ans:String(n),
+      w:`${x} is ${ec1S(va)} in ${ecU(a)} and ${ec1S(vb)} in ${ecU(b)}. The oxidation number ${up?'increases':'decreases'} by ${Math.abs(d)} for each ${x} atom.`+(k>1?` One ${ecU(a)} has ${k} ${x} atoms: ${k} × ${Math.abs(d)} = ${n} electrons.`:'')+
+        ` Thus one ${ecU(a)} ${up?'loses':'gains'} ${n} electron${n>1?'s':''}: it is ${up?'oxidized':'reduced'}.`};}];
+EC_METHOD[1]='Use the rules first: an element is 0, a monatomic ion is its charge, H is +1, O is −2, Group 1 is +1, Group 2 is +2 and F is −1. Then the sum of all the oxidation numbers equals the charge of the entity (0 for a compound).';
+EC_HT[1]={pre:'Write an oxidation number with its sign first: +2, −1, 0. A charge is written the other way: 2+.',items:[
+  {q:'Find the oxidation number of one element',s:['An element alone is 0. A monatomic ion is its charge.','Give the atoms that have a rule their values: F −1; Group 1 +1; Group 2 +2; H +1 (−1 with a metal); O −2 (−1 in a peroxide); the other halogens −1.','Write the sum: (number of atoms × oxidation number) for each element. It equals 0 for a compound and the charge for a polyatomic ion.','Solve for the last element.'],chk:'SO₄²⁻: S + 4(−2) = −2, thus S = +6.'},
+  {q:'Two ions in one formula',s:['Split the compound into its ions: NH₄NO₃ is NH₄⁺ and NO₃⁻; PbCrO₄ is Pb²⁺ and CrO₄²⁻.','Use the sum rule for each polyatomic ion, with its own charge.'],chk:'In NH₄NO₃, N is −3 in NH₄⁺ and +5 in NO₃⁻.'},
+  {q:'Which element is oxidized and which is reduced?',s:['Write the oxidation number of each element on both sides.','An increase is a loss of electrons: that element is oxidized, and its reactant is the reducing agent.','A decrease is a gain of electrons: that element is reduced, and its reactant is the oxidizing agent.','The change for one atom is the number of electrons it loses or gains. Multiply by the number of those atoms.'],chk:'2AgNO₃ + Cu → Cu(NO₃)₂ + 2Ag: Cu goes from 0 to +2 (oxidized) and Ag from +1 to 0 (reduced). N and O do not change.'},
+  {q:'Is it a redox reaction?',s:['Assign oxidation numbers to every element on both sides.','If any oxidation number changes, it is a redox reaction: one element goes up and one goes down.','If none changes, it is not redox: acid-base, neutralization and precipitation reactions.'],chk:'Almost every reaction with an uncombined element on one side is redox, such as Mg + 2HCl → MgCl₂ + H₂.'},
+  {q:'An oxidation number that is a fraction',s:['Use the sum rule as usual.','A fraction is an average: the atoms of that element do not all have the same oxidation number.'],chk:'Fe₃O₄: 3Fe + 4(−2) = 0, thus Fe = +8/3 (one Fe²⁺ and two Fe³⁺).'}]};
+EC_REF.t.push(['Oxidation number','The charge that an atom would have if the electrons of each bond were given to the more electronegative atom. The sign is written first: +2.'],
+  ['Peroxide','A compound in which two O atoms are bonded to each other, such as H₂O₂ or Na₂O₂. Its O atoms are −1.'],
+  ['Ionic hydride','A compound of hydrogen with a metal, such as LiH or CaH₂. Its H atoms are −1.']);
+EC_REF.f.push(['Sum of the oxidation numbers','compound: sum = 0; polyatomic ion: sum = the ion charge'],
+  ['Oxidation-number rules','element 0; monatomic ion = its charge; Group 1 +1; Group 2 +2; F −1; H +1 (−1 in a metal hydride); O −2 (−1 in a peroxide); other halogens −1'],
+  ['Change in oxidation number','increase: electrons lost (oxidation); decrease: electrons gained (reduction)']);
 }catch(e){console.error('[ec] slot 1 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 2 ----- */
 {try{
