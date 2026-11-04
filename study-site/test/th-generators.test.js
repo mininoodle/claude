@@ -5,7 +5,9 @@
    fits the four-box numeric-response format, and the first hint does not give the answer away.
    Chemistry, checked independently of the generator code: every equation in a question or an explanation is balanced,
    and the answers of lessons 3, 4, 6 and 7 are recomputed from the numbers in the question and the data booklet
-   values of the page (TH_F): reverse activation energies, nΔfH°, Hess sums against Σ products − Σ reactants. */
+   values of the page (TH_F): reverse activation energies, nΔfH°, Hess sums against Σ products − Σ reactants.
+   The Hess steps named in the explanation (Keep, Reverse, Multiply) must add up to the target equation, and the
+   'missing ΔfH°' explanation must show the sum of the products term by term. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node-tools/node_modules/playwright')); }
 const path = require('path');
@@ -87,13 +89,25 @@ const file = path.resolve(process.argv[2] || 'study-site/index.html');
           if (gi >= 4 && it.L === 6) {
             const t = eqsIn(q).pop(); if (!near(it.n, direct(t), 1e-6)) fail(`Hess sum ${it.n} vs formation method ${direct(t).toFixed(1)} for ${t}`);
             eqsIn(q).slice(0, -1).forEach(e => { const v = direct(e), h = +(q.split(e)[1].match(/ΔH = ([−+]?[\d.]+)/)[1].replace('−', '-')); if (!near(v, h, 1e-6)) fail(`given ΔH ${h} vs ${v.toFixed(1)} for ${e}`); });
+            /* the manipulations that the explanation lists (Keep I, Reverse II, Multiply III by 4 ...) add up to the target equation */
+            const given = eqsIn(q).slice(0, -1), co = given.map(() => null), R = { I: 0, II: 1, III: 2 };
+            for (const m of plainT(it.w).matchAll(/(Keep|Reverse|Multiply) (III|II|I)(?: and multiply it by (\d+)| by (\d+))?:/g)) co[R[m[2]]] = m[1] === 'Keep' ? 1 : m[1] === 'Reverse' ? -(+(m[3] || 1)) : +m[4];
+            if (co.includes(null)) fail('the explanation does not name a step for every given equation');
+            else {
+              const net = {}, add = (e, c) => { const [l, r] = e.split('→'); for (const [k, f] of side(l)) net[f] = (net[f] || 0) - c * k; for (const [k, f] of side(r)) net[f] = (net[f] || 0) + c * k; };
+              given.forEach((e, i) => add(e, co[i])); add(t, -1);
+              const left = Object.entries(net).filter(([, v]) => Math.abs(v) > 1e-9);
+              if (left.length) fail('the listed steps do not add up to the target: ' + left.map(([f, v]) => v + ' ' + f).join(', '));
+            }
           }
           if (gi >= 4 && it.L === 7) {
             const e = eqsIn(it.w)[0], dc = direct(e), f = side(e.split('→')[0])[0][1];
             if (/bomb calorimeter/.test(q) && !/H2O\(l\)/.test(e) || /open air/.test(q) && !/H2O\(g\)/.test(e)) fail('water state');
             if (/^Calculate the molar enthalpy of combustion/.test(q)) { if (!near(it.n, dc, 1e-6)) fail('ΔcH'); }
             else if (/Calculate the energy released/.test(q)) { const m = qn[0], M = TH_M[f]; if (!near(it.n, -m / M * dc, .001)) fail('energy for a mass'); }
-            else { if (!near(it.n, TH_F[f], 1e-6) || !near(dc, qn[0], 1e-6)) fail('missing ΔfH'); }
+            else { if (!near(it.n, TH_F[f], 1e-6) || !near(dc, qn[0], 1e-6)) fail('missing ΔfH');
+              /* full working: the sum of the products is shown term by term, as in the other two kinds */
+              if (!/= \[[^\]]*\([−+]?\d+\.\d\)[^\]]*\] − x/.test(plainT(it.w))) fail('missing ΔfH: the sum of the products is not shown'); }
           }
         } catch (e) { fail('check threw ' + e.message); }
       }
