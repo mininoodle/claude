@@ -729,6 +729,8 @@ body{--on-a1:#fff}
   /* the 'Study' row with the mode and account buttons stays at the top of the rail when the rail scrolls to show the open lesson */
   html #rail>.rail-brand{position:sticky;top:-10px;z-index:2;background:var(--rail);margin-top:-10px;padding-top:10px}
   #rail.scrolled>.rail-brand{box-shadow:0 1px 0 var(--hair)}
+  /* those buttons are always on screen there: focus on them (Tab, or back from the account dialog) must not scroll the page (see the bar's buttons) */
+  #rail>.rail-brand button{scroll-margin-top:-100px}
   /* the search row takes 38 px: the headings and the top of the rail give back 28 px, thus Review stays in view at 1366x768 in every unit */
   html #rail{padding-top:10px}html #rail .rail-h,html #rail .ulabel{padding-top:8px}
   #rail .chips button.pin{order:-1}

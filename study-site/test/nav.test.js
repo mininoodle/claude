@@ -203,6 +203,12 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       await p.evaluate(() => document.querySelector('.crumb-b[data-lv="l"]').click()); await frames(p); await p.keyboard.press('Escape'); await frames(p);
       const e = await p.evaluate(() => ({ back: document.activeElement.matches('.crumb-b[data-lv="l"]'), y: Math.round(scrollY) }));
       check(t.bar && t.y === r && e.back && e.y === r, `${phone ? 390 : 1366} px, ${k}-1: Tab into the bar and Escape from its menu keep the page at ${r} (${t.y}, ${e.y})`);
+      if (!phone) {
+        /* the mode and account buttons at the top of the rail: Tab onto them keeps the page */
+        await p.evaluate(y => { scrollTo(0, y); const s = document.createElement('button'); s.style.cssText = 'position:fixed;left:0;top:300px;width:1px;height:1px;opacity:0'; document.body.prepend(s); s.focus({ preventScroll: true }); }, r); await frames(p);
+        const ys = []; for (let i = 0; i < 2; i++) { await p.keyboard.press('Tab'); await frames(p); ys.push(await p.evaluate(() => (document.activeElement.closest('.rail-brand') ? '' : 'not in the Study row ') + Math.round(scrollY))); }
+        check(ys.every(v => v === String(r)), `1366 px: Tab onto the mode and account buttons keeps the page at ${r} (${ys.join(', ')})`);
+      }
       await ctx.close();
     }
     /* ---------- the page stays itself when its base address is another one (a srcdoc frame, a <base href>) ---------- */
