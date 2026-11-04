@@ -956,10 +956,15 @@ function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n)return '';const r=x/n,n
   if(!pl&&(near(r,2)||near(r,.5)))return 'Your answer is different by a factor of 2. Check a coefficient, a mole ratio, or the ½ in the kinetic energy formula.';
   if(!pl&&(near(r,9.81)||near(r,1/9.81)))return 'Your answer is different by a factor of 9.81. Check if the question gives a weight (N) or a mass (kg).';
   /* before the reciprocal and exponent checks: near 1, n², √n and 1/n are only a few percent from n */
+  /* g = 10 m/s² instead of 9.81: 1.9 % off, inside the 2 % window of practice but wrong on an exam key */
+  if(!pl&&/9\.81/.test(it.w||'')&&(near(r,10/9.81,.004)||near(r,9.81/10,.004)))return 'Your answer is different by a factor of 10/9.81. Use g = 9.81 m/s², not 10 m/s².';
   if(Math.abs(r-1)<.08)return pl&&Number.isInteger(n)&&Number.isInteger(x)?'You are close. Check your count or your arithmetic again.':'You are close. Keep more digits in the intermediate steps and round only at the end.';
   if(n>0&&x>0&&near(x,1/n))return 'You have the reciprocal of the answer. Check which quantities are on the top and on the bottom.';
   if(!pl&&n>0&&x>0&&n!==1&&(near(x,n*n)||near(x,Math.sqrt(n))))return 'Check the exponent or the square root in your calculation.';
   return '';}
+/* a correct numeric entry that is not the three-digit key (inside the 2 % window of an item with the default tolerance): say so, so that early rounding is seen */
+function keyNote(v,it){if(it.o||it.ans||it.ex||it.abs!=null||(it.tol!=null&&it.tol!==.02)||!it.n)return '';const x=parseNum(v);if(!isFinite(x)||+x.toPrecision(3)===+it.n.toPrecision(3))return '';
+  const d=diagnose(x,it);return /9\.81/.test(d)?'Accepted, but y'+d.slice(1)+' ':`Accepted. The key is ${ansText(it)}: keep all digits until the last step. `;}
 /* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
    cb receives {v,ok,s,hi}: hi is the number of hints used. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer.
    opt.hintNote follows a correct answer that used a hint. opt.retry(q): a 'Try again' button under a wrong multiple-choice answer or a shown answer calls it */
@@ -981,7 +986,7 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt
     const ans=()=>`<b>Answer: ${ansText(it)}</b>. ${it.w||''}`;
     const show=(e,anim)=>{const d=e.ok?'':diagnose(parseNum(e.v),it);
       if(e.s&&!e.ok)say('info',ans()+' <span class="hint">This question does not count as correct now.'+note+'</span>');
-      else if(e.ok)say('ok','Correct. '+(it.w||'')+(e.hi&&opt.hintNote?' <span class="hint">'+opt.hintNote+'</span>':''));
+      else if(e.ok)say('ok',(keyNote(e.v,it)||'Correct. ')+(it.w||'')+(e.hi&&opt.hintNote?' <span class="hint">'+opt.hintNote+'</span>':''));
       else say('bad',test?'Not correct. '+(d?d+' ':'')+ans():'Not correct. '+(d||(it.plain?'Check your reasoning and your arithmetic.':'Check the sign, the units and the conversions.'))+(steps.length?' Use a hint or try again.':' Try again.'));
       if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);if(rr)rr.hidden=!(e.s&&!e.ok);};
     const chk=()=>{if(test&&q.dataset.done)return;if(shown){show({v:inp.value.trim().slice(0,24),ok:0,s:1},false);return;}const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. You can type 6.25e6 for 6.25 × 10⁶.');return;}
@@ -1162,6 +1167,11 @@ async function savePDF(name,lines){
 function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);if(!t.includes('e')&&t.length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
 /* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong */
 const nrHalf=(sp,n)=>sp.m==='d'?.5*10**(Math.floor(Math.log10(n))-sp.p+1):.5*.01*10**sp.e;
+/* the timed exam grades the four boxes like a numerical-response key: the key rounded to the boxes, give or take 1 in the last box.
+   An exact value (tol 0, ex) must be exact, and a wider window that an item sets on purpose (tol above 2 %, or abs: a graph reading, an estimate) is kept */
+const nrKey=(sp,n)=>sp.m==='d'?+n.toPrecision(sp.p):+(n/10**sp.e).toFixed(2)*10**sp.e;
+function nrOK(sp,v,it){if(!isFinite(v))return false;const h=nrHalf(sp,it.n);if(it.tol===0||it.ex)return numOK(v,it,h);
+  const k=Math.abs(v-nrKey(sp,it.n))<=2*h*(1+1e-9);return (it.tol??0)>.02||it.abs>0?k||numOK(v,it,h):k;}
 const nrVal=(sp,t)=>{t=(t||'').replace(/\s/g,'');if(!t)return NaN;if(sp.m==='d')return /^(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;if(!/^\d{4}$/.test(t))return NaN;return (+t[0]+ +t[1]/10+ +t[2]/100)*10**((sp.e<0?-1:1)*+t[3]);};
 const nrShow=(sp,t)=>!t?'no answer':sp.m==='d'?t:/^\d{4}$/.test(t)?`${t[0]}.${t[1]}${t[2]} × 10<sup>${sp.e<0?'−':''}${t[3]}</sup>`:t;
 /* a timed exam in progress is kept in this tab (sessionStorage), so that a reload does not lose it */
@@ -1264,7 +1274,7 @@ function reviewUI(g,sk,le){
     c.append(el('details',{class:'ex'},`<summary>Model response</summary><div>${x.model}</div>`));const r=el('div',{class:'row'}),fin=el('button',{type:'button',class:'btn'},'Show my results');
     fin.onclick=()=>exDone({got:$$('.tile.on',box).length,max:x.marks.length,q:x.q});r.append(fin);c.append(r);host.append(c);toHost();}
   function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j],na=a==null||a==='';if(x.kind==='mc')res.push({x,na,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a],v:a});
-      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:numOK(v,x.it,nrHalf(x.nr,x.it.n))?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:''),v:plain(nrShow(x.nr,a))});}});
+      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:nrOK(x.nr,v,x.it)?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:''),v:plain(nrShow(x.nr,a))});}});
     /* a question without an answer (na) counts in the score, but not as answered: no history, study day or spaced repetition */
     res.forEach(r=>{if(r.x.L>=0&&!r.na)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1,v:r.v});});if(E.items.some((x,j)=>x.kind==='wr'&&(E.ans[j]||'').trim()))markStudy();
     T={res};const used=E.used;E=null;exSave();results({wr,used});}
