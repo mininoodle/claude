@@ -848,11 +848,13 @@ const Store=(()=>{
     pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy,
     error:()=>err,canSave:()=>canSave,optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
-/* spaced repetition: a missed question comes back after 1, 3 and 7 days */
-const SRI=[1,3,7],DAY=864e5;
+/* spaced repetition: a missed question comes back after 1, 3, 7, 16 and 35 days, then every 60 days (SRM), so that it is still known at the diploma.
+   A wrong answer starts it again at 1 day. A correct answer before the due date does not move it. Box b waits SRI[b] days: boxes 0 to 2 keep their old meaning.
+   Passing the 7-day review (reaching box SRG) counts as learned for the 'It stuck' badge, where the old schedule ended */
+const SRI=[1,3,7,16,35],SRM=60,SRG=3,DAY=864e5;
 function srMark(id,ok){if(!id)return;const e=Store.sr(id),now=Date.now();
   if(!ok){Store.srSet(id,{b:0,d:now+SRI[0]*DAY});return;}
-  if(e&&now>=e.d){const b=e.b+1;if(b>=SRI.length){Store.srSet(id,{x:1});Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}else Store.srSet(id,{b,d:now+SRI[b]*DAY});}}
+  if(e&&now>=e.d){const b=(e.b||0)+1;Store.srSet(id,{b,d:now+(b<SRI.length?SRI[b]:SRM)*DAY});if(b===SRG){Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}}}
 /* change counters for the saved progress. SV moves with every write through the Store's methods and with every change that the Store merges
    from another tab, device or backup (it calls its subscribers). SVQ moves only when the results of a question can change: answers (a), history (h), clears and merges.
    Values derived from the progress, such as lessonLevel, are kept until their counter moves */
@@ -1167,7 +1169,7 @@ function reviewUI(g,sk,le){
     const cr=el('div',{class:'row'}),cb=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear the saved answers of this section');
     cb.onclick=()=>askClear(sk);cr.append(cb);c1.append(cr);
     const sr=srs(),dq=sr.filter(([,e])=>e.d<=now).map(([k])=>item(k)).filter(Boolean),wt=sr.filter(([,e])=>e.d>now).map(([,e])=>e.d);
-    const cs=el('section',{class:'card glass half'},`<h3>Spaced repetition</h3><p>A question that you miss comes back after 1 day, then after 3 days, then after 7 days. When you answer it correctly each time, it leaves this list.</p>
+    const cs=el('section',{class:'card glass half'},`<h3>Spaced repetition</h3><p>A question that you miss comes back after 1 day, then after 3, 7, 16 and 35 days, then every 60 days, so that you still know it at the diploma. A wrong answer starts it again at 1 day.</p>
       <div class="stats"><div class="stat"><span>Due now</span><b>${dq.length}</b></div><div class="stat"><span>Scheduled for later</span><b>${wt.length}</b></div>${wt.length?`<div class="stat"><span>Next date</span><b>${new Date(Math.min(...wt)).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</b></div>`:''}</div>
       <div class="row"><button type="button" class="btn" ${dq.length?'':'disabled'}>Practise the questions that are due (${dq.length})</button></div>`);
     host.append(cs);$('.btn',cs).onclick=()=>start('due',0,shuffle(dq));
@@ -11012,7 +11014,7 @@ const ACH=[
   {id:'num',cat:'practice',ic:'exam',n:'Precision',d:t=>`Get ${t} numeric answers right.`,tiers:[10,50,150,400],v:()=>gN('n_num')},
   {id:'bank',cat:'practice',ic:'book',n:'Review bank',d:t=>`Answer ${t} review-bank questions correctly.`,tiers:[10,50,150,400],v:()=>gN('n_rev')},
   {id:'combo',cat:'practice',ic:'bolt',n:'Combo',d:t=>`Answer ${t} questions correctly in a row.`,tiers:[5,10,20,40],v:()=>gN('comboBest')},
-  {id:'sr',cat:'practice',ic:'reset',n:'It stuck',d:t=>`${t} missed ${pl(t,'question leaves','questions leave')} spaced repetition after 1, 3 and 7 days.`,tiers:[1,5,20,50],v:()=>gN('srOut')},
+  {id:'sr',cat:'practice',ic:'reset',n:'It stuck',d:t=>`${t} missed ${pl(t,'question passes its reviews','questions pass their reviews')} in spaced repetition after 1, 3 and 7 days.`,tiers:[1,5,20,50],v:()=>gN('srOut')},
   {id:'comp',cat:'practice',ic:'comp',n:'Component method',d:t=>`Solve ${t} problems in “2-D: components”.`,tiers:[10,30],v:()=>gN('cnt_mom_'+LX('mom','2-D: components'))},
   {id:'streak',cat:'habit',ic:'flame',n:'Streak',d:t=>`Study on ${t} days in a row.`,tiers:[3,7,14,30,60],v:streakNow},
   {id:'days',cat:'habit',ic:'cal',n:'Study days',d:t=>`Study on ${t} different days.`,tiers:[5,20,50,100,200],v:()=>(gv('days')||[]).length},
