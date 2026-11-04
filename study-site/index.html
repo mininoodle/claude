@@ -726,6 +726,9 @@ body{--on-a1:#fff}
 #rail .rail-brand{padding-top:2px;padding-bottom:6px}
 /* a wide screen: the reference sheet and Review are pinned at the top of the lesson list, with a line under them */
 @media(min-width:901px){
+  /* the 'Study' row with the mode and account buttons stays at the top of the rail when the rail scrolls to show the open lesson */
+  html #rail>.rail-brand{position:sticky;top:-10px;z-index:2;background:var(--rail);margin-top:-10px;padding-top:10px}
+  #rail.scrolled>.rail-brand{box-shadow:0 1px 0 var(--hair)}
   /* the search row takes 38 px: the headings and the top of the rail give back 28 px, thus Review stays in view at 1366x768 in every unit */
   html #rail{padding-top:10px}html #rail .rail-h,html #rail .ulabel{padding-top:8px}
   #rail .chips button.pin{order:-1}
@@ -11734,14 +11737,16 @@ html{scroll-padding-top:62px}
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',crumb.offsetHeight+'px')).observe(crumb);
   upd();
   /* keep the open lesson visible in the rail */
-  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(!b)return;const r=b.getBoundingClientRect(),q=rail.getBoundingClientRect();
-    if(!r.height)return;if(r.top<q.top)rail.scrollTop-=q.top-r.top+8;else if(r.bottom>q.bottom)rail.scrollTop+=r.bottom-q.bottom+8;};
+  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(!b)return;const r=b.getBoundingClientRect(),q=rail.getBoundingClientRect(),
+      top=q.top+(getComputedStyle(rail.firstChild).position==='sticky'?rail.firstChild.getBoundingClientRect().bottom-q.top:0);
+    if(!r.height)return;if(r.top<top)rail.scrollTop-=top-r.top+8;else if(r.bottom>q.bottom)rail.scrollTop+=r.bottom-q.bottom+8;};
   new MutationObserver(seen).observe($id('chips'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
   /* the section's reference sheet and its Review (with the badge of due questions) are pinned at the top of the lesson list in the rail (CSS order),
      thus they stay in view however long the list is. The arrow keys go round the same circle: the pinned two are the last two lessons */
   const pins=()=>{const S=typeof SUBJ!=='undefined'&&SUBJ[curS],bs=[...$id('chips').children];if(!S)return;const rv=S.lessons.findIndex(l=>l.rv);
-    bs.forEach((b,i)=>{b.classList.toggle('pin',i===rv||(i===rv-1&&!!(REF[curS])));b.classList.toggle('pin-end',i===rv);});};
+    bs.forEach((b,i)=>{b.classList.toggle('pin',i===rv||(i===rv-1&&!!(REF[curS])));b.classList.toggle('pin-end',i===rv);});seen();};
   new MutationObserver(pins).observe($id('chips'),{childList:true});pins();
+  rail.addEventListener('scroll',()=>rail.classList.toggle('scrolled',rail.scrollTop>0),{passive:true});
   /* the rail's tab lists are columns on a wide screen and rows on a narrow one */
   const wide=matchMedia('(min-width:901px)'),orient=()=>rail.querySelectorAll('[role=tablist]').forEach(t=>{if(wide.matches)t.setAttribute('aria-orientation','vertical');else t.removeAttribute('aria-orientation');});
   new MutationObserver(orient).observe(rail,{childList:true,subtree:true});wide.addEventListener('change',orient);orient();
