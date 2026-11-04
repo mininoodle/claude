@@ -838,8 +838,9 @@ function quizBusy(){const c=LASTQ,A=c&&c.isConnected&&!c.closest('[hidden]')&&c.
 function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;if(!first&&typeof ACH_Q!=='undefined'&&ACH_Q.length)setTimeout(()=>celebrateNext(),400);
   if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;
   /* the page's address: a new history entry for a page the student opens, the same entry at load, for a page shown again,
-     for the arrow keys (one press, one lesson) and for a page opened by Back or Forward */
-  const h=pageHash(L);if(h&&location.hash!==h)try{if(first||same||NAVREP||HASHNAV)location.replace(h);else location.hash=h;}catch(e){}}
+     for the arrow keys (one press, one lesson) and for a page opened by Back or Forward. The same entry is this document's own address with the new
+     fragment: a bare '#/...' would be read against the base address, which in a srcdoc frame or under a <base href> is another page, and the site would unload */
+  const h=pageHash(L);if(h&&location.hash!==h)try{if(first||same||NAVREP||HASHNAV)location.replace(location.href.split('#')[0]+h);else location.hash=h;}catch(e){}}
 
 /* ----- the address of each page: #/eq/3 (section key, lesson number from 0), #/today, #/test, or #/chem (a subject). The '#/' form matches no
    element id, thus the browser does not jump. A fragment also works inside the sandboxed artifact frame. Back and Forward step through the pages,
