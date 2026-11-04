@@ -14,6 +14,7 @@ Navigation and usability of the page shell (rail, breadcrumb, address, search, p
   - achievements: a Bronze tier is a toast, a Gold tier a modal <dialog> that Escape closes
   - 'Formulas' opens the section's reference sheet in a modal dialog; Escape closes it and the page has not moved
   - the search stays quick with many lessons built; the bar keeps room for the lesson's name at 360, 640 and 905 px
+  - focus that reaches the sticky bar (Tab, Escape from its menu) does not scroll the page
   - with a <base href> (as in a srcdoc frame) the page does not unload itself when it writes its address, and Back still works
 Everything is read from SUBJECTS and SUBJ, thus new sections are covered without a change here. */
 const path = require('path');
@@ -187,6 +188,21 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       await frames(p);
       const r = await p.evaluate(id => { const c = document.querySelector('.crumb-b.cur'); return { id, t: c.textContent.trim(), w: Math.round(c.getBoundingClientRect().width) }; }, id);
       check(r.w >= 40 && r.t === await p.evaluate(id => { const m = /^(.+)-(\d+)$/.exec(id); return SUBJ[m[1]].lessons[+m[2]].t; }, r.id), `${w} px: the bar shows the lesson's name of ${r.id} in ${r.w} px (40 or more)`);
+      await ctx.close();
+    }
+    /* ---------- focus that reaches the sticky bar (Tab into it, Escape from its menu) does not scroll the page ---------- */
+    for (const phone of [false, true]) {
+      const { ctx, p } = await openPage(b, { phone });
+      const k = await p.evaluate(() => { const u = SUBJECTS.flatMap(S => S.units).filter(x => SUBJ[x]).sort((a, c) => SUBJ[c].lessons.length - SUBJ[a].lessons.length)[0]; goLesson(u, 1); return u; });
+      await frames(p);
+      const r = await p.evaluate(async () => { const f = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const y0 = Math.min(3000, document.documentElement.scrollHeight - innerHeight - 10); scrollTo(0, y0); await f();
+        const c = [...document.querySelectorAll('#rail button,#rail input')].filter(e => e.offsetParent && e.tabIndex >= 0); c[c.length - 1].focus({ preventScroll: true }); return y0; });
+      await p.keyboard.press('Tab'); await frames(p);
+      const t = await p.evaluate(() => ({ bar: !!document.activeElement.closest('.crumb'), y: Math.round(scrollY) }));
+      await p.evaluate(() => document.querySelector('.crumb-b[data-lv="l"]').click()); await frames(p); await p.keyboard.press('Escape'); await frames(p);
+      const e = await p.evaluate(() => ({ back: document.activeElement.matches('.crumb-b[data-lv="l"]'), y: Math.round(scrollY) }));
+      check(t.bar && t.y === r && e.back && e.y === r, `${phone ? 390 : 1366} px, ${k}-1: Tab into the bar and Escape from its menu keep the page at ${r} (${t.y}, ${e.y})`);
       await ctx.close();
     }
     /* ---------- the page stays itself when its base address is another one (a srcdoc frame, a <base href>) ---------- */
