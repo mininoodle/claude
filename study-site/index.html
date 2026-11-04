@@ -127,6 +127,7 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
 /* saving or syncing is not ok: a dot on the account button, and a card at the top of the Today page */
 .modebtn.acct{position:relative}.modebtn.acct.warn::after{content:'';position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--bg,#fff)}
 .card.syncline{border-color:color-mix(in srgb,var(--bad) 45%,var(--hair))}.syncline p{margin:.2em 0}
+.bkp{border-top:1px solid var(--hair);margin-top:.9em;padding-top:.5em}.bkb{display:flex;gap:.5em;flex-wrap:wrap}.card .bkp{border:0;margin:0;padding:0}
 dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--glass2);border:1px solid var(--hair);border-radius:6px;padding:.1em .4em}
 .seg{position:relative;display:flex;border-radius:999px;isolation:isolate}
 .seg.main button{display:flex;align-items:center;gap:.5em}
@@ -803,7 +804,7 @@ const Store=(()=>{
     if(k.startsWith('ch_'))return o({ok:Math.max(l.ok||0,r.ok||0)});
     if(k.startsWith('boss_')){const x={won:[l.won,r.won].filter(Boolean).sort()[0]||0},a=l.best,b=r.best;if(a||b)x.best=!a?b:!b?a:a.c>b.c||(a.c===b.c&&a.ms<=b.ms)?a:b;return o(x);}
     return null;}
-  /* fold another copy R into D. Returns [D changed, R lacks something that D has] */
+  /* fold another copy R into D. Returns [D changed, R lacks something that D has, number of entries taken from R] */
   function fold(R,noUp){let ch=false;const rc=R.c||{},nc=[],nk=[];
     for(const k in rc){const l=D.c[k],r=rc[k];if(r&&(!l||(r.t||0)>(l.t||0))){D.c[k]=r;ch=true;nc.push(k);}}
     MAPS.forEach(m=>{const rm=R[m]||{},lm=D[m];for(const k in rm){const l=lm[k],r=rm[k];if(!r||typeof r!=='object'||l&&same(l,r))continue;const v=l&&mix(m,k,l,r);
@@ -816,7 +817,7 @@ const Store=(()=>{
     const rcut=(m,k)=>{const c=RTM.includes(m)&&D.c['rt:'+k],e=c&&D[m][k];if(e&&!e.x&&(e.t||0)<=(c.t||0)){D[m][k]={x:1,t:c.t||0};ch=true;}};
     nk.forEach(([m,k])=>rcut(m,k));nc.forEach(id=>{if(id.startsWith('rt:'))RTM.forEach(m=>rcut(m,id.slice(3)));});
     const up=!noUp&&(MAPS.some(m=>{const rm=R[m]||{},lm=D[m];return Object.keys(lm).some(k=>{const l=lm[k],r=rm[k];return !r||!same(l,r)&&(mix(m,k,l,r)?J(l)!==J(r):nw(l,r));});})||Object.keys(D.c).some(k=>!rc[k]||(D.c[k].t||0)>(rc[k].t||0)));
-    return [ch,up];}
+    return [ch,up,nk.length];}
   /* storage blocked or full: said at load, and again after the first answer (a: the save followed an answer). status() keeps it on the account button and the Today page */
   const warn=a=>{if(mode==='account'||warned>1||warned&&!a)return;warned++;setTimeout(()=>toast('Your progress cannot be saved in this browser, because its site storage is blocked or full. It is lost when you reload the page.'+(window.SYNC&&window.SYNC.ready?' Sign in to keep it.':'')+' You can also download a backup on the Today page.'));};
   /* another tab's copy o: progress of a different account replaces this copy, otherwise its newer entries are folded in */
@@ -987,6 +988,13 @@ const Store=(()=>{
     clear(f,id,T){let n=0;const t=T||Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&(!T||(D[m][k].t||0)<=T)&&f(m,k)){D[m][k]={x:1,t};dq(m,k);n++;}});if(id){D.c[id]={t};dq('c',id);}if(n||id)touch();if(n)emit();return n;},cleared:id=>!!D.c[id],
     pos:()=>D.pos,setPos(q){D.pos=q;save();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy||DQ.size>0,
     error:()=>err,outdated:()=>newer>SCHEMA,canSave:()=>canSave,
+    /* a backup: every entry (cleared ones too, so that a restore repeats the clears) and the clears, with its format and time */
+    exportCopy:()=>JSON.parse(JSON.stringify(Object.assign({},LX,cp(),{kind:'unit-study-site-progress',v:SCHEMA,saved:Date.now()}))),
+    /* restore a backup: it is folded in like a copy from another device (the newer entry wins, history and counters combine), thus nothing is deleted.
+       A file from the other copy of the site or from another account merges too. Returns {n: entries taken} or {err: 'format'|'newer'} */
+    importCopy(R){if(!R||typeof R!=='object'||Array.isArray(R)||R.kind&&R.kind!=='unit-study-site-progress'||!MAPS.some(m=>R[m]&&typeof R[m]==='object'))return {err:'format'};
+      if(typeof R.v==='number'&&R.v>SCHEMA)return {err:'newer'};const o=upgrade(JSON.parse(JSON.stringify(R)));MAPS.concat('c').forEach(m=>{if(!o[m]||typeof o[m]!=='object'||Array.isArray(o[m]))o[m]={};});
+      const [ch,,n]=fold(o,1);if(ch){save();emit();if(ref){ahead();if(DQ.size||!SPL)later(800);}}return {n};},
     /* the lasting state. local: ok|blocked. remote: off|ok|pending|retrying|stopped|outdated|viewer. text: what to tell the student, empty when all is well */
     status(){const r=noW?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':dirty||busy||DQ.size?'pending':'ok';
       const t=r==='viewer'||r==='outdated'?MSG[r]:r==='stopped'?MSG[kind(stop)]:r==='retrying'?MSG.soft:'';
@@ -1261,12 +1269,14 @@ function makePDF(lines){const W=612,H=792,M=56,pages=[];let cur=[],y=H-M;const e
   obj.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`;});const xr=out.length;
   out+=`xref\n0 ${obj.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${obj.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
   const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u;}
-async function savePDF(name,lines){
-  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:new Blob([makePDF(lines)],{type:'application/pdf'})});return 'The PDF was sent to your downloads.';}}
+/* offer a file to the student: the artifact's downloads capability when there is one, else a normal download link. what: 'The PDF', 'The backup' */
+async function saveFile(name,blob,what='The file'){
+  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:blob});return what+' was sent to your downloads.';}}
   catch(e){if(e&&e.code==='declined')return 'The download was cancelled.';}
   /* a normal browser: a link to the file */
-  try{const u=URL.createObjectURL(new Blob([makePDF(lines)],{type:'application/pdf'})),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return 'The PDF was saved to your downloads.';}catch(e){}
+  try{const u=URL.createObjectURL(blob),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return what+' was saved to your downloads.';}catch(e){}
   return 'A download is not available in this view.';}
+const savePDF=(name,lines)=>saveFile(name,new Blob([makePDF(lines)],{type:'application/pdf'}),'The PDF');
 /* numeric-response format: 4 boxes, direct value or a.bc × 10^d */
 function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);if(!t.includes('e')&&t.length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
 /* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong */
@@ -1521,7 +1531,8 @@ function accountDialog(){const back=document.activeElement,on=Store.mode()==='ac
   else{body=S.error?`<h3 id="ac-h">Sign-in is not available right now</h3><p>${Store.canSave()?'Your progress is saved in this browser. ':''}The sign-in service could not be reached. Check the internet connection, then reload the page.</p>${ns}`
       :`<h3 id="ac-h">Connecting…</h3><p>Sign-in is still loading. This takes a moment.</p>`;err=S.error||'';
     row=`<button type="button" class="btn" data-x>Close</button>`;}
-  const d=el('dialog',{class:'confirm','aria-labelledby':'ac-h'},body+`<p class="hint" data-err role="alert"${err?'':' hidden'}></p><div class="row">${row}</div>`),m=$('[data-err]',d);m.textContent=err;
+  const d=el('dialog',{class:'confirm','aria-labelledby':'ac-h'},body+BKP+`<p class="hint" data-err role="alert"${err?'':' hidden'}></p><div class="row">${row}</div>`),m=$('[data-err]',d);m.textContent=err;
+  backupButtons(d,()=>close());
   /* the Firebase module fires sync-change when it is ready or has failed: show the new state */
   document.body.append(d);const re=()=>{if(sy()===k0||(i&&i.disabled)||(cb&&cb.disabled))return;close();accountDialog();},close=()=>{if(!d.isConnected)return;removeEventListener('sync-change',re);d.close();d.remove();if(back&&back.isConnected)back.focus();};
   if(!on&&FIREBASE_CONFIG&&web)addEventListener('sync-change',re);
@@ -11266,15 +11277,30 @@ function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);backupCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
 /* the state of saving and syncing, while it is not ok: first on the Today page, with what the student can do */
 const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':'';
+/* a backup of all progress: one JSON file. Restoring one adds it to the progress here, in another browser or in the other copy of the site, and never deletes */
+const BKK='unit-study-site.backup',BKP=`<div class="bkp"><p class="hint">A backup is a file with all of your progress. Restoring it adds to the progress here and never deletes anything.</p><div class="bkb"><button type="button" class="btn sm ghost" data-bk>${icon('save',15)}Download a backup</button><button type="button" class="btn sm ghost" data-rs>${icon('up',15)}Restore from a backup</button></div></div>`;
+async function backupSave(){const msg=await saveFile('study-progress-'+today()+'.json',new Blob([JSON.stringify(Store.exportCopy())],{type:'application/json'}),'The backup');
+  if(/ was s/.test(msg))try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}toast(msg);refreshLive();}
+function backupLoad(){const i=el('input',{type:'file',accept:'.json,application/json',style:'display:none'});document.body.append(i);
+  i.addEventListener('change',async()=>{const f=i.files&&i.files[0];i.remove();if(!f)return;let o=null;try{o=JSON.parse(await f.text());}catch(e){}const r=o?Store.importCopy(o):{err:'format'};
+    toast(r.err==='newer'?'This backup was made by a newer version of the site. Reload the page, then restore it again.':r.err?'This file is not a backup of this study site.':r.n?`The backup is restored: ${r.n} saved ${r.n===1?'item was':'items were'} added or updated. Nothing was deleted.`:'The backup has nothing newer than the progress on this device.');
+    if(r.n)afterChange();});
+  i.click();}
+/* f: run first, for example to close the dialog that holds the buttons */
+function backupButtons(host,f){const b=$('[data-bk]',host),r=$('[data-rs]',host);if(b)b.onclick=()=>{if(f)f();backupSave();};if(r)r.onclick=()=>{if(f)f();backupLoad();};}
+/* the Today page: the backup buttons, and a reminder when the progress lives only in this browser and the last backup is older than a week (after 50 answers) */
+function backupCard(g){const st=Store.status(),acc=st.remote==='ok'||st.remote==='pending';let t=0;try{t=+localStorage.getItem(BKK)||0;}catch(e){}
+  const old=!acc&&Store.xk('a').length>=50&&Date.now()-t>7*864e5,c=card(g,'Backup',`<p>${acc?'Your progress is saved in this browser and in your account.':'Your progress is saved in this browser only.'} Download a backup to keep a copy, or to move your progress to another browser or to the other copy of the site.</p>${old?`<p class="hint"><b>${t?'Your last backup is more than a week old.':'You have not downloaded a backup yet.'}</b></p>`:t?`<p class="hint">Last backup: ${fmtDay(dayOf(t))}.</p>`:''}`+BKP.replace('A backup is a file with all of your progress. Restoring it','Restoring a backup'),'half');backupButtons(c);}
 function syncCard(g){const st=Store.status(),h=syncHead(st);if(!h)return;
-  const tx=st.text.startsWith(h+'.')?st.text.slice(h.length+1).trim():st.text;
+  const tx=(st.text.startsWith(h+'.')?st.text.slice(h.length+1).trim():st.text).replace(' on the Today page','');
   const c=card(g,'',`<h3>${icon(st.remote==='viewer'?'user':'cloud',18)} ${h}</h3><p role="status">${tx}</p><div class="row"></div>`,'syncline'),row=$('.row',c);g.prepend(c);
   const b=(t,f,cl)=>{const x=el('button',{type:'button',class:'btn sm'+(cl?' '+cl:'')},t);x.onclick=f;row.append(x);};
   if(st.remote==='outdated')b(icon('reset',15)+'Reload',()=>location.reload());
   else if(st.remote==='retrying'||st.remote==='stopped')b(icon('reset',15)+'Sync now',async()=>{const ok=await Store.sync();toast(ok?'Synced.':'Could not sync yet. Your progress is kept on this device.');});
+  if(st.local!=='ok'||/^(stopped|viewer)$/.test(st.remote))b(icon('save',15)+'Download a backup',backupSave,st.remote==='outdated'?'ghost':'');
   b('Account',accountDialog,'ghost');}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
