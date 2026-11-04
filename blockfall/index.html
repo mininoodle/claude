@@ -63,6 +63,8 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
 .tuning input[type=checkbox],.tuning input[type=range]{accent-color:var(--accent)}
 .tuning output{color:var(--fg);font-variant-numeric:tabular-nums}
 .note{color:var(--muted);margin:10px 0 0;line-height:1.5;max-width:65ch}
+/* Small phones: a tighter overlay, so the title and all four mode buttons fit in the narrow well */
+@media (max-width:360px){#overlay{gap:8px;padding:8px}.modes{gap:6px}.modes button{padding:4px 12px}}
 @media (prefers-reduced-motion:reduce){.action{transition:none}}
 </style>
 </head>
@@ -684,7 +686,8 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
 
   // ---- difficulty ----
   // depth: pieces placed in the search (1 = the current piece or the hold piece only); beam: states kept per depth;
-  // hold: may use hold; tslots: T-slot bonus; simple: straight drops only (no tucks, no spins) when one exists;
+  // hold: may use hold; tslots: T-slot bonus; simple: straight drops only (no tucks, no spins), unless there is none
+  // or every one of them tops out;
   // noise: random spread added to each root move value; slip: chance to take another move within gap of the best;
   // miss: chance to drop one column off (within 2 * gap); w: weight changes for the level.
   const LEVELS = [null,
@@ -802,25 +805,30 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
     }
     const cand = [];
     let safe = 0;
-    for (let oi = 0; oi < opts.length; oi++) {
-      const o = opts[oi];
-      const n = gen(RB, 0, o.p, o.r0, o.x0, o.y0, st.simple);
-      if (n < 0) continue;
-      o.yi0 = spawnYi;
-      const nh = o.hold ? cur : hold0, nq = o.hold && hold0 < 0 ? 2 : 1, nc = nq - 1 < qn ? QP[nq - 1] : -1;
-      for (let i = 0; i < n; i++) {
-        nodes++;
-        place(RB, 0, rbTop, TMP, 0, o.p, OR_[i], OX[i], OY[i], OS[i], b2b0, combo0, gR, gL);
-        if (rDead) {   // a lock out or a garbage top out: legal, kept only for when every move loses
-          cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew: 0, sc: -2e9, fatal: true, nh, nq, nc, b2b: -1, combo: -1, g: 0});
-          continue;
+    // simple levels try straight drops first; if every one of them tops out, all reachable placements
+    for (let simple = st.simple; ; simple = false) {
+      for (let oi = 0; oi < opts.length; oi++) {
+        const o = opts[oi];
+        const n = gen(RB, 0, o.p, o.r0, o.x0, o.y0, simple);
+        if (n < 0) continue;
+        o.yi0 = spawnYi;
+        const nh = o.hold ? cur : hold0, nq = o.hold && hold0 < 0 ? 2 : 1, nc = nq - 1 < qn ? QP[nq - 1] : -1;
+        for (let i = 0; i < n; i++) {
+          nodes++;
+          place(RB, 0, rbTop, TMP, 0, o.p, OR_[i], OX[i], OY[i], OS[i], b2b0, combo0, gR, gL);
+          if (rDead) {   // a lock out or a garbage top out: legal, kept only for when every move loses
+            cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew: 0, sc: -2e9, fatal: true, nh, nq, nc, b2b: -1, combo: -1, g: 0});
+            continue;
+          }
+          const fatal = nc >= 0 && !canSpawn(TMP, 0, nc);
+          if (!fatal) safe++;
+          const rew = moveReward(o.p, OS[i]);
+          const sc = rew + evalBoard(TMP, 0, rTop, rG, st.tslots) + stateBonus(rB, nh);
+          cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew, sc, fatal, nh, nq, nc, b2b: rB, combo: rC, g: rG});
         }
-        const fatal = nc >= 0 && !canSpawn(TMP, 0, nc);
-        if (!fatal) safe++;
-        const rew = moveReward(o.p, OS[i]);
-        const sc = rew + evalBoard(TMP, 0, rTop, rG, st.tslots) + stateBonus(rB, nh);
-        cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew, sc, fatal, nh, nq, nc, b2b: rB, combo: rC, g: rG});
       }
+      if (safe || !simple) break;
+      cand.length = 0;
     }
     if (!cand.length) return {id: req.id, hold: false, inputs: [], expect: null, dead: true, nodes, ms: now() - t0};
     const nc0 = cand.length;
@@ -1261,10 +1269,12 @@ class Player {
     this.lastHole = h;
     this.inc.push({lines: n, hole: h, t: DELAY, k: 0});
   }
-  // After a lock that clears nothing, up to 8 ready lines rise; false if that pushed blocks out of the top
+  // After a lock that clears nothing, up to 8 ready lines rise; false if that pushed blocks out of the top.
+  // A bot locks at its planned time, which can be up to one tick before playMs: lines must be ready by then.
   rise() {
+    const late = playMs - (bots[this.i]?.at ?? playMs);
     let n = 0, out = false;
-    while (n < 8 && this.inc.length && this.inc[0].t <= 0) {
+    while (n < 8 && this.inc.length && this.inc[0].t + late <= 0) {
       const e = this.inc[0];
       for (; e.lines && n < 8; e.lines--, n++, this.raised++) {
         if (e.k++ && this.rnd('gs') * 100 < cfg.messiness) e.hole = (e.hole + 1 + (this.rnd('gs') * (COLS - 1) | 0)) % COLS;
@@ -1409,12 +1419,14 @@ const mask = row => row.reduce((a, v, c) => v ? a | 1 << c : a, 0);
 // Drives one player: a plan per piece, its inputs spread over the piece's time slot (game time), then a hard drop
 class Bot {
   constructor(p, lv) { this.p = p; this.lv = lv; this.level = lv || cfg.botLevel; this.id = 0; this.req = null; this.q = []; this.at = null; }
-  // maxMs is only a safety limit: one time slot (at most 500 ms), so a slow plan still keeps the bot's pace
+  // maxMs is only a safety limit: one time slot (at most 500 ms), so a slow plan still keeps the bot's pace.
+  // incomingReady: the lines whose delay is over by the drop at the end of the slot, so they rise at this lock
   begin() {
     const p = this.p, c = p.cur, lv = this.level = this.lv || cfg.botLevel;
     this.t0 = this.at ?? playMs; this.period = 1000 / PPS[lv]; this.q = [];
     let inc = 0, ready = 0;
-    for (const e of p.inc) { inc += e.lines; if (e.t <= 0) ready += e.lines; }
+    const by = this.t0 + this.period - playMs;
+    for (const e of p.inc) { inc += e.lines; if (e.t <= by) ready += e.lines; }
     this.req = {id: this.id = ++reqId, board: p.board.map(mask), cur: c.t, curPos: {x: c.x, y: c.y, r: c.r},
       hold: p.hold, canHold: p.canHold, queue: p.queue.slice(), b2b: p.b2b, combo: p.combo, incoming: inc, incomingReady: ready,
       difficulty: lv, seed: (p.seed ^ Math.imul(p.pieces + 1, 0x9E3779B1) ^ Math.imul(p.i, 0x85EBCA6B)) >>> 0,
@@ -1461,9 +1473,21 @@ const stamp = e => Math.min(e.timeStamp || Infinity, performance.now());
 // Start a new DAS run; with "keep charge" a charged direction change repeats at once
 function charge(t, wasCharged) { repeatFrom = cfg.keepDas && wasCharged ? t : t + cfg.das; steps = 0; }
 
+// Outside play, a focused control keeps the keys it uses (arrows on a slider, Space on a checkbox, Enter on a button)
+let passKey = ''; // a key whose keydown went to a focused control; its keyup goes there too
+function ownKey(e) {
+  const k = e.code, t = e.target.type;
+  if (state === 'play') return false;
+  if (t === 'range') return /^(Arrow|Home|End|Page)/.test(k);
+  if (t === 'select-one') return /^(Arrow|Home|End|Page)|^Space$/.test(k);
+  if (t === 'checkbox') return k === 'Space';
+  if (t === 'submit' || t === 'button') return k === 'Space' || k === 'Enter' || k === 'NumpadEnter';
+  return false;
+}
 addEventListener('keydown', e => {
   if (listening) { e.preventDefault(); assign(listening, e.code); return; }
   if (e.target.type === 'number') return;
+  if (ownKey(e)) { passKey = e.code; return; }
   const a = actionFor(e.code);
   const idle = state === 'ready' || state === 'over' || state === 'done';
   if (idle && (e.code === 'Enter' || a === 'restart')) { e.preventDefault(); start(cfg.mode); return; }
@@ -1487,6 +1511,7 @@ addEventListener('keydown', e => {
   else if (a === 'hold') P.doHold();
 });
 addEventListener('keyup', e => {
+  if (e.code === passKey) { passKey = ''; return; }
   const a = actionFor(e.code); if (!a) return;
   e.preventDefault();
   if (!down.delete(e.code)) return;
