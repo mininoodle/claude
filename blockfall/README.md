@@ -10,6 +10,7 @@ Open `index.html` in a browser. Everything is in that one file: styles and scrip
 |---|---|
 | Marathon | Play until you top out. The level goes up every 10 lines, and the pieces fall faster. |
 | Sprint 40L | Clear 40 lines as fast as you can. Gravity stays at level 1. Your best time is saved. |
+| Blitz 2:00 | Score as many points as you can in 2 minutes. The level goes up every 10 lines, as in Marathon. Your best score is saved. |
 
 Press Enter on the start screen to play the last mode again.
 
