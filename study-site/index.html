@@ -4147,14 +4147,20 @@ EC_REF.t.push(['Strongest oxidizing agent (SOA)','The oxidizing agent present th
 const ec4sup=e=>String(e).replace('-','⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
 const ec4s=(x,n=3)=>{if(!isFinite(x))return '?';if(x===0)return '0';const a=Math.abs(x);if(a>=1e4||a<1e-2){const [m,e]=x.toExponential(n-1).split('e');return m.replace('-','−')+' × 10'+ec4sup(+e);}let s=x.toPrecision(n);if(s.includes('e'))s=String(Number(s));return s.replace('-','−');};
 const ec4Cn=s=>C(s).split(' ').map(t=>/<su[bp]>/.test(t)?'<span style="white-space:nowrap">'+t+'</span>':t).join(' ');
-const ec4Eq=s=>{const [l,r]=String(s).split(/\s*->\s*/);return '<span style="display:inline-block">'+ec4Cn(l)+' →</span> <span style="display:inline-block">'+ec4Cn(r)+'</span>';};
+const ec4Eq=s=>{const [l,r]=String(s).split(/\s*->\s*/);return '<span style="display:inline-block">'+ec4Cn(l)+'&nbsp;→</span> <span style="display:inline-block">'+ec4Cn(r)+'</span>';};
 const ec4Ip=h=>'<p style="margin:.4em .5em">'+h+'</p>';
-const ec4Ic=s=>'<p style="margin:.5em .3em;text-align:center;font-size:min(1em,3.7vw)">'+ec4Eq(s)+'</p>';
+const ec4Ic=s=>'<p style="margin:.5em .3em;text-align:center;font-size:min(1em,3.4vw)">'+ec4Eq(s)+'</p>';
 const ec4Fr=(a,b)=>{const g=ecGcd(a,b);return b/g===1?String(a/g):(a/g)+'/'+(b/g);};
-/* a table of buret readings. fin, ini: the final and the initial readings (mL). o.cap: a title, o.dp: the decimals (2), o.col: the final colours, o.vol: true adds the volume used */
-const ec4Tb=(fin,ini,o={})=>{const dp=o.dp==null?2:o.dp,c='padding:.32em .55em;text-align:center;white-space:nowrap',h='padding:.32em .55em;text-align:left;font-weight:650;color:var(--ink2);font-size:.86em';
+/* a table of buret readings. fin, ini: the final and the initial readings (mL). o.cap: a title, o.dp: the decimals (2), o.col: the final colours, o.vol: true adds the volume used,
+   o.rot: one row for each trial (it fits a phone: question figures and worked examples use it) */
+const ec4Tb=(fin,ini,o={})=>{const dp=o.dp==null?2:o.dp,c='padding:.32em .55em;text-align:center;white-space:nowrap',h='padding:.32em .55em;text-align:left;font-weight:650;color:var(--ink2);font-size:.86em',
+    cap=o.cap?`<caption style="caption-side:top;font-weight:650;padding:0 .3em .4em;text-align:center">${o.cap}</caption>`:'';
+  if(o.rot){const hc='padding:.3em .45em;text-align:center;font-weight:650;color:var(--ink2);font-size:.82em;vertical-align:bottom',d='padding:.3em .45em;text-align:center',
+      hd=['Trial','Final buret reading (mL)','Initial buret reading (mL)'].concat(o.col?['Final colour']:[],o.vol?['Volume used (mL)']:[]);
+    return `<table style="width:auto;margin:.35em auto;font-size:.92em">${cap}<tr>${hd.map(t=>`<th scope="col" style="${hc}">${t}</th>`).join('')}</tr>`+
+      fin.map((f,i)=>`<tr><th scope="row" style="${d};font-weight:650">${i+1}</th><td style="${d}">${f.toFixed(dp)}</td><td style="${d}">${ini[i].toFixed(dp)}</td>${o.col?`<td style="${d}">${o.col[i]}</td>`:''}${o.vol?`<td style="${d}"><b>${(f-ini[i]).toFixed(dp)}</b></td>`:''}</tr>`).join('')+'</table>';}
   const tr=(t,a,f=x=>x)=>`<tr><th scope="row" style="${h}">${t}</th>${a.map(x=>`<td style="${c}">${f(x)}</td>`).join('')}</tr>`;
-  return `<table style="width:auto;margin:.35em auto;font-size:.92em">${o.cap?`<caption style="caption-side:top;font-weight:650;padding:0 .3em .4em;text-align:center">${o.cap}</caption>`:''}`+
+  return `<table style="width:auto;margin:.35em auto;font-size:.92em">${cap}`+
     tr('Trial',fin.map((x,i)=>'<b>'+(i+1)+'</b>'))+tr('Final buret reading (mL)',fin,x=>x.toFixed(dp))+tr('Initial buret reading (mL)',ini,x=>x.toFixed(dp))+
     (o.col?tr('Final colour',o.col):'')+(o.vol?tr('Volume used (mL)',fin.map((x,i)=>x-ini[i]),x=>'<b>'+x.toFixed(dp)+'</b>'):'')+'</table>';};
 /* the readings of one titration: [[name, value], ...] */
@@ -4162,10 +4168,10 @@ const ec4Rd=(rows,cap)=>`<table style="width:auto;margin:.3em auto;font-size:.92
 /* permanganate purple: the titrant in the buret and a flask far past the endpoint */
 const EC4_PU='color-mix(in srgb,var(--s6) 62%,var(--s5))';
 /* the titration apparatus (SVG, viewBox 0 0 360 378): a buret held by a clamp on a stand, over an Erlenmeyer flask on a white tile.
-   o.r: the buret reading at the meniscus (mL, 0 to 50), o.tc: the colour of the titrant, o.fc and o.fo: the colour and the opacity of the solution in the flask,
+   o.r: the buret reading at the meniscus (mL, 0 to 50), o.fs and o.ns: the font size of the labels and of the scale numbers, o.tc: the colour of the titrant, o.fc and o.fo: the colour and the opacity of the solution in the flask,
    o.tl and o.sl: the label lines of the titrant and the sample, o.tag: the reading at the meniscus, o.spot: a pink spot where the last drop landed,
    o.bub: gas bubbles in the flask, o.drop: a drop at the tip, o.alt: the description for a screen reader */
-function ec4App(o={}){const bx=150,y0=26,k=4,r=Math.max(0,Math.min(50,+o.r||0)),yr=y0+k*r,tc=o.tc||'var(--liq)',T=(t,x,y,q)=>svgText(t,x,y,Object.assign({s:13,w:600,f:'ink'},q||{}));
+function ec4App(o={}){const bx=150,y0=26,k=4,r=Math.max(0,Math.min(50,+o.r||0)),yr=y0+k*r,tc=o.tc||'var(--liq)',fs=o.fs||13,T=(t,x,y,q)=>svgText(t,x,y,Object.assign({s:fs,w:600,f:'ink'},q||{}));
   let s=`<rect x="22" y="365" width="236" height="9" rx="3" fill="var(--steel2)"/><rect x="36" y="8" width="7" height="358" rx="2" fill="var(--steel)" stroke="var(--steel2)" stroke-width=".8"/>`+
     `<rect x="${bx-74}" y="359" width="148" height="6" rx="1.5" fill="#fff" stroke="var(--axis)" stroke-width=".8"/>`;
   /* the buret: the glass, the titrant below the meniscus, the scale (0 mL at the top), the stopcock and the tip */
@@ -4173,21 +4179,23 @@ function ec4App(o={}){const bx=150,y0=26,k=4,r=Math.max(0,Math.min(50,+o.r||0)),
     `<path d="M${bx-7.5},${f1(yr-1.5)}Q${bx},${f1(yr+3)} ${bx+7.5},${f1(yr-1.5)}V248H${bx-7.5}Z" fill="${tc}"/>`;
   let sc='';for(let v=0;v<=50;v++)sc+=`M${bx-9},${y0+k*v}h${v%5?4:8}`;
   s+=`<path d="${sc}" stroke="var(--ink2)" stroke-width="1" fill="none"/>`;
-  for(let v=0;v<=50;v+=10)s+=T(String(v),bx-14,y0+k*v+4,{s:11,w:500,f:'ink2',a:'end'});
+  for(let v=0;v<=50;v+=10)s+=T(String(v),bx-14,y0+k*v+4,{s:o.ns||11,w:500,f:'ink2',a:'end'});
   s+=`<rect x="${bx-9}" y="12" width="18" height="236" rx="3" fill="none" stroke="var(--gl)" stroke-width="2"/>`+
     `<path d="M${bx-9},248L${bx-3},257V276L${bx-1.3},290H${bx+1.3}L${bx+3},276V257L${bx+9},248" fill="${tc}" stroke="var(--gl)" stroke-width="1.8" stroke-linejoin="round"/>`+
     `<rect x="${bx-17}" y="262" width="34" height="7" rx="3" fill="var(--steel2)"/><circle cx="${bx}" cy="265.5" r="5" fill="var(--steel)" stroke="var(--steel2)" stroke-width="1.2"/>`+
-    `<rect x="42" y="150" width="${bx-52}" height="7" rx="2" fill="var(--steel2)"/><rect x="${bx-13}" y="145" width="26" height="17" rx="3" fill="none" stroke="var(--steel2)" stroke-width="3"/>`;
+    `<rect x="42" y="236" width="${bx-52}" height="7" rx="2" fill="var(--steel2)"/><rect x="${bx-13}" y="231" width="26" height="17" rx="3" fill="none" stroke="var(--steel2)" stroke-width="3"/>`;
   if(o.drop)s+=`<path d="M${bx},295q4.5,6.5 0,10q-4.5,-3.5 0,-10Z" fill="${tc}"/>`;
   /* the Erlenmeyer flask and its solution */
-  s+=`<path d="M${bx-32},334H${bx+32}L${bx+57.5},349.5Q${bx+61},356.5 ${bx+52},356.5H${bx-52}Q${bx-61},356.5 ${bx-57.5},349.5Z" fill="${o.fc||'var(--liq)'}" fill-opacity="${o.fo==null?.75:o.fo}"/>`;
+  /* a light layer under the solution: it does not show on the light theme, and on the dark theme it keeps a pale colour pale */
+  const lq=`M${bx-32},334H${bx+32}L${bx+57.5},349.5Q${bx+61},356.5 ${bx+52},356.5H${bx-52}Q${bx-61},356.5 ${bx-57.5},349.5Z`;
+  s+=`<path d="${lq}" fill="#fff" fill-opacity=".5"/><path d="${lq}" fill="${o.fc||'var(--liq)'}" fill-opacity="${o.fo==null?.75:o.fo}"/>`;
   if(o.spot)s+=`<ellipse cx="${bx}" cy="337" rx="12" ry="3.4" fill="var(--s5)" fill-opacity=".8"/>`;
   if(o.bub)s+=[[-16,350,2.4],[9,346,2],[22,351,2.2],[-28,347,1.8],[2,341,1.7],[-6,352,1.6]].map(([dx,y,rr])=>`<circle cx="${bx+dx}" cy="${y}" r="${rr}" fill="none" stroke="var(--ink2)" stroke-width="1"/>`).join('');
   s+=`<path d="M${bx-11},302V320L${bx-58},351Q${bx-63},359 ${bx-53},359H${bx+53}Q${bx+63},359 ${bx+58},351L${bx+11},320V302" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round"/>`;
   /* labels: the reading at the meniscus, the titrant and the sample */
   if(o.tag)s+=`<path d="M${bx+14},${f1(yr)}H${bx+24}" stroke="var(--ink2)" stroke-width="1.2"/>`+T(o.tag,bx+28,f1(yr+4.5),{a:'start',c:'l'});
-  (o.tl||[]).forEach((t,i)=>{s+=T(t,bx+26,262+17*i,{a:'start',c:'l',w:i?500:650});});
-  (o.sl||[]).forEach((t,i)=>{s+=T(t,bx+70,318+17*i,{a:'start',c:'l',w:i?500:650});});
+  (o.tl||[]).forEach((t,i)=>{s+=T(t,bx+26,256+(fs+3)*i,{a:'start',c:'l',w:i?500:650});});
+  (o.sl||[]).forEach((t,i)=>{s+=T(t,bx+70,318+(fs+3)*i,{a:'start',c:'l',w:i?500:650});});
   return `<svg viewBox="0 0 360 378" role="img" aria-label="${String(o.alt||'A buret over an Erlenmeyer flask.').replace(/"/g,'&quot;')}">${s}</svg>`;}
 /* the colour changes of the two titrants when they are reduced (SVG) */
 const ec4Col=()=>{const T=(t,x,y,q)=>svgText(t,x,y,Object.assign({s:13,w:650,f:'ink'},q||{})),
@@ -4233,7 +4241,7 @@ function ec4Titr(host,P,slot){
   const setK=k=>{const a=Object.assign({},S.k||{});a[cur]=k;put(Object.assign({},S,{p:cur,k:a}));};
   const saveA=()=>{const a=Object.assign({},S.a||{}),xs=[iv.value.trim().slice(0,24),ic.value.trim().slice(0,24)];if(xs.some(Boolean))a[cur]=xs;else delete a[cur];put(Object.assign({},S,{p:cur,a}));};
   const draw=msg=>{const p=P[cur],k=kOf(cur),V=k/100,rg=p.i+V,s=state(p,k);
-    fig.innerHTML=ec4App({r:rg,tc:EC4_PU,fc:FC[s],fo:FO[s],spot:s===1&&spot,bub:!!p.gas&&k>0,drop:k>0&&s<2,tag:rg.toFixed(2)+' mL',tl:['Titrant:',p.tt,p.tc],sl:['Sample:',p.sa,p.sb],
+    fig.innerHTML=ec4App({fs:15,ns:12.5,r:rg,tc:EC4_PU,fc:FC[s],fo:FO[s],spot:s===1&&spot,bub:!!p.gas&&k>0,drop:k>0&&s<2,tag:rg.toFixed(2)+' mL',tl:['Titrant:',p.tt,p.tc],sl:['Sample:',p.sa,p.sb],
       alt:`A buret of ${p.tc} ${p.tt} held over an Erlenmeyer flask that holds ${p.sa} of ${p.sb}. The buret reads ${rg.toFixed(2)} mL. The solution in the flask is ${CW[s]}.`});
     R(0,rg.toFixed(2)+' mL');R(1,V.toFixed(2)+' mL');R(2,CW[s]);st.textContent=msg||MS(s,p);};
   const add=dk=>{const k=kOf(cur)+dk;if(k>mx(cur)){draw('The buret does not hold that much titrant. Refill and start again.');return;}setK(k);const d=k/100-veq(P[cur]);spot=d<0&&d>-1;draw();};
@@ -4344,16 +4352,16 @@ const ec4P=(()=>{const f=x=>ec4s(x,4),g=x=>ec4s(x,3),S=(l,u,v,w,d,o)=>Object.ass
   return P;})();
 ecCSS(4,'#ec-4 .ec4-app svg{max-width:300px}#ec-4 .ec4-col svg{max-width:360px}'+
   '#ec-4 .ec4-vtr{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start;margin:.4em 0}'+
-  '#ec-4 .ec4-vtf{border-radius:16px;background:var(--fig);border:1px solid var(--hair);padding:8px}#ec-4 .ec4-vtf svg{display:block;width:100%;max-width:300px;height:auto;margin:0 auto}'+
+  '#ec-4 .ec4-vtf{border-radius:16px;background:var(--fig);border:1px solid var(--hair);padding:8px}#ec-4 .ec4-vtf svg{display:block;width:100%;max-width:340px;height:auto;margin:0 auto}'+
   '#ec-4 .ec4-vts{min-height:3.2em;margin:.4em 0;font-size:.95rem}'+
   '#ec-4 .ec4-st{list-style:none;padding:0;margin:.7em 0;display:grid;grid-template-columns:minmax(0,1fr);gap:.5em;counter-reset:ec4}'+
   '#ec-4 .ec4-st li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.3em .8em;align-items:center;padding:.5em .7em;border-radius:14px;background:var(--glass2);border:1px solid var(--hair)}'+
   '#ec-4 .ec4-st li>label{counter-increment:ec4}#ec-4 .ec4-st li>label::before{content:counter(ec4) ". ";font-weight:700;color:var(--ink2)}'+
-  '#ec-4 .ec4-in{display:flex;align-items:center;gap:.45em;white-space:nowrap}#ec-4 .ec4-in input{width:9.5rem}#ec-4 .ec4-in span{min-width:2.4em;color:var(--ink2)}'+
+  '#ec-4 .ec4-in{display:flex;align-items:center;gap:.45em;white-space:nowrap}#ec-4 .ec4-in input{width:9.5rem}#ec-4 .ec4-in span{min-width:3.6em;color:var(--ink2)}'+
   '#ec-4 .ec4-in input.ok{border-color:var(--ok);background:var(--okb)}#ec-4 .ec4-in input.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
   '#ec-4 .ec4-w{grid-column:1/-1;margin:0;font-size:.92rem;color:var(--ink2)}'+
   '#ec-4 .ec4-pick{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .7em;margin:.2em 0 .7em;font-weight:600}#ec-4 .ec4-pick select{font-weight:400;max-width:100%}'+
-  '@media(min-width:760px){#ec-4 .ec4-vtr{grid-template-columns:minmax(0,320px) minmax(0,1fr)}}'+
+  '@media(min-width:760px){#ec-4 .ec4-vtr{grid-template-columns:minmax(0,360px) minmax(0,1fr)}}'+
   '@media(max-width:600px){#ec-4 .ec4-st li{grid-template-columns:minmax(0,1fr)}#ec-4 .ec4-in input{flex:1 1 0;width:0;min-width:0}}');
 
 ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown concentration. Acidified permanganate and acidified dichromate are strong oxidizing agents that change colour when they are reduced, thus they show their own endpoint.',build(g){
@@ -4366,18 +4374,18 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
     <li>Unlike acid-base titrations, a redox titration cannot use an acid-base indicator to show when it is complete. A visible colour change is often the easiest method.</li>
     <li>The titrant is an oxidizing agent that changes colour as it is reduced: acidified permanganate, ${ec4Cn('MnO4^-(aq)')}, or acidified dichromate, ${ec4Cn('Cr2O7^2-(aq)')}.</li></ul>`,'w7');
   card(g,'Titrants that show their own endpoint',CF(ec4Col(),'Both are strong oxidizing agents in an acidic solution, and both change colour when they are reduced. The colours of the ions are in the data booklet.','ec4-col')+
-    `<table><tr><th>Half-reaction (data booklet)</th><th><i>E</i>°</th></tr><tr><td>${ec4Eq('MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)')}</td><td>+1.51 V</td></tr><tr><td>${ec4Eq('Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)')}</td><td>+1.23 V</td></tr></table>
+    `<table><tr><th>Half-reaction (data booklet)</th><th><i>E</i>°</th></tr><tr><td>${ec4Eq('MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)')}</td><td style="white-space:nowrap">+1.51 V</td></tr><tr><td>${ec4Eq('Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)')}</td><td style="white-space:nowrap">+1.23 V</td></tr></table>
     <p class="note">Permanganate is purple (pink when it is dilute) and becomes almost colourless. Dichromate is orange and becomes green. Both half-reactions need ${ec4Cn('H^+(aq)')}: the titration is done in an acidic solution.</p>`,'w5');
-  card(g,'Primary standards',`<ul><li>The titrant must have a known concentration. A <span class="key">primary standard</span> is a chemical that is used to find the exact concentration of a standard solution, such as the titrant. This is called <span class="key">standardization</span>.</li>
+  const tb=card(g,'Primary standards',`<ul><li>The titrant must have a known concentration. A <span class="key">primary standard</span> is a chemical that is used to find the exact concentration of a standard solution, such as the titrant. This is called <span class="key">standardization</span>.</li>
     <li>The concentration of a permanganate solution is hard to know. In an acidic solution, ${ec4Cn('MnO4^-(aq)')} slowly oxidizes water, so its concentration changes all the time. A fresh permanganate solution is standardized just before it is used.</li>
     <li>Tin(II) chloride is used as the primary standard for permanganate. The tin(II) solution is acidified: permanganate needs ${ec4Cn('H^+(aq)')} to be a strong oxidizing agent. Then the SRA is ${ec4Cn('Sn^2+(aq)')}, a much stronger reducing agent than water, thus the permanganate oxidizes the tin(II) ions and not the water.</li>
-    <li>With permanganate as the oxidizing agent, all of the primary standard has been oxidized when a slightly pink solution forms: the next drop of ${ec4Cn('MnO4^-(aq)')} has nothing left to react with. This pink lasts only a short time, because the extra permanganate slowly oxidizes water and is reduced to almost colourless ${ec4Cn('Mn^2+(aq)')}.</li></ul>`,'w7');
-  const tb=card(g,'Permanganate, water and tin(II)','<p class="hint">Part of the table of reduction half-reactions. Acidified permanganate is above water and above tin(II) on the right side, thus it can oxidize both. Tin(II) is the strongest reducing agent, thus it reacts first.</p>','w5');
+    <li>With permanganate as the oxidizing agent, all of the primary standard has been oxidized when a slightly pink solution forms: the next drop of ${ec4Cn('MnO4^-(aq)')} has nothing left to react with. This pink lasts only a short time, because the extra permanganate slowly oxidizes water and is reduced to almost colourless ${ec4Cn('Mn^2+(aq)')}.</li></ul>
+    <p class="hint">Part of the table of reduction half-reactions: permanganate, water and tin(II). Acidified permanganate is above water and above tin(II) on the right side, thus it can oxidize both. Tin(II) is the strongest reducing agent, thus it reacts first.</p>`);
   ecTable(tb,ecRows(['MnO4^-(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Sn^4+(aq)']),{mark:{soa:0,sra:2},rows:[0,2],cap:'The SOA, '+C('MnO4^-(aq)')+' with '+C('H^+(aq)')+', reacts with the SRA, '+C('Sn^2+(aq)')+'.'});
   card(g,'Solving a redox titration',`<p>A redox titration is solved with stoichiometry, as in the notes:</p><ol><li>List the entities in the solution, including water and, if the solution is acidic, ${ec4Cn('H^+(aq)')}. Identify the SOA and the SRA.</li>
     <li>Write the reduction and the oxidation half-reactions, and balance the electrons gained and lost.</li><li>Add them to write the net redox equation. The SOA must be above the SRA: the reaction is spontaneous.</li>
     <li>Write the given information under the equation. Find the amount of the solution that you know: <i>n</i> = <i>cV</i>.</li><li>Use the mole ratio of the net equation to find the amount of the other entity.</li><li>Find the unknown: <i>c</i> = <i>n</i>/<i>V</i> (or <i>V</i> = <i>n</i>/<i>c</i>).</li></ol>
-    <div class="fx"><i>n</i> = <i>cV</i> &nbsp;&nbsp; <i>n</i><sub>unknown</sub> = <i>n</i><sub>known</sub> × (coefficient of the unknown ÷ coefficient of the known)</div>
+    <div class="fx"><i>n</i> = <i>cV</i><br><i>n</i><sub>unknown</sub> = <i>n</i><sub>known</sub> × <span style="white-space:nowrap">coefficient of the unknown</span> ÷ <span style="white-space:nowrap">coefficient of the known</span></div>
     <p class="hint">Change mL to L before you use <i>n</i> = <i>cV</i>. A concentration in mmol/L is 10<sup>−3</sup> mol/L: 8.08 mmol/L = 8.08 × 10<sup>−3</sup> mol/L.</p>`,'w7');
   card(g,'The apparatus',CF(ec4App({r:6.4,tc:'color-mix(in srgb,var(--s2) 78%,var(--liq))',fc:'var(--s3)',fo:.32,tag:'6.40 mL',tl:['Titrant:','K₂Cr₂O₇(aq)','concentration?'],sl:['Sample: 25.0 mL','0.100 mol/L','SnCl₂(aq), acidic'],
     alt:'A titration set-up. A buret held by a clamp on a stand contains orange potassium dichromate solution, the titrant. Its scale reads from 0 mL at the top to 50 mL at the bottom; the reading is 6.40 mL. Below it, an Erlenmeyer flask on a white tile holds 25.0 mL of acidic 0.100 mol/L tin(II) chloride solution, which turns green as Cr³⁺(aq) forms.'}),
@@ -4399,7 +4407,7 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
   card(g,'Buret readings from several trials',`<ul><li>Read the buret at the bottom of the meniscus. Record the initial and the final reading of each trial.</li><li>Volume used = final reading − initial reading.</li>
     <li>The first trial is often a quick rough trial that finds the approximate volume.</li><li>Average only the trials that agree within 0.2 mL. Leave out a trial that went past the endpoint: its colour is dark pink or purple instead of pale pink.</li></ul>`+
     ex('Example 2. A student titrates 20.00 mL samples of acidified tin(II) chloride with 0.0250 mol/L '+C('KMnO4(aq)')+'. Use the data to find the concentration of the tin(II) ions.',
-      ec4Tb([19.20,36.95,18.70,36.50],[0.50,19.20,0.85,18.70],{col:['purple','pale pink','pale pink','pale pink'],vol:true})+
+      ec4Tb([19.20,36.95,18.70,36.50],[0.50,19.20,0.85,18.70],{col:['purple','pale pink','pale pink','pale pink'],vol:true,rot:true})+
       `<p>Trial 1 is a rough trial: it went past the endpoint (purple) and it is about 0.9 mL more than the others. Trials 2, 3 and 4 agree within 0.10 mL. Average = (17.75 + 17.85 + 17.80) ÷ 3 = 17.80 mL.</p>
       <p>Net: ${ec4Eq('2MnO4^-(aq) + 16H^+(aq) + 5Sn^2+(aq) -> 2Mn^2+(aq) + 8H2O(l) + 5Sn^4+(aq)')}</p>
       <p><i>n</i>(${ec4Cn('MnO4^-')}) = (0.0250 mol/L)(0.01780 L) = 4.450 × 10<sup>−4</sup> mol<br><i>n</i>(${ec4Cn('Sn^2+')}) = 5/2 × 4.450 × 10<sup>−4</sup> mol = 1.113 × 10<sup>−3</sup> mol<br><i>c</i>(${ec4Cn('Sn^2+')}) = 1.113 × 10<sup>−3</sup> mol ÷ 0.02000 L = <b>0.0556 mol/L</b></p>`),'w7');
@@ -4412,11 +4420,11 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
   ec4Titr(vt,ec4V,0);
   const ps=card(g,'Practice questions 1 to 4, step by step','<p class="hint">Choose a question. Type the value of each step, then Check. Keep one or two extra digits in the steps, and round only the answer. A ratio can be typed as a fraction, for example 5/2. Show the solution gives the working of every step.</p>');
   ec4Steps(ps,ec4P,0);
-  const mt=card(g,'Try it: titration terms','','w7');
+  const mt=card(g,'Try it: titration terms','');
   matching(mt,[['The solution of known concentration in the buret','titrant'],['A measured volume of the solution of unknown concentration, in the flask','sample'],['A chemical used to find the exact concentration of a titrant','primary standard'],
     ['Finding the exact concentration of a titrant with a primary standard','standardization'],['A lasting colour change shows that the reaction is complete','endpoint'],['The reactants have reacted in the exact mole ratio of the net equation','equivalence point'],
     ['A quick first trial that finds the approximate volume','rough trial']],'Select the term for each description.',0);
-  const nq=card(g,'Diploma-style question: the order of the steps','','w5');
+  const nq=card(g,'Diploma-style question: the order of the steps','');
   nrCode(nq,{q:'<p><b>Steps of a redox titration calculation</b></p><ol><li>Calculate the concentration of the sample, <i>c</i> = <i>n</i>/<i>V</i>.</li><li>Calculate the amount of the titrant, <i>n</i> = <i>cV</i>.</li><li>Identify the SOA and the SRA, and write the balanced net equation.</li><li>Use the mole ratio of the net equation to find the amount of the sample.</li></ol><p>The steps above are done in the order _____, _____, _____ and _____.</p><p class="hint">Record all four digits of your answer.</p>',
     a:'3241',w:'First the net equation from the SOA and the SRA (3). Then the amount of the titrant, n = cV (2). The mole ratio gives the amount of the sample (4). Last, its concentration, c = n/V (1). Record 3241.'},0);
 },qz:[
@@ -4446,7 +4454,7 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
 
 /* the information of the diploma questions (each item carries its own copy: an item can be shown alone in a review or a test) */
 const ec4F29=ec4Ip('A student used an acidified 6.31 × 10<sup>−2</sup> mol/L '+C('KMnO4(aq)')+' solution to titrate 25.0 mL samples of '+ec4Cn('Fe^2+(aq)')+' solution of unknown concentration. In the reactions, the '+ec4Cn('Fe^2+(aq)')+' ion was oxidized to the '+ec4Cn('Fe^3+(aq)')+' ion. The student completed five trials and summarized the data in a table.')+
-  ec4Tb([17.55,35.65,26.40,42.65,16.85],[0.30,17.55,10.05,26.40,0.55],{col:['purple','purple','pink','pink','pink']});
+  ec4Tb([17.55,35.65,26.40,42.65,16.85],[0.30,17.55,10.05,26.40,0.55],{col:['purple','purple','pink','pink','pink'],rot:true});
 const ec4F30=ec4Ip('A 0.532 mol/L solution of '+ec4Cn('Ce^4+(aq)')+' was used to titrate a 25.0 mL sample of '+ec4Cn('Sn^2+(aq)')+'.')+ec4Rd([['Final buret reading (mL)','43.5'],['Initial buret reading (mL)','12.6']],'Volume Used')+
   ec4Ip('The half-reaction for cerium(IV) can be represented by')+'<p style="margin:.3em .5em .5em;text-align:center">'+ec4Eq('Ce^4+(aq) + e^- -> Ce^3+(aq)')+' &nbsp; <span style="white-space:nowrap">'+ecEs('')+' = +1.61 V</span></p>';
 const ec4F31=ec4Ip('Poisonous oxalic acid is found in non-toxic concentrations in vegetables such as spinach and rhubarb. Manufacturers of spinach juice are required to analyze the concentration of oxalic acid to avoid problems that could arise from unexpectedly high concentrations of oxalic acid. The reaction of oxalic acid with acidified potassium permanganate can be represented by the following equation.')+
@@ -4473,7 +4481,7 @@ EC_RQ[4]=[
   {q:'Sodium oxalate, '+C('Na2C2O4(s)')+', is a primary standard for permanganate. A 0.1340 g sample of '+C('Na2C2O4(s)')+' is dissolved in water and acidified. It reacts completely with 18.65 mL of a '+C('KMnO4(aq)')+' solution. Use the equation below to calculate the concentration of the permanganate solution.',
     fig:ec4Ic('2MnO4^-(aq) + 5C2O4^2-(aq) + 16H^+(aq) -> 2Mn^2+(aq) + 10CO2(g) + 8H2O(l)'),n:.134/134*.4/.01865,u:'mol/L',tol:.01,
     w:'M(Na₂C₂O₄) = 2(22.99) + 2(12.01) + 4(16.00) = 134.00 g/mol. n(C₂O₄²⁻) = 0.1340 g ÷ 134.00 g/mol = 1.000 × 10⁻³ mol. n(MnO₄⁻) = 2/5 × 1.000 × 10⁻³ mol = 4.000 × 10⁻⁴ mol. c = 4.000 × 10⁻⁴ mol ÷ 0.01865 L = 2.14 × 10⁻² mol/L.'},
-  {q:'Use the information below. The concentration of the '+C('Fe^2+(aq)')+' is',fig:ec4Ip('A technician titrates 15.00 mL samples of acidified '+ec4Cn('Fe^2+(aq)')+' with 0.0150 mol/L '+C('KMnO4(aq)')+'. The results of four trials are in the table.')+ec4Tb([12.90,25.20,37.55,12.65],[0.00,12.90,25.20,0.40]),
+  {q:'Use the information below. The concentration of the '+C('Fe^2+(aq)')+' is',fig:ec4Ip('A technician titrates 15.00 mL samples of acidified '+ec4Cn('Fe^2+(aq)')+' with 0.0150 mol/L '+C('KMnO4(aq)')+'. The results of four trials are in the table.')+ec4Tb([12.90,25.20,37.55,12.65],[0.00,12.90,25.20,0.40],{rot:true}),
     o:['0.0123 mol/L','0.0615 mol/L','0.0623 mol/L','0.0645 mol/L'],a:1,
     w:'Volumes: 12.90, 12.30, 12.35 and 12.25 mL. Trial 1 is about 0.6 mL more than the others: it is the rough trial and is left out. Average of trials 2 to 4 = 12.30 mL. n(MnO₄⁻) = (0.0150 mol/L)(0.01230 L) = 1.845 × 10⁻⁴ mol. MnO₄⁻ + 8H⁺ + 5Fe²⁺ → Mn²⁺ + 4H₂O + 5Fe³⁺, thus n(Fe²⁺) = 5 × 1.845 × 10⁻⁴ mol = 9.225 × 10⁻⁴ mol. c = 9.225 × 10⁻⁴ mol ÷ 0.01500 L = 0.0615 mol/L. The value 0.0623 mol/L uses all four trials, 0.0645 mol/L uses trial 1, and 0.0123 mol/L leaves out the mole ratio.'},
   {q:'An iron ore is analyzed. A 1.000 g sample is dissolved in acid, and all of the iron is changed to '+C('Fe^2+(aq)')+'. The solution needs 22.40 mL of 0.0200 mol/L acidified '+C('KMnO4(aq)')+' to reach the endpoint. Calculate the percent by mass of iron in the ore.',n:.02*.0224*5*EC_M.Fe/1*100,u:'%',tol:.01,
@@ -4492,7 +4500,7 @@ EC_RQ[4]=[
     w:'Net: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 6Fe²⁺(aq) → 2Cr³⁺(aq) + 7H₂O(l) + 6Fe³⁺(aq). n(Fe²⁺) = (0.120 mol/L)(0.03000 L) = 3.600 × 10⁻³ mol. n(Cr₂O₇²⁻) = 1/6 × 3.600 × 10⁻³ mol = 6.000 × 10⁻⁴ mol. V = n/c = 6.000 × 10⁻⁴ mol ÷ 0.0250 mol/L = 0.0240 L, that is 24.0 mL.'},
   {q:'Acidified '+C('K2Cr2O7(aq)')+' is added from a buret to a flask of colourless tin(II) chloride solution. As the titration goes on, the solution in the flask turns',o:['green, as Cr³⁺(aq) ions form','orange, as Cr³⁺(aq) ions form','green, as Sn⁴⁺(aq) ions form','pale pink, as Mn²⁺(aq) ions form'],a:0,
     w:'Orange Cr₂O₇²⁻(aq) is reduced to green Cr³⁺(aq): Cr₂O₇²⁻ + 14H⁺ + 6e⁻ → 2Cr³⁺ + 7H₂O. The Sn⁴⁺(aq) ions are colourless, and no manganese is present.'},
-  {q:'Use the information below. Calculate the concentration of the tin(II) ions.',fig:ec4Ip('A chemist titrates 25.00 mL samples of acidified '+C('SnCl2(aq)')+' with 0.0200 mol/L '+C('K2Cr2O7(aq)')+'.')+ec4Tb([16.15,29.35,15.75,30.25],[0.35,14.95,1.20,15.75]),
+  {q:'Use the information below. Calculate the concentration of the tin(II) ions.',fig:ec4Ip('A chemist titrates 25.00 mL samples of acidified '+C('SnCl2(aq)')+' with 0.0200 mol/L '+C('K2Cr2O7(aq)')+'.')+ec4Tb([16.15,29.35,15.75,30.25],[0.35,14.95,1.20,15.75],{rot:true}),
     n:.02*((14.40+14.55+14.50)/3)/1000*3/.025,u:'mol/L',tol:.01,
     w:'Volumes: 15.80, 14.40, 14.55 and 14.50 mL. Trial 1 is the rough trial: it is more than 0.2 mL from the others, thus it is left out. Average = (14.40 + 14.55 + 14.50) ÷ 3 = 14.48 mL. n(Cr₂O₇²⁻) = (0.0200 mol/L)(0.01448 L) = 2.897 × 10⁻⁴ mol. Cr₂O₇²⁻ + 14H⁺ + 3Sn²⁺ → 2Cr³⁺ + 7H₂O + 3Sn⁴⁺, thus n(Sn²⁺) = 3 × 2.897 × 10⁻⁴ mol = 8.690 × 10⁻⁴ mol. c = 8.690 × 10⁻⁴ mol ÷ 0.02500 L = 0.0348 mol/L.'}];
 
@@ -4523,7 +4531,7 @@ EC_GEN[4]=[
       w:`Net: ${p.eq}. n(${p.ru}) = (${ss} mol/L)(${(vs/1000).toFixed(5)} L) = ${ec4s(ns,4)} mol. n(${p.ou}) = ${p.tr} × ${ec4s(ns,4)} mol = ${ec4s(nt,4)} mol. V = n/c = ${ec4s(nt,4)} mol ÷ ${ct.toFixed(4)} mol/L = ${ec4s(V/1000,4)} L, that is ${ec4s(V)} mL.`};},
   ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],V0=RN(1000,2200,5)/100,vol=[RN(200,300,5)/100,0,RN(-2,2)*.05,RN(-2,2)*.05].map(x=>+(V0+x).toFixed(2)),
       i1=RN(0,100,5)/100,i3=RN(0,100,5)/100,ini=[i1,+(i1+vol[0]).toFixed(2),i3,+(i3+vol[2]).toFixed(2)],fin=ini.map((x,j)=>+(x+vol[j]).toFixed(2)),av=(vol[1]+vol[2]+vol[3])/3,nt=ct*av/1000,ns=nt*p.r,c=ns/(vs/1000);
-    return {q:`${vs.toFixed(2)} mL samples of ${p.sn} are titrated with ${ct.toFixed(4)} mol/L ${p.tf}. Use the buret readings below to calculate the concentration of ${p.ru}(aq) in the samples.`,fig:ec4Tb(fin,ini),n:c,u:'mol/L',tol:.01,
+    return {q:`${vs.toFixed(2)} mL samples of ${p.sn} are titrated with ${ct.toFixed(4)} mol/L ${p.tf}. Use the buret readings below to calculate the concentration of ${p.ru}(aq) in the samples.`,fig:ec4Tb(fin,ini,{rot:true}),n:c,u:'mol/L',tol:.01,
       w:`Volumes used: ${vol.map(x=>x.toFixed(2)).join(', ')} mL. Trial 1 is more than 0.2 mL from the others: it is the rough trial and is left out. Average of trials 2 to 4 = ${av.toFixed(2)} mL. Net: ${p.eq}. n(${p.ou}) = (${ct.toFixed(4)} mol/L)(${(av/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(${p.ru}) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(ns,4)} mol. c = ${ec4s(ns,4)} mol ÷ ${(vs/1000).toFixed(5)} L = ${ec4s(c)} mol/L.`};},
   ()=>{let it=null;for(let t=0;t<100&&!it;t++){const p=ec4Pr[[0,3][RN(0,1)]],ct=RN(100,300)/1e4,m=RN(500,2000,5)/1000,V=RN(1000,4500,5)/100,nt=ct*V/1000,nFe=nt*p.r,mFe=nFe*EC_M.Fe,pc=mFe/m*100;
       if(pc<5||pc>70)continue;
