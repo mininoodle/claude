@@ -21,6 +21,7 @@ class Server{
   vis(dev,p){return !dev.viewer;}
   async op(dev,op,a){
     if(dev.offline&&op!=='unsub')throw {code:'unavailable',message:'offline'};
+    if(dev.revoked&&op!=='unsub')throw {code:'revoked',message:'the grant was withdrawn'};
     const n=a&&a.path;dev.calls=(dev.calls||0)+1;
     if(op==='get'){const d=this.vis(dev,n)?this.docs.get(n):undefined;dev.readB=(dev.readB||0)+(d?size(d):0);return {exists:!!d,data:clone(d)};}
     if(op==='query'){const out=[];for(const [p,d] of this.docs)if(this.col(p)===n&&this.vis(dev,p))out.push({id:p.split('/').pop(),data:clone(d)});out.sort((x,y)=>x.id<y.id?-1:1);dev.readB=(dev.readB||0)+out.reduce((s,d)=>s+size(d.data),0);return out;}
@@ -205,6 +206,11 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   const V2=await device('V2',{id:'v8',viewer:true,owner:false,can:false});await sleep(1200);
   ok('viewer (the platform says it cannot write): no attach and no write',(V2.writes||0)===0&&await ev(V2,()=>Store.mode()==='device'&&Store.status().remote==='viewer'));
   await close(V2);
+
+  /* 7b. the grant is withdrawn while the page runs: sync stops for this visit, without the viewer text, and progress stays in the browser */
+  {const RV=await device('RV',{id:'u5'});await until(RV,()=>Store.mode()==='account'&&!Store.pending());RV.revoked=true;await answer(RV,'th',0,1);await sleep(2500);
+    const rv=await ev(RV,()=>({mode:Store.mode(),st:Store.status(),t:window.__toasts.filter(t=>/stopped for this visit/.test(t)).length,saved:Store.xk('a').length}));
+    ok('a withdrawn grant: detached for the visit, said once, progress kept in the browser',rv.mode==='device'&&rv.st.remote==='off'&&rv.t===1&&rv.saved>=1,rv);await close(RV);}
 
   /* 8. the version gate: a newer page wrote schema 5 */
   const meta=server.docs.get('data/users/u1/meta');meta.v=5;server.changed('data/users/u1/meta',null);await sleep(300);const wv=A.writes;await answer(A,'ff',1,1);await sleep(2500);

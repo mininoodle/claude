@@ -853,7 +853,7 @@ const Store=(()=>{
   /* a document as maps of entries (e) and its other top-level fields (x) */
   const unpack=d=>{const e={},x={};for(const k in d){if(k==='v')continue;if(MAPS.includes(k)||k==='c'){const o={},s=d[k]&&typeof d[k]==='object'?d[k]:{};for(const q in s){const v=dec(s[q]);if(v)o[q]=v;}e[k]=o;}else x[k]=d[k];}return {e,x};};
   const pack=E=>{const o={};for(const m in E){const s={};for(const k in E[m])s[k]=J(E[m][k]);o[m]=s;}return o;};
-  let SPL=false,LEG='',Mir=new Map(),Mx=new Map(),Msz=new Map(),DQ=new Set(),listed=false,live=false,wres=null,wt=0,V1=3,stop='',tries=0,noW=false,off='';
+  let SPL=false,LEG='',Mir=new Map(),Mx=new Map(),Msz=new Map(),DQ=new Set(),listed=false,live=false,wres=null,wt=0,V1=3,stop='',tries=0,noW=false,viewer=false,off='';
   const dq=(m,k)=>{if(SPL)DQ.add(m+'\t'+k);};
   const mget=id=>Mir.has(id)?Mir.get(id):listed?null:undefined;
   /* R: the account copy (a single document). It passes the version gate, and its unknown top-level fields are kept for the next upload */
@@ -882,7 +882,7 @@ const Store=(()=>{
         for(const m in P){M[m]=M[m]||{};for(const k in P[m])M[m][k]=JSON.parse(P[m][k]);}Msz.set(id,sz);}
       else{const E={};const add=(m,lm)=>{for(const k in lm)if(docOf(m,k)===id)(E[m]=E[m]||{})[k]=lm[k];};MAPS.forEach(m=>add(m,D[m]));add('c',D.c);
         const body=Object.assign({},Mx.get(id)||{},pack(E),{v:SCHEMA}),txt=JSON.stringify(body),sz=bytes(txt);if(sz>LIM)throw {code:'too-large'};
-        try{await (r.create||r.set)(id,body);}catch(e){Mir.delete(id);throw {code:e&&e.code,op:'set'};}
+        try{await (r.create?r.create(id,body):r.set(id,body));}catch(e){Mir.delete(id);throw {code:e&&e.code,op:'set'};}
         Mir.set(id,unpack(JSON.parse(txt)).e);Msz.set(id,sz);}}}
   const within=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(false),ms))]);
   /* errors: a permanent one stops the retries and says what to do; anything else is tried again with a growing wait (4 s, 8 s ... 5 min, with jitter) */
@@ -903,7 +903,7 @@ const Store=(()=>{
   function fail(e){const c=String(e&&e.code||'error');err=c;
     if(c==='outdated'){emit();return;}
     /* the Claude db rejects every write of a viewer who may not write here (a shared link opened by someone else, a Viewer or Commenter) with invalid_argument */
-    if(src==='claude'&&c==='invalid_argument'&&e.op==='set'){noW=true;say('viewer');detach();return;}
+    if(src==='claude'&&c==='invalid_argument'&&e.op==='set'){noW=viewer=true;say('viewer');detach();return;}
     if(/^(revoked|not.granted|capability.(disabled|removed))$/.test(c)){noW=src==='claude';off=c;say(c);detach();return;}
     if(HARD.test(c)&&!(c==='invalid_argument'&&e.op==='patch')){stop=c;emit();say(c);return;}
     emit();}
@@ -955,7 +955,7 @@ const Store=(()=>{
       const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return false;
       const id=await user.id();if(!id)return false;
       /* a viewer who may not write here: the platform says so up front (false), or only the first write tells (null) */
-      let w=null;try{if(typeof user.can==='function')w=await user.can('data.write');}catch(e){}if(w===false){noW=true;say('viewer');emit();return false;}
+      let w=null;try{if(typeof user.can==='function')w=await user.can('data.write');}catch(e){}if(w===false){noW=viewer=true;say('viewer');emit();return false;}
       /* one query and one listener for the whole collection. If the store refuses a query here, each known document is read and watched on its own (at most 2 + one per section, under the 64 listeners of a view) */
       const col=db.collection('data/users/'+id),sure=q=>!(q&&q.metadata&&q.metadata.fromCache),pend=d=>!!(d.metadata&&d.metadata.hasPendingWrites);
       const ids=()=>['progress','meta'].concat((secs()?[...secs()]:[]).map(k=>'p_'+k)),flat=e=>e instanceof TypeError||/^(invalid.argument|transform.error|capability.removed)$/.test(e&&e.code||'');let per=false;
@@ -996,7 +996,7 @@ const Store=(()=>{
       if(typeof R.v==='number'&&R.v>SCHEMA)return {err:'newer'};const o=upgrade(JSON.parse(JSON.stringify(R)));MAPS.concat('c').forEach(m=>{if(!o[m]||typeof o[m]!=='object'||Array.isArray(o[m]))o[m]={};});
       const [ch,,n]=fold(o,1);if(ch){save();emit();if(ref){ahead();if(DQ.size||!SPL)later(800);}}return {n};},
     /* the lasting state. local: ok|blocked. remote: off|ok|pending|retrying|stopped|outdated|viewer. text: what to tell the student, empty when all is well */
-    status(){const r=noW?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':dirty||busy||DQ.size?'pending':'ok';
+    status(){const r=viewer?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':dirty||busy||DQ.size?'pending':'ok';
       const t=r==='viewer'||r==='outdated'?MSG[r]:r==='stopped'?MSG[kind(stop)]:r==='retrying'?MSG.soft:'';
       return {local:canSave?'ok':'blocked',remote:r,code:stop||err||off,text:[canSave?'':MSG.local+(mode==='account'&&r==='ok'?' It is still saved to your account.':BK.replace('a copy','it')),t].filter(Boolean).join(' ')};},optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
