@@ -1,7 +1,8 @@
 /* usage: node study-site/test/ec-dip3.test.js <path to index.html>
    The diploma practice questions 7 to 27 of Electrochemistry lesson 3 (EC_DIP[3], slot 3d): 21 items in the order of the notes (pages 15 to 19), the keys of the
    answer key (notes p. 85), every code answer is exact and stays out of the exam's number boxes, every "below" stem has its information (fig), no multiple-choice
-   key is the unique longest option, the items follow the lesson's own questions, and the page loads with no console errors. Exit code 0 = pass, 1 = fail. */
+   key is the unique longest option, the items follow the lesson's own questions, the hints of a code answer never give its digits, every figure fits a 320 px
+   phone, and the page loads with no console errors. Exit code 0 = pass, 1 = fail. */
 const path=require('path');let chromium;try{({chromium}=require('playwright'));}catch(e){({chromium}=require('/opt/node-tools/node_modules/playwright'));}
 const file=path.resolve(process.argv[2]||path.join(__dirname,'..','index.html'));
 const KEY={7:'C',8:'A',9:'B',10:'2314',11:'2415',12:'C',13:'A',14:'B',15:'A',16:'D',17:'A',18:'A',19:'B',20:'D',21:'D',22:'A',23:'D',24:'D',25:'D',26:'C',27:'B'};
@@ -23,7 +24,17 @@ const KEY={7:'C',8:'A',9:'B',10:'2314',11:'2415',12:'C',13:'A',14:'B',15:'A',16:
     /* every figure and stem is well formed: each element that is opened is closed (br is a void element) */
     const bal=h=>{const c={};(String(h).match(/<\/?[a-z][a-z0-9]*/gi)||[]).forEach(t=>{const nm=t.replace(/[<\/]/g,'').toLowerCase();if(nm==='br')return;c[nm]=(c[nm]||0)+(t[1]==='/'?-1:1);});return Object.keys(c).filter(k=>c[k]);};
     D.forEach((it,j)=>[it.q,it.fig].forEach(h=>{if(h){const b=bal(h);ok(!b.length,'question '+(7+j)+': an element is not closed: '+b.join(', '));}}));
+    /* a code answer: the hint button shows the sentences of w except the last one (qEl), thus every digit of the code is given only in the last sentence */
+    D.forEach((it,j)=>{if(!it.ans)return;const ss=sentences(it.w),hs=ss.slice(0,-1),bad=hs.filter(t=>t.includes(it.ans)||/\(\d\)|(?<![\d.])[1-9]\.?$/.test(t));
+      ok(!bad.length,'question '+(7+j)+': a hint gives a digit of the code '+it.ans+': '+bad.join(' | '));ok(ss[ss.length-1].includes(it.ans),'question '+(7+j)+': the last sentence of w must give the code '+it.ans);});
     return f;},KEY);
+  /* every figure fits a 320 px phone: no element of a diploma item is wider than the item (main clips it, thus a column of a table would be lost) */
+  await p.setViewportSize({width:320,height:800});await p.evaluate(()=>goSection('ec',3));await p.waitForTimeout(500);
+  fails.push(...await p.evaluate(()=>{const D=EC_DIP[3],qs=[...document.querySelectorAll('#ec-3 section.quiz .q')].slice(-D.length),f=[];
+    if(qs.length!==D.length)return ['the question card of lesson 3 must show the '+D.length+' diploma questions last'];
+    qs.forEach((q,j)=>{const r=q.getBoundingClientRect(),w=[...q.querySelectorAll('.qt *, .qfig *')].filter(e=>{const x=e.getBoundingClientRect();return x.width&&(x.right>r.right+1||x.left<r.left-1);});
+      if(w.length)f.push('question '+(7+j)+' at 320 px: '+w.length+' elements are wider than the question, for example '+w[0].tagName+' '+Math.round(w[0].getBoundingClientRect().right)+' > '+Math.round(r.right));});
+    return f;}));
   const all=fails.concat(errs);await b.close();
   if(all.length){console.log('FAIL ec-dip3: '+all.length+' problems\n  '+all.join('\n  '));process.exit(1);}
   console.log('PASS ec-dip3: 21 diploma questions of lesson 3 match the answer key');process.exit(0);})();
