@@ -848,11 +848,32 @@ const Store=(()=>{
     pos:()=>D.pos,setPos(q){D.pos=q;local();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy,
     error:()=>err,canSave:()=>canSave,optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
-/* spaced repetition: a missed question comes back after 1, 3 and 7 days */
-const SRI=[1,3,7],DAY=864e5;
+/* spaced repetition: a missed question comes back after 1, 3, 7, 16 and 35 days, then every 60 days (SRM), so that it is still known at the diploma.
+   A wrong answer starts it again at 1 day. A correct answer before the due date does not move it. Box b waits SRI[b] days: boxes 0 to 2 keep their old meaning.
+   Passing the 7-day review (reaching box SRG) counts as learned for the 'It stuck' badge, where the old schedule ended */
+const SRI=[1,3,7,16,35],SRM=60,SRG=3,DAY=864e5;
 function srMark(id,ok){if(!id)return;const e=Store.sr(id),now=Date.now();
   if(!ok){Store.srSet(id,{b:0,d:now+SRI[0]*DAY});return;}
-  if(e&&now>=e.d){const b=e.b+1;if(b>=SRI.length){Store.srSet(id,{x:1});Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}else Store.srSet(id,{b,d:now+SRI[b]*DAY});}}
+  if(e&&now>=e.d){if(e.k){lcPass(id,e.k);return;}const b=(e.b||0)+1;Store.srSet(id,{b,d:now+(b<SRI.length?SRI[b]:SRM)*DAY});if(b===SRG){Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}}}
+/* lesson check: when a lesson is mastered, LCN of its questions come back in spaced repetition after 7 days (entry {k:1}). Each one answered correctly
+   hands its check on to another question of the lesson: after 21 more days (k:2), then after 60 more days (k:3), thus about 7, 28 and 88 days after mastery.
+   A wrong answer puts that question on the normal schedule, and the lesson shows 'Needs review' until it is answered correctly again.
+   The entry <unit>_<lesson>_lc marks a lesson whose check has started, so that it starts only once */
+const LCN=3,LCG=[7,21,60],lcKey=(sk,L)=>sk+'_'+L+'_lc';
+function lcPick(sk,L,n,not){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];return le&&le.qz?shuffle(le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>id!==not&&!Store.sr(id))).slice(0,n):[];}
+function lcSeed(sk,L,days=LCG[0]){if(Store.sr(lcKey(sk,L)))return;const now=Date.now();lcPick(sk,L,LCN).forEach(id=>Store.srSet(id,{k:1,d:now+days*DAY}));Store.srSet(lcKey(sk,L),{on:1});}
+function lcPass(id,k){const p=id.split('_'),now=Date.now();Store.srSet(id,{x:1});if(k<LCG.length)lcPick(p[0],+p[1],1,id).forEach(n=>Store.srSet(n,{k:k+1,d:now+LCG[k]*DAY}));}
+/* lessons that were mastered before the lesson check existed start theirs once: 3 lessons a day from 2 days on, so that a student with many mastered lessons
+   gets about 9 more questions a day, not a large backlog. It runs 4 s after the page loads, and again after progress arrives later from the account or another tab */
+function lcSeedAll(){let i=0;UORDER.forEach(sk=>unitLessons(sk).forEach(x=>{if(x.lv===3&&!Store.sr(lcKey(sk,x.L)))lcSeed(sk,x.L,2+Math.floor(i++/3));}));}
+let lcT=0;const lcLater=()=>{clearTimeout(lcT);lcT=setTimeout(lcSeedAll,4000);};lcLater();Store.on(lcLater);
+/* change counters for the saved progress. SV moves with every write through the Store's methods and with every change that the Store merges
+   from another tab, device or backup (it calls its subscribers). SVQ moves only when the results of a question can change: answers (a), history (h), clears and merges.
+   Values derived from the progress, such as lessonLevel, are kept until their counter moves */
+let SV=0,SVQ=0;const svBump=()=>{SV++;SVQ++;};Store.on(svBump);
+['set','setRev','srSet','wSet','xs','clear'].forEach(k=>{const f=Store[k];Store[k]=function(m){const q=k==='set'||k==='clear'||k==='xs'&&m==='h';SV++;if(q)SVQ++;try{return f.apply(this,arguments);}finally{SV++;if(q)SVQ++;queueMicrotask(svBump);}};});
+/* a cache that is emptied when its counter moves (q: SVQ, else SV), and with day also when the date changes */
+function svMemo(f,{q,day}={}){let v=-1,d='',m=new Map();return (...a)=>{const c=q?SVQ:SV,td=day?today():'';if(v!==c||d!==td){v=c;d=td;m.clear();}const k=a.join('|');if(m.has(k))return m.get(k);const r=f(...a);m.set(k,r);return r;};}
 
 /* ---------- controls ---------- */
 function ctl(host,defs,on){
@@ -919,7 +940,9 @@ function parseNum(s){s=String(s).trim().replace(/[−–]/g,'-').replace(/[\d,]+
 /* one grader for every mode: the tolerance of the item (abs alone when it sets abs and no tol), plus half a unit of the last digit the entry format allows (ulp). Bounds are inclusive, with slack for rounding errors. */
 const numOK=(x,it,ulp=0)=>isFinite(x)&&Math.abs(x-it.n)<=Math.max((it.tol??(it.abs?0:.02))*Math.abs(it.n),it.abs||0,ulp,(Math.abs(it.n)||1)*1e-12)*(1+1e-9);
 /* an exact value (ex, or a whole number graded with an absolute or a tight tolerance: a count, an exact limit) is shown as it is, not to 3 significant figures */
-const ansText=it=>it.o?optLbl(it,it.a):(it.ans||(it.ex||Number.isInteger(it.n)&&(it.abs!=null||it.tol<.02)?String(it.n).replace('-','−'):sig(it.n)))+(it.u?' '+it.u:'');
+/* the element for a question text: a <div> when it has block content (paragraphs, lists, tables), which a <p> cannot hold */
+const qTag=q=>/<(p|ol|ul|table|div)[\s>]/i.test(q||'')?'div':'p';
+const ansText=it=>it.o?optLbl(it,it.a):(it.code?it.code+(it.any?', in any order':''):it.ans||(it.ex||Number.isInteger(it.n)&&(it.abs!=null||it.tol<.02)?String(it.n).replace('-','−'):sig(it.n)))+(it.u?' '+it.u:'');
 const sentences=w=>{const p=String(w||'').split('. ');return p.map((x,i)=>i<p.length-1?x+'.':x).filter(Boolean);};
 /* the numbers in a text: 4.19, −1.54, 12 500, 3/11, 1.6 × 10⁵ (not coefficients such as 2a, sub- or superscripts) */
 const numsIn=t=>(String(t||'').replace(/10<sup>(.*?)<\/sup>/g,'10^$1').replace(/<(su[bp])>.*?<\/\1>/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[−–]/g,'-').replace(/10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+)/g,(m,e)=>'10^'+[...e].map(c=>SUP[c]).join(''))
@@ -927,7 +950,7 @@ const numsIn=t=>(String(t||'').replace(/10<sup>(.*?)<\/sup>/g,'10^$1').replace(/
 /* a hint sentence that states a value the checker accepts (either sign), other than data from the question, gives the answer away */
 const hintLeaks=(t,it)=>{const g=numsIn(it.q+' '+(it.fig||'')).map(Math.abs);return numsIn(t).some(x=>(numOK(x,it)||numOK(-x,it))&&!g.includes(Math.abs(x)));};
 /* find a common mistake in a numeric answer */
-function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n)return '';const r=x/n,near=(a,b,t=.025)=>Math.abs(a-b)<=t*Math.abs(b),pl=it.plain,ph=!pl&&it.abs&&it.tol===0&&!it.u&&n>0&&n<14;
+function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n||it.code)return '';const r=x/n,near=(a,b,t=.025)=>Math.abs(a-b)<=t*Math.abs(b),pl=it.plain,ph=!pl&&it.abs&&it.tol===0&&!it.u&&n>0&&n<14;
   if(ph)return near(x,14-n,.01)?'This is the value for the other ion. Use pH + pOH = 14.00.':Math.abs(x-n)<.3?'You are close. Keep more digits in the intermediate steps and round only at the end.':'';
   if(near(x,-n))return 'The size is correct, but the sign is wrong.'+(pl?(n>0?' The answer is positive.':' The answer is negative.'):' Check the direction that you set as positive'+(n>0?', or give the magnitude.':'.'));
   /* science-only checks are skipped for Math, Language Arts and Social Studies items (it.plain) */
@@ -936,21 +959,30 @@ function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n)return '';const r=x/n,n
   if(!pl&&(near(r,2)||near(r,.5)))return 'Your answer is different by a factor of 2. Check a coefficient, a mole ratio, or the ½ in the kinetic energy formula.';
   if(!pl&&(near(r,9.81)||near(r,1/9.81)))return 'Your answer is different by a factor of 9.81. Check if the question gives a weight (N) or a mass (kg).';
   /* before the reciprocal and exponent checks: near 1, n², √n and 1/n are only a few percent from n */
+  /* g = 10 m/s² instead of 9.81: 1.9 % off, inside the 2 % window of practice but wrong on an exam key */
+  if(!pl&&/9\.81/.test(it.w||'')&&(near(r,10/9.81,.004)||near(r,9.81/10,.004)))return 'Your answer is different by a factor of 10/9.81. Use g = 9.81 m/s², not 10 m/s².';
   if(Math.abs(r-1)<.08)return pl&&Number.isInteger(n)&&Number.isInteger(x)?'You are close. Check your count or your arithmetic again.':'You are close. Keep more digits in the intermediate steps and round only at the end.';
   if(n>0&&x>0&&near(x,1/n))return 'You have the reciprocal of the answer. Check which quantities are on the top and on the bottom.';
   if(!pl&&n>0&&x>0&&n!==1&&(near(x,n*n)||near(x,Math.sqrt(n))))return 'Check the exponent or the square root in your calculation.';
   return '';}
-/* one question. sv is a saved answer or null. cb receives {v,ok,s}. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer. */
-function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.'){
-  const q=el('div',{class:'q'},`<p class="qt">${label?`<b>${label}</b> `:''}${it.q}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});
+/* a correct numeric entry that is not the three-digit key (inside the 2 % window of an item with the default tolerance): say so, so that early rounding is seen */
+function keyNote(v,it){if(it.o||it.code||it.ans||it.ex||it.abs!=null||(it.tol!=null&&it.tol!==.02)||!it.n)return '';const x=parseNum(v);if(!isFinite(x)||+x.toPrecision(3)===+it.n.toPrecision(3))return '';
+  const d=diagnose(x,it);return /9\.81/.test(d)?'Accepted, but y'+d.slice(1)+' ':`Accepted. The key is ${ansText(it)}: keep all digits until the last step. `;}
+/* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
+   cb receives {v,ok,s,hi}: hi is the number of hints used. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer.
+   opt.hintNote follows a correct answer that used a hint. opt.retry(q): a 'Try again' button under a wrong multiple-choice answer or a shown answer calls it */
+function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt={}){
+  const q=el('div',{class:'q'},`<div class="qt">${label?`<b>${label}</b> `:''}${it.q}</div>${it.fig?`<div class="qfig">${it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});
+  const rr=opt.retry?el('div',{class:'row',hidden:''},`<button type="button" class="btn sm ghost">${icon('reset',14)}Try again</button>`):null;if(rr)rr.firstChild.onclick=()=>opt.retry(q);
   const say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
   if(it.o){
     const ops=el('div',{class:'ops'}),btn={};
-    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>. ')+(it.w||''));};
+    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>'+(/[.?!]$/.test(plain(ansText(it)).trim())?' ':'. '))+(it.w||''));if(rr)rr.hidden=ok;};
     optOrd(it).forEach(j=>{const b=el('button',{type:'button',class:'op'},optLbl(it,j));btn[j]=b;b.onclick=()=>{if(q.dataset.done)return;b.classList.add('picked');b.setAttribute('aria-pressed','true');lock(j,true);cb({v:j,ok:j===it.a?1:0});};ops.append(b);});
     q.append(ops);if(sv&&btn[sv.v])lock(sv.v,false);
   }else{
-    const ws=test?[]:sentences(it.w).slice(0,-1),cut=ws.findIndex(t=>hintLeaks(t,it));
+    /* a code answer (it.code) gets no hint ladder: each sentence of its explanation gives one digit away */
+    const ws=test||it.code?[]:sentences(it.w).slice(0,-1),cut=ws.findIndex(t=>hintLeaks(t,it));
     const steps=test?[]:(it.m?[it.m]:[]).concat(cut<0?ws:ws.slice(0,cut));let hi=0,shown=!!(sv&&sv.s);
     const row=el('div',{class:'num'},`<input type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your answer" aria-label="Your answer"><span>${it.u||''}</span><button type="button" class="btn sm">Check</button>`+(test?'':(steps.length?'<button type="button" class="btn sm ghost" data-h>'+icon('bulb',15)+'Hint</button>':'')+'<button type="button" class="btn sm ghost" data-s>Show answer</button>'));
     const inp=row.children[0],hl=el('ol',{class:'hints','aria-live':'polite'});
@@ -958,33 +990,47 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.'){
     const ans=()=>`<b>Answer: ${ansText(it)}</b>. ${it.w||''}`;
     const show=(e,anim)=>{const d=e.ok?'':diagnose(parseNum(e.v),it);
       if(e.s&&!e.ok)say('info',ans()+' <span class="hint">This question does not count as correct now.'+note+'</span>');
-      else if(e.ok)say('ok','Correct. '+(it.w||''));
-      else say('bad',test?'Not correct. '+(d?d+' ':'')+ans():'Not correct. '+(d||(it.plain?'Check your reasoning and your arithmetic.':'Check the sign, the units and the conversions.'))+(steps.length?' Use a hint or try again.':' Try again.'));
-      if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);};
-    const chk=()=>{if(test&&q.dataset.done)return;if(shown){show({v:inp.value.trim().slice(0,24),ok:0,s:1},false);return;}const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. You can type 6.25e6 for 6.25 × 10⁶.');return;}
-      const e={v:inp.value.trim().slice(0,24),ok:good(x)?1:0};if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);};
+      else if(e.ok)say('ok',(keyNote(e.v,it)||'Correct. ')+(it.w||'')+(e.hi&&opt.hintNote?' <span class="hint">'+opt.hintNote+'</span>':''));
+      else say('bad',test?'Not correct. '+(d?d+' ':'')+ans():'Not correct. '+(d||(it.code?'Check each number again.':it.plain?'Check your reasoning and your arithmetic.':'Check the sign, the units and the conversions.'))+(steps.length?' Use a hint or try again.':' Try again.'));
+      if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);if(rr)rr.hidden=!(e.s&&!e.ok);};
+    const chk=()=>{if(test&&q.dataset.done)return;if(shown){show({v:inp.value.trim().slice(0,24),ok:0,s:1},false);return;}
+      if(it.code){const t=inp.value.replace(/\s/g,'');if(!/^\d{1,4}$/.test(t)){say('info','Type the digits of your answer, for example 2514.');return;}const e={v:t,ok:codeOK(t,it)?1:0};if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);return;}
+      const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. You can type 6.25e6 for 6.25 × 10⁶.');return;}
+      const e={v:inp.value.trim().slice(0,24),ok:good(x)?1:0};if(hi)e.hi=hi;if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);};
     row.children[2].onclick=chk;inp.addEventListener('keydown',e=>{if(e.key==='Enter')chk();});
     const hb=$('[data-h]',row),sb=$('[data-s]',row);
     if(hb)hb.onclick=()=>{if(hi<steps.length){const li=el('li',{},steps[hi++]);hl.append(li);}if(hi>=steps.length){hb.disabled=true;hb.textContent='No more hints';}};
     if(sb)sb.onclick=()=>{const e={v:inp.value.trim().slice(0,24),ok:0,s:1};show(e,false);if(!shown){shown=true;cb(e);}};
-    q.append(row,hl);if(sv){inp.value=sv.v??'';show(sv,false);}
+    q.append(row,hl);if(sv&&sv.re)say('info',sv.re);else if(sv){inp.value=sv.v??'';show(sv,false);}
   }
-  q.append(fb);return q;
+  q.append(fb);if(rr)q.append(rr);return q;
 }
 const QUIZ={};
 function quiz(host,items,title,base){
   const c=el('section',{class:'card glass quiz'});host.append(c);
   /* the saved answers this card shows: a sync that does not change them leaves the card (and what is typed in it) alone */
-  const sg=()=>items.map((_,i)=>{const e=Store.get(base+'_'+i);return e?[e.v,e.ok,e.s].join():'';}).join('|');let last='';
+  const sg=()=>items.map((_,i)=>{const e=Store.get(base+'_'+i);return e?[e.v,e.ok,e.s].join():'';}).join('|')+'|'+today();let last='';
+  /* a correct numeric answer from an earlier day that can still give a mastery day today is not filled in, so that Check needs the answer worked out again */
+  const saved=(id,it)=>{const s=Store.get(id),td=today();if(!s||it.o||!s.ok||s.s||!s.t||dayOf(s.t)===td)return s;const h=Store.x('h',id);if(!mStep(okDays(id),td)||(h&&h.rv===td))return s;
+    return Object.assign({},s,{re:`Correct on ${fmtDay(dayOf(s.t))}${s.hi?' with a hint':''}. Solve it again${s.hi?' without a hint':''} to count it for mastery today.`});};
   const render=()=>{last=sg();c.innerHTML=`<div class="qh"><h3>${title||'Check your understanding'}</h3><span class="score" aria-live="polite"></span></div>`;const sc=$('.score',c);
     const upd=b=>{sc.textContent=items.filter((_,i)=>{const e=Store.get(base+'_'+i);return e&&e.ok;}).length+' / '+items.length;if(b)fx(sc,'bump');};
     /* a shown answer does not count and logs one miss; the same correct answer checked again on the same day counts once */
-    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',Store.get(id),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
-      const ok=!!(e.ok&&!e.s);Store.set(id,e);last=sg();upd(true);if(ok&&p&&p.ok&&p.t&&dayOf(p.t)===today())return;
-      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre});},false));});
-    /* clears this lesson's own questions (not its review bank): answers, spaced repetition and the correct-count; the mastery history stays */
-    const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();};r.append(b);c.append(r);upd();};
-  render();QUIZ[base]=()=>{if(sg()!==last)render();};return c;
+    /* a correct answer that used a hint counts for Practised, not as a mastery day; checked again on the same day without the hint, it keeps the hint */
+    /* Try again clears only this question's saved answer: its spaced repetition and the day its answer was shown stay, thus a correct retry adds no mastery day today */
+    const retry=(q,it,i)=>{quiet=1;try{Store.clear((m,k)=>m==='a'&&k===base+'_'+i);}finally{quiet=0;}last=sg();const n=mk(it,i);q.replaceWith(n);upd(true);afterChange();focusTo(n,'.op,input');};
+    const mk=(it,i)=>{const id=base+'_'+i;return qEl(it,(i+1)+'.',saved(id,it),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
+      const ok=!!(e.ok&&!e.s),same=ok&&p&&p.ok&&p.t&&dayOf(p.t)===today();if(same&&p.hi&&!e.hi)e=Object.assign({},e,{hi:p.hi});Store.set(id,e);last=sg();upd(true);if(same)return;
+      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v,hint:!!e.hi});},false,' Select Try again to answer it again.',{hintNote:'You used a hint, thus this answer counts for Practised but not as a mastery day.',retry:q=>retry(q,it,i)});};
+    items.forEach((it,i)=>c.append(mk(it,i)));
+    /* clears this lesson's own questions (not its review bank): the answers and the correct-count. Spaced repetition and the mastery history stay.
+       It sits below a divider, and it needs a second selection within 5 s (a double tap does not count), like Submit in the timed exam */
+    const r=el('div',{class:'row',style:'border-top:1px solid var(--hair);margin-top:1.4em;padding-top:1em'}),b=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear my answers for this lesson');let armed=0;
+    b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent='Select again to clear. Your mastery level and review dates stay.';setTimeout(()=>{armed=0;if(b.isConnected)b.innerHTML=icon('reset',14)+'Clear my answers for this lesson';},5000);return;}if(now-armed<600)return;
+      const bp=base.split('_'),le=SUBJ[bp[0]]&&SUBJ[bp[0]].lessons[+bp[1]];Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();focusTo(c,'h3');toast('Your answers in '+(le?le.t:'this lesson')+' are cleared. Your mastery level and review dates stay.');};r.append(b);c.append(r);upd();};
+  let quiet=0;render();QUIZ[base]=()=>{if(!quiet&&sg()!==last)render();};
+  /* a page left open past midnight: a correct answer from the day before is no longer filled in */
+  const day=()=>{if(!c.isConnected){LIVE.delete(day);return;}if(!quiet&&sg()!==last)render();};LIVE.add(day);return c;
 }
 /* clickable diagram: explore, test and drag-the-labels modes */
 function hotspot(host,svg,parts,opt={}){
@@ -1124,20 +1170,32 @@ async function savePDF(name,lines){
   try{const u=URL.createObjectURL(new Blob([makePDF(lines)],{type:'application/pdf'})),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return 'The PDF was saved to your downloads.';}catch(e){}
   return 'A download is not available in this view.';}
 /* numeric-response format: 4 boxes, direct value or a.bc × 10^d */
-function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);if(!t.includes('e')&&t.length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
+function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);/* a value below 1 leaves out the 0 before the decimal point, as the exam says: .456 fills the four boxes */if(!t.includes('e')&&(p===3?t.replace(/^0\./,'.'):t).length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
 /* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong */
 const nrHalf=(sp,n)=>sp.m==='d'?.5*10**(Math.floor(Math.log10(n))-sp.p+1):.5*.01*10**sp.e;
-const nrVal=(sp,t)=>{t=(t||'').replace(/\s/g,'');if(!t)return NaN;if(sp.m==='d')return /^(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;if(!/^\d{4}$/.test(t))return NaN;return (+t[0]+ +t[1]/10+ +t[2]/100)*10**((sp.e<0?-1:1)*+t[3]);};
-const nrShow=(sp,t)=>!t?'no answer':sp.m==='d'?t:/^\d{4}$/.test(t)?`${t[0]}.${t[1]}${t[2]} × 10<sup>${sp.e<0?'−':''}${t[3]}</sup>`:t;
+/* the timed exam grades the four boxes like a numerical-response key: the key rounded to the boxes, give or take 1 in the last box.
+   An exact value (tol 0, ex) must be exact, and a wider window that an item sets on purpose (tol above 2 %, or abs: a graph reading, an estimate) is kept */
+const nrKey=(sp,n)=>sp.m==='d'?+n.toPrecision(sp.p):+(n/10**sp.e).toFixed(2)*10**sp.e;
+function nrOK(sp,v,it){if(sp.m==='c')return codeOK(v,it);if(!isFinite(v))return false;const h=nrHalf(sp,it.n);if(it.tol===0||it.ex)return numOK(v,it,h);
+  const k=Math.abs(v-nrKey(sp,it.n))<=2*h*(1+1e-9);return (it.tol??0)>.02||it.abs>0?k||numOK(v,it,h):k;}
+/* a code answer (diploma style): it.code is the string of digits, in that order, or in any order with it.any. Its spec is {m:'c',n:number of digits} */
+const codeOK=(v,it)=>{const t=String(v||'').replace(/\s/g,''),s=x=>[...x].sort().join('');return it.any?s(t)===s(it.code):t===it.code;};
+/* the four-box format of an item, or null when it has none */
+const nrOf=it=>it.o||it.ans?null:it.code?{m:'c',n:it.code.length}:nrSpec(it.n);
+const nrVal=(sp,t)=>{t=(t||'').replace(/\s/g,'');if(sp.m==='c')return t;if(!t)return NaN;if(sp.m==='d')return /^(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;if(!/^\d{4}$/.test(t))return NaN;return (+t[0]+ +t[1]/10+ +t[2]/100)*10**((sp.e<0?-1:1)*+t[3]);};
+const nrShow=(sp,t)=>!t?'no answer':sp.m!=='s'?t:/^\d{4}$/.test(t)?`${t[0]}.${t[1]}${t[2]} × 10<sup>${sp.e<0?'−':''}${t[3]}</sup>`:t;
 /* a timed exam in progress is kept in this tab (sessionStorage), so that a reload does not lose it */
 const EXK=sk=>'exam:'+sk;
 /* a reload or close would drop a review test or an exam in progress: ask first */
 addEventListener('beforeunload',e=>{if($('section.rv-q')){e.preventDefault();e.returnValue='';}});
+/* the science sections (Physics, Biology, Chemistry) have numerical-response questions on the diploma: their timed exam takes 4 from the review bank
+   when the section has no generators but at least 4 bank questions that fit the four boxes. Math keeps its generated ones; Language Arts and Social Studies have none */
+const nrUnit=sk=>SUBJECTS.some(s=>['phy','bio','chem'].includes(s.k)&&s.units.includes(sk));
 function reviewUI(g,sk,le){
   const S=SUBJ[sk],host=el('div',{style:'grid-column:1/-1;display:grid;grid-template-columns:repeat(12,1fr);gap:16px'});g.append(host);
-  const LS=S.lessons.map((l,i)=>({l,i})).filter(x=>x.l.qz),gens=GEN[sk]||null,wrs=WRQ[sk]||[],nMC=gens?10:14,nNR=gens?4:0;let view='home',T=null,E=null,tick=0,len=10,mins=30;
+  const LS=S.lessons.map((l,i)=>({l,i})).filter(x=>x.l.qz),gens=GEN[sk]||null,wrs=WRQ[sk]||[],nNR=gens||nrUnit(sk)&&LS.flatMap(({l})=>l.rq||l.qz).filter(nrOf).length>=4?4:0,nMC=nNR?10:14;let view='home',T=null,E=null,tick=0,len=10,mins=30;
   const stat=({l,i})=>{let a=0,c=0;l.qz.forEach((_,j)=>{const e=Store.get(sk+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});return {a,c,n:l.qz.length};};
-  const item=id=>{const p=id.split('_'),l=S.lessons[+p[1]],r=p[2]&&p[2][0]==='r',arr=l&&(r?l.rq:l.qz),j=+(r?p[2].slice(1):p[2]);return arr&&arr[j]?{it:arr[j],L:+p[1],id}:null;};
+  const item=id=>{const p=id.split('_');if(p[2]&&p[2][0]==='g'){const x=qItem(id);return x&&{it:x.it,L:x.L,id,gen:1};}const l=S.lessons[+p[1]],r=p[2]&&p[2][0]==='r',arr=l&&(r?l.rq:l.qz),j=+(r?p[2].slice(1):p[2]);return arr&&arr[j]?{it:arr[j],L:+p[1],id}:null;};
   /* the review bank of a lesson, or its lesson questions when a unit has no bank yet */
   const bank=({l,i})=>l.rq?l.rq.map((it,j)=>({it,L:i,id:sk+'_'+i+'_r'+j})):l.qz.map((it,j)=>({it,L:i,id:sk+'_'+i+'_'+j}));
   const hist=id=>Store.x('h',id),gotRight=x=>{const h=hist(x.id),e=Store.get(x.id);return !!((h&&h.c)||(e&&e.ok));};
@@ -1160,7 +1218,7 @@ function reviewUI(g,sk,le){
     const cr=el('div',{class:'row'}),cb=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear the saved answers of this section');
     cb.onclick=()=>askClear(sk);cr.append(cb);c1.append(cr);
     const sr=srs(),dq=sr.filter(([,e])=>e.d<=now).map(([k])=>item(k)).filter(Boolean),wt=sr.filter(([,e])=>e.d>now).map(([,e])=>e.d);
-    const cs=el('section',{class:'card glass half'},`<h3>Spaced repetition</h3><p>A question that you miss comes back after 1 day, then after 3 days, then after 7 days. When you answer it correctly each time, it leaves this list.</p>
+    const cs=el('section',{class:'card glass half'},`<h3>Spaced repetition</h3><p>A question that you miss comes back after 1 day, then after 3, 7, 16 and 35 days, then every 60 days, so that you still know it at the diploma. A wrong answer starts it again at 1 day.</p>
       <div class="stats"><div class="stat"><span>Due now</span><b>${dq.length}</b></div><div class="stat"><span>Scheduled for later</span><b>${wt.length}</b></div>${wt.length?`<div class="stat"><span>Next date</span><b>${new Date(Math.min(...wt)).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</b></div>`:''}</div>
       <div class="row"><button type="button" class="btn" ${dq.length?'':'disabled'}>Practise the questions that are due (${dq.length})</button></div>`);
     host.append(cs);$('.btn',cs).onclick=()=>start('due',0,shuffle(dq));
@@ -1177,18 +1235,18 @@ function reviewUI(g,sk,le){
   function start(mode,n,fixed){let list=fixed;
     if(!list){const gn=mode==='mix'&&gens?Math.round(n*.3):0,gl=[],seen=new Set();
       /* a generated question that is already in the test is drawn again; if it keeps repeating, the bank fills its place */
-      if(gn){const gs=shuffle(gens);for(let i=0;i<gn;i++)for(let k=0;k<20;k++){const it=gs[i%gs.length]();if(!seen.has(it.q)){seen.add(it.q);gl.push({it,L:it.L,gen:1});break;}}}
+      if(gn){const gs=shuffle(genList(sk));for(let i=0;i<gn;i++)for(let k=0;k<20;k++){const g=gs[i%gs.length],it=g.f();if(!seen.has(it.q)){seen.add(it.q);gl.push({it,L:it.L,gen:1,id:g.id});break;}}}
       list=shuffle(balanced(n-gl.length,x=>mode!=='weak'||!gotRight(x)).concat(gl));}
     if(!list.length){home();return;}T={list,i:0,res:[],m:mode};ask();toHost();}
   function ask(){view='test';host.innerHTML='';const x=T.list[T.i],tot=T.list.length,right=()=>T.res.filter(r=>r.ok).length;
     const c=el('section',{class:'card glass rv-q'},`<div class="qh"><h3>Question ${T.i+1} of ${tot}</h3><span class="score">${right()} correct</span></div><div class="bar2" style="margin:.2em 0 1em"><i class="b2" style="width:${100*T.i/tot}%"></i></div><p class="hint">Lesson: ${S.lessons[x.L].t}${x.gen?' (new numbers)':''}</p>`);
     const nav=el('div',{class:'row'}),nx=el('button',{type:'button',class:'btn',disabled:''},T.i+1<tot?'Next question':'See the results'),end=el('button',{type:'button',class:'btn ghost'},'End the test now');
-    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.re?null:(x.id||null),!!e.ok,x.re?{}:{sk,L:x.L,rv:1});srMark(x.id||null,!!e.ok);nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
+    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.re?null:(x.id||null),!!e.ok,x.re?{}:{sk,L:x.L,rv:1,v:e.v});srMark(x.id||null,!!e.ok);nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
     nx.onclick=()=>{T.i++;if(T.i<tot){ask();toQ(host);}else results();};end.onclick=()=>results();nav.append(nx,end);c.append(nav);host.append(c);const h=$('h3',c);h.tabIndex=-1;h.focus({preventScroll:true});}
   /* ----- timed exam ----- */
   function exStart(mins){const wr=wrs.length?wrs[Math.floor(Math.random()*wrs.length)]:null,skip=new Set(wr&&wr.skip||[]),items=balanced(nMC,x=>!!x.it.o&&!skip.has(x.id)).map(x=>Object.assign(x,{kind:'mc',ord:optOrd(x.it)}));
-    if(nNR){const gs=shuffle(gens).map(f=>{const it=f();return {it,L:it.L,gen:1};}).filter(x=>nrSpec(x.it.n)).slice(0,2),ss=balanced(nNR-gs.length,x=>!x.it.o&&!!nrSpec(x.it.n)&&!x.it.ans&&!skip.has(x.id));
-      shuffle(gs.concat(ss)).forEach(x=>items.push(Object.assign(x,{kind:'nr',nr:nrSpec(x.it.n)})));}
+    if(nNR){const gs=shuffle(genList(sk)).map(g=>{const it=g.f();return {it,L:it.L,gen:1,id:g.id};}).filter(x=>nrSpec(x.it.n)).slice(0,2),ss=balanced(nNR-gs.length,x=>!!nrOf(x.it)&&!skip.has(x.id));
+      shuffle(gs.concat(ss)).forEach(x=>items.push(Object.assign(x,{kind:'nr',nr:x.it.code?nrOf(x.it):nrSpec(x.it.n)})));}
     if(wr)items.push({it:wr,kind:'wr',L:-1});
     E={items,ans:items.map(()=>null),i:0,t0:Date.now(),end:Date.now()+mins*60000};exRun();
     exShow();toHost();}
@@ -1202,9 +1260,9 @@ function reviewUI(g,sk,le){
     const c=el('section',{class:'card glass rv-q'},`<div class="qh"><h3>Unit exam: question ${E.i+1} of ${N}</h3><span class="score" data-t>${fmt(E.end-Date.now())} left</span></div><div class="chipsrow" data-nav></div>`),nav=$('[data-nav]',c);
     E.items.forEach((y,j)=>{const b=el('button',{type:'button',class:'chip'+(j===E.i?' on':'')+(has(j)?' placed':''),'aria-label':'Question '+(j+1)+(has(j)?', answered':'')},String(j+1));if(j===E.i)b.setAttribute('aria-current','step');else b.tabIndex=-1;b.onclick=()=>{E.i=j;exShow(1);toQ(host);};nav.append(b);});arrowKeys(nav,()=>[...nav.children],()=>E.i);
     const mk=()=>{nav.children[E.i].classList.toggle('placed',has(E.i));exSave();};
-    const body=el('div',{class:'q'},`<p class="hint">${x.kind==='mc'?'Multiple choice':x.kind==='nr'?'Numeric response':'Written response'}</p><p class="qt">${x.it.q}</p>${x.it.fig?`<div class="qfig">${x.it.fig}</div>`:''}`);
+    const body=el('div',{class:'q'},`<p class="hint">${x.kind==='mc'?'Multiple choice':x.kind==='nr'?'Numeric response':'Written response'}</p><div class="qt">${x.it.q}</div>${x.it.fig?`<div class="qfig">${x.it.fig}</div>`:''}`);
     if(x.kind==='mc'){const ops=el('div',{class:'ops'});x.ord.forEach(j=>{const b=el('button',{type:'button',class:'op'+(E.ans[E.i]===j?' sel':''),'aria-pressed':E.ans[E.i]===j},optLbl(x.it,j));b.onclick=()=>{E.ans[E.i]=j;$$('.op',ops).forEach(o=>{o.classList.remove('sel');o.setAttribute('aria-pressed','false');});b.classList.add('sel');b.setAttribute('aria-pressed','true');mk();};ops.append(b);});body.append(ops);}
-    else if(x.kind==='nr'){const sp=x.nr;body.append(el('p',{class:'hint'},(sp.m==='d'?'Record your answer in the four boxes. Use 3 significant digits. A decimal point uses one box. Leave out a 0 before the decimal point: record 0.456 as .456. Start at the left.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
+    else if(x.kind==='nr'){const sp=x.nr;body.append(el('p',{class:'hint'},(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${x.it.any?', in any order':''}.`:sp.m==='d'?'Record your answer in the four boxes. Use 3 significant digits. A decimal point uses one box. Leave out a 0 before the decimal point: record 0.456 as .456. Start at the left.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
       const bx=el('div',{class:'nr'}),cur=(E.ans[E.i]||'').padEnd(4,' ');
       for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'decimal',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
         b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');E.ans[E.i]=[...bx.children].map(z=>z.value||' ').join('').replace(/\s+$/,'');mk();if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
@@ -1225,10 +1283,10 @@ function reviewUI(g,sk,le){
     x.marks.forEach(m=>{const b=el('button',{type:'button',class:'tile','aria-pressed':'false'},m);b.onclick=()=>{b.classList.toggle('on');b.setAttribute('aria-pressed',b.classList.contains('on'));};box.append(b);});c.append(box);
     c.append(el('details',{class:'ex'},`<summary>Model response</summary><div>${x.model}</div>`));const r=el('div',{class:'row'}),fin=el('button',{type:'button',class:'btn'},'Show my results');
     fin.onclick=()=>exDone({got:$$('.tile.on',box).length,max:x.marks.length,q:x.q});r.append(fin);c.append(r);host.append(c);toHost();}
-  function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j],na=a==null||a==='';if(x.kind==='mc')res.push({x,na,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a]});
-      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:numOK(v,x.it,nrHalf(x.nr,x.it.n))?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:'')});}});
+  function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j],na=a==null||a==='';if(x.kind==='mc')res.push({x,na,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a],v:a});
+      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:nrOK(x.nr,v,x.it)?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:''),v:plain(nrShow(x.nr,a))});}});
     /* a question without an answer (na) counts in the score, but not as answered: no history, study day or spaced repetition */
-    res.forEach(r=>{if(r.x.L>=0&&!r.na)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1});});if(E.items.some((x,j)=>x.kind==='wr'&&(E.ans[j]||'').trim()))markStudy();
+    res.forEach(r=>{if(r.x.L>=0&&!r.na)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1,v:r.v});});if(E.items.some((x,j)=>x.kind==='wr'&&(E.ans[j]||'').trim()))markStudy();
     T={res};const used=E.used;E=null;exSave();results({wr,used});}
   function results(o){const back=host.contains(document.activeElement);o=o||{};const exam=o.used!=null,R=T.res,wr=o.wr,n=R.length+(wr?wr.max:0),c=R.filter(r=>r.ok).length+(wr?wr.got:0);if(!n){home();return;}view='res';host.innerHTML='';
     /* a test or practice round already updated spaced repetition with each answer; the exam does it here */
@@ -1244,9 +1302,9 @@ function reviewUI(g,sk,le){
     host.append(c1);setRing(c1,f,c+' of '+n);
     const c2=el('section',{class:'card glass'},`<h3>Results for each lesson</h3><p class="hint">The lessons with the lowest results are first.</p><div class="bars">${rows.map(r=>`<div class="barrow"><span>${icon(S.lessons[r.L].ic||LIC[S.lessons[r.L].t]||sk,15)}${S.lessons[r.L].t}</span><div class="bar2"><i class="b2" data-w="${100*r.c/r.n}"></i></div><b>${r.c} / ${r.n}</b><button type="button" class="btn sm ghost" data-go="${r.L}">Open</button></div>`).join('')}</div>`);
     host.append(c2);grow(c2);$$('[data-go]',c2).forEach(b=>b.onclick=()=>showLesson(+b.dataset.go));
-    /* questions with new numbers have no id, so they cannot come back in spaced repetition; a question without an answer (na, timed exam) is not added either */
+    /* a question with new numbers has the id of its generator: it comes back in spaced repetition with other numbers. A question without an answer (na, timed exam) is not added */
     const nA=miss.filter(r=>r.na).length,nG=miss.filter(r=>!r.na&&!r.x.id).length,nS=miss.length-nA-nG,not=nA&&nG?'Questions without an answer and questions with new numbers':nA?'Questions without an answer':'Questions with new numbers',why=nA?'':', because their numbers change each time',srH=!nA&&!nG?'These questions are now in your spaced repetition list.':nS?(nA?(nG?'The questions from the question bank that you answered incorrectly':'The questions that you answered incorrectly'):'The questions from the question bank')+' are now in your spaced repetition list. '+not+' are not'+why+'.':not+' are not added to your spaced repetition list'+why+'.';
-    const c3=el('section',{class:'card glass'},`<h3>${miss.length?'Questions to study again':'No incorrect answers'}</h3>`+(miss.length?`<p class="hint">${srH}</p>`:'')+miss.map(r=>{const it=r.x.it;return `<div class="miss"><p>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">Your answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;}).join(''));
+    const c3=el('section',{class:'card glass'},`<h3>${miss.length?'Questions to study again':'No incorrect answers'}</h3>`+(miss.length?`<p class="hint">${srH}${miss.some(r=>r.x.gen&&r.x.id&&!r.na)?' A question with new numbers comes back with other numbers.':''}</p>`:'')+miss.map(r=>{const it=r.x.it,t=qTag(it.q);return `<div class="miss"><${t}>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</${t}>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">Your answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;}).join(''));
     const br=el('div',{class:'row'}),msg=el('p',{class:'hint','aria-live':'polite'});
     const pdf=()=>{const P=[{t:(exam?'Exam results: ':'Review test results: ')+S.name,s:18,b:1},{t:new Date().toLocaleString(),s:10},{t:`Score: ${c} of ${n} (${Math.round(100*f)}%)`,s:13,b:1,g:8},{t:vd[0]+' '+vd[1]}];
       if(wr)P.push({t:`Written response: ${wr.got} of ${wr.max} marks`});if(exam)P.push({t:'Time used: '+fmt(o.used)+' (min:s)'});
@@ -1277,10 +1335,10 @@ const dispUnits=S=>S.units.reduce((D,u)=>{const g=ugOf(u);if(!g)D.push(u);else i
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
 function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()&&qItem(k)).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
-    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon('check',13):'';chipBtns[i].dataset.lv=v.lv;
-    chipBtns[i].title=LVN[v.lv]+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two different days':'')+'.';
-    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=LVN[v.lv]+' · '+v.ok1+' / '+v.n;}
-    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+LVN[v.lv]+'</b> · '+lvHint(v)+'</span>';});}
+    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon(v.nr?'reset':'check',13):'';chipBtns[i].dataset.lv=v.lv;
+    chipBtns[i].title=lvName(v)+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two days at least 2 days apart':'')+'.'+(v.lv===3&&v.nr?' Your last answer to '+v.nr+' of them was wrong.':'');
+    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=lvName(v)+' · '+v.ok1+' / '+v.n;}
+    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+lvName(v)+'</b> · '+lvHint(v)+'</span>';});}
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
 function centreChip(smooth){const cb=chipBtns[curL[curS]],nav=$('#chips');if(cb&&!nav.hidden)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:smooth&&!RM?'smooth':'instant'});}
 function showLesson(i,o={}){
@@ -1334,10 +1392,10 @@ function showTab(i,first){
 /* clear answers: everything saved for one section (unit), then rebuild its lessons so the try-its start fresh */
 const unitKey=sk=>(m,k)=>m==='r'?k===sk:m==='w'?k.startsWith('hs_'+sk+'-')||k.startsWith('ord_'+sk+'-')||k.startsWith('mt_'+sk+'-')||k.startsWith('spd_'+sk+'-')||(sk==='eq'&&k.startsWith('ice_')):
   m==='g'?k==='boss_'+sk||k.startsWith('ch_'+sk+'_')||k.startsWith('cnt_'+sk+'_'):k.startsWith(sk+'_');
-/* what a recorded clear covers: 'u:mom' is a unit, 'l:mom_0' the quiz answers, spaced repetition and correct-count of one lesson's own questions (not its mastery history or its review bank) */
+/* what a recorded clear covers: 'u:mom' is a unit, 'l:mom_0' the quiz answers and correct-count of one lesson's own questions (not their spaced repetition, the mastery history or the review bank) */
 /* rb2:bio: the Biology review banks were rewritten to be harder. Answers, spaced repetition and history of their items from before the rewrite no longer describe the new questions */
 const RB2='rb2:bio',RB2T=Date.parse('2026-11-02T16:01:43Z'),rb2Scope=(m,k)=>(m==='a'||m==='s'||m==='h')&&/^(ns|sn|en)_\d+_r\d+$/.test(k);
-const clearScope=id=>id===RB2?rb2Scope:id.startsWith('u:')?unitKey(id.slice(2)):id.startsWith('l:')?(m,k)=>(m==='a'||m==='s')&&k.startsWith(id.slice(2)+'_')&&/^\d+$/.test(k.slice(id.length-1))||m==='g'&&k==='cnt_'+id.slice(2):null;Store.setScope(clearScope);
+const clearScope=id=>id===RB2?rb2Scope:id.startsWith('u:')?unitKey(id.slice(2)):id.startsWith('l:')?(m,k)=>m==='a'&&k.startsWith(id.slice(2)+'_')&&/^\d+$/.test(k.slice(id.length-1))||m==='g'&&k==='cnt_'+id.slice(2):null;Store.setScope(clearScope);
 function clearUnit(sk){
   Store.clear(unitKey(sk),'u:'+sk);try{sessionStorage.removeItem(EXK(sk));}catch(e){}
   Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
@@ -5515,7 +5573,8 @@ EN_RQ[2]=[
   {"q": "During labour, a drug blocks nerve impulses in the axons that run from the hypothalamus through the pituitary stalk. The portal blood vessels are not affected. Predict the effect on oxytocin and on the feedback loop of labour.", "o": ["Oxytocin release falls, thus the positive feedback loop of labour weakens.", "Oxytocin release continues, because the posterior lobe makes its own oxytocin.", "Oxytocin release falls, thus negative feedback makes the contractions stronger.", "Oxytocin release continues, because the portal blood is not affected."], "a": 0, "w": "Oxytocin is stored in the axon endings in the posterior lobe, and a nerve impulse triggers its release. Without impulses, little oxytocin is released, thus stronger contractions no longer cause more oxytocin, and the positive feedback loop weakens. The posterior lobe makes no hormones, and the portal blood serves only the anterior lobe."},
   {"q": "A student tests whether screen light lowers melatonin. On one evening each volunteer reads a bright tablet from 20:00 to 23:00. On another evening the same volunteer reads a printed book in dim light. A blood sample is taken at 23:00 each time. Which pair correctly names the manipulated variable and a variable that must be controlled?", "o": ["Manipulated: bright screen light; controlled: time of the blood sample", "Manipulated: melatonin level; controlled: bright screen light", "Manipulated: bright screen light; controlled: melatonin level at 23:00", "Manipulated: time of the blood sample; controlled: bright screen light"], "a": 0, "w": "The student changes the light, thus screen light is the manipulated variable. Melatonin is the responding variable: it is measured, not controlled. Melatonin changes with the time of day, thus the sample must be taken at the same time on both evenings. Calling melatonin a controlled variable confuses what is measured with what is kept the same."},
   {"q": "After severe blood loss in childbirth, the anterior lobe of the pituitary of a mother dies. Her posterior lobe and her hypothalamus are not damaged. Which set of changes is most likely in the following months?", "o": ["Low thyroxine, no milk production, normal ADH release", "Low thyroxine, normal milk production, low ADH release", "Normal thyroxine, no milk production, low ADH release", "Low thyroxine, no milk production, low ADH release"], "a": 0, "w": "The anterior lobe makes TSH and prolactin, thus thyroxine falls and milk production stops. ADH is made in the hypothalamus and released from the posterior lobe, which is healthy, thus ADH release is normal. Choosing \"low ADH\" treats the pituitary as one gland; its two lobes are different tissues with different routes."},
-  {"q": "A hockey team flies east from Vancouver to Halifax, which is 4 h ahead. On the first night the players go to bed at 23:00 Halifax time, and an alarm wakes them at 07:00 Halifax time. Their SCN is still on Vancouver time. Predict their melatonin at bedtime and how easily they wake.", "o": ["Melatonin at bedtime: still low; waking at 07:00: hard", "Melatonin at bedtime: already high; waking at 07:00: hard", "Melatonin at bedtime: still low; waking at 07:00: easy", "Melatonin at bedtime: already high; waking at 07:00: easy"], "a": 0, "w": "At 23:00 in Halifax their SCN reads 19:00, thus the evening rise of melatonin has not started, and sleep comes late. At 07:00 in Halifax their SCN reads 03:00, the middle of their biological night, thus melatonin is still high and waking is hard. \"Already high\" applies the westward example from the lesson in the wrong direction."}
+  {"q": "A hockey team flies east from Vancouver to Halifax, which is 4 h ahead. On the first night the players go to bed at 23:00 Halifax time, and an alarm wakes them at 07:00 Halifax time. Their SCN is still on Vancouver time. Predict their melatonin at bedtime and how easily they wake.", "o": ["Melatonin at bedtime: still low; waking at 07:00: hard", "Melatonin at bedtime: already high; waking at 07:00: hard", "Melatonin at bedtime: still low; waking at 07:00: easy", "Melatonin at bedtime: already high; waking at 07:00: easy"], "a": 0, "w": "At 23:00 in Halifax their SCN reads 19:00, thus the evening rise of melatonin has not started, and sleep comes late. At 07:00 in Halifax their SCN reads 03:00, the middle of their biological night, thus melatonin is still high and waking is hard. \"Already high\" applies the westward example from the lesson in the wrong direction."},
+  {"q": "<p><b>Responses stimulated by hormones</b></p><ol><li>Release of thyroxine</li><li>Development of bones and muscles</li><li>Water reabsorption by kidneys</li><li>Development of follicle and sperm</li><li>Ovulation and maintenance of the corpus luteum</li><li>Milk production</li></ol><p class=\"hint\">LH and FSH act on the ovaries and the testes. The corpus luteum is what is left of the follicle after ovulation. It releases progesterone.</p><p><b>Numerical response.</b> Identify the response, as numbered above, that would be stimulated by each of the hormones given below.</p><table><tr><th>Response</th><td>___</td><td>___</td><td>___</td><td>___</td></tr><tr><th>Hormone</th><td>hGH</td><td>LH</td><td>TSH</td><td>FSH</td></tr></table><p>Record your four-digit answer, in the order of the hormones in the table.</p>", "code": "2514", "n": 2514, "tol": 0, "abs": 0, "w": "hGH: 2, development of bones and muscles. LH: 5, ovulation and maintenance of the corpus luteum. TSH: 1, release of thyroxine. FSH: 4, development of follicle and sperm. Thus the answer is 2514. Responses 3 and 6 are not used: ADH causes water reabsorption by the kidneys, and prolactin causes milk production."}
 ];
 
 /* ---------- challenge problem ---------- */
@@ -6273,7 +6332,8 @@ EN_RQ[5]=[
   {"q": "The thyroid of an adult releases about 100 µg of thyroxine (T₄) a day. One molecule of T₄ contains four iodine atoms. The molar mass of T₄ is 777 g/mol, and the molar mass of iodine is 127 g/mol. Calculate the mass of iodine, in µg, that the diet must supply each day to replace this thyroxine.", "n": 65.4, "u": "µg", "w": "Step 1: the fraction of the mass of T₄ that is iodine is (4 × 127) ÷ 777 = 508 ÷ 777 = 0.654. Step 2: 100 µg × 0.654 = 65.4 µg of iodine a day. Using one iodine atom instead of four gives 16.3 µg, a common slip. The body cannot make iodine, thus it must come from food such as iodized salt."},
   {"q": "In a rare mutation, the nuclear receptor for thyroxine cannot bind the hormone in any cell, including the cells of the hypothalamus and the anterior pituitary. The thyroid gland itself is normal. Predict the thyroxine level, the TSH level and the metabolic rate.", "o": ["Thyroxine: high; TSH: high; metabolic rate: low", "Thyroxine: high; TSH: low; metabolic rate: high", "Thyroxine: low; TSH: high; metabolic rate: low", "Thyroxine: low; TSH: low; metabolic rate: low"], "a": 0, "w": "Thyroxine acts through an intracellular receptor, and the hypothalamus and the pituitary detect it in the same way. Without binding there is little negative feedback, thus TRH and TSH rise, and the healthy thyroid releases more thyroxine. The body cells still cannot respond, thus the metabolic rate stays low. \"TSH: low\" assumes that a high hormone level always gives feedback, but feedback needs a working receptor."},
   {"q": "Two people each have a tumour of the anterior pituitary that releases too much hGH. Person P is 9 years old, and person Q is 40 years old. Neither is treated for five years. Predict the main change in each person.", "o": ["P: grows much taller; Q: thicker hands, feet and jaw, same height", "P: thicker hands, feet and jaw, same height; Q: grows much taller", "P: grows much taller; Q: also grows much taller than before", "P: stops growing early; Q: thicker hands, feet and jaw, same height"], "a": 0, "w": "P still has open growth plates, thus the long bones grow faster and for longer (gigantism). Q has closed growth plates, thus the bones cannot lengthen, but the bones of the hands, the feet and the face thicken (acromegaly). The tempting error is to think that extra hGH always adds height; height needs open growth plates."},
-  {"q": "Rats receive daily injections for 3 weeks. Values are given as a percentage of the saline control group.<table><tr><th>Group</th><th>O₂ use</th><th>TSH</th><th>Thyroid mass</th></tr><tr><td>Saline</td><td>100%</td><td>100%</td><td>100%</td></tr><tr><td>Thyroxine</td><td>145%</td><td>20%</td><td>70%</td></tr></table>Which conclusion is best supported?", "o": ["Thyroxine raises the metabolic rate and lowers TSH by negative feedback, thus the gland shrinks.", "Thyroxine raises the metabolic rate and makes the thyroid grow, because the gland works harder.", "TSH raises the metabolic rate directly, thus the low TSH should have lowered the O₂ use.", "The injected thyroxine destroyed thyroid tissue, which explains both the low TSH and the O₂ use."], "a": 0, "w": "O₂ use measures the metabolic rate, thus thyroxine raised it. The injected thyroxine inhibited the hypothalamus and the anterior pituitary, thus TSH fell, and without TSH the thyroid became smaller. The smaller thyroid mass rules out growth. TSH acts on the thyroid, not on the body cells, thus a low TSH does not lower the O₂ use directly."}
+  {"q": "Rats receive daily injections for 3 weeks. Values are given as a percentage of the saline control group.<table><tr><th>Group</th><th>O₂ use</th><th>TSH</th><th>Thyroid mass</th></tr><tr><td>Saline</td><td>100%</td><td>100%</td><td>100%</td></tr><tr><td>Thyroxine</td><td>145%</td><td>20%</td><td>70%</td></tr></table>Which conclusion is best supported?", "o": ["Thyroxine raises the metabolic rate and lowers TSH by negative feedback, thus the gland shrinks.", "Thyroxine raises the metabolic rate and makes the thyroid grow, because the gland works harder.", "TSH raises the metabolic rate directly, thus the low TSH should have lowered the O₂ use.", "The injected thyroxine destroyed thyroid tissue, which explains both the low TSH and the O₂ use."], "a": 0, "w": "O₂ use measures the metabolic rate, thus thyroxine raised it. The injected thyroxine inhibited the hypothalamus and the anterior pituitary, thus TSH fell, and without TSH the thyroid became smaller. The smaller thyroid mass rules out growth. TSH acts on the thyroid, not on the body cells, thus a low TSH does not lower the O₂ use directly."},
+  {"q": "<p><b>Some events in the endocrine system</b></p><ol><li>Metabolic rate increases.</li><li>Thyroxine secretion increases.</li><li>The hypothalamus secretes a releasing hormone.</li><li>TSH travels through the bloodstream to the target cells.</li></ol><p><b>Numerical response.</b> In order to restore homeostasis when thyroxine levels in the blood are lower than normal, the sequence in which the events listed above occur is ___, ___, ___ and&nbsp;___.</p><p>Record all four digits of your answer: box 1 is the first event.</p>", "code": "3421", "n": 3421, "tol": 0, "abs": 0, "w": "3: the hypothalamus releases TRH. 4: TSH travels in the blood to the thyroid. 2: the thyroid releases more thyroxine. 1: the metabolic rate increases. Thus the answer is 3421."}
 ];
 
 /* ---------- challenge problem ---------- */
@@ -6815,7 +6875,8 @@ EN_RQ[7]=[
   {"q": "A head injury destroys the neurosecretory cells of the hypothalamus that make ADH. The posterior pituitary and the kidneys are not damaged. Predict the urine of the patient and the effect of a desmopressin nasal spray.", "o": ["Urine: large and dilute; desmopressin: lowers the urine volume", "Urine: large and dilute; desmopressin: no effect, as the lobe is intact", "Urine: small and concentrated; desmopressin: lowers the urine volume", "Urine: large and contains glucose; desmopressin: no effect"], "a": 0, "w": "ADH is made in the hypothalamus; the posterior pituitary only stores and releases it. Thus an intact posterior lobe has no ADH to release, and the patient has diabetes insipidus. The kidneys still have working receptors, thus synthetic ADH reduces the urine volume. The answer \"no effect, as the lobe is intact\" forgets where ADH is made."},
   {"q": "In Addison disease, the adrenal cortex releases too little aldosterone and too little cortisol. Predict the blood pressure of the patient and the blood glucose between meals.", "o": ["Blood pressure: low; blood glucose between meals: low", "Blood pressure: high; blood glucose between meals: low", "Blood pressure: low; blood glucose between meals: high", "Blood pressure: high; blood glucose between meals: high"], "a": 0, "w": "Without aldosterone, less Na⁺ is reabsorbed in the distal tubule and the collecting duct, and water follows the Na⁺ into the urine. Blood volume and pressure fall. Without cortisol, the liver makes less new glucose between meals, thus glucose can fall too low. Linking every adrenal problem with high glucose is the common error; high glucose fits too much cortisol."},
   {"q": "A student tests whether caffeine increases urine output. Each volunteer drinks 500 mL of water on one day and 500 mL of water with caffeine on another day. Urine is collected for 3 h.<table><tr><th>Drink</th><th>Mean urine (mL)</th><th>Mean urine concentration (mOsm/kg)</th></tr><tr><td>Water</td><td>540</td><td>210</td></tr><tr><td>Water with caffeine</td><td>820</td><td>140</td></tr></table>Which conclusion and explanation are best supported?", "o": ["Caffeine increases urine output; the result fits less ADH action on the collecting ducts.", "Caffeine increases urine output; the result fits more ADH action on the collecting ducts.", "Caffeine decreases water loss, because its urine is more dilute than the urine after water.", "Caffeine increases urine output; the result fits more aldosterone acting on the tubules."], "a": 0, "w": "With caffeine, more urine is made and it is more dilute. This is the pattern of less water reabsorbed in the collecting ducts, as when the action of ADH is reduced. More ADH would give a smaller volume of concentrated urine, and more aldosterone would save Na⁺ and water. Dilute urine does not mean less water is lost: volume and concentration are separate measures."},
-  {"q": "A drug for high blood pressure stops the formation of angiotensin II. Predict the release of aldosterone and the blood volume of a patient who takes it.", "o": ["Aldosterone: falls; blood volume: falls", "Aldosterone: rises; blood volume: falls", "Aldosterone: falls; blood volume: rises", "Aldosterone: no change; blood volume: falls"], "a": 0, "w": "Angiotensin II makes the adrenal cortex release aldosterone and narrows the arterioles. Without it, less aldosterone is released, less Na⁺ is reabsorbed, and less water follows, thus the blood volume and the pressure fall. Predicting a rise in aldosterone treats it as a hormone that removes salt; it saves salt."}
+  {"q": "A drug for high blood pressure stops the formation of angiotensin II. Predict the release of aldosterone and the blood volume of a patient who takes it.", "o": ["Aldosterone: falls; blood volume: falls", "Aldosterone: rises; blood volume: falls", "Aldosterone: falls; blood volume: rises", "Aldosterone: no change; blood volume: falls"], "a": 0, "w": "Angiotensin II makes the adrenal cortex release aldosterone and narrows the arterioles. Without it, less aldosterone is released, less Na⁺ is reabsorbed, and less water follows, thus the blood volume and the pressure fall. Predicting a rise in aldosterone treats it as a hormone that removes salt; it saves salt."},
+  {"q": "<p><b>Some functions of hormones</b></p><ol><li>Promote muscle and bone development</li><li>Increase water reabsorption in the kidneys</li><li>Increase the level of amino acids in blood plasma</li><li>Stimulate the conversion of glucose into glycogen</li></ol><p><b>Numerical response.</b> Identify the main function of each hormone named below.</p><table><tr><th>Hormone</th><th>Function</th></tr><tr><td>ADH</td><td>___ (column 1)</td></tr><tr><td>Cortisol</td><td>___ (column 2)</td></tr><tr><td>hGH</td><td>___ (column 3)</td></tr><tr><td>Insulin</td><td>___ (column 4)</td></tr></table><p>Record the number for each hormone in its column: box 1 is column 1.</p>", "code": "2314", "n": 2314, "tol": 0, "abs": 0, "w": "ADH: 2, it increases water reabsorption in the kidneys. Cortisol: 3, it increases the level of amino acids in blood plasma, because it makes muscle protein break down. hGH: 1, it promotes muscle and bone development. Insulin: 4, it stimulates the conversion of glucose into glycogen. Thus the answer is 2314."}
 ];
 
 /* ---------- challenge problem ---------- */
@@ -6844,7 +6905,7 @@ EN_WRQ.push({q:'A runner loses 1.5 L of water in sweat during a race on a hot da
 
 /* the endocrine lessons and banks are checked when the page loads. A problem is a console error: the smoke test and assemble.js --verify report it */
 (()=>{const err=m=>console.error('[en] '+m),str=x=>typeof x==='string'&&x.trim()!=='',num=x=>typeof x==='number'&&isFinite(x),txt=s=>String(s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
-  const IK=new Set(['q','o','a','w','n','u','tol','abs','ans','ex','m','fig']),LK=new Set(['t','h','d','ic','qt','build','qz']);
+  const IK=new Set(['q','o','a','w','n','u','tol','abs','ans','ex','m','fig','code','any']),LK=new Set(['t','h','d','ic','qt','build','qz']);
   const item=(it,at)=>{if(!it||typeof it!=='object'){err(at+': not an object');return;}
     Object.keys(it).forEach(k=>{if(!IK.has(k))err(at+': unknown field "'+k+'"');});
     if(!str(it.q))err(at+': q (the question) is missing');if(!str(it.w))err(at+': w (the explanation) is missing');
@@ -10505,7 +10566,8 @@ RQ.ns=[
   {"q": "In meningitis, the meninges are inflamed and the flow of cerebrospinal fluid can be blocked. Predict the most direct effect of the blocked flow on the brain.", "o": ["Less protection from shocks and slower removal of wastes into the blood", "Loss of the myelin that insulates the axons in the white matter of the brain", "Loss of the bone that encloses the brain and the spinal cord", "Less protection from shocks, but more nutrients delivered to the brain"], "a": 0, "w": "Cerebrospinal fluid absorbs shocks and carries nutrients to the brain and wastes to the blood, thus a blocked flow reduces both. Myelin and bone are separate structures. The last option keeps the first function but reverses the effect on transport."},
   {"q": "A disease destroys myelin in the spinal cord but leaves the cell bodies alive. In a cross-section, region P is the outer white area and region Q is the inner grey area. Which prediction is best?", "o": ["P is affected most, thus signals between the body and the brain slow down.", "Q is affected most, thus the reflex arcs lose their interneurons.", "P is affected most, thus the interneurons in grey matter are destroyed.", "Q is affected most, because grey matter is grey due to its thick myelin."], "a": 0, "w": "White matter is white because of myelin, thus the outer white area is damaged. Its myelinated fibres carry information up to the brain and down to the effectors, thus these signals slow down. Grey matter has no myelin and contains the interneurons, thus Q is not the main target."},
   {"q": "A student says: \"If we record from enough single neurons of the cortex, we will find the one neuron where consciousness is located.\" Which response is correct?", "o": ["Wrong: consciousness emerges from the interaction of many neurons, not one.", "Right: each neuron of the cortex holds a small, separate part of consciousness.", "Wrong: consciousness is coordinated by the spinal cord, not by the cortex.", "Right: consciousness is a property of the neurons of the thalamus only."], "a": 0, "w": "Consciousness is an emergent property: it comes from interactions between the elements of a system, the neurons, and no single neuron has it. The second option still treats consciousness as stored in individual cells. The spinal cord coordinates only unconscious processes."},
-  {"q": "Patient 1 has damage to the thalamus. Patient 2 has damage to the hypothalamus. Which row gives the most likely loss in each patient?", "o": ["Thalamus: senses not relayed to the cerebrum; hypothalamus: temperature not kept constant", "Thalamus: temperature not kept constant; hypothalamus: senses not relayed to the cerebrum", "Thalamus: two hemispheres cannot communicate; hypothalamus: temperature not kept constant", "Thalamus: senses not relayed to the cerebrum; hypothalamus: heart rate not controlled"], "a": 0, "w": "The thalamus relays sensory information to the cerebrum. The hypothalamus keeps homeostasis, such as body temperature, and connects to the pituitary gland. The second row swaps the two regions. Heart rate is controlled by the medulla oblongata, and the hemispheres communicate through the corpus callosum."}
+  {"q": "Patient 1 has damage to the thalamus. Patient 2 has damage to the hypothalamus. Which row gives the most likely loss in each patient?", "o": ["Thalamus: senses not relayed to the cerebrum; hypothalamus: temperature not kept constant", "Thalamus: temperature not kept constant; hypothalamus: senses not relayed to the cerebrum", "Thalamus: two hemispheres cannot communicate; hypothalamus: temperature not kept constant", "Thalamus: senses not relayed to the cerebrum; hypothalamus: heart rate not controlled"], "a": 0, "w": "The thalamus relays sensory information to the cerebrum. The hypothalamus keeps homeostasis, such as body temperature, and connects to the pituitary gland. The second row swaps the two regions. Heart rate is controlled by the medulla oblongata, and the hemispheres communicate through the corpus callosum."},
+  {"q": "<p>Adrenoleukodystrophy (ALD) is a genetic disorder that causes damage to the myelin sheaths of neurons in the brain.</p><p><b>Some symptoms of ALD</b></p><ol><li>Decreased vision</li><li>Decreased hearing</li><li>Decreased learning ability</li><li>Decreased muscular coordination</li></ol><p><b>Numerical response.</b> Match each of the symptoms of ALD listed above with the region of the brain associated with it given below.</p><table><tr><th>Region of the brain</th><th>Symptom of ALD</th></tr><tr><td>Cerebellum</td><td>___</td></tr><tr><td>Frontal lobe</td><td>___</td></tr><tr><td>Occipital lobe</td><td>___</td></tr><tr><td>Temporal lobe</td><td>___</td></tr></table><p>Record all four digits of your answer, in the order of the regions in the table.</p>", "code": "4312", "n": 4312, "tol": 0, "abs": 0, "w": "Cerebellum: 4, decreased muscular coordination. Frontal lobe: 3, decreased learning ability. Occipital lobe: 1, decreased vision. Temporal lobe: 2, decreased hearing. Thus the answer is 4312."}
 ],
   [
   {"q": "A resting volunteer has a heart rate of 64 beats/min. A drug blocks the parasympathetic nerves to the heart, and the rate rises to 96 beats/min. Calculate the percent increase in heart rate.", "n": 50, "u": "%", "w": "Change = 96 − 64 = 32 beats/min. Percent increase = 32 ÷ 64 × 100% = 50%. A common error is to divide by the new value (32 ÷ 96 = 33%). The rate rises because the parasympathetic \"brake\" is removed and the sympathetic input is unopposed."},
@@ -10543,7 +10605,8 @@ RQ.sn=[
   {"q": "In a rod, light breaks rhodopsin apart, which starts a nerve impulse. Which row gives the class of receptor that a rod belongs to and the energy change that it carries out?", "o": ["Class: photoreceptor; light energy to electrochemical energy", "Class: chemoreceptor; chemical energy to light energy", "Class: photoreceptor; electrochemical energy to light energy", "Class: chemoreceptor; light energy to electrochemical energy"], "a": 0, "w": "Receptors are classed by the energy that they detect. A rod detects light, thus it is a photoreceptor, and like every receptor it converts the stimulus energy into the electrochemical energy of impulses. The tempting error is to call it a chemoreceptor because rhodopsin is a chemical; the stimulus is light, not a chemical."},
   {"q": "After bright sunlight a person enters a dark room. The rods hold 20 % of their maximum amount of rhodopsin. In a simple model, rhodopsin is rebuilt at a steady 8.0 % of the maximum per minute. Calculate how many minutes it takes for the rods to reach 90 % of their maximum rhodopsin.", "n": 8.75, "u": "min", "w": "Rhodopsin needed = 90 % − 20 % = 70 % of the maximum. Time = 70 % ÷ 8.0 % per minute = 8.75 min. This fits the lesson: dark adaptation takes several minutes."},
   {"q": "Before an eye exam a doctor gives eye drops that widen the pupil and paralyse the ciliary muscles for a few hours, so the muscles stay relaxed. Which row predicts two effects on the patient until the drops wear off?", "o": ["Bright sunlight: uncomfortable glare; distant road sign: blurred", "Bright sunlight: no change; reading a book: blurred", "Bright sunlight: uncomfortable glare; reading a book: sharper", "Bright sunlight: uncomfortable glare; reading a book: blurred"], "a": 3, "w": "A wide pupil lets too much light in, thus bright light causes glare. Relaxed ciliary muscles keep the ligaments tight and the lens flat, which suits far objects but not near ones, thus reading is blurred. The tempting error is that paralysed muscles cannot flatten the lens; the lens is flattened when the muscles relax."},
-  {"q": "At night a person sees a faint star at the edge of her vision. When she looks straight at it, it disappears. When she looks slightly to one side, it appears again. Which explanation is correct?", "o": ["Looking straight puts it on the blind spot, with no receptors.", "Looking straight makes the pupil smaller, so less light enters.", "Looking straight puts it on the fovea, whose cones need bright light.", "The fovea has the most rods, but dim light bleaches their rhodopsin."], "a": 2, "w": "The fovea centralis has the most cones, and cones respond only to high-intensity light. Rods, which respond to dim light, surround the fovea, thus a faint star is seen when its image falls beside the fovea. The tempting error is the blind spot; we look straight at an object with the fovea, not with the blind spot."}
+  {"q": "At night a person sees a faint star at the edge of her vision. When she looks straight at it, it disappears. When she looks slightly to one side, it appears again. Which explanation is correct?", "o": ["Looking straight puts it on the blind spot, with no receptors.", "Looking straight makes the pupil smaller, so less light enters.", "Looking straight puts it on the fovea, whose cones need bright light.", "The fovea has the most rods, but dim light bleaches their rhodopsin."], "a": 2, "w": "The fovea centralis has the most cones, and cones respond only to high-intensity light. Rods, which respond to dim light, surround the fovea, thus a faint star is seen when its image falls beside the fovea. The tempting error is the blind spot; we look straight at an object with the fovea, not with the blind spot."},
+  {"q": "<p>Collie eye anomaly (CEA) is a genetic disorder that affects a number of eye structures in dogs of various collie breeds. CEA results in thinning of the sclera, reduced development of the choroid, and detachment of the retina. The structures and functions of the parts of the eye are similar in dogs and in humans.</p><p><b>Numerical response.</b> In the diagram below, the three eye structures that are affected in a dog with CEA are numbered ______, ______ and ______. Record all three digits of your answer in any order.</p>", "fig": snEyeNR().replace(/ey-vit-nr/g,'ey-vit-rq'), "any": 1, "code": "457", "n": 457, "tol": 0, "abs": 0, "w": "Answer: 4, 5 and 7, in any order. 4 is the sclera, 5 is the retina and 7 is the choroid: the three layers of the wall of the eye. 1 is the aqueous humour behind the cornea, 2 is the lens, 3 is the iris and 6 is the optic nerve."}
 ],
   [
   {q:'In the blind spot test the dot disappears when the face is 25 cm from the screen and the centre of the dot is 7.0 cm from the cross. The angle between the cross and the blind spot is fixed for a given eye. Determine the cross-to-dot separation that would make the dot disappear when the face is 40 cm from the screen.',n:11.2,u:'cm',tol:0.02,w:'The direction of the blind spot makes a fixed angle θ with the line of sight: tan θ = 7.0 ÷ 25 = 0.280, θ = 15.6°. At 40 cm the same angle gives separation = 40 × tan θ = 40 × 0.280 = 11.2 cm. Equivalently, separation scales with distance: 7.0 × 40 ÷ 25 = 11.2 cm.',m:'Use the fact that the angle between the cross and the blind spot is constant, so separation ÷ distance is constant.'},
@@ -11541,34 +11604,60 @@ const fmtT=ms=>{const t=Math.max(0,Math.ceil(ms/1000));return Math.floor(t/60)+'
 const fmtS=ms=>{const d=Math.round(Math.max(0,ms)/100);return Math.floor(d/600)+':'+(d%600/10).toFixed(1).padStart(4,'0');};
 const fmtDay=d=>{const [y,m,da]=d.split('-').map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});};
 const gN=k=>(Store.x('g',k)||{}).n||0,gv=k=>(Store.x('g',k)||{}).v,gset=(k,v)=>Store.xs('g',k,{v});
-const qItem=id=>{if(!id)return null;const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
+/* the question generators of a unit, each with a stable id unit_lesson_g<k>: k is its place among the generators of that lesson. A new generator goes at the end of GEN[unit], thus it never moves another */
+const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{let L=-1;try{L=f().L;}catch(e){}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
+/* a generator id gives a new question with other numbers each time */
+const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')[0],g=SUBJ[sk]&&genList(sk).find(x=>x.id===id);if(!g)return null;const it=g.f();return {it,id,sk,L:g.L,gen:1};}
+  const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
 const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
 const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
 const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}});}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
-function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));return s;}
-function lessonLevel(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
-  le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(d.size>=2)ok2++;});
-  const n=le.qz.length;return {n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+/* Mastered needs two correct days at least MGAP calendar days apart, so that two rounds just before and just after midnight are not enough.
+   Two correct days that were both saved before MCUT keep the old rule (any two different days): a lesson mastered before the change stays Mastered.
+   Days saved by an older version of the site keep the old rule too, whatever their date (the change may reach a student after MCUT): okDays marks them with .old.
+   A history entry that this version never wrote has no l; when this version first writes one whose days already make a pair, it keeps o2 */
+const MGAP=2,MCUT='2026-11-05',dayNum=d=>{const [y,m,da]=d.split('-').map(Number);return Math.round(Date.UTC(y,m-1,da)/DAY);},dayStr=n=>{const x=new Date(n*DAY);return x.getUTCFullYear()+'-'+p2(x.getUTCMonth()+1)+'-'+p2(x.getUTCDate());};
+function okTwo(d){if(d.size<2)return false;if(d.old)return true;const a=[...d].sort();return a[1]<MCUT||dayNum(a[a.length-1])-dayNum(a[0])>=MGAP;}
+/* a correct answer today (td) moves a question with correct days d toward Mastered: it is its first correct day, or the day that completes the pair */
+const mStep=(d,td)=>!okTwo(d)&&!d.has(td)&&(!d.size||okTwo(new Set([...d,td])));
+/* the first day (number) on which a correct answer completes the pair */
+const mNext=d=>Math.max(dayNum(today())+1,dayNum([...d].sort()[0])+MGAP);
+function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&!a.hi&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));if(h&&(h.o2||h.l==null))s.old=1;return s;}
+/* lessonLevel runs for every lesson after each answer (badges, chips, the Today page): it is computed once for each change of the progress, and each caller gets its own copy */
+const lvMemo=svMemo((sk,L)=>lessonLevel0(sk,L),{q:1});function lessonLevel(sk,L){const r=lvMemo(sk,L);return r&&Object.assign({},r);}
+function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
+  /* a correct answer with a hint (h.hd, or a saved answer with hi) counts for Practised (ok1), not for the two mastery days */
+  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id),a=Store.get(id);if(a||(h&&(h.c||h.m)))ans++;if(d.size>=1||(h&&h.hd)||(a&&a.ok&&!a.s&&a.hi))ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
+  /* nr: questions whose latest answer was wrong. A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
+  const n=le.qz.length;return {n,ans,ok1,ok2,nr,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
+/* the questions of a lesson whose latest answer was wrong, and the next lesson check date of a lesson (0: none) */
+const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h&&h.l===0;});
+const lcNext=(sk,L)=>SUBJ[sk].lessons[L].qz.reduce((m,_,j)=>{const e=Store.sr(sk+'_'+L+'_'+j);return e&&e.k&&(!m||e.d<m)?e.d:m;},0);
 /* questions that still need a correct answer today to move toward Mastered */
-function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id),h=Store.x('h',id);return d.size<2&&!d.has(td)&&!(h&&h.rv===td);});}
+function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id),h=Store.x('h',id);return mStep(d,td)&&!(h&&h.rv===td);});}
 const allLessons=()=>UORDER.flatMap(unitLessons);
 function unitLessons(sk){return SUBJ[sk].lessons.map((le,L)=>le.qz?Object.assign({sk,L},lessonLevel(sk,L)):null).filter(Boolean);}
 const lvSteps=(lv,big)=>`<span class="lvs${big?' big':''}" aria-hidden="true">${[1,2,3].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</span>`;
-const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two different days`,`the challenge problem is unlocked`][v.lv];
+const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?`your last answer to ${v.nr} of ${v.n} questions was wrong`:`the challenge problem is unlocked`][v.lv];
 
 /* ----- every answer goes through here. o.rv: a wrong answer shows the right one, and a correct answer on that day adds no mastery day ----- */
 function onAnswer(id,ok,o={}){
   const td=today(),has=o.sk&&SUBJ[o.sk]&&o.L!=null&&o.L>=0,before=has?(o.before||lessonLevel(o.sk,o.L)):null;
-  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&rv!==td&&!d.includes(td))d.push(td);Store.xs('h',id,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv});}
+  /* the history entry also keeps l, the latest result (1 correct, 0 wrong), and for the mistake log lv and lm: the last wrong answer (an option index, a text of at most 24 characters,
+     or '' when the answer was shown) and the time of that miss. Fields that this version does not set are kept */
+  /* o.hint: a correct answer that used a hint adds no mastery day; hd keeps its day, so it still counts for Practised */
+  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&!o.hint&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;if(h.l==null&&new Set(h.d||[]).size>=2)e.o2=1;if(ok&&o.hint&&rv!==td)e.hd=td;
+    if(!ok){e.lm=Date.now();if(o.v!=null)e.lv=typeof o.v==='number'?o.v:String(o.v).trim().slice(0,24);}Store.xs('h',id,e);}
   if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
   markStudy();if(!o.nocombo)comboStep(ok);
   if(before){const a=lessonLevel(o.sk,o.L),t=SUBJ[o.sk].lessons[o.L].t;
-    if(a.lv===3&&before.lv<3)toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');
-    else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again on another day to master it.');}
+    if(a.lv===3&&before.lv<3){toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');lcSeed(o.sk,o.L);}
+    else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again in 2 days or later to master it.');}
   afterChange();}
 function afterChange(){chipProgress();checkAch();refreshLive();homeDot();}
 
@@ -11593,7 +11682,7 @@ let lastClk=null;
 document.addEventListener('click',e=>{if(!e.isTrusted)return;const p=lastClk,t=performance.now(),tg=e.target;lastClk={t,x:e.clientX,y:e.clientY,el:tg};
   if(p&&!p.el.isConnected&&tg!==p.el&&tg.closest&&tg.closest('.op,.pager')&&t-p.t<(tg.closest('.speed')?200:400)&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<30){e.stopImmediatePropagation();e.preventDefault();}},true);
 /* a correct answer in a round also counts in the lesson quiz, so the quiz and the Review page agree with the mastery level */
-function quizKeep(x,e){if(!e.ok||!x.id||/_r\d+$/.test(x.id))return;const p=Store.get(x.id),h=Store.x('h',x.id);if(p&&p.ok&&!p.s)return;
+function quizKeep(x,e){if(!e.ok||!x.id||/_[rg]\d+$/.test(x.id))return;const p=Store.get(x.id),h=Store.x('h',x.id);if(p&&p.ok&&!p.s)return;
   /* not on a day the answer was shown: it adds no mastery day then either */
   if(h&&h.rv===today())return;Store.set(x.id,{v:e.v,ok:1});const r=QUIZ[x.sk+'_'+x.L];if(r)r();}
 /* an answer that waits for its confidence rating; Stop records it */
@@ -11611,7 +11700,7 @@ function runRound(box,o){let i=0,over=false,tm=0,tEnd=0;const res=[],t0=Date.now
     const cr=o.conf?el('div',{class:'confrow',hidden:''},`<span class="hint">Before you see the result: how sure were you?</span>`+CONF.map(([k,nm,d])=>`<button type="button" class="chip" data-c="${k}" title="${d}">${nm}</button>`).join('')):null;
     const q=qEl(x.it,'',null,e=>{if(over)return;const r={x,ok:e.ok?1:0,conf:null,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')};res.push(r);if(o.limit&&res.length===n){clearInterval(tm);tEnd=Date.now();}
       /* with confidence on, the combo, toasts and achievements of the answer also wait for the rating */
-      const rec=()=>{onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L,rv:1});quizKeep(x,e);};if(cr){const f=RR_PEND;RR_PEND=rec;if(f)f();}else rec();srMark(x.id,!!e.ok);o.step&&o.step(res);
+      const rec=()=>{onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L,rv:1,v:e.v});quizKeep(x,e);};if(cr){const f=RR_PEND;RR_PEND=rec;if(f)f();}else rec();srMark(x.id,!!e.ok);o.step&&o.step(res);
       const upd=()=>{nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=base+res.filter(r=>r.ok).length+' correct';};
       if(cr){q.classList.add('prec');cr.hidden=false;$$('.chip',cr).forEach(b=>b.onclick=()=>{r.conf=b.dataset.c;$$('.chip',cr).forEach(x=>x.classList.toggle('on',x===b));q.classList.remove('prec');cr.hidden=true;if(RR_PEND===rec){RR_PEND=null;rec();}upd();nx.focus({preventScroll:true});});return;}
       upd();},true);
@@ -11626,13 +11715,18 @@ function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
   function view(){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const v=lessonLevel(sk,L),need=masteryNeeds(sk,L);
     const msg=['Answer the questions above to start this lesson.',
       `Answer every question correctly once to reach <b>Practised</b>. ${v.ok1} of ${v.n} have been answered correctly.`,
-      `Answer each question correctly again on a different day to reach <b>Mastered</b>. ${v.ok2} of ${v.n} have been answered correctly on two days.`,
-      'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
-    c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${LVN[v.lv]}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
+      `Answer each question correctly again at least 2 days after the first time to reach <b>Mastered</b>. ${v.ok2} of ${v.n} have been answered correctly on two such days.`,
+      v.nr?`You mastered this lesson, but your last answer to ${v.nr} of its questions was wrong. Answer ${v.nr===1?'it':'them'} correctly again to keep the lesson fresh.`:'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
+    const miss=v.lv===3&&v.nr?lcMissed(sk,L):[],nc=v.lv===3&&!v.nr?lcNext(sk,L):0;
+    c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${lvName(v)}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
       (v.lv>=1&&v.lv<3?(need.length?`<div class="row"><button type="button" class="btn">${icon('target',15)}Practise for mastery (${need.length} ${need.length===1?'question':'questions'})</button></div><p class="hint">A question that you answer wrong goes into spaced repetition and comes back after 1 day.</p>`
-        :`<p class="hint">${icon('cal',14)} Come back tomorrow. A question counts for mastery only when you answer it correctly on a second, different day.</p>`):'');
-    const b=$('.row .btn',c);if(b)b.onclick=run;}
-  function run(){busy=1;const items=shuffle(masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML='<h3>Practise for mastery</h3>';const box=el('div');c.append(box);
+        :`<p class="hint">${icon('cal',14)} Come back ${comeBack()}. A question counts for mastery when you answer it correctly again at least 2 days after the first time.</p>`)
+      :miss.length?`<div class="row"><button type="button" class="btn">${icon('reset',15)}Practise the missed ${miss.length===1?'question':'questions'} (${miss.length})</button></div>`
+      :nc?`<p class="hint">${icon('cal',14)} To keep this lesson fresh, ${LCN} of its questions come back in your review after about 7, 28 and 88 days. Next check: ${fmtDay(dayOf(nc))}.</p>`:'');
+    const b=$('.row .btn',c);if(b)b.onclick=()=>run(miss.length?miss:null);}
+  /* the first day on which a question of this lesson can move toward Mastered again */
+  function comeBack(){const t=dayNum(today());let m=Infinity;SUBJ[sk].lessons[L].qz.forEach((_,j)=>{const d=okDays(sk+'_'+L+'_'+j);if(!okTwo(d))m=Math.min(m,d.size?mNext(d):t+1);});return m<=t+1||!isFinite(m)?'tomorrow':'on '+fmtDay(dayStr(m));}
+  function run(ids){busy=1;const items=shuffle(ids||masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML=`<h3>${ids?'Practise the missed questions':'Practise for mastery'}</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,title:'Question',done:res=>{busy=0;const n=res.filter(r=>r.ok).length;view();c.append(el('p',{class:'fb '+(n===res.length?'ok':'info')},`${n} of ${res.length} correct in this round.`));}});}
   LIVE.add(view);view();}
 function challengeCard(g,sk,L){const it=CH[sk]&&CH[sk][L];if(!it)return;const key='ch_'+sk+'_'+L,c=card(g,'','');let shown=-1;
@@ -11695,14 +11789,14 @@ const MAPS=[['ns','The neuron','neuron'],['ns','Brain and CNS','brain'],['sn','T
 const pl=(n,s,p)=>n===1?s:(p||s+'s');
 const ACH=[
   {id:'prac',cat:'mastery',ic:'target',n:'Practised',d:t=>`Answer every question of ${t} ${pl(t,'lesson')} correctly.`,tiers:[1,5,15,30,62],v:()=>allLessons().filter(x=>x.lv>=2).length},
-  {id:'master',cat:'mastery',ic:'check',n:'Mastered',d:t=>`Master ${t} ${pl(t,'lesson')}: every question correct on two different days.`,tiers:[1,5,15,30,62],v:()=>allLessons().filter(x=>x.lv===3).length},
+  {id:'master',cat:'mastery',ic:'check',n:'Mastered',d:t=>`Master ${t} ${pl(t,'lesson')}: every question correct on two days at least 2 days apart.`,tiers:[1,5,15,30,62],v:()=>allLessons().filter(x=>x.lv===3).length},
   {id:'unit',cat:'mastery',ic:'star',n:'Unit mastered',d:t=>`Master every lesson of ${t} ${pl(t,'unit')}.`,tiers:[1,3,5,8],v:()=>UORDER.filter(sk=>unitLessons(sk).every(x=>x.lv===3)).length},
   {id:'maps',cat:'mastery',ic:'ns',n:'Map maker',d:t=>`Place every label with no mistakes in ${t} of the ${MAPS.length} diagrams (${MAPS.map(x=>x[2]).join(', ')}).`,tiers:[1,2,4,MAPS.length],v:()=>MAPS.filter(x=>hsPerfect(x[0],x[1])).length},
   {id:'ok',cat:'practice',ic:'check',n:'Correct answers',d:t=>`Answer ${t} questions correctly, in any mode.`,tiers:[25,100,300,1000,2500],v:()=>gN('n_ok')},
   {id:'num',cat:'practice',ic:'exam',n:'Precision',d:t=>`Get ${t} numeric answers right.`,tiers:[10,50,150,400],v:()=>gN('n_num')},
   {id:'bank',cat:'practice',ic:'book',n:'Review bank',d:t=>`Answer ${t} review-bank questions correctly.`,tiers:[10,50,150,400],v:()=>gN('n_rev')},
   {id:'combo',cat:'practice',ic:'bolt',n:'Combo',d:t=>`Answer ${t} questions correctly in a row.`,tiers:[5,10,20,40],v:()=>gN('comboBest')},
-  {id:'sr',cat:'practice',ic:'reset',n:'It stuck',d:t=>`${t} missed ${pl(t,'question leaves','questions leave')} spaced repetition after 1, 3 and 7 days.`,tiers:[1,5,20,50],v:()=>gN('srOut')},
+  {id:'sr',cat:'practice',ic:'reset',n:'It stuck',d:t=>`${t} missed ${pl(t,'question passes its reviews','questions pass their reviews')} in spaced repetition after 1, 3 and 7 days.`,tiers:[1,5,20,50],v:()=>gN('srOut')},
   {id:'comp',cat:'practice',ic:'comp',n:'Component method',d:t=>`Solve ${t} problems in “2-D: components”.`,tiers:[10,30],v:()=>gN('cnt_mom_'+LX('mom','2-D: components'))},
   {id:'streak',cat:'habit',ic:'flame',n:'Streak',d:t=>`Study on ${t} days in a row.`,tiers:[3,7,14,30,60],v:streakNow},
   {id:'days',cat:'habit',ic:'cal',n:'Study days',d:t=>`Study on ${t} different days.`,tiers:[5,20,50,100,200],v:()=>(gv('days')||[]).length},
@@ -11784,7 +11878,7 @@ const lvFor=xp=>{let n=1;while(xp>=50*n*(n+1))n++;return n;};
 /* ----- daily challenge: 5 questions from due questions, mastery checks and weak lessons ----- */
 function pickDaily(){const now=Date.now(),td=today(),pick=[],seen=new Set(),add=id=>{if(pick.length<5&&!seen.has(id)&&qItem(id)){seen.add(id);pick.push(id);}};
   shuffle(Store.srAll().filter(([k,e])=>e.d<=now&&qItem(k)).map(([k])=>k)).slice(0,3).forEach(add);
-  const m2=[],weak=[];allLessons().forEach(x=>{if(!x.lv)return;SUBJ[x.sk].lessons[x.L].qz.forEach((_,j)=>{const id=x.sk+'_'+x.L+'_'+j,d=okDays(id);if(d.size===1&&!d.has(td))m2.push(id);});weak.push(x);});
+  const m2=[],weak=[];allLessons().forEach(x=>{if(!x.lv)return;SUBJ[x.sk].lessons[x.L].qz.forEach((_,j)=>{const id=x.sk+'_'+x.L+'_'+j,d=okDays(id);if(d.size&&mStep(d,td))m2.push(id);});weak.push(x);});
   shuffle(m2).slice(0,2).forEach(add);
   const ids=x=>SUBJ[x.sk].lessons[x.L].qz.map((_,j)=>x.sk+'_'+x.L+'_'+j);
   weak.sort((a,b)=>a.ok1/a.n-b.ok1/b.n).forEach(x=>shuffle(ids(x).filter(id=>!okDays(id).size)).slice(0,2).forEach(add));
@@ -11813,9 +11907,35 @@ function dailyCard(g){const c=card(g,'','','w7'),st=()=>{const d=Store.x('g','da
         const nd=Object.assign({},dd,{res:dd.res.concat(res[res.length-1].ok)});Store.xs('g','daily',nd);if(dailyClaim(nd))afterChange();},
       done:()=>{HOME_BUSY=0;dailyClaim(rec());afterChange();view();}});}
   view();}
-function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily'),due=!(d&&d.day===today()&&d.fin);if(!b)return;b.classList.toggle('tdue',due);
-  /* the dot is only drawn, so its meaning goes in the name too */
-  if(due)b.setAttribute('aria-label',SUBJECTS[0].name+', daily challenge due');else b.removeAttribute('aria-label');}
+function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily'),due=!(d&&d.day===today()&&d.fin);if(!b)return;const n=dueAll().length;b.classList.toggle('tdue',due||n>0);
+  /* the dot is only drawn, so its meaning goes in the name too: the daily challenge and the review questions that are due */
+  const w=[due?'daily challenge due':'',n?n+' review '+(n===1?'question':'questions')+' due':''].filter(Boolean);if(w.length)b.setAttribute('aria-label',SUBJECTS[0].name+', '+w.join(', '));else b.removeAttribute('aria-label');}
+
+/* ----- the review queue on the Today page: the questions of every section that are due in spaced repetition (missed questions, lesson checks,
+   calculations with new numbers), mixed one section at a time, in rounds of up to RQN ----- */
+const RQN=15;
+/* a saved id that still names a question (a generator id is checked without making a question) */
+const qHas=id=>{const sk=id.split('_')[0];return /_g\d+$/.test(id)?!!(SUBJ[sk]&&genList(sk).some(g=>g.id===id)):!!qItem(id);};
+const dueAll=()=>{const now=Date.now();return Store.srAll().filter(([k,e])=>e.d<=now&&qHas(k)).map(([k])=>k);};
+/* n due ids: one from each section in turn, in a random order inside each section */
+function duePick(n){const by={};shuffle(dueAll()).forEach(id=>{const sk=id.split('_')[0];(by[sk]=by[sk]||[]).push(id);});const g=shuffle(Object.values(by)),out=[];let k=0;
+  while(out.length<n&&g.some(a=>a.length)){const a=g[k++%g.length];if(a.length)out.push(a.pop());}return out;}
+function reviewCard(g){const c=card(g,'','');let busy=0;
+  function view(msg){if(busy)return;const due=dueAll(),by={};due.forEach(id=>{const sk=id.split('_')[0];by[sk]=(by[sk]||0)+1;});const units=UORDER.filter(sk=>by[sk]),now=Date.now();
+    const {n:ma,nf}=mistCount(),mk=ma?`<div class="row"><button type="button" class="btn sm ghost" data-mist>${icon('book',14)}My mistakes (${nf} not fixed)</button></div>`:'';
+    const h=`<h3>${icon('target',18)} Review</h3>`+(msg||'');
+    if(!due.length){const later=Store.srAll().filter(([k,e])=>e.d>now&&qHas(k)).map(([,e])=>e.d),nx=later.length?Math.min(...later):0,nd=nx?later.filter(d=>dayOf(d)===dayOf(nx)).length:0;
+      c.innerHTML=h+`<p>Nothing is due now.${nx?` Next: <b>${nd} ${nd===1?'question':'questions'}</b> on ${fmtDay(dayOf(nx))}.`:''}</p><p class="hint">${later.length?`${later.length} ${later.length===1?'question is':'questions are'} scheduled. `:''}A question that you miss comes back here after 1 day, then after 3, 7, 16 and 35 days. A mastered lesson sends ${LCN} of its questions here after 7, 28 and 88 days.</p>`+mk;const mb=$('[data-mist]',c);if(mb)mb.onclick=openMistakes;return;}
+    const n=Math.min(RQN,due.length);
+    c.innerHTML=h+`<p><b>${due.length} ${due.length===1?'question is':'questions are'} due</b> from ${units.length} ${units.length===1?'section':'sections'}. A round mixes the sections${due.length>RQN?` and has ${RQN} questions`:''}.</p>
+      <div class="stats">${units.map(sk=>`<div class="stat"><span>${icon(sk,14)} ${SUBJ[sk].name}</span><b>${by[sk]}</b></div>`).join('')}</div>
+      <div class="row"><button type="button" class="btn">${icon('play',15)}${due.length>n?`Review ${n} now`:`Review all due (${due.length})`}</button>${due.length>n?`<span class="hint">${due.length-n} more after this round</span>`:''}</div>`+mk;
+    $('.row .btn',c).onclick=run;const mb=$('[data-mist]',c);if(mb)mb.onclick=openMistakes;}
+  function run(){const items=duePick(RQN).map(qItem).filter(Boolean);if(!items.length){view();return;}busy=1;HOME_BUSY=1;c.innerHTML=`<h3>${icon('target',18)} Review</h3>`;const box=el('div');c.append(box);
+    runRound(box,{items,title:'Review question',done:res=>{afterChange();busy=0;HOME_BUSY=0;const k=res.filter(r=>r.ok).length,m=dueAll().length;
+      view(`<p class="fb ${k===res.length?'ok':'info'}">${k} of ${res.length} correct in this round.${res.length>k?' A missed question comes back tomorrow.':''}${m?` ${m} more ${m===1?'is':'are'} due.`:''}</p>`);focusTo(c,'h3');}});}
+  /* after a change the card is drawn again, but not while the Today page is hidden: it is drawn again when it is shown */
+  const live=()=>{if(!c.isConnected){LIVE.delete(live);return;}if(!c.closest('[hidden]'))view();};LIVE.add(live);view();}
 
 /* ----- the Today page ----- */
 function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
@@ -11828,16 +11948,18 @@ function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDo
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
-    <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');}
-function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const next=all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv).slice(0,3);
-  const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two different days.</p>`+
-    (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${LVN[x.lv]}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
+    <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');
+  /* the review queue goes right after the daily challenge and the weekly goal (a full row) */
+  reviewCard(g);}
+function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const nrl=all.filter(x=>x.lv===3&&x.nr),next=nrl.concat(all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv)).slice(0,3);
+  const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}${nrl.length?`<div class="stat"><span>Needs review</span><b>${nrl.length}</b></div>`:''}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two days at least 2 days apart.</p>`+
+    (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${lvName(x)}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
   $$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,L]=b.dataset.go.split('_');goLesson(sk,+L);});}
 function levelCard(g,xs,lv,lo,hi){const c=card(g,'Level '+lv,`<div class="bar2" style="height:12px"><i class="b2" data-w="${100*(xs.xp-lo)/(hi-lo)}"></i></div><p><b>${xs.xp} XP</b> · ${hi-xs.xp} XP to level ${lv+1}</p>
   <table class="xpt">${xs.rows.map(r=>`<tr><td>${r[0]}</td><td class="hint">${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('')}</table><p class="hint">Most XP comes from mastery and achievements, so your level shows what you know and how you study.</p>`,'half');grow(c);}
 function mapCard(g){const c=card(g,'Progress map','<p class="hint">Each circle is a lesson. It fills in as you go from Learning to Practised to Mastered. The crown at the end is the boss round. Select a circle to open it.</p><div class="pmap"></div>'),pm=$('.pmap',c);
   UORDER.forEach(sk=>{const ls=unitLessons(sk),rv=SUBJ[sk].lessons.findIndex(l=>l.rv),row=el('div',{class:'pm-u'},`<div class="pm-h">${icon(sk,16)}${SUBJ[sk].name}<span class="hint">${ls.filter(x=>x.lv===3).length} of ${ls.length} mastered</span></div><div class="pm-path"></div>`),p=$('.pm-path',row);
-    ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+LVN[x.lv];
+    ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+lvName(x);
       const n=el('button',{type:'button',class:'pm-n','data-lv':x.lv,style:'--p:'+(x.ok1/x.n),'aria-label':t,title:t},icon(x.lv===3?'check':lessonIcon(sk,x.L),16));n.onclick=()=>goLesson(sk,x.L);p.append(n);});
     p.append(el('i',{class:'pm-l'+(ls.every(x=>x.lv>=2)?' on':'')}));const b=bossWon(sk),bn=el('button',{type:'button',class:'pm-n boss'+(b?' won':''),'aria-label':'Boss round: '+(b?'beaten':'not beaten yet'),title:'Boss round'},icon('crown',17));
     /* the crown opens the Review lesson at its boss round card */
@@ -11968,12 +12090,14 @@ function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from a
     sum.innerHTML=sel.length?`<b>${n} questions</b> from ${sel.length} ${sel.length===1?'unit':'units'} (${pool} available)${st.conf?', with confidence ratings':''}.`:'Select at least one unit.';go.disabled=!sel.length||!n;};
   go.onclick=()=>{const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]);testRun(L,testPick(sel,st.n),st.conf);};upd(0);
   const last=gv('tlast');if(last){card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
+  mistCard(g,L);dipCard(g,L);
 }
 
 function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Answer each question, then rate how sure you were before you see the result.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
   runRound(box,{items,title:'Question',conf,done:res=>testResults(L,res,conf)});stopBtn(c,L);}
-function stopBtn(c,L){const r=el('div',{class:'row',style:'justify-content:flex-end'}),b=el('button',{type:'button',class:'btn sm ghost'},'Stop this test');let armed=0;
-  b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent='Select again to stop. Your answers so far are saved.';setTimeout(()=>{armed=0;b.textContent='Stop this test';},4000);return;}if(now-armed<600)return;const f=RR_PEND;RR_PEND=null;if(f)f();testSetupPage(L);};r.append(b);c.append(r);}
+/* o.msg: what the second selection does; o.stop runs before the Test page is shown again */
+function stopBtn(c,L,o={}){const r=el('div',{class:'row',style:'justify-content:flex-end'}),b=el('button',{type:'button',class:'btn sm ghost'},'Stop this test');let armed=0;
+  b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent=o.msg||'Select again to stop. Your answers so far are saved.';setTimeout(()=>{armed=0;b.textContent='Stop this test';},4000);return;}if(now-armed<600)return;const f=RR_PEND;RR_PEND=null;if(f)f();if(o.stop)o.stop();testSetupPage(L);};r.append(b);c.append(r);}
 
 /* ----- results and revision ----- */
 const CKEY=r=>r.ok?(r.conf==='sure'?'ok-sure':'ok-doubt'):(r.conf==='sure'?'bad-sure':r.conf==='guess'?'bad-guess':'bad-unsure');
@@ -12005,6 +12129,108 @@ function testRevise(L,items,conf){TBUSY=1;const n=items.length,g=testHead(L,'Rev
     const K=Object.keys(CGROUP),still=res.filter(r=>!r.ok||(conf&&r.conf!=='sure')).sort((a,b)=>K.indexOf(CKEY(a))-K.indexOf(CKEY(b)));
     const cc=card(g2,still.length?'Still to revise':conf?'All secure':'All correct',still.length?`<p class="hint">${conf?'These questions were wrong, or you were not sure.':'These questions were wrong again.'} ${still.some(r=>r.ok)?'Wrong answers are in your spaced repetition.':'They stay in your spaced repetition.'}</p>`+still.map(missHTML).join(''):`<p>You answered every revision question correctly${conf?' and with confidence':''}.</p>`);
     const row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],still.length?['Revise these again',()=>testRevise(L,still.map(r=>r.x),conf),'ghost']:null].filter(Boolean).forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});cc.append(row);window.scrollTo({top:0});}});}
+
+/* ===================== my mistakes: every question that you answered wrong, from the history of each question (h.m > 0) ===================== */
+/* the last wrong answer as text: h.lv is an option index, a text, or '' for a shown answer. An older entry has no lv: then the lesson quiz's saved answer is used */
+function lastWrong(x,h){const it=x.it;if(x.gen)return 'not shown, because the numbers change each time';let v=h.lv;
+  if(v==null){const a=/_\d+$/.test(x.id)?Store.get(x.id):null;if(a&&!a.ok)v=a.s?'':a.v;}
+  if(v==null)return 'not recorded';if(v==='')return 'you showed the answer';if(it.o)return typeof v==='number'&&it.o[v]!=null?optLbl(it,v):String(v);return String(v).replace(/10\^([−-]?\d+)/,'10<sup>$1</sup>')+(it.u?' '+it.u:'');}
+/* one row for each question with a miss, the newest miss first. fixed: answered correctly after its last miss */
+function mistakes(){const out=[];Store.xk('h').forEach(id=>{const h=Store.x('h',id);if(!h||!h.m||!qHas(id))return;const x=qItem(id);if(!x)return;const a=/_\d+$/.test(id)?Store.get(id):null;
+  out.push({x,h,id,t:h.lm||h.t||0,fixed:h.l===1||(h.l==null&&!!(a&&a.ok&&!a.s)),va:lastWrong(x,h)});});return out.sort((a,b)=>b.t-a.t);}
+const mistAll=svMemo(mistakes,{q:1});
+/* only the counts (all, not fixed), for the Today card and the Test page: no question is built */
+const mistCount=svMemo(()=>{let n=0,nf=0;Store.xk('h').forEach(id=>{const h=Store.x('h',id);if(!h||!h.m||!qHas(id))return;n++;const a=h.l==null&&/_\d+$/.test(id)?Store.get(id):null;if(!(h.l===1||(h.l==null&&a&&a.ok&&!a.s)))nf++;});return {n,nf};},{q:1});
+/* lessons ranked by their share of correct answers (c / (c + m)), lowest first, over their lesson, bank and calculation questions, with at least 3 answers */
+function weakLessons(){const by={};Store.xk('h').forEach(id=>{const h=Store.x('h',id),p=id.split('_');if(!h||!(h.c||h.m)||p.length!==3||!SUBJ[p[0]]||!qHas(id))return;
+    const k=p[0]+'_'+p[1],b=by[k]||(by[k]={sk:p[0],L:+p[1],c:0,m:0});b.c+=h.c||0;b.m+=h.m||0;});
+  return Object.values(by).filter(b=>b.c+b.m>=3&&b.m).sort((a,b)=>a.c/(a.c+a.m)-b.c/(b.c+b.m)||b.m-a.m);}
+/* the rows of a list, grouped by section and lesson: the group with the newest miss first */
+function mistGroups(rs){const gs=[],gi={};rs.forEach(r=>{const k=r.x.sk+'_'+r.x.L;if(!gi[k])gs.push(gi[k]={sk:r.x.sk,L:r.x.L,rs:[]});gi[k].rs.push(r);});return gs;}
+const MPG=25,MIST_F=[['All',()=>1],['Not fixed',r=>!r.fixed],['Missed twice or more',r=>r.h.m>=2]];
+const mistHTML=r=>{const it=r.x.it,t=qTag(it.q);return `<div class="miss"><${t}>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</${t}>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">${r.fixed?`<b>${icon('check',13)} Fixed</b> · `:''}Missed ${r.h.m} ${r.h.m===1?'time':'times'}${r.h.lm?' · last on '+fmtDay(dayOf(r.h.lm)):''}</p><p class="hint">Your last wrong answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;};
+function mistPDF(rs){const P=[{t:'My mistakes',s:18,b:1},{t:new Date().toLocaleString(),s:10},{t:`${rs.length} ${rs.length===1?'question':'questions'}, ${rs.filter(r=>!r.fixed).length} not fixed yet`,s:13,b:1,g:8}],wl=weakLessons().slice(0,8);
+  if(wl.length)P.push({t:'Weakest lessons',s:13,b:1,g:10},...wl.map(b=>({t:`${SUBJ[b.sk].name}: ${SUBJ[b.sk].lessons[b.L].t}: ${b.c} of ${b.c+b.m} answers correct`})));
+  let i=0;mistGroups(rs).forEach(G=>{P.push({t:SUBJ[G.sk].name+': '+SUBJ[G.sk].lessons[G.L].t,s:13,b:1,g:10});G.rs.forEach(r=>{const it=r.x.it;
+    P.push({t:(++i)+'. '+plain(it.q)+(r.x.gen?' (new numbers)':''),g:6},{t:`Missed ${r.h.m} ${r.h.m===1?'time':'times'}${r.fixed?', fixed':''}. Your last wrong answer: ${plain(r.va)}`,s:10},{t:'Correct answer: '+plain(ansText(it)),b:1},...(fixedOrd(it)?it.o.map((o,j)=>({t:'ABCDEFG'[j]+'. '+plain(o),s:10})):[]),{t:plain(it.w||''),s:10});});});return P;}
+/* the My mistakes page of the Test tab: weakest lessons, the log with its filters, Retry and a PDF */
+function mistakesPage(L){TBUSY=2;const all=mistAll(),nf=all.filter(r=>!r.fixed).length;
+  const g=testHead(L,'My mistakes',all.length?`${all.length} ${all.length===1?'question':'questions'} that you answered wrong at least once, ${nf} not fixed yet. A question is fixed when you answer it correctly after your last miss.`:'No wrong answers yet. A question that you answer wrong in a lesson, a review, an exam or a round appears here.');
+  const wl=weakLessons().slice(0,8);
+  if(wl.length){const c=card(g,'Weakest lessons',`<p class="hint">The share of correct answers in each lesson, over its lesson, review-bank and calculation questions (lessons with at least 3 answers). The weakest is first.</p><div class="bars">${wl.map(b=>`<div class="barrow"><span>${icon(lessonIcon(b.sk,b.L),15)}<span>${SUBJ[b.sk].lessons[b.L].t} <small class="hint">${SUBJ[b.sk].name}</small></span></span><div class="bar2"><i class="b2" data-w="${Math.round(100*b.c/(b.c+b.m))}"></i></div><b>${b.c} / ${b.c+b.m}</b><button type="button" class="btn sm ghost" data-go="${b.sk}_${b.L}">Open</button></div>`).join('')}</div>`);
+    grow(c);$$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,l]=b.dataset.go.split('_');goLesson(sk,+l);});}
+  const box=card(g,all.length?'The questions':'',''),fr=el('div',{class:'row'}),act=el('div',{class:'row'}),list=el('div'),msg=el('p',{class:'hint','aria-live':'polite'});let f=0,lim=MPG;
+  const rb=el('button',{type:'button',class:'btn'}),pb=el('button',{type:'button',class:'btn ghost'},'Save this list as a PDF'),bk=el('button',{type:'button',class:'btn ghost'},'Back to the Test page');
+  if(all.length){box.append(fr,act,msg,list);seg(fr,MIST_F.map(x=>x[0]),i=>{f=i;lim=MPG;draw();});act.append(rb,pb);}act.append(bk);if(!all.length)box.append(act);
+  const sel=()=>all.filter(MIST_F[f][1]);
+  function draw(){const s=sel(),N=Math.min(20,s.length);rb.innerHTML=icon('target',15)+(s.length?`Retry these (${N}${s.length>N?' of '+s.length:''})`:'Retry these');rb.disabled=!s.length;pb.disabled=!s.length;msg.textContent='';
+    /* the first lim rows, group by group: Show more adds rows at the end, so that the rows on screen do not move */
+    let left=lim;const vis=[];mistGroups(s).forEach(G=>{if(left>0){const rs=G.rs.slice(0,left);left-=rs.length;vis.push([G,rs]);}});
+    list.innerHTML=s.length?vis.map(([G,rs])=>`<h4>${icon(G.sk,15)} ${SUBJ[G.sk].name} · ${SUBJ[G.sk].lessons[G.L].t} <span class="hint">(${G.rs.length})</span></h4>`+rs.map(mistHTML).join('')).join('')
+      +(s.length>lim?`<div class="row"><button type="button" class="btn ghost" data-more>Show ${Math.min(MPG,s.length-lim)} more</button><span class="hint">${lim} of ${s.length} shown</span></div>`:''):'<p class="hint">No questions are in this list.</p>';
+    const mb=$('[data-more]',list);if(mb)mb.onclick=()=>{const k=lim;lim+=MPG;draw();const m=$$('.miss',list)[k];if(m){m.tabIndex=-1;m.focus();}};}
+  /* not fixed first; a calculation gets new numbers */
+  rb.onclick=()=>{const s=sel(),o=s.filter(r=>!r.fixed).concat(s.filter(r=>r.fixed)).slice(0,20).map(r=>r.x.gen?qItem(r.id):r.x).filter(Boolean);mistakesRetry(L,o);};
+  pb.onclick=async()=>{pb.disabled=true;msg.textContent=await savePDF('my-mistakes.pdf',mistPDF(sel()));pb.disabled=false;};bk.onclick=()=>testSetupPage(L);
+  if(all.length)draw();}
+function mistakesRetry(L,items){TBUSY=1;const g=testHead(L,'Retry my mistakes',`${items.length} ${items.length===1?'question':'questions'}, the ones not fixed first. Feedback shows after each answer.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  stopBtn(c,L);runRound(box,{items,title:'Question',done:res=>{const k=res.filter(r=>r.ok).length;mistakesPage(L);toast(`${k} of ${res.length} correct. A question that you answered correctly now counts as fixed.`);}});}
+/* the entry on the Test page and on the Today review card. A running test is not interrupted */
+function mistCard(g,L){const {n:all,nf}=mistCount();if(!all)return;
+  const c=card(g,'My mistakes',`<p>${all} ${all===1?'question':'questions'} answered wrong at least once, <b>${nf} not fixed yet</b>. See them by lesson with your last wrong answer, retry them, or save them as a PDF.</p><div class="row"><button type="button" class="btn ghost">${icon('book',15)}Open my mistakes</button></div>`);$('.btn',c).onclick=()=>mistakesPage(L);}
+function openMistakes(){const i=SUBJECTS.findIndex(s=>s.test);if(i<0)return;tabSeg.set(i);showTab(i);const L=$('#test-0');if(L&&TBUSY!==1)mistakesPage(L);}
+
+/* ===================== diploma practice exam: the sections of one course in a timed exam with multiple choice and numerical response
+   in the diploma's ratio, drawn evenly from every lesson, with no feedback until it is submitted ===================== */
+/* nr: the share of numerical-response questions on the diploma; min: minutes for each question (the diploma's pace) */
+const DIP=[{k:'phy',name:'Physics 30',nr:14/50,min:3.6},{k:'chem',name:'Chemistry 30',nr:16/60,min:3},{k:'bio',name:'Biology 30',nr:12/60,min:3}];
+const dipUnits=d=>(SUBJECTS.find(s=>s.k===d.k)||{units:[]}).units.filter(u=>SUBJ[u]);
+/* n questions, about d.nr of them numerical response (questions that fit the four boxes, and calculations with new numbers), one lesson at a time */
+function dipPick(d,n){const us=dipUnits(d),ls=us.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>({sk,L,a:lessonItems(sk,le,L)})).filter(x=>x.a)),gen=us.flatMap(sk=>genList(sk).map(g=>{const it=g.f();return {it,sk,L:g.L,id:g.id,gen:1};}));
+  const take=(groups,k)=>{groups=shuffle(groups.filter(a=>a.length));const out=[];let j=0;while(out.length<k&&groups.some(a=>a.length)){const a=groups[j++%groups.length];if(a.length)out.push(a.pop());}return out;};
+  const nr=take(ls.map(x=>shuffle(x.a.filter(y=>nrOf(y.it)).concat(gen.filter(g=>g.sk===x.sk&&g.L===x.L&&nrSpec(g.it.n))))),Math.round(n*d.nr)),mc=take(ls.map(x=>shuffle(x.a.filter(y=>y.it.o))),n-nr.length);
+  return shuffle(mc.map(x=>Object.assign({},x,{kind:'mc',ord:optOrd(x.it)})).concat(nr.map(x=>Object.assign({},x,{kind:'nr',nr:x.it.code?nrOf(x.it):nrSpec(x.it.n)}))));}
+/* a diploma practice exam in progress is kept in this tab (sessionStorage), like the unit exam: a reload, or a phone that drops the page while another app is open, does not lose it */
+const DIPK='exam:dip',dipSave=(d,E)=>{try{sessionStorage.setItem(DIPK,JSON.stringify({k:d.k,E}));}catch(e){}},dipDrop=()=>{try{sessionStorage.removeItem(DIPK);}catch(e){}};
+function dipLoad(L){let v=null;try{v=JSON.parse(sessionStorage.getItem(DIPK));}catch(e){}const d=v&&DIP.find(x=>x.k===v.k),E=v&&v.E;
+  if(!d||!E||!Array.isArray(E.items)||!E.items.length||!E.items.every(x=>x&&x.it&&SUBJ[x.sk]&&SUBJ[x.sk].lessons[x.L])){if(v)dipDrop();return false;}
+  if(Date.now()<E.end)dipRun(L,d,null,0,E);else dipDone(L,d,E);return true;}
+function dipCard(g,L){if(TBUSY!==1&&dipLoad(L))return;const st=Object.assign({c:2,n:20},gv('dipset')||{});
+  const c=card(g,'Diploma practice exam',`<p>The sections of one course in one timed exam: multiple choice and numerical response in the ratio of the diploma exam, from every lesson, at the diploma's pace. There is no feedback until you submit it.</p><div class="row"><span>Course:</span><span data-c></span></div><div class="row"><span>Questions:</span><span data-n></span></div><p class="hint" data-i></p><div class="row"><button type="button" class="btn">${icon('timer',15)}Start the exam</button></div>`);
+  const info=()=>{const d=DIP[st.c],us=dipUnits(d),nr=Math.round(st.n*d.nr),r=Store.x('g','dip_'+d.k);$('[data-i]',c).innerHTML=`${st.n-nr} multiple choice and ${nr} numerical response in ${Math.round(st.n*d.min)} minutes, from ${us.map(u=>SUBJ[u].name).join(', ')}. The site does not have every unit of ${d.name} yet.${r&&r.last?` Last: ${r.last.c} / ${r.last.n}. Best: ${r.best.c} / ${r.best.n}.`:''}`;},save=()=>gset('dipset',{c:st.c,n:st.n});
+  seg($('[data-c]',c),DIP.map(d=>d.name),i=>{st.c=i;info();save();}).set(st.c);seg($('[data-n]',c),['10','20','30'],i=>{st.n=[10,20,30][i];info();save();}).set(Math.max(0,[10,20,30].indexOf(st.n)));info();
+  $('.row .btn',c).onclick=()=>{const d=DIP[st.c],items=dipPick(d,st.n);if(items.length)dipRun(L,d,items,Math.round(items.length*d.min));};}
+function dipRun(L,d,items,mins,E0){TBUSY=1;const E=E0||{items,ans:items.map(()=>null),i:0,t0:Date.now(),end:Date.now()+mins*60000},N=E.items.length,has=j=>E.ans[j]!=null&&E.ans[j]!=='';let tick=0;mins=Math.round((E.end-E.t0)/60000);dipSave(d,E);
+  const g=testHead(L,d.name+': diploma practice',`${N} questions, ${mins} minutes. There is no feedback until you submit the exam.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  const done=()=>{clearInterval(tick);if(TBUSY!==1||!box.isConnected)return;dipDone(L,d,E);};
+  tick=setInterval(()=>{if(!box.isConnected||TBUSY!==1){clearInterval(tick);return;}const left=E.end-Date.now(),t=$('[data-t]',box);if(t){t.textContent=fmtT(left)+' left';t.classList.toggle('low',left<120000);}if(left<=0)done();},500);
+  function show(f){const x=E.items[E.i];box.innerHTML=`<div class="qh"><b>Question ${E.i+1} of ${N}</b><span class="score" data-t>${fmtT(E.end-Date.now())} left</span></div><div class="chipsrow" data-nav></div><p class="hint">${SUBJ[x.sk].name} · ${x.kind==='mc'?'Multiple choice':'Numerical response'}</p><div class="qt">${x.it.q}</div>${x.it.fig?`<div class="qfig">${x.it.fig}</div>`:''}`;
+    const nav=$('[data-nav]',box);E.items.forEach((y,j)=>{const b=el('button',{type:'button',class:'chip'+(j===E.i?' on':'')+(has(j)?' placed':''),'aria-label':'Question '+(j+1)+(has(j)?', answered':'')},String(j+1));if(j===E.i)b.setAttribute('aria-current','step');else b.tabIndex=-1;b.onclick=()=>{E.i=j;show(1);};nav.append(b);});arrowKeys(nav,()=>[...nav.children],()=>E.i);
+    const mk=()=>{nav.children[E.i].classList.toggle('placed',has(E.i));dipSave(d,E);};dipSave(d,E);
+    if(x.kind==='mc'){const ops=el('div',{class:'ops'});x.ord.forEach(j=>{const b=el('button',{type:'button',class:'op'+(E.ans[E.i]===j?' sel':''),'aria-pressed':String(E.ans[E.i]===j)},optLbl(x.it,j));b.onclick=()=>{E.ans[E.i]=j;$$('.op',ops).forEach(o=>{o.classList.remove('sel');o.setAttribute('aria-pressed','false');});b.classList.add('sel');b.setAttribute('aria-pressed','true');mk();};ops.append(b);});box.append(ops);}
+    else{const sp=x.nr;box.append(el('p',{class:'hint'},(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${x.it.any?', in any order':''}.`:sp.m==='d'?'Record your answer in the four boxes, from the left. A decimal point uses one box. Record 0.456 as .456.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
+      const bx=el('div',{class:'nr'}),cur=(E.ans[E.i]||'').padEnd(4,' ');
+      for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'decimal',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
+        b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');E.ans[E.i]=[...bx.children].map(z=>z.value||' ').join('').replace(/\s+$/,'');mk();if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
+        b.onkeydown=e=>{if(e.key==='Backspace'&&!b.value&&k>0)bx.children[k-1].focus();};b.onfocus=()=>b.select();bx.append(b);}box.append(bx);}
+    const row=el('div',{class:'row'}),pv=el('button',{type:'button',class:'btn ghost'},'Previous'),nx=el('button',{type:'button',class:'btn'},'Next'),sb=el('button',{type:'button',class:'btn ghost'},'Submit the exam');let armed=0;
+    pv.disabled=E.i===0;nx.disabled=E.i===N-1;pv.onclick=()=>{E.i--;show();toQ(box);};nx.onclick=()=>{E.i++;show();toQ(box);};
+    sb.onclick=()=>{const now=Date.now();if(!armed){armed=now;const un=E.items.filter((_,j)=>!has(j)).length;sb.textContent=(un?un+' without an answer. ':'')+'Select again to submit';setTimeout(()=>{armed=0;if(sb.isConnected)sb.textContent='Submit the exam';},5000);return;}if(now-armed<600)return;done();};
+    row.append(pv,nx,sb);box.append(row);if(f)nav.children[E.i].focus({preventScroll:true});}
+  show();stopBtn(c,L,{msg:'Select again to stop. This exam is not scored, and its answers are not saved.',stop:dipDrop});}
+/* results: the score, each section, and the questions to study again; answered questions go into the history and spaced repetition */
+function dipDone(L,d,E){dipDrop();const used=Math.min(Date.now(),E.end)-E.t0,res=E.items.map((x,j)=>{const a=E.ans[j],na=a==null||a==='';const ok=na?0:x.kind==='mc'?(a===x.it.a?1:0):(nrOK(x.nr,nrVal(x.nr,a),x.it)?1:0);
+    return {x,na,ok,va:na?'no answer':x.kind==='mc'?optLbl(x.it,a):nrShow(x.nr,a)+(x.it.u?' '+x.it.u:''),v:x.kind==='mc'?a:plain(nrShow(x.nr,a))};});
+  res.forEach(r=>{if(!r.na){onAnswer(r.x.id||null,!!r.ok,{sk:r.x.sk,L:r.x.L,nocombo:1,v:r.v});srMark(r.x.id||null,!!r.ok);}});
+  const n=res.length,c=res.filter(r=>r.ok).length,f=n?c/n:0,prev=Store.x('g','dip_'+d.k)||{},best=!prev.best||f>prev.best.c/prev.best.n||(f===prev.best.c/prev.best.n&&n>prev.best.n)?{c,n}:prev.best;
+  Store.xs('g','dip_'+d.k,{last:{c,n,day:today()},best});if(f>=.85)inc('exam85');markStudy();afterChange();TBUSY=2;
+  const by={};res.forEach(r=>{const b=by[r.x.sk]||(by[r.x.sk]=[0,0]);b[1]++;if(r.ok)b[0]++;});
+  const g=testHead(L,d.name+': results',`${c} of ${n} correct in ${fmtT(used)} (min:s).`),c1=card(g,'Score',`<div class="rv-top">${ringHTML()}<div><p style="font-size:1.25rem;font-weight:650;margin:0">${f>=.85?'You are ready for this part of the course.':f>=.6?'A good base. Study the questions below.':'Study these sections again, then take the exam again.'}</p>
+    <div class="stats"><div class="stat"><span>This exam</span><b>${c} / ${n}</b></div><div class="stat"><span>Best</span><b>${best.c} / ${best.n}</b></div>${prev.last?`<div class="stat"><span>Previous</span><b>${prev.last.c} / ${prev.last.n}</b></div>`:''}</div>
+    <div class="bars">${Object.keys(by).map(sk=>`<div class="barrow"><span>${icon(sk,15)}${SUBJ[sk].name}</span><div class="bar2"><i class="b2" data-w="${100*by[sk][0]/by[sk][1]}"></i></div><b>${by[sk][0]} / ${by[sk][1]}</b><span></span></div>`).join('')}</div></div></div>`);
+  setRing(c1,f,c+' of '+n);grow(c1);const miss=res.filter(r=>!r.ok);
+  card(g,miss.length?'Questions to study again':'No incorrect answers',miss.length?`<p class="hint">The questions that you answered are now in your history and in spaced repetition. A question without an answer is not.</p>`+miss.map(missHTML).join(''):'');
+  const nx=card(g,'',''),row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],['Another diploma practice exam',()=>dipRun(L,d,dipPick(d,n),Math.round(n*d.min)),'ghost']].forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});nx.append(row);window.scrollTo({top:0});}
 
 boot();
 
