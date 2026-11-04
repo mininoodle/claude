@@ -960,8 +960,10 @@ function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n)return '';const r=x/n,n
   if(n>0&&x>0&&near(x,1/n))return 'You have the reciprocal of the answer. Check which quantities are on the top and on the bottom.';
   if(!pl&&n>0&&x>0&&n!==1&&(near(x,n*n)||near(x,Math.sqrt(n))))return 'Check the exponent or the square root in your calculation.';
   return '';}
-/* one question. sv is a saved answer or null. cb receives {v,ok,s}. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer. */
-function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.'){
+/* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
+   cb receives {v,ok,s,hi}: hi is the number of hints used. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer.
+   opt.hintNote follows a correct answer that used a hint */
+function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt={}){
   const q=el('div',{class:'q'},`<p class="qt">${label?`<b>${label}</b> `:''}${it.q}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});
   const say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
   if(it.o){
@@ -978,16 +980,16 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.'){
     const ans=()=>`<b>Answer: ${ansText(it)}</b>. ${it.w||''}`;
     const show=(e,anim)=>{const d=e.ok?'':diagnose(parseNum(e.v),it);
       if(e.s&&!e.ok)say('info',ans()+' <span class="hint">This question does not count as correct now.'+note+'</span>');
-      else if(e.ok)say('ok','Correct. '+(it.w||''));
+      else if(e.ok)say('ok','Correct. '+(it.w||'')+(e.hi&&opt.hintNote?' <span class="hint">'+opt.hintNote+'</span>':''));
       else say('bad',test?'Not correct. '+(d?d+' ':'')+ans():'Not correct. '+(d||(it.plain?'Check your reasoning and your arithmetic.':'Check the sign, the units and the conversions.'))+(steps.length?' Use a hint or try again.':' Try again.'));
       if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);};
     const chk=()=>{if(test&&q.dataset.done)return;if(shown){show({v:inp.value.trim().slice(0,24),ok:0,s:1},false);return;}const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. You can type 6.25e6 for 6.25 × 10⁶.');return;}
-      const e={v:inp.value.trim().slice(0,24),ok:good(x)?1:0};if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);};
+      const e={v:inp.value.trim().slice(0,24),ok:good(x)?1:0};if(hi)e.hi=hi;if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);};
     row.children[2].onclick=chk;inp.addEventListener('keydown',e=>{if(e.key==='Enter')chk();});
     const hb=$('[data-h]',row),sb=$('[data-s]',row);
     if(hb)hb.onclick=()=>{if(hi<steps.length){const li=el('li',{},steps[hi++]);hl.append(li);}if(hi>=steps.length){hb.disabled=true;hb.textContent='No more hints';}};
     if(sb)sb.onclick=()=>{const e={v:inp.value.trim().slice(0,24),ok:0,s:1};show(e,false);if(!shown){shown=true;cb(e);}};
-    q.append(row,hl);if(sv){inp.value=sv.v??'';show(sv,false);}
+    q.append(row,hl);if(sv&&sv.re)say('info',sv.re);else if(sv){inp.value=sv.v??'';show(sv,false);}
   }
   q.append(fb);return q;
 }
@@ -995,16 +997,22 @@ const QUIZ={};
 function quiz(host,items,title,base){
   const c=el('section',{class:'card glass quiz'});host.append(c);
   /* the saved answers this card shows: a sync that does not change them leaves the card (and what is typed in it) alone */
-  const sg=()=>items.map((_,i)=>{const e=Store.get(base+'_'+i);return e?[e.v,e.ok,e.s].join():'';}).join('|');let last='';
+  const sg=()=>items.map((_,i)=>{const e=Store.get(base+'_'+i);return e?[e.v,e.ok,e.s].join():'';}).join('|')+'|'+today();let last='';
+  /* a correct numeric answer from an earlier day that can still give a mastery day today is not filled in, so that Check needs the answer worked out again */
+  const saved=(id,it)=>{const s=Store.get(id),td=today();if(!s||it.o||!s.ok||s.s||!s.t||dayOf(s.t)===td)return s;const h=Store.x('h',id);if(!mStep(okDays(id),td)||(h&&h.rv===td))return s;
+    return Object.assign({},s,{re:`Correct on ${fmtDay(dayOf(s.t))}${s.hi?' with a hint':''}. Solve it again${s.hi?' without a hint':''} to count it for mastery today.`});};
   const render=()=>{last=sg();c.innerHTML=`<div class="qh"><h3>${title||'Check your understanding'}</h3><span class="score" aria-live="polite"></span></div>`;const sc=$('.score',c);
     const upd=b=>{sc.textContent=items.filter((_,i)=>{const e=Store.get(base+'_'+i);return e&&e.ok;}).length+' / '+items.length;if(b)fx(sc,'bump');};
     /* a shown answer does not count and logs one miss; the same correct answer checked again on the same day counts once */
-    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',Store.get(id),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
-      const ok=!!(e.ok&&!e.s);Store.set(id,e);last=sg();upd(true);if(ok&&p&&p.ok&&p.t&&dayOf(p.t)===today())return;
-      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v});},false));});
+    /* a correct answer that used a hint counts for Practised, not as a mastery day; checked again on the same day without the hint, it keeps the hint */
+    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',saved(id,it),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
+      const ok=!!(e.ok&&!e.s),same=ok&&p&&p.ok&&p.t&&dayOf(p.t)===today();if(same&&p.hi&&!e.hi)e=Object.assign({},e,{hi:p.hi});Store.set(id,e);last=sg();upd(true);if(same)return;
+      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v,hint:!!e.hi});},false,undefined,{hintNote:'You used a hint, thus this answer counts for Practised but not as a mastery day.'}));});
     /* clears this lesson's own questions (not its review bank): answers, spaced repetition and the correct-count; the mastery history stays */
     const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();};r.append(b);c.append(r);upd();};
-  render();QUIZ[base]=()=>{if(sg()!==last)render();};return c;
+  render();QUIZ[base]=()=>{if(sg()!==last)render();};
+  /* a page left open past midnight: a correct answer from the day before is no longer filled in */
+  const day=()=>{if(!c.isConnected){LIVE.delete(day);return;}if(sg()!==last)render();};LIVE.add(day);return c;
 }
 /* clickable diagram: explore, test and drag-the-labels modes */
 function hotspot(host,svg,parts,opt={}){
@@ -10877,11 +10885,12 @@ function okTwo(d){if(d.size<2)return false;const a=[...d].sort();return a[1]<MCU
 const mStep=(d,td)=>!okTwo(d)&&!d.has(td)&&(!d.size||okTwo(new Set([...d,td])));
 /* the first day (number) on which a correct answer completes the pair */
 const mNext=d=>Math.max(dayNum(today())+1,dayNum([...d].sort()[0])+MGAP);
-function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));return s;}
+function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&!a.hi&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));return s;}
 /* lessonLevel runs for every lesson after each answer (badges, chips, the Today page): it is computed once for each change of the progress, and each caller gets its own copy */
 const lvMemo=svMemo((sk,L)=>lessonLevel0(sk,L),{q:1});function lessonLevel(sk,L){const r=lvMemo(sk,L);return r&&Object.assign({},r);}
 function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
-  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
+  /* a correct answer with a hint (h.hd, or a saved answer with hi) counts for Practised (ok1), not for the two mastery days */
+  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id),a=Store.get(id);if(a||(h&&(h.c||h.m)))ans++;if(d.size>=1||(h&&h.hd)||(a&&a.ok&&!a.s&&a.hi))ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
   /* nr: questions whose latest answer was wrong. A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
   const n=le.qz.length;return {n,ans,ok1,ok2,nr,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
 const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
@@ -10900,7 +10909,8 @@ function onAnswer(id,ok,o={}){
   const td=today(),has=o.sk&&SUBJ[o.sk]&&o.L!=null&&o.L>=0,before=has?(o.before||lessonLevel(o.sk,o.L)):null;
   /* the history entry also keeps l, the latest result (1 correct, 0 wrong), and for the mistake log lv and lm: the last wrong answer (an option index, a text of at most 24 characters,
      or '' when the answer was shown) and the time of that miss. Fields that this version does not set are kept */
-  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;
+  /* o.hint: a correct answer that used a hint adds no mastery day; hd keeps its day, so it still counts for Practised */
+  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&!o.hint&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;if(ok&&o.hint&&rv!==td)e.hd=td;
     if(!ok){e.lm=Date.now();if(o.v!=null)e.lv=typeof o.v==='number'?o.v:String(o.v).trim().slice(0,24);}Store.xs('h',id,e);}
   if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
