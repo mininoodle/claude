@@ -721,6 +721,23 @@ p.legend>span{white-space:normal;min-width:0}
 /* text and icons on the accent fill var(--a1). In dark mode the fill is a light blue: white on it is 2.8:1, #191919 is 6.2:1 */
 body{--on-a1:#fff}
 [data-mode="dark"] body{--on-a1:#191919}
+/* the rail: the mode and account buttons in the 'Study' row */
+#rail .rail-brand .rail-tools{margin:0 0 0 auto;padding:0;gap:4px}
+#rail .rail-brand{padding-top:2px;padding-bottom:6px}
+/* a wide screen: the reference sheet and Review are pinned at the top of the lesson list, with a line under them */
+@media(min-width:901px){
+  #rail .chips button.pin{order:-1}
+  #rail .chips button.pin-end{position:relative;margin-bottom:9px}
+  #rail .chips button.pin-end::after{content:"";position:absolute;left:8px;right:8px;bottom:-5px;border-bottom:1px solid var(--hair)}
+}
+/* a narrow screen: the rail's first row holds the subjects (scrolling sideways) and, at its end, the mode and account buttons */
+@media(max-width:900px){
+  html #rail{flex-direction:row;flex-wrap:wrap;align-items:center}
+  #rail>*{flex:1 1 100%;min-width:0;order:3}
+  #rail>#tabs{flex:1 1 0;order:1}
+  #rail>.rail-brand{display:flex;flex:none;order:2;padding:0}
+  #rail>.rail-brand>:not(.rail-tools){display:none}
+}
 </style>
 <script>
 'use strict';
@@ -872,7 +889,8 @@ function ctl(host,defs,on){
   host.append(box);
   return {v,box,set(o){for(const k in o)sets[k]&&sets[k](o[k]);on&&on(v);}};
 }
-function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
+/* Left and Right move to the previous or next tab; in a list shown as a column (aria-orientation="vertical", the rail on a wide screen) Up and Down do too */
+function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const v=box.getAttribute('aria-orientation')==='vertical',d=e.key==='ArrowRight'||v&&e.key==='ArrowDown'?1:e.key==='ArrowLeft'||v&&e.key==='ArrowUp'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
 /* segmented control: the glass thumb stretches while it moves */
 function seg(host,labels,on,cls='in'){
   const s=el('div',{class:'seg '+cls,role:'tablist'}),th=el('i',{class:'thumb'});s.append(th);let cur=0,px=null,py=0;
@@ -1318,13 +1336,12 @@ function showUnit(k,first){
   sectBar(k);showLesson(curL[k],{first});chipProgress();
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
-/* section bar: a grouped unit gets a row of its own for its sections, under the unit bar.
-   Clear answers moves into this row, because it clears the open section only. */
-function sectBar(k){const host=$('#units'),ug=ugOf(k),cb=$('.uclear',host);let row=$('.usec',host);
-  if(row&&(!ug||!secSeg||secSeg.g!==ug)){if(cb)host.append(cb);row.remove();row=null;}
+/* section bar: a grouped unit gets a row of its own for its sections, under the unit bar. (Clearing a section's answers is on its Review page.) */
+function sectBar(k){const host=$('#units'),ug=ugOf(k);let row=$('.usec',host);
+  if(row&&(!ug||!secSeg||secSeg.g!==ug)){row.remove();row=null;}
   if(!ug){secSeg=null;return;}
   if(!row){row=el('div',{class:'usec'},'<span class="ulabel">Sections</span>');secSeg={g:ug,s:seg(row,ug.units.map(unitLabel),i=>goSection(ug.units[i]))};host.append(row);}
-  if(cb)row.append(cb);secSeg.s.set(ug.units.indexOf(k));}
+  secSeg.s.set(ug.units.indexOf(k));}
 /* open section k of a grouped unit (at lesson i, or where it was left) */
 function goSection(k,i){if(i!=null)curL[k]=i;const S=SUBJECTS.find(s=>s.units.includes(k));if(S)curU[S.k]=k;showUnit(k);}
 function showTab(i,first){
@@ -1333,7 +1350,6 @@ function showTab(i,first){
   const D=dispUnits(S),pick=d=>typeof d==='string'?d:d.units.includes(curU[S.k])?curU[S.k]:d.units[0];
   host.append(el('span',{class:'ulabel'},S.name+(D.length>1?' units':' unit')));
   const us=seg(host,D.map(d=>typeof d==='string'?unitLabel(d):groupLabel(d)),j=>{const u=pick(D[j]);curU[S.k]=u;showUnit(u);});
-  const cb=el('button',{type:'button',class:'btn sm ghost uclear'},icon('reset',14)+'Clear answers');cb.onclick=()=>askClear(curS);host.append(cb);
   const j=Math.max(0,D.findIndex(d=>d===curU[S.k]||(typeof d!=='string'&&d.units.includes(curU[S.k]))));curU[S.k]=pick(D[j]);
   showUnit(curU[S.k],first);if(j)us.set(j);
 }
@@ -11445,10 +11461,11 @@ html{scroll-padding-top:62px}
   const main=$id('main');if(!main||$id('rail'))return;
   const shell=document.createElement('div');shell.id='shell';main.parentNode.insertBefore(shell,main);
   const rail=document.createElement('aside');rail.id='rail';rail.setAttribute('aria-label','Navigation');
-  rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span>Study</div><div class="rail-h">Subjects</div>';
+  rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span><span class="rail-name">Study</span></div><div class="rail-h">Subjects</div>';
   rail.append($id('tabs'),$id('units'));
   const lh=document.createElement('div');lh.className='rail-h';lh.textContent='Lessons';rail.append(lh,$id('chips'));
-  const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.append(tools);
+  /* the mode and account buttons sit in the 'Study' row at the top, thus they stay in view however long the lists are */
+  const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.firstChild.append(tools);
   shell.append(rail,main);
   const crumb=document.createElement('div');crumb.className='crumb';crumb.innerHTML='<nav class="crumb-path" aria-label="Breadcrumb"></nav><span class="crumb-right"></span>';main.prepend(crumb);
   const path=crumb.firstChild,right=crumb.lastChild,sep='<span class="crumb-sep" aria-hidden="true">/</span>';
@@ -11491,6 +11508,14 @@ html{scroll-padding-top:62px}
   /* keep the open lesson visible in the rail */
   const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'});};
   new MutationObserver(seen).observe($id('chips'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
+  /* the section's reference sheet and its Review (with the badge of due questions) are pinned at the top of the lesson list in the rail (CSS order),
+     thus they stay in view however long the list is. The arrow keys go round the same circle: the pinned two are the last two lessons */
+  const pins=()=>{const S=typeof SUBJ!=='undefined'&&SUBJ[curS],bs=[...$id('chips').children];if(!S)return;const rv=S.lessons.findIndex(l=>l.rv);
+    bs.forEach((b,i)=>{b.classList.toggle('pin',i===rv||(i===rv-1&&!!(REF[curS])));b.classList.toggle('pin-end',i===rv);});};
+  new MutationObserver(pins).observe($id('chips'),{childList:true});pins();
+  /* the rail's tab lists are columns on a wide screen and rows on a narrow one */
+  const wide=matchMedia('(min-width:901px)'),orient=()=>rail.querySelectorAll('[role=tablist]').forEach(t=>{if(wide.matches)t.setAttribute('aria-orientation','vertical');else t.removeAttribute('aria-orientation');});
+  new MutationObserver(orient).observe(rail,{childList:true,subtree:true});wide.addEventListener('change',orient);orient();
 })();
 </script>
 
