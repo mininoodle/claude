@@ -760,7 +760,8 @@ const Store=(()=>{
   const KEY='unit-study-site.v2',NOC='unit-study-site.noclaude',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},c:{},pos:null,u:null},lastW=null,canSave=true,warned=false;
   try{const s=localStorage.getItem(KEY);lastW=s;if(s){const o=JSON.parse(s);if(o&&typeof o==='object'){MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,rt=0,mode='device',lastPull=0,pulled=false,uid=null,src='',unsub=null,err='',cur=Promise.resolve(true),scope=()=>null;
-  const emit=()=>subs.forEach(f=>{try{f();}catch(e){}});
+  /* one failing subscriber does not stop the others, and its error is reported (the page tests fail on console errors) */
+  const emit=()=>subs.forEach(f=>{try{f();}catch(e){console.error('[store] subscriber failed',e);}});
   /* entries compare as JSON with sorted keys. The newer entry wins; a fixed order breaks a tie, so every copy keeps the same one */
   const J=x=>JSON.stringify(x,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
   const nw=(a,b)=>(a.t||0)>(b.t||0)||((a.t||0)===(b.t||0)&&J(a)>J(b));
@@ -840,7 +841,7 @@ const Store=(()=>{
   document.addEventListener('visibilitychange',()=>{if(document.hidden){if(dirty&&ref){clearTimeout(timer);push();}}else if(ref&&Date.now()-lastPull>60000)pull();});
   /* another tab saved: take its newer entries, so open tabs show each other's work */
   addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o!=='object')return;lastW=e.newValue;
-    const [ch,up]=adopt(o);if(ch)emit();if(up)local();}catch(_){}});
+    const [ch,up]=adopt(o);if(ch)emit();if(up)local();}catch(e){console.error('[store] the copy saved by another tab could not be read',e);}});
   const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});touch();};
   return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),
     rev:k=>g('r',k),setRev:(k,o)=>p('r',k,o),
@@ -1428,7 +1429,7 @@ function boot(){
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',$('#top').offsetHeight+'px')).observe($('#top'));
   let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
-  Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();refreshLive();homeDot();unitMarks();});
+  Store.on(()=>{Object.keys(QUIZ).forEach(k=>{try{QUIZ[k]();}catch(e){console.error('[quiz] '+k+' could not be redrawn',e);}});chipProgress();refreshLive();homeDot();unitMarks();});
   migrateBadges();Store.on(()=>{if(!gv('achMig'))migrateBadges();});
   /* a page left open past midnight: redraw what depends on the date (Today, mastery cards, due counts, the Today dot) */
   let day0=today();const dayTick=()=>{if(document.hidden||today()===day0)return;day0=today();chipProgress();refreshLive();homeDot();};
@@ -10847,7 +10848,7 @@ const qItem=id=>{if(!id)return null;const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SU
 const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
 const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
-const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}});}
+const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
 function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));return s;}
