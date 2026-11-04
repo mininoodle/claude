@@ -864,8 +864,10 @@ addEventListener('hashchange',()=>{let t=null;try{t=hashTarget(location.hash);}c
 /* ----- site search: the lessons' titles, headings and descriptions and the reference sheets' terms, formulas and hormones (indexed at the
    first search, from SUBJECTS, SUBJ and REF), and the card headings of the lessons already open ----- */
 const txt=h=>{const t=document.createElement('template');t.innerHTML=String(h==null?'':h);return t.content.textContent.replace(/\s+/g,' ').trim();};
-/* one plain form for the text and the query: no tags, no accents, no case; H₃O⁺ = H3O+, curly quotes and dashes as plain ones */
-const fold=s=>txt(s).normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'");
+/* one plain form for the text and the query: no accents, no case; H₃O⁺ = H3O+, curly quotes and dashes as plain ones. fold also drops the tags of the
+   lesson and reference texts; text that is already plain (a heading's text, the query) goes through plain only, thus a '<' in it stays text */
+const fplain=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'");
+const fold=s=>fplain(txt(s));
 let FIND=null;
 function findIndex(){if(FIND)return FIND;FIND=[];
   SUBJECTS.forEach(S=>S.units.forEach(k=>{const U=SUBJ[k];if(!U)return;const path=S.name+' › '+U.name;
@@ -873,13 +875,15 @@ function findIndex(){if(FIND)return FIND;FIND=[];
     const R=typeof REF!=='undefined'&&REF[k],ri=U.lessons.findIndex(l=>l.rv)-1;
     if(R&&ri>=0)[].concat(R.t||[],R.f||[],R.h||[]).forEach(r=>FIND.push({kind:1,t:txt(r[0]),body:r.slice(1).join(' '),k,i:ri,path:path+' › '+txt(U.lessons[ri].t)}));}));
   FIND.forEach(x=>{x.ft=fold(x.t);x.fb=fold(x.body);});return FIND;}
-/* the card headings of the lessons that are built (they exist only once a lesson has been opened) */
+/* the card headings of the lessons that are built (they exist only once a lesson has been opened). A lesson keeps its list until its number of cards
+   changes, thus a key typed in the search does not read every heading of every open lesson again (the Review page, whose cards change, is read each time) */
 function findCards(){const out=[];document.querySelectorAll('#main>article.lesson').forEach(A=>{const m=/^(.+)-(\d+)$/.exec(A.id),U=m&&SUBJ[m[1]];if(!U)return;const k=m[1],i=+m[2],le=U.lessons[i];if(!le)return;
-  const S=SUBJECTS.find(s=>s.units.includes(k)),seen=new Set([fold(le.t),fold(le.h||'')]);
-  A.querySelectorAll('.card h2,.card h3').forEach(h=>{const t=txt(h.textContent),ft=fold(t);if(!ft||seen.has(ft))return;seen.add(ft);
-    out.push({kind:2,t,ft,fb:'',k,i,path:(S?S.name+' › ':'')+U.name+' › '+txt(le.t)});});});return out;}
+  const n=A.getElementsByClassName('card').length;if(A._find&&A._findN===n&&!le.rv){out.push(...A._find);return;}
+  const S=SUBJECTS.find(s=>s.units.includes(k)),seen=new Set([fold(le.t),fold(le.h||'')]),path=(S?S.name+' › ':'')+U.name+' › '+txt(le.t),list=[];
+  A.querySelectorAll('.card h2,.card h3').forEach(h=>{const t=h.textContent.replace(/\s+/g,' ').trim(),ft=fplain(t);if(!ft||seen.has(ft))return;seen.add(ft);
+    list.push({kind:2,t,ft,fb:'',k,i,path});});A._find=list;A._findN=n;out.push(...list);});return out;}
 /* up to max matches: every word of the query is in the entry. Titles first, then card headings, terms, and matches in the text */
-function findTopics(q,max=8){const w=fold(q).split(' ').filter(Boolean);if(!w.length)return [];const hits=[];
+function findTopics(q,max=8){const w=fplain(q).split(' ').filter(Boolean);if(!w.length)return [];const hits=[];
   for(const x of findIndex().concat(findCards())){const inT=w.every(v=>x.ft.includes(v));if(!inT&&!w.every(v=>x.ft.includes(v)||x.fb.includes(v)))continue;
     let sc=inT?[100,60,80][x.kind]:[40,20,0][x.kind];if(x.ft.startsWith(w[0]))sc+=30;else if((' '+x.ft).includes(' '+w[0]))sc+=15;hits.push([sc-Math.min(10,x.ft.length/20),x]);}
   hits.sort((a,b)=>b[0]-a[0]);const seen=new Set(),res=[];
@@ -888,7 +892,7 @@ function findTopics(q,max=8){const w=fold(q).split(' ').filter(Boolean);if(!w.le
 function findGo(x){TOP=x.kind===0?1:0;goLesson(x.k,x.i);const A=document.getElementById(x.k+'-'+x.i);if(!A)return;
   if(x.kind===1){const inp=A.querySelector('input[aria-label="Search the formulas and terms"]');if(inp){inp.value=x.t;inp.dispatchEvent(new Event('input'));const c=inp.closest('.card');goTo(c);
       if(matchMedia('(pointer:fine)').matches)inp.focus({preventScroll:true});else focusTo(c,'h3');return;}}
-  if(x.kind===2){const c=[...A.querySelectorAll('.card')].find(c=>{const h=c.querySelector('h2,h3');return h&&fold(h.textContent)===x.ft;});if(c){goTo(c,'h2,h3');return;}}
+  if(x.kind===2){const c=[...A.querySelectorAll('.card')].find(c=>{const h=c.querySelector('h2,h3');return h&&fplain(h.textContent)===x.ft;});if(c){goTo(c,'h2,h3');return;}}
   focusTo(A,'h1');}
 
 /* ----- the course units of each subject (Alberta programs), and which of them are on the site. The units on the site come from SUBJECTS and
