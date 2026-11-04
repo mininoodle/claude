@@ -11189,14 +11189,15 @@ function duePick(n){const by={};shuffle(dueAll()).forEach(id=>{const sk=id.split
   while(out.length<n&&g.some(a=>a.length)){const a=g[k++%g.length];if(a.length)out.push(a.pop());}return out;}
 function reviewCard(g){const c=card(g,'','');let busy=0;
   function view(msg){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const due=dueAll(),by={};due.forEach(id=>{const sk=id.split('_')[0];by[sk]=(by[sk]||0)+1;});const units=UORDER.filter(sk=>by[sk]),now=Date.now();
+    const ma=mistAll(),nf=ma.filter(r=>!r.fixed).length,mk=ma.length?`<div class="row"><button type="button" class="btn sm ghost" data-mist>${icon('book',14)}My mistakes (${nf} not fixed)</button></div>`:'';
     const h=`<h3>${icon('target',18)} Review</h3>`+(msg||'');
     if(!due.length){const later=Store.srAll().filter(([k,e])=>e.d>now&&qHas(k)).map(([,e])=>e.d),nx=later.length?Math.min(...later):0,nd=nx?later.filter(d=>dayOf(d)===dayOf(nx)).length:0;
-      c.innerHTML=h+`<p>Nothing is due now.${nx?` Next: <b>${nd} ${nd===1?'question':'questions'}</b> on ${fmtDay(dayOf(nx))}.`:''}</p><p class="hint">${later.length?`${later.length} ${later.length===1?'question is':'questions are'} scheduled. `:''}A question that you miss comes back here after 1 day, then after 3, 7, 16 and 35 days. A mastered lesson sends ${LCN} of its questions here after 7, 28 and 88 days.</p>`;return;}
+      c.innerHTML=h+`<p>Nothing is due now.${nx?` Next: <b>${nd} ${nd===1?'question':'questions'}</b> on ${fmtDay(dayOf(nx))}.`:''}</p><p class="hint">${later.length?`${later.length} ${later.length===1?'question is':'questions are'} scheduled. `:''}A question that you miss comes back here after 1 day, then after 3, 7, 16 and 35 days. A mastered lesson sends ${LCN} of its questions here after 7, 28 and 88 days.</p>`+mk;const mb=$('[data-mist]',c);if(mb)mb.onclick=openMistakes;return;}
     const n=Math.min(RQN,due.length);
     c.innerHTML=h+`<p><b>${due.length} ${due.length===1?'question is':'questions are'} due</b> from ${units.length} ${units.length===1?'section':'sections'}. A round mixes the sections${due.length>RQN?` and has ${RQN} questions`:''}.</p>
       <div class="stats">${units.map(sk=>`<div class="stat"><span>${icon(sk,14)} ${SUBJ[sk].name}</span><b>${by[sk]}</b></div>`).join('')}</div>
-      <div class="row"><button type="button" class="btn">${icon('play',15)}${due.length>n?`Review ${n} now`:`Review all due (${due.length})`}</button>${due.length>n?`<span class="hint">${due.length-n} more after this round</span>`:''}</div>`;
-    $('.row .btn',c).onclick=run;}
+      <div class="row"><button type="button" class="btn">${icon('play',15)}${due.length>n?`Review ${n} now`:`Review all due (${due.length})`}</button>${due.length>n?`<span class="hint">${due.length-n} more after this round</span>`:''}</div>`+mk;
+    $('.row .btn',c).onclick=run;const mb=$('[data-mist]',c);if(mb)mb.onclick=openMistakes;}
   function run(){const items=duePick(RQN).map(qItem).filter(Boolean);if(!items.length){view();return;}busy=1;HOME_BUSY=1;c.innerHTML=`<h3>${icon('target',18)} Review</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,title:'Review question',done:res=>{afterChange();busy=0;HOME_BUSY=0;const k=res.filter(r=>r.ok).length,m=dueAll().length;
       view(`<p class="fb ${k===res.length?'ok':'info'}">${k} of ${res.length} correct in this round.${res.length>k?' A missed question comes back tomorrow.':''}${m?` ${m} more ${m===1?'is':'are'} due.`:''}</p>`);focusTo(c,'h3');}});}
@@ -11326,6 +11327,7 @@ function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from a
     sum.innerHTML=sel.length?`<b>${n} questions</b> from ${sel.length} ${sel.length===1?'unit':'units'} (${pool} available)${st.conf?', with confidence ratings':''}.`:'Select at least one unit.';go.disabled=!sel.length||!n;};
   go.onclick=()=>{const sel=Object.keys(st.units).filter(u=>st.units[u]&&SUBJ[u]);testRun(L,testPick(sel,st.n),st.conf);};upd(0);
   const last=gv('tlast');if(last){card(g,'Last test',`<div class="stats"><div class="stat"><span>Score</span><b>${last.c} / ${last.n}</b></div><div class="stat"><span>Units</span><b>${last.u}</b></div><div class="stat"><span>Date</span><b>${fmtDay(last.day)}</b></div>${last.conf?`<div class="stat"><span>Sure but wrong</span><b>${last.sw}</b></div>`:''}</div>`);}
+  mistCard(g,L);
 }
 
 function testRun(L,items,conf){TBUSY=1;const g=testHead(L,'Test in progress',`${items.length} questions. ${conf?'Answer each question, then rate how sure you were before you see the result.':'Answer each question.'}`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
@@ -11363,6 +11365,50 @@ function testRevise(L,items,conf){TBUSY=1;const n=items.length,g=testHead(L,'Rev
     const K=Object.keys(CGROUP),still=res.filter(r=>!r.ok||(conf&&r.conf!=='sure')).sort((a,b)=>K.indexOf(CKEY(a))-K.indexOf(CKEY(b)));
     const cc=card(g2,still.length?'Still to revise':conf?'All secure':'All correct',still.length?`<p class="hint">${conf?'These questions were wrong, or you were not sure.':'These questions were wrong again.'} ${still.some(r=>r.ok)?'Wrong answers are in your spaced repetition.':'They stay in your spaced repetition.'}</p>`+still.map(missHTML).join(''):`<p>You answered every revision question correctly${conf?' and with confidence':''}.</p>`);
     const row=el('div',{class:'row'});[['Build another test',()=>testSetupPage(L)],still.length?['Revise these again',()=>testRevise(L,still.map(r=>r.x),conf),'ghost']:null].filter(Boolean).forEach(([t,fn,cl])=>{const b=el('button',{type:'button',class:'btn '+(cl||'')},t);b.onclick=fn;row.append(b);});cc.append(row);window.scrollTo({top:0});}});}
+
+/* ===================== my mistakes: every question that you answered wrong, from the history of each question (h.m > 0) ===================== */
+/* the last wrong answer as text: h.lv is an option index, a text, or '' for a shown answer. An older entry has no lv: then the lesson quiz's saved answer is used */
+function lastWrong(x,h){const it=x.it;if(x.gen)return 'not shown, because the numbers change each time';let v=h.lv;
+  if(v==null){const a=/_\d+$/.test(x.id)?Store.get(x.id):null;if(a&&!a.ok)v=a.s?'':a.v;}
+  if(v==null)return 'not recorded';if(v==='')return 'you showed the answer';if(it.o)return typeof v==='number'&&it.o[v]!=null?optLbl(it,v):String(v);return String(v).replace(/10\^([−-]?\d+)/,'10<sup>$1</sup>')+(it.u?' '+it.u:'');}
+/* one row for each question with a miss, the newest miss first. fixed: answered correctly after its last miss */
+function mistakes(){const out=[];Store.xk('h').forEach(id=>{const h=Store.x('h',id);if(!h||!h.m||!qHas(id))return;const x=qItem(id);if(!x)return;const a=/_\d+$/.test(id)?Store.get(id):null;
+  out.push({x,h,id,t:h.lm||h.t||0,fixed:h.l===1||(h.l==null&&!!(a&&a.ok&&!a.s)),va:lastWrong(x,h)});});return out.sort((a,b)=>b.t-a.t);}
+const mistAll=svMemo(mistakes,{q:1});
+/* lessons ranked by their share of correct answers (c / (c + m)), lowest first, over their lesson, bank and calculation questions, with at least 3 answers */
+function weakLessons(){const by={};Store.xk('h').forEach(id=>{const h=Store.x('h',id),p=id.split('_');if(!h||!(h.c||h.m)||p.length!==3||!SUBJ[p[0]]||!qHas(id))return;
+    const k=p[0]+'_'+p[1],b=by[k]||(by[k]={sk:p[0],L:+p[1],c:0,m:0});b.c+=h.c||0;b.m+=h.m||0;});
+  return Object.values(by).filter(b=>b.c+b.m>=3&&b.m).sort((a,b)=>a.c/(a.c+a.m)-b.c/(b.c+b.m)||b.m-a.m);}
+/* the rows of a list, grouped by section and lesson: the group with the newest miss first */
+function mistGroups(rs){const gs=[],gi={};rs.forEach(r=>{const k=r.x.sk+'_'+r.x.L;if(!gi[k])gs.push(gi[k]={sk:r.x.sk,L:r.x.L,rs:[]});gi[k].rs.push(r);});return gs;}
+const MIST_F=[['All',()=>1],['Not fixed',r=>!r.fixed],['Missed twice or more',r=>r.h.m>=2]];
+const mistHTML=r=>{const it=r.x.it;return `<div class="miss"><p>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">${r.fixed?`<b>${icon('check',13)} Fixed</b> · `:''}Missed ${r.h.m} ${r.h.m===1?'time':'times'}${r.t?' · last on '+fmtDay(dayOf(r.t)):''}</p><p class="hint">Your last wrong answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;};
+function mistPDF(rs){const P=[{t:'My mistakes',s:18,b:1},{t:new Date().toLocaleString(),s:10},{t:`${rs.length} ${rs.length===1?'question':'questions'}, ${rs.filter(r=>!r.fixed).length} not fixed yet`,s:13,b:1,g:8}],wl=weakLessons().slice(0,8);
+  if(wl.length)P.push({t:'Weakest lessons',s:13,b:1,g:10},...wl.map(b=>({t:`${SUBJ[b.sk].name}: ${SUBJ[b.sk].lessons[b.L].t}: ${b.c} of ${b.c+b.m} answers correct`})));
+  let i=0;mistGroups(rs).forEach(G=>{P.push({t:SUBJ[G.sk].name+': '+SUBJ[G.sk].lessons[G.L].t,s:13,b:1,g:10});G.rs.forEach(r=>{const it=r.x.it;
+    P.push({t:(++i)+'. '+plain(it.q)+(r.x.gen?' (new numbers)':''),g:6},{t:`Missed ${r.h.m} ${r.h.m===1?'time':'times'}${r.fixed?', fixed':''}. Your last wrong answer: ${plain(r.va)}`,s:10},{t:'Correct answer: '+plain(ansText(it)),b:1},...(fixedOrd(it)?it.o.map((o,j)=>({t:'ABCDEFG'[j]+'. '+plain(o),s:10})):[]),{t:plain(it.w||''),s:10});});});return P;}
+/* the My mistakes page of the Test tab: weakest lessons, the log with its filters, Retry and a PDF */
+function mistakesPage(L){TBUSY=2;const all=mistAll(),nf=all.filter(r=>!r.fixed).length;
+  const g=testHead(L,'My mistakes',all.length?`${all.length} ${all.length===1?'question':'questions'} that you answered wrong at least once, ${nf} not fixed yet. A question is fixed when you answer it correctly after your last miss.`:'No wrong answers yet. A question that you answer wrong in a lesson, a review, an exam or a round appears here.');
+  const wl=weakLessons().slice(0,8);
+  if(wl.length){const c=card(g,'Weakest lessons',`<p class="hint">The share of correct answers in each lesson, over its lesson, review-bank and calculation questions (lessons with at least 3 answers). The weakest is first.</p><div class="bars">${wl.map(b=>`<div class="barrow"><span>${icon(lessonIcon(b.sk,b.L),15)}<span>${SUBJ[b.sk].lessons[b.L].t} <small class="hint">${SUBJ[b.sk].name}</small></span></span><div class="bar2"><i class="b2" data-w="${Math.round(100*b.c/(b.c+b.m))}"></i></div><b>${b.c} / ${b.c+b.m}</b><button type="button" class="btn sm ghost" data-go="${b.sk}_${b.L}">Open</button></div>`).join('')}</div>`);
+    grow(c);$$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,l]=b.dataset.go.split('_');goLesson(sk,+l);});}
+  const box=card(g,all.length?'The questions':'',''),fr=el('div',{class:'row'}),act=el('div',{class:'row'}),list=el('div'),msg=el('p',{class:'hint','aria-live':'polite'});let f=0;
+  const rb=el('button',{type:'button',class:'btn'}),pb=el('button',{type:'button',class:'btn ghost'},'Save this list as a PDF'),bk=el('button',{type:'button',class:'btn ghost'},'Back to the Test page');
+  if(all.length){box.append(fr,act,msg,list);seg(fr,MIST_F.map(x=>x[0]),i=>{f=i;draw();});act.append(rb,pb);}act.append(bk);if(!all.length)box.append(act);
+  const sel=()=>all.filter(MIST_F[f][1]);
+  function draw(){const s=sel(),N=Math.min(20,s.length);rb.innerHTML=icon('target',15)+(s.length?`Retry these (${N}${s.length>N?' of '+s.length:''})`:'Retry these');rb.disabled=!s.length;pb.disabled=!s.length;msg.textContent='';
+    list.innerHTML=s.length?mistGroups(s).map(G=>`<h4>${icon(G.sk,15)} ${SUBJ[G.sk].name} · ${SUBJ[G.sk].lessons[G.L].t} <span class="hint">(${G.rs.length})</span></h4>`+G.rs.map(mistHTML).join('')).join(''):'<p class="hint">No questions are in this list.</p>';}
+  /* not fixed first; a calculation gets new numbers */
+  rb.onclick=()=>{const s=sel(),o=s.filter(r=>!r.fixed).concat(s.filter(r=>r.fixed)).slice(0,20).map(r=>r.x.gen?qItem(r.id):r.x).filter(Boolean);mistakesRetry(L,o);};
+  pb.onclick=async()=>{pb.disabled=true;msg.textContent=await savePDF('my-mistakes.pdf',mistPDF(sel()));pb.disabled=false;};bk.onclick=()=>testSetupPage(L);
+  if(all.length)draw();}
+function mistakesRetry(L,items){TBUSY=1;const g=testHead(L,'Retry my mistakes',`${items.length} ${items.length===1?'question':'questions'}, the ones not fixed first. Feedback shows after each answer.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
+  stopBtn(c,L);runRound(box,{items,title:'Question',done:res=>{const k=res.filter(r=>r.ok).length;mistakesPage(L);toast(`${k} of ${res.length} correct. A question that you answered correctly now counts as fixed.`);}});}
+/* the entry on the Test page and on the Today review card. A running test is not interrupted */
+function mistCard(g,L){const all=mistAll();if(!all.length)return;const nf=all.filter(r=>!r.fixed).length;
+  const c=card(g,'My mistakes',`<p>${all.length} ${all.length===1?'question':'questions'} answered wrong at least once, <b>${nf} not fixed yet</b>. See them by lesson with your last wrong answer, retry them, or save them as a PDF.</p><div class="row"><button type="button" class="btn ghost">${icon('book',15)}Open my mistakes</button></div>`);$('.btn',c).onclick=()=>mistakesPage(L);}
+function openMistakes(){const i=SUBJECTS.findIndex(s=>s.test);if(i<0)return;tabSeg.set(i);showTab(i);const L=$('#test-0');if(L&&TBUSY!==1)mistakesPage(L);}
 
 boot();
 
