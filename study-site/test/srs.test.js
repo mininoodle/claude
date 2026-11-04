@@ -299,6 +299,8 @@ async function queue(b) {
     const secs = []; for (let i = 0; i < 5 && c.querySelector('.q'); i++) { secs.push(c.querySelector('p.hint').textContent.split(' · ')[0]); const op = c.querySelector('.q .op'); if (op) op.click(); else { c.querySelector('.num input').value = '1'; c.querySelector('.num .btn').click(); }
       [...c.querySelectorAll('.row .btn')].find(x => /Next|Finish/.test(x.textContent)).click(); } return { secs, left: dueAll().length }; });
   ok(round.secs.length === 3 && new Set(round.secs).size === 3 && round.left === 0, 'queue: a round mixes the sections and clears the due list', round);
+  const again = await p.evaluate(() => { goLesson('th', 1); tabSeg.set(0); showTab(0); const c = [...document.querySelectorAll('#home-0 .card')].find(c => /^\s*Review/.test((c.querySelector('h3') || {}).textContent || '')); return c ? c.innerText.replace(/\s+/g, ' ') : ''; });
+  ok(/Nothing is due now/.test(again), 'queue: the card is drawn again when the Today page is shown again', again);
   /* the lessonLevel cache gives the same levels as the raw computation */
   const same = await p.evaluate(() => ORDER.every(k => SUBJ[k].lessons.every((le, L) => !le.qz || JSON.stringify(lessonLevel(k, L)) === JSON.stringify(lessonLevel0(k, L)))));
   ok(same, 'cache: every cached lesson level equals the raw one');

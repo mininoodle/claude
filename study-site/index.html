@@ -11213,8 +11213,8 @@ const dueAll=()=>{const now=Date.now();return Store.srAll().filter(([k,e])=>e.d<
 function duePick(n){const by={};shuffle(dueAll()).forEach(id=>{const sk=id.split('_')[0];(by[sk]=by[sk]||[]).push(id);});const g=shuffle(Object.values(by)),out=[];let k=0;
   while(out.length<n&&g.some(a=>a.length)){const a=g[k++%g.length];if(a.length)out.push(a.pop());}return out;}
 function reviewCard(g){const c=card(g,'','');let busy=0;
-  function view(msg){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const due=dueAll(),by={};due.forEach(id=>{const sk=id.split('_')[0];by[sk]=(by[sk]||0)+1;});const units=UORDER.filter(sk=>by[sk]),now=Date.now();
-    const ma=mistAll(),nf=ma.filter(r=>!r.fixed).length,mk=ma.length?`<div class="row"><button type="button" class="btn sm ghost" data-mist>${icon('book',14)}My mistakes (${nf} not fixed)</button></div>`:'';
+  function view(msg){if(busy)return;const due=dueAll(),by={};due.forEach(id=>{const sk=id.split('_')[0];by[sk]=(by[sk]||0)+1;});const units=UORDER.filter(sk=>by[sk]),now=Date.now();
+    const {n:ma,nf}=mistCount(),mk=ma?`<div class="row"><button type="button" class="btn sm ghost" data-mist>${icon('book',14)}My mistakes (${nf} not fixed)</button></div>`:'';
     const h=`<h3>${icon('target',18)} Review</h3>`+(msg||'');
     if(!due.length){const later=Store.srAll().filter(([k,e])=>e.d>now&&qHas(k)).map(([,e])=>e.d),nx=later.length?Math.min(...later):0,nd=nx?later.filter(d=>dayOf(d)===dayOf(nx)).length:0;
       c.innerHTML=h+`<p>Nothing is due now.${nx?` Next: <b>${nd} ${nd===1?'question':'questions'}</b> on ${fmtDay(dayOf(nx))}.`:''}</p><p class="hint">${later.length?`${later.length} ${later.length===1?'question is':'questions are'} scheduled. `:''}A question that you miss comes back here after 1 day, then after 3, 7, 16 and 35 days. A mastered lesson sends ${LCN} of its questions here after 7, 28 and 88 days.</p>`+mk;const mb=$('[data-mist]',c);if(mb)mb.onclick=openMistakes;return;}
@@ -11226,7 +11226,8 @@ function reviewCard(g){const c=card(g,'','');let busy=0;
   function run(){const items=duePick(RQN).map(qItem).filter(Boolean);if(!items.length){view();return;}busy=1;HOME_BUSY=1;c.innerHTML=`<h3>${icon('target',18)} Review</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,title:'Review question',done:res=>{afterChange();busy=0;HOME_BUSY=0;const k=res.filter(r=>r.ok).length,m=dueAll().length;
       view(`<p class="fb ${k===res.length?'ok':'info'}">${k} of ${res.length} correct in this round.${res.length>k?' A missed question comes back tomorrow.':''}${m?` ${m} more ${m===1?'is':'are'} due.`:''}</p>`);focusTo(c,'h3');}});}
-  LIVE.add(view);view();}
+  /* after a change the card is drawn again, but not while the Today page is hidden: it is drawn again when it is shown */
+  const live=()=>{if(!c.isConnected){LIVE.delete(live);return;}if(!c.closest('[hidden]'))view();};LIVE.add(live);view();}
 
 /* ----- the Today page ----- */
 function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
@@ -11400,6 +11401,8 @@ function lastWrong(x,h){const it=x.it;if(x.gen)return 'not shown, because the nu
 function mistakes(){const out=[];Store.xk('h').forEach(id=>{const h=Store.x('h',id);if(!h||!h.m||!qHas(id))return;const x=qItem(id);if(!x)return;const a=/_\d+$/.test(id)?Store.get(id):null;
   out.push({x,h,id,t:h.lm||h.t||0,fixed:h.l===1||(h.l==null&&!!(a&&a.ok&&!a.s)),va:lastWrong(x,h)});});return out.sort((a,b)=>b.t-a.t);}
 const mistAll=svMemo(mistakes,{q:1});
+/* only the counts (all, not fixed), for the Today card and the Test page: no question is built */
+const mistCount=svMemo(()=>{let n=0,nf=0;Store.xk('h').forEach(id=>{const h=Store.x('h',id);if(!h||!h.m||!qHas(id))return;n++;const a=h.l==null&&/_\d+$/.test(id)?Store.get(id):null;if(!(h.l===1||(h.l==null&&a&&a.ok&&!a.s)))nf++;});return {n,nf};},{q:1});
 /* lessons ranked by their share of correct answers (c / (c + m)), lowest first, over their lesson, bank and calculation questions, with at least 3 answers */
 function weakLessons(){const by={};Store.xk('h').forEach(id=>{const h=Store.x('h',id),p=id.split('_');if(!h||!(h.c||h.m)||p.length!==3||!SUBJ[p[0]]||!qHas(id))return;
     const k=p[0]+'_'+p[1],b=by[k]||(by[k]={sk:p[0],L:+p[1],c:0,m:0});b.c+=h.c||0;b.m+=h.m||0;});
@@ -11431,8 +11434,8 @@ function mistakesPage(L){TBUSY=2;const all=mistAll(),nf=all.filter(r=>!r.fixed).
 function mistakesRetry(L,items){TBUSY=1;const g=testHead(L,'Retry my mistakes',`${items.length} ${items.length===1?'question':'questions'}, the ones not fixed first. Feedback shows after each answer.`),c=card(g,'',''),box=el('div');c.append(box);window.scrollTo({top:0});
   stopBtn(c,L);runRound(box,{items,title:'Question',done:res=>{const k=res.filter(r=>r.ok).length;mistakesPage(L);toast(`${k} of ${res.length} correct. A question that you answered correctly now counts as fixed.`);}});}
 /* the entry on the Test page and on the Today review card. A running test is not interrupted */
-function mistCard(g,L){const all=mistAll();if(!all.length)return;const nf=all.filter(r=>!r.fixed).length;
-  const c=card(g,'My mistakes',`<p>${all.length} ${all.length===1?'question':'questions'} answered wrong at least once, <b>${nf} not fixed yet</b>. See them by lesson with your last wrong answer, retry them, or save them as a PDF.</p><div class="row"><button type="button" class="btn ghost">${icon('book',15)}Open my mistakes</button></div>`);$('.btn',c).onclick=()=>mistakesPage(L);}
+function mistCard(g,L){const {n:all,nf}=mistCount();if(!all)return;
+  const c=card(g,'My mistakes',`<p>${all} ${all===1?'question':'questions'} answered wrong at least once, <b>${nf} not fixed yet</b>. See them by lesson with your last wrong answer, retry them, or save them as a PDF.</p><div class="row"><button type="button" class="btn ghost">${icon('book',15)}Open my mistakes</button></div>`);$('.btn',c).onclick=()=>mistakesPage(L);}
 function openMistakes(){const i=SUBJECTS.findIndex(s=>s.test);if(i<0)return;tabSeg.set(i);showTab(i);const L=$('#test-0');if(L&&TBUSY!==1)mistakesPage(L);}
 
 boot();
