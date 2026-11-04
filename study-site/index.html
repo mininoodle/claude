@@ -4609,7 +4609,7 @@ const G6O=['MnO4^-(aq)','Cr2O7^2-(aq)','Cl2(g)','Br2(l)','Au^3+(aq)','Ag^+(aq)',
   G6R=[['Fe^2+(aq)','ra'],['I^-(aq)','ra'],['Ag(s)'],['Cu(s)'],['H2(g)'],['Pb(s)'],['Sn(s)'],['Ni(s)'],['Fe(s)'],['Zn(s)'],['Al(s)'],['Mg(s)']].map(([k,s])=>ecRow(k,s));
 EC_GEN[6]=[
   /* the mass at one electrode from the mass at the other electrode of a voltaic cell */
-  ()=>{const [c,a]=g6Cell(),fw=RN(0,1),m=RN(.2,5,.01),mi=fw?a:c,mo=fw?c:a,n1=m/mi.M,ne=n1*mi.z,n2=ne/mo.z,x=n2*mo.M;
+  ()=>{const [c,a]=g6Cell(),fw=RN(0,1),m=RN(1,5,.01),mi=fw?a:c,mo=fw?c:a,n1=m/mi.M,ne=n1*mi.z,n2=ne/mo.z,x=n2*mo.M;
     return {q:`In the voltaic cell ${g6Not(a,c)}, ${fw?`the ${a.nm} anode loses ${m.toFixed(2)} g. Calculate the mass of ${c.nm} that is deposited on the cathode.`:`${m.toFixed(2)} g of ${c.nm} is deposited on the cathode. Calculate the mass of ${a.nm} that is used up at the anode.`}`,n:x,u:'g',tol:.01,
       w:`Anode: ${g6Ox(a)}. Cathode: ${g6Red(c)}. n(${mi.s}) = ${m.toFixed(2)} g ÷ ${mi.M.toFixed(2)} g/mol = ${sig(n1,4)} mol. n(e⁻) = ${mi.z} × ${sig(n1,4)} mol = ${sig(ne,4)} mol. n(${mo.s}) = ${sig(ne,4)} mol ÷ ${mo.z} = ${sig(n2,4)} mol. m(${mo.s}) = ${sig(n2,4)} mol × ${mo.M.toFixed(2)} g/mol = ${sig(x)} g.`};},
   /* a coefficient of a disproportionation, balanced with the lowest whole numbers */
