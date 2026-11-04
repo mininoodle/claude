@@ -757,6 +757,23 @@ function topBar(){const c=document.querySelector('.crumb');if(c&&getComputedStyl
 function goTo(e,sel){if(!e)return;const y=Math.max(0,e.getBoundingClientRect().top+scrollY-topBar()-12);window.scrollTo({top:y,behavior:RM||Math.abs(y-scrollY)>3*innerHeight?'auto':'smooth'});if(sel)focusTo(e,sel);}
 /* the level pill under a lesson's title goes to the lesson's questions */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button.lvl[data-lvl]'),L=b&&b.closest('.lesson');if(L)goTo($('.card.quiz',L),'h3');});
+
+/* ----- the student's place: a page that is shown again opens where the student left it ----- */
+let PAGE=null,TOP=0,RAILNAV=0,dwT=0;
+const shownPage=()=>document.querySelector('#main>.lesson:not([hidden])');
+/* showLesson, showHome and showTest call this first, while the page being left is still on screen: its scroll position is kept on its article
+   (thus a rebuilt article, after Clear answers, starts at the top). On a narrow screen the rail is at the top of the page: a student who uses it,
+   or who is up there next to it, has scrolled up to it, thus the place kept is where they last stayed for 2.5 s */
+function keepPlace(){const a=shownPage(),r=document.getElementById('rail');if(!a)return;
+  const up=r&&getComputedStyle(r).position!=='sticky'&&(RAILNAV||scrollY<r.offsetHeight);a._y=up&&a._read>scrollY?a._read:scrollY;}
+addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=shownPage();if(a)a._read=scrollY;},2500);},{passive:true});
+['click','keydown'].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest('#rail')){RAILNAV=1;setTimeout(()=>{RAILNAV=0;});}},true));
+/* the Previous/Next pager opens the next lesson at its top */
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
+/* showLesson, showHome and showTest call this when page L is on screen. It goes back to where the student left L, or to the top when L is new,
+   rebuilt, chosen again (the current lesson's chip is a 'back to top') or opened with the pager. At load the browser keeps the place of a reload */
+function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;
+  if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;}
 </script>
 <script>
 'use strict';
@@ -1327,7 +1344,7 @@ function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
 function centreChip(smooth){const cb=chipBtns[curL[curS]],nav=$('#chips');if(cb&&!nav.hidden)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:smooth&&!RM?'smooth':'instant'});}
 function showLesson(i,o={}){
-  const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i],back=!!$('.lesson:focus-within');
+  keepPlace();const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i],back=!!$('.lesson:focus-within');
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
   const id=curS+'-'+i;let L=document.getElementById(id);
   if(!L){L=el('article',{class:'lesson',id,role:'tabpanel','aria-labelledby':'tab-'+id});
@@ -1345,7 +1362,7 @@ function showLesson(i,o={}){
   const sub=SUBJECTS.find(s=>s.units.includes(curS));document.title=le.t+' · '+(sub?sub.name:S.name)+' · Study site';
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   centreChip(!o.first);
-  if(!o.first)window.scrollTo({top:0});savePos();if(chipBtns.length===S.lessons.length)chipProgress();
+  pageShown(L,o);savePos();if(chipBtns.length===S.lessons.length)chipProgress();
   if(back)focusTo(L,'h1');
 }
 function showUnit(k,first){
@@ -11156,10 +11173,10 @@ function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x
   if(due)b.setAttribute('aria-label',SUBJECTS[0].name+', daily challenge due');else b.removeAttribute('aria-label');}
 
 /* ----- the Today page ----- */
-function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showHome(){keepPlace();curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY){L.classList.remove('enter');homeRender(L);}});}
-  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
   const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
@@ -11251,11 +11268,11 @@ function testPool(units){const pool=[];units.forEach(sk=>{SUBJ[sk].lessons.forEa
 function testPick(units,n){const groups=shuffle(units.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>{const a=lessonItems(sk,le,L);return a?shuffle(a):null;}).filter(Boolean))),out=[];let k=0;
   while(out.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)out.push(a.pop());}return shuffle(out);}
 
-function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showTest(){keepPlace();curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#test-0');
   if(!L){L=el('article',{class:'lesson',id:'test-0',role:'tabpanel'});$('#main').append(L);testSetupPage(L);}
   else if(!TBUSY)testSetupPage(L);
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function testHead(L,title,lede){const back=L.contains(document.activeElement);L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;if(back)focusTo(L,'h1');return $('.grid',L);}
 
 function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
@@ -11509,7 +11526,9 @@ html{scroll-padding-top:62px}
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
-    const its=[...menu.querySelectorAll('.cm-i')],t=its.find(e=>e.classList.contains('on'))||its[0];if(t){t.focus({preventScroll:true});t.scrollIntoView({block:'nearest'});}};
+    /* the current item gets focus, and the menu (not the page: that would move the student's place) scrolls to show it */
+    const its=[...menu.querySelectorAll('.cm-i')],t=its.find(e=>e.classList.contains('on'))||its[0];if(t){t.focus({preventScroll:true});
+      if(t.offsetTop<menu.scrollTop)menu.scrollTop=t.offsetTop;else if(t.offsetTop+t.offsetHeight>menu.scrollTop+menu.clientHeight)menu.scrollTop=t.offsetTop+t.offsetHeight-menu.clientHeight;}};
   path.addEventListener('click',e=>{const b=e.target.closest('.crumb-b');if(!b)return;const was=mBtn===b;closeMenu();if(!was)openMenu(b);});
   path.addEventListener('keydown',e=>{const b=e.target.closest('.crumb-b');if(b&&e.key==='ArrowDown'){e.preventDefault();if(mBtn!==b){closeMenu();openMenu(b);}}});
   menu.addEventListener('keydown',e=>{const its=[...menu.querySelectorAll('.cm-i')],n=its.length,i=its.indexOf(document.activeElement);
@@ -11529,7 +11548,8 @@ html{scroll-padding-top:62px}
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',crumb.offsetHeight+'px')).observe(crumb);
   upd();
   /* keep the open lesson visible in the rail */
-  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'});};
+  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(!b)return;const r=b.getBoundingClientRect(),q=rail.getBoundingClientRect();
+    if(!r.height)return;if(r.top<q.top)rail.scrollTop-=q.top-r.top+8;else if(r.bottom>q.bottom)rail.scrollTop+=r.bottom-q.bottom+8;};
   new MutationObserver(seen).observe($id('chips'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
   /* the section's reference sheet and its Review (with the badge of due questions) are pinned at the top of the lesson list in the rail (CSS order),
      thus they stay in view however long the list is. The arrow keys go round the same circle: the pinned two are the last two lessons */
