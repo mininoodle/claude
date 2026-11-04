@@ -4228,11 +4228,11 @@ function ec5Wd(ts,fs,fw){const d=el('div',{class:'gfx','aria-hidden':'true',styl
 /* the oxidation-number method as a drawing: the skeleton equation, the oxidation numbers of the atoms that change, a bracket above for the oxidation (electrons lost)
    and a bracket below for the reduction (electrons gained). o.L, o.R: the terms (unicode, without states); o.on: {index in L then R: [label, 'ox' or 'red']};
    o.ox, o.red: [index from, index to, label]; o.res: a line under the drawing; o.alt: the description */
-function ec5Bridge(o){const fs=16,ts=o.L.concat(o.R),w=ec5Wd(ts.concat(['+','→']),fs,600),pw=w[ts.length],aw=w[ts.length+1],g=7;let x=0;const X=[];
+function ec5Bridge(o){const fs=15,ts=o.L.concat(o.R),w=ec5Wd(ts.concat(['+','→']),fs,600),pw=w[ts.length],aw=w[ts.length+1],g=7;let x=0;const X=[];
   ts.forEach((t,i)=>{if(i===o.L.length)x+=g*2+aw+g*2;else if(i>0)x+=g+pw+g;X.push(x+w[i]/2);x+=w[i];});
   const eqW=x,lab=[o.ox[2],o.red[2],o.res||''],lw=ec5Wd(lab,13.5,600),W=Math.ceil(Math.max(eqW,...lw)+28),dx=(W-eqW)/2,P=X.map(v=>v+dx),H=o.res?166:140;
   const co={ox:'s2',red:'s1'},mid=(i,j)=>(P[i]+P[j])/2,cl=(c,wd)=>Math.min(Math.max(c,wd/2+6),W-wd/2-6);
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.alt.replace(/"/g,'&quot;')}">`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="max-width:${Math.round(W*1.15)}px" role="img" aria-label="${o.alt.replace(/"/g,'&quot;')}">`;
   /* the terms, the plus signs and the arrow */
   x=dx;ts.forEach((t,i)=>{if(i===o.L.length){s+=`<text x="${f1(x+g*2+aw/2)}" y="84" text-anchor="middle" font-size="${fs}" font-weight="600" fill="var(--ink2)">→</text>`;x+=g*2+aw+g*2;}
     else if(i>0){s+=`<text x="${f1(x+g+pw/2)}" y="84" text-anchor="middle" font-size="${fs}" font-weight="600" fill="var(--ink2)">+</text>`;x+=g+pw+g;}
@@ -4302,16 +4302,17 @@ const EC5_ON=[
   .map(([L,R,a,w],i)=>({n:String(i+1),L,R,f:[],c:'neutral solution',a,w:'<p>'+w.split('. ').join('.</p><p>')+'</p><p>'+C(a)+'</p>'}));
 [...EC5_HR,...EC5_PR,...EC5_ON].forEach(p=>{const b=ecBal(p.a);if(b)ec5Err(p.n+' ('+p.a+') does not balance: '+b);if(!p.L.concat(p.R).every(k=>ec5Key(p.a).includes(k+':')))ec5Err(p.n+': the answer does not contain every entity of the skeleton');});
 /* the worked example on p. 25, and the two examples of the oxidation-number method on p. 28 */
-const EC5_EX={red:'CrO4^2-(aq) + 8H^+(aq) + 3e^- -> Cr^3+(aq) + 4H2O(l)',ox:'Cl^-(aq) + 2H2O(l) -> ClO2^-(aq) + 4H^+(aq) + 4e^-',a:'4CrO4^2-(aq) + 3Cl^-(aq) + 20H^+(aq) -> 4Cr^3+(aq) + 3ClO2^-(aq) + 10H2O(l)',
+const EC5_EX={red:'CrO4^2-(aq) + 8H^+(aq) + 3e^- -> Cr^3+(aq) + 4H2O(l)',ox:'Cl^-(aq) + 2H2O(l) -> ClO2^-(aq) + 4H^+(aq) + 4e^-',red4:'4CrO4^2-(aq) + 32H^+(aq) + 12e^- -> 4Cr^3+(aq) + 16H2O(l)',ox3:'3Cl^-(aq) + 6H2O(l) -> 3ClO2^-(aq) + 12H^+(aq) + 12e^-',a:'4CrO4^2-(aq) + 3Cl^-(aq) + 20H^+(aq) -> 4Cr^3+(aq) + 3ClO2^-(aq) + 10H2O(l)',
   on1:'SeO3^2-(aq) + Cl2(aq) + H2O(l) -> SeO4^2-(aq) + 2Cl^-(aq) + 2H^+(aq)',on2:'8H^+(aq) + MnO4^-(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)'};
-if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});
+if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a)||ec5Add(EC5_EX.red4,1,EC5_EX.ox3,1)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2,EC5_EX.red4,EC5_EX.ox3].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});
 
 /* ---------- "Use the following information" boxes of the diploma questions ---------- */
 const ec5I=(...ps)=>`<div style="padding:.15em .45em .3em;line-height:1.5;font-size:.95rem">${ps.join('')}</div>`,ec5P=h=>`<p style="margin:.35em 0">${h}</p>`,ec5Q=s=>`<p style="margin:.45em 0;text-align:center">${C(s)}</p>`;
 const ec5Ar=(t,b)=>`<span style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .3em;font-size:.72em"><span>${t}</span><span style="font-size:1.6em">⇌</span><span>${b||'&nbsp;'}</span></span>`;
+const ec5St=(n,l,ar,r,h)=>`<div style="margin:.55em 0;padding:.35em 0;text-align:center;border-top:1px solid var(--hair)"><b>${n}</b><br><span style="white-space:nowrap">${C(l)}</span> ${ar} <span style="white-space:nowrap">${C(r)}</span><br>Δ<i>H</i> = ${h}</div>`;
 const EC5_F={
   q34:ec5I(ec5P('To prevent it from contaminating the air, chlorine gas can be reacted as represented by the <b>unbalanced</b> equation'),ec5Q('Cl2(g) + S2O3^2-(aq) + H2O(l) -> SO4^2-(aq) + H^+(aq) + Cl^-(aq)')),
-  q36:ec5I(ec5P('Fuel cells used to power electric vehicles are high-efficiency voltaic cells that consume conventional fuels under conditions of controlled combustion. The half-reactions that occur in a propane–oxygen fuel cell are'),
+  q36:ec5I(ec5P('Fuel cells used to power electric vehicles are high-efficiency voltaic cells that consume conventional fuels under conditions of controlled combustion. The half-reactions that occur in a propane-oxygen fuel cell are'),
     ec5Q('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')+ec5Q('C3H8(g) + 6H2O(l) -> 3CO2(g) + 20H^+(aq) + 20e^-'),
     `<p class="hint" style="margin:.5em 0 .1em">Data booklet, standard molar enthalpies of formation (kJ/mol): ${C('C3H8(g)')} −103.8; ${C('CO2(g)')} −393.5; ${C('H2O(l)')} −285.8; ${C('H2O(g)')} −241.8.</p>`),
   q37:ec5I(ec5P('A particular voltaic cell is represented by'),ec5Q('Ag(s) / Ag^+(aq) // Cr2O7^2-(aq), Cr^3+(aq), H^+(aq) / C(s)')),
@@ -4322,7 +4323,7 @@ const EC5_F={
   q45:ec5I(ec5P('The beautiful patterns of butterfly wings, the stripes on zebra pelts, and the myriad of colours of tropical fish all result from oscillating chemical reactions. These chemical reactions can be studied in a much simpler form in the laboratory. In 1958, the Russian chemist B. P. Belousov discovered a complex reaction sequence in which the concentration of reactants and products oscillated over time.'),
     `<p style="margin:.6em 0 .2em;text-align:center"><b>Unbalanced Reaction Equations</b></p><table><tr><th scope="row">I</th><td>${C('__H^+(aq) + __BrO2^-(aq) + __BrO3^-(aq) <=> __BrO2(aq) + __H2O(l)')}</td></tr><tr><th scope="row">II</th><td>${C('__Ce^3+(aq) + __BrO2(aq) <=> __Ce^4+(aq) + __BrO2^-(aq)')}</td></tr><tr><th scope="row">III</th><td>${C('__BrO2^-(aq) <=> __BrO3^-(aq) + __BrO^-(aq)')}</td></tr></table>`),
   q47:ec5I(ec5P('The oil that Syncrude mines from the Athabasca Tar Sands contains large amounts of undesirable sulphur. To remove most of the sulphur, Syncrude uses a chemical process known as the Claus process, which results in a low-sulphur “sweet” crude oil. Two steps involved in the Claus process are shown below.'),
-    `<table><tr><th scope="row">Step I</th><td>${C('H2S(g) + 3/2 O2(g)')}${ec5Ar('950 °C–1200 °C')}${C('SO2(g) + H2O(g)')}</td><td style="white-space:nowrap">Δ<i>H</i> = −518 kJ</td></tr><tr><th scope="row">Step II</th><td>${C('SO2(g) + 2H2S(g)')}${ec5Ar('170 °C–370 °C','catalyst')}${C('3S(l) + 2H2O(g)')}</td><td style="white-space:nowrap">Δ<i>H</i> = −93 kJ</td></tr></table>`,
+    ec5St('Step I','H2S(g) + 3/2 O2(g)',ec5Ar('950 °C to 1200 °C'),'SO2(g) + H2O(g)','−518 kJ')+ec5St('Step II','SO2(g) + 2H2S(g)',ec5Ar('170 °C to 370 °C','catalyst'),'3S(l) + 2H2O(g)','−93 kJ'),
     ec5P('Syncrude solidifies and stores approximately 1.36 Gg of sulphur per day.'))};
 
 /* ---------- the lesson ---------- */
@@ -4332,7 +4333,7 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
     '#ec-5 .ec5-t{display:inline-flex;align-items:center;gap:.2em;white-space:nowrap}#ec-5 .ec5-t input{width:2.6em;min-height:2.6em;text-align:center;padding:.3em .15em;font-variant-numeric:tabular-nums}'+
     '#ec-5 .ec5-t.opt input{border-style:dashed}#ec-5 .ec5-t.opt .ec5-f{color:var(--ink2)}#ec-5 .ec5-op{color:var(--ink2);margin-left:.15em}#ec-5 .ec5-ar{font-size:1.2em;color:var(--ink2);margin:0 .1em}'+
     '#ec-5 .ec5-t input.ok{border-color:var(--ok);background:var(--okb)}#ec-5 .ec5-t input.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
-    '#ec-5 .ec5-st td,#ec-5 .ec5-st th{vertical-align:top}#ec-5 .ec5-st td:first-child{white-space:nowrap}');
+    '#ec-5 .ec5-2c{display:grid;gap:0 1.8em}#ec-5 .ec5-2c ol{padding-left:1.5em}@media(min-width:700px){#ec-5 .ec5-2c{grid-template-columns:1fr 1fr}}');
   /* 1. the rule and the two methods */
   card(g,'Balancing with electrons',`<p class="hint">Outcome: 30–B1.7k</p><p>Write and balance equations for redox reactions in acidic and neutral solutions by</p>
     <ul><li>using half-reaction equations from a standard reduction potential table</li><li>developing simple half-reaction equations from information about redox changes</li><li>assigning oxidation numbers, where appropriate, to the entities that change</li></ul>
@@ -4346,17 +4347,11 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
     <li>Multiply the half-reactions so that the electrons gained equal the electrons lost. Add them, and cancel the identical entities on opposite sides.</li><li>Check the atoms (number and kind) and the charge.</li></ol>
     <p class="hint">A <span class="key">half-reaction</span> shows only the oxidation or only the reduction, with its electrons. Electrons on the left: a reduction. Electrons on the right: an oxidation.</p>`,'w5');
   /* 3. the worked example of p. 25 */
-  const td=s=>C(s.replace(/\((aq|l|s|g)\)/g,''));
-  card(g,'Worked example: the half-reaction method',ex('Balance the following redox reaction in acidic solution: '+C('CrO4^2-(aq) + Cl^-(aq) -> Cr^3+(aq) + ClO2^-(aq)'),
-    `<table class="ec5-st"><tr><th>Step</th><th>Reduction</th><th>Oxidation</th></tr>
-    <tr><td>1. Split</td><td>${td('CrO4^2- -> Cr^3+')}</td><td>${td('Cl^- -> ClO2^-')}</td></tr>
-    <tr><td>2. Atoms other than O and H</td><td>Cr: 1 on each side</td><td>Cl: 1 on each side</td></tr>
-    <tr><td>3. O with H₂O</td><td>${td('CrO4^2- -> Cr^3+ + 4H2O')}</td><td>${td('Cl^- + 2H2O -> ClO2^-')}</td></tr>
-    <tr><td>4. H with H⁺</td><td>${td('CrO4^2- + 8H^+ -> Cr^3+ + 4H2O')}</td><td>${td('Cl^- + 2H2O -> ClO2^- + 4H^+')}</td></tr>
-    <tr><td>5. Charge with e⁻</td><td>+6 on the left, +3 on the right:<br>${td('CrO4^2- + 8H^+ + 3e^- -> Cr^3+ + 4H2O')}</td><td>−1 on the left, +3 on the right:<br>${td('Cl^- + 2H2O -> ClO2^- + 4H^+ + 4e^-')}</td></tr>
-    <tr><td>6. Equal e⁻</td><td>× 4: ${td('4CrO4^2- + 32H^+ + 12e^- -> 4Cr^3+ + 16H2O')}</td><td>× 3: ${td('3Cl^- + 6H2O -> 3ClO2^- + 12H^+ + 12e^-')}</td></tr></table>
-    <p>Add the two half-reactions. The 12e⁻ cancel:<br>${td('4CrO4^2- + 32H^+ + 3Cl^- + 6H2O -> 4Cr^3+ + 16H2O + 3ClO2^- + 12H^+')}</p>
-    <p>Cancel 12${C('H^+')} and 6${C('H2O')} from both sides:</p><p><b>${C(EC5_EX.a)}</b></p>
+    card(g,'Worked example: the half-reaction method',ex('Balance the following redox reaction in acidic solution: '+C('CrO4^2-(aq) + Cl^-(aq) -> Cr^3+(aq) + ClO2^-(aq)'),
+    `<p>1. Split the reaction into two half-reactions: ${C('CrO4^2-(aq) -> Cr^3+(aq)')} (Cr: +6 → +3, a reduction) and ${C('Cl^-(aq) -> ClO2^-(aq)')} (Cl: −1 → +3, an oxidation). Do steps 2 to 5 on each one.</p>
+    <div class="ec5-2c"><div><p><b>Reduction</b></p>${ec5HalfW(EC5_EX.red)}</div><div><p><b>Oxidation</b></p>${ec5HalfW(EC5_EX.ox)}</div></div>
+    <p>6. The lowest common multiple of 3 and 4 is 12. Multiply the reduction by 4 and the oxidation by 3:</p><p>${C(EC5_EX.red4)}<br>${C(EC5_EX.ox3)}</p>
+    <p>Add the two half-reactions. The 12e⁻ cancel, 12${C('H^+')} cancel from 32${C('H^+')}, and 6${C('H2O')} cancel from 16${C('H2O')}:</p><p><b>${C(EC5_EX.a)}</b></p>
     <p>7. Check. Cr: 4 = 4. Cl: 3 = 3. O: 4(4) = 16 on the left, 3(2) + 10 = 16 on the right. H: 20 = 20. Charge: 4(−2) + 3(−1) + 20 = +9 on the left, 4(+3) + 3(−1) = +9 on the right.</p>`));
   /* 4. half-reactions from the table */
   const ents=['K^+(aq)','Cr2O7^2-(aq)','H^+(aq)','I^-(aq)','H2O(l)'],rows=ecRows(['Cr2O7^2-(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','I2(s)','H^+(aq)','H2O(l)','K^+(aq)']),pr=ecPredict(ents,{rows});
@@ -4373,19 +4368,19 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
   ec5Bal(c2,EC5_PR,{slot:1,lab:'Practice question'});
   c2.insertAdjacentHTML('beforeend',ex('Answers to practice questions 1 to 16','<ol>'+EC5_PR.map(p=>'<li>'+C(p.a)+'</li>').join('')+'</ol><p class="hint">Show the answer in the try-it above to see the two half-reactions of each question.</p>'));
   /* 7. the oxidation-number method and its two examples */
-  const b1=ec5Bridge({L:['SeO₃²⁻','Cl₂','H₂O'],R:['SeO₄²⁻','Cl⁻','H⁺'],on:{0:['+4','ox'],1:['0','red'],3:['+6','ox'],4:['−1','red']},ox:[0,3,'Se: +4 → +6, loses 2e⁻'],red:[1,4,'Cl: 0 → −1, gains 1e⁻ per atom: 2e⁻ per Cl₂'],res:'2e⁻ lost = 2e⁻ gained: one SeO₃²⁻ for each Cl₂',
-    alt:'The skeleton equation SeO₃²⁻ + Cl₂ + H₂O → SeO₄²⁻ + Cl⁻ + H⁺ with oxidation numbers. A bracket above joins Se in SeO₃²⁻ (+4) to Se in SeO₄²⁻ (+6): it loses 2 electrons. A bracket below joins Cl in Cl₂ (0) to Cl⁻ (−1): each atom gains 1 electron, 2 electrons per Cl₂. 2 electrons lost equal 2 electrons gained: one SeO₃²⁻ for each Cl₂.'});
-  const b2=ec5Bridge({L:['H⁺','MnO₄⁻','Fe²⁺'],R:['Mn²⁺','H₂O','Fe³⁺'],on:{1:['+7','red'],2:['+2','ox'],3:['+2','red'],5:['+3','ox']},ox:[2,5,'Fe: +2 → +3, loses 1e⁻'],red:[1,3,'Mn: +7 → +2, gains 5e⁻'],res:'5 Fe²⁺ lose 5e⁻ for each MnO₄⁻',
-    alt:'The skeleton equation H⁺ + MnO₄⁻ + Fe²⁺ → Mn²⁺ + H₂O + Fe³⁺ with oxidation numbers. A bracket above joins Fe²⁺ (+2) to Fe³⁺ (+3): it loses 1 electron. A bracket below joins Mn in MnO₄⁻ (+7) to Mn²⁺ (+2): it gains 5 electrons. Thus 5 Fe²⁺ for each MnO₄⁻.'});
+  const b1=ec5Bridge({L:['SeO₃²⁻','Cl₂'],R:['SeO₄²⁻','Cl⁻'],on:{0:['+4','ox'],1:['0','red'],2:['+6','ox'],3:['−1','red']},ox:[0,2,'Se: +4 → +6, loses 2e⁻'],red:[1,3,'Cl: 0 → −1, gains 2 × 1e⁻ = 2e⁻'],res:'2e⁻ lost = 2e⁻ gained: 1 SeO₃²⁻ : 1 Cl₂',
+    alt:'The entities that change in example 1: SeO₃²⁻ + Cl₂ → SeO₄²⁻ + Cl⁻, with oxidation numbers. A bracket above joins Se in SeO₃²⁻ (+4) to Se in SeO₄²⁻ (+6): it loses 2 electrons. A bracket below joins Cl in Cl₂ (0) to Cl⁻ (−1): each of the two Cl atoms gains 1 electron, 2 electrons in all. 2 electrons lost equal 2 electrons gained: one SeO₃²⁻ for each Cl₂.'});
+  const b2=ec5Bridge({L:['MnO₄⁻','Fe²⁺'],R:['Mn²⁺','Fe³⁺'],on:{0:['+7','red'],1:['+2','ox'],2:['+2','red'],3:['+3','ox']},ox:[1,3,'Fe: +2 → +3, loses 1e⁻'],red:[0,2,'Mn: +7 → +2, gains 5e⁻'],res:'5e⁻ lost = 5e⁻ gained: 1 MnO₄⁻ : 5 Fe²⁺',
+    alt:'The entities that change in example 2: MnO₄⁻ + Fe²⁺ → Mn²⁺ + Fe³⁺, with oxidation numbers. A bracket above joins Fe²⁺ (+2) to Fe³⁺ (+3): it loses 1 electron. A bracket below joins Mn in MnO₄⁻ (+7) to Mn²⁺ (+2): it gains 5 electrons. Thus 5 Fe²⁺ for each MnO₄⁻.'});
   card(g,'Method 2: oxidation numbers (neutral solution)',`<ol><li>Assign oxidation numbers.</li><li>Use the change in oxidation number to find the number of electrons transferred per atom.</li><li>Find the number of electrons transferred for each reactant (look at the formula of the reactant: how many of those atoms it has).</li>
     <li>Balance the total number of electrons transferred from the reducing agent to the oxidizing agent.</li><li>Balance the rest of the equation by inspection.</li></ol>
-    <p class="hint">In a neutral solution, water is a reactant and ${C('H^+(aq)')} can form as a product. The skeleton equations below already show them.</p>`+CF(b1,'Steps 1 to 4 for example 1.')+
+    <p class="hint">In a neutral solution, water is a reactant and ${C('H^+(aq)')} can form as a product. The skeleton equations below already show them.</p>`+CF(b1,'Steps 1 to 4 for example 1. H₂O and H⁺ are left out of the drawing: their oxidation numbers do not change.')+
     ex('Example 1. Balance '+C('SeO3^2-(aq) + Cl2(aq) + H2O(l) -> SeO4^2-(aq) + Cl^-(aq) + H^+(aq)'),
       `<ol><li>Oxidation numbers: Se is +4 in ${C('SeO3^2-')} and +6 in ${C('SeO4^2-')}. Cl is 0 in ${C('Cl2')} and −1 in ${C('Cl^-')}. O stays −2 and H stays +1.</li><li>Se: +4 → +6, thus 2e⁻ lost per atom. Cl: 0 → −1, thus 1e⁻ gained per atom.</li>
       <li>${C('SeO3^2-')} has one Se atom: it loses 2e⁻. ${C('Cl2')} has two Cl atoms: it gains 2e⁻.</li><li>2e⁻ lost = 2e⁻ gained: one ${C('SeO3^2-')} for each ${C('Cl2')}.</li>
       <li>Inspection: one ${C('Cl2')} gives 2${C('Cl^-')}. O: 3 + 1 = 4 on each side. H: 2 in ${C('H2O')}, thus 2${C('H^+')}. Charge: −2 on the left, −2 − 2 + 2 = −2 on the right.</li></ol><p><b>${C(EC5_EX.on1)}</b></p>`)+
     ex('Example 2. Balance '+C('H^+(aq) + MnO4^-(aq) + Fe^2+(aq) -> Mn^2+(aq) + H2O(l) + Fe^3+(aq)'),
-      CF(b2,'')+`<ol><li>Oxidation numbers: Mn is +7 in ${C('MnO4^-')} and +2 in ${C('Mn^2+')}. Fe is +2 in ${C('Fe^2+')} and +3 in ${C('Fe^3+')}.</li><li>Mn gains 5e⁻ per atom. Fe loses 1e⁻ per atom.</li><li>${C('MnO4^-')} has one Mn: it gains 5e⁻. ${C('Fe^2+')} loses 1e⁻.</li>
+      CF(b2,'Steps 1 to 4. H⁺ and H₂O are left out of the drawing: their oxidation numbers do not change.')+`<ol><li>Oxidation numbers: Mn is +7 in ${C('MnO4^-')} and +2 in ${C('Mn^2+')}. Fe is +2 in ${C('Fe^2+')} and +3 in ${C('Fe^3+')}.</li><li>Mn gains 5e⁻ per atom. Fe loses 1e⁻ per atom.</li><li>${C('MnO4^-')} has one Mn: it gains 5e⁻. ${C('Fe^2+')} loses 1e⁻.</li>
       <li>5e⁻ lost = 5e⁻ gained: 5${C('Fe^2+')} for each ${C('MnO4^-')}.</li><li>Inspection: 5${C('Fe^3+')} and one ${C('Mn^2+')}. O: 4 in ${C('MnO4^-')}, thus 4${C('H2O')}. H: 8 in 4${C('H2O')}, thus 8${C('H^+')}. Charge: +8 − 1 + 10 = +17 on the left, +2 + 15 = +17 on the right.</li></ol><p><b>${C(EC5_EX.on2)}</b></p>`));
   /* 8. try-it: the practice of p. 28 */
   const c3=card(g,'Practice: the oxidation-number method',`<p>Balance each equation with the oxidation-number method (practice questions 1 to 5). Every entity is already in the skeleton: type its coefficient.</p>`);
@@ -4399,7 +4394,7 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
   const c4=card(g,'Try it: the steps in order','');
   ordering(c4,['Split the reaction into two half-reactions.','Balance the atoms other than O and H.','Balance O with H₂O(l).','Balance H with H⁺(aq).','Balance the charge with electrons.','Multiply the half-reactions so that the electrons are equal, then add them and cancel.','Check the atoms and the charge.'],'Put the steps of the half-reaction method (acidic solution) in order.',0);
 },qz:[
-  {q:'The method for balancing redox equations is based on the rule that',o:['the electrons lost in oxidation equal the electrons gained in reduction','the total charge on each side of the equation is equal to zero','the number of H⁺(aq) ions always equals the number of H₂O(l) molecules','the oxidation numbers of all atoms on each side add up to zero'],a:0,
+  {q:'The method for balancing redox equations is based on the rule that',o:['the electrons lost in oxidation equal the electrons gained in reduction','the total charge on each side of the equation must be equal to zero','the number of H⁺(aq) ions must equal the number of H₂O(l) molecules','the oxidation numbers of all the atoms on each side must add up to zero'],a:0,
     w:'Electrons are not created or destroyed. Every electron lost by the reducing agent is gained by the oxidizing agent. The charge must be the same on both sides, but it is not always zero.'},
   {q:'In acidic solution, after the oxygen atoms of a half-reaction are balanced with H₂O(l), the hydrogen atoms are balanced with',o:['H⁺(aq)','H₂O(l)','OH⁻(aq)','H₂(g)'],a:0,
     w:'Step 4: add H⁺(aq) to the side that needs hydrogen. More H₂O(l) would add oxygen again, and OH⁻(aq) is not used in an acidic solution.'},
@@ -4417,8 +4412,8 @@ ECL[5]={t:EC_T[5],h:'Balancing redox equations',d:'The electrons lost in the oxi
     w:'Reduction: MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). Oxidation: Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻. The number of electrons is the lowest common multiple of 5 and 2: two MnO₄⁻ gain them and five Sn²⁺ lose them. 2MnO₄⁻(aq) + 16H⁺(aq) + 5Sn²⁺(aq) → 2Mn²⁺(aq) + 8H₂O(l) + 5Sn⁴⁺(aq), with 10 electrons transferred.'},
   {q:'Iodate ions react with hydrogen sulfite ions in a neutral solution: '+C('IO3^-(aq) + HSO3^-(aq) -> I^-(aq) + SO4^2-(aq) + H^+(aq)')+'. In the balanced equation, the ratio of '+C('IO3^-')+' to '+C('HSO3^-')+' is',o:['1 : 3','3 : 1','1 : 6','2 : 3'],a:0,
     w:'I goes from +5 to −1: each IO₃⁻ gains 6e⁻. S goes from +4 in HSO₃⁻ to +6 in SO₄²⁻: each HSO₃⁻ loses 2e⁻. Three HSO₃⁻ lose 6e⁻, thus the ratio is 1 : 3. IO₃⁻(aq) + 3HSO₃⁻(aq) → I⁻(aq) + 3SO₄²⁻(aq) + 3H⁺(aq).'},
-  {q:'Use the oxidation-number method to balance '+C('ClO3^-(aq) + SO2(g) + H2O(l) -> Cl^-(aq) + SO4^2-(aq) + H^+(aq)')+' with the lowest whole-number coefficients. What is the coefficient of '+C('H^+(aq)')+'?',n:6,u:'',tol:0,
-    w:'Cl goes from +5 to −1: each ClO₃⁻ gains 6e⁻. S goes from +4 to +6: each SO₂ loses 2e⁻. Thus one ClO₃⁻ and three SO₂ give one Cl⁻ and three SO₄²⁻. O: 3 + 6 = 9 on the left without water and 12 on the right: three H₂O(l) on the left. Their hydrogen gives H⁺(aq) on the right: ClO₃⁻(aq) + 3SO₂(g) + 3H₂O(l) → Cl⁻(aq) + 3SO₄²⁻(aq) + 6H⁺(aq), and the coefficient of H⁺ is 6.'},
+  {q:'Use the oxidation-number method to balance '+C('ClO3^-(aq) + SO2(g) + H2O(l) -> Cl^-(aq) + SO4^2-(aq) + H^+(aq)')+' with the lowest whole-number coefficients. What is the coefficient of '+C('H2O(l)')+'?',n:3,u:'',tol:0,
+    w:'Cl goes from +5 to −1: each ClO₃⁻ gains 6e⁻. S goes from +4 to +6: each SO₂ loses 2e⁻. Thus one ClO₃⁻ and three SO₂ give one Cl⁻ and three SO₄²⁻. O: 3 + 6 = 9 on the left before water is added, and 12 on the right. Water on the left makes up the oxygen, and its hydrogen forms H⁺(aq) on the right: ClO₃⁻(aq) + 3SO₂(g) + 3H₂O(l) → Cl⁻(aq) + 3SO₄²⁻(aq) + 6H⁺(aq), thus the coefficient of H₂O(l) is 3.'},
   {q:'Acidified dichromate ions oxidize iron(II) ions: '+C('Cr2O7^2-(aq) + 14H^+(aq) + 6Fe^2+(aq) -> 2Cr^3+(aq) + 7H2O(l) + 6Fe^3+(aq)')+'. Calculate the mass of iron(II) sulfate, '+C('FeSO4(s)')+', that reacts with 0.0150 mol of dichromate ions.',n:.0150*6*ecMolar('FeSO4(s)'),u:'g',tol:.01,
     w:'The mole ratio is 6 Fe²⁺ : 1 Cr₂O₇²⁻. n(Fe²⁺) = 6 × 0.0150 mol = 0.0900 mol, and n(FeSO₄) = n(Fe²⁺). M(FeSO₄) = 55.85 + 32.06 + 4(16.00) = 151.91 g/mol. m = (0.0900 mol)(151.91 g/mol) = 13.7 g.'}]};
 
@@ -4445,8 +4440,8 @@ EC_DIP[5]=[
   {q:'Numerical response. When the redox reaction '+C('__H2O(l) + __NO2^-(aq) + __Al(s) -> __NH3(g) + __AlO2^-(aq) + __H^+(aq)')+' is balanced using lowest whole-number coefficients, the coefficient of<br>'+C('H2O(l)')+' is __________<br>'+C('NO2^-(aq)')+' is __________<br>'+C('Al(s)')+' is __________<br>'+C('H^+(aq)')+' is __________<br>(Record all four digits of your answer.)',
     n:2121,ans:'2121',tol:0,abs:0,
     w:'N goes from +3 in NO₂⁻ to −3 in NH₃: each NO₂⁻ gains 6e⁻. Al goes from 0 to +3 in AlO₂⁻: each Al loses 3e⁻. Thus one NO₂⁻ and two Al, which give one NH₃ and two AlO₂⁻. O: 2 on the left and 4 on the right, thus two H₂O(l) on the left. H: 4 on the left and 3 on the right, thus one H⁺(aq) on the right. Charge: −1 on the left, −2 + 1 = −1 on the right. 2H₂O(l) + NO₂⁻(aq) + 2Al(s) → NH₃(g) + 2AlO₂⁻(aq) + H⁺(aq). Record 2121.'},
-  {q:'Use the following information. The type of reaction that this equation represents is',fig:EC5_F.q42,o:['a Brønsted–Lowry acid–base reaction','an oxidation–reduction reaction','a formation reaction','a combustion reaction'],a:1,
-    w:'Cr goes from +6 in Cr₂O₇²⁻ to +3 in Cr³⁺ (reduced), and C goes from −2 in CH₃OH to 0 in CH₂O (oxidized). Electrons are transferred: an oxidation–reduction reaction, option B. The reactants are not elements (not a formation), and no oxygen gas burns a fuel (not a combustion).'},
+  {q:'Use the following information. The type of reaction that this equation represents is',fig:EC5_F.q42,o:['a Brønsted-Lowry acid-base reaction','an oxidation-reduction reaction','a formation reaction','a combustion reaction'],a:1,
+    w:'Cr goes from +6 in Cr₂O₇²⁻ to +3 in Cr³⁺ (reduced), and C goes from −2 in CH₃OH to 0 in CH₂O (oxidized). Electrons are transferred: an oxidation-reduction reaction, option B. The reactants are not elements (not a formation), and no oxygen gas burns a fuel (not a combustion).'},
   {q:'Use the following information. When the equation is balanced, the equation is',fig:EC5_F.q42,
     o:[C('CH3OH(l) + Cr2O7^2-(aq) + 14H^+(aq) -> CH2O(aq) + 2Cr^3+(aq) + 7H2O(l)'),C('3CH3OH(l) + Cr2O7^2-(aq) + 14H^+(aq) -> 3CH2O(aq) + 2Cr^3+(aq) + 7H2O(l)'),C('3CH3OH(l) + Cr2O7^2-(aq) + 8H^+(aq) -> 3CH2O(aq) + 2Cr^3+(aq) + 7H2O(l)'),C('3CH3OH(l) + Cr2O7^2-(aq) + 8H^+(aq) -> 3CH2O(aq) + 2Cr^3+(aq) + 8H2O(l)')],a:2,
     w:'Oxidation: CH₃OH(l) → CH₂O(aq) + 2H⁺(aq) + 2e⁻. Reduction: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 6e⁻ → 2Cr³⁺(aq) + 7H₂O(l). Multiply the oxidation by 3 so that 6e⁻ are lost. When the half-reactions are added, the 6H⁺ made by the oxidation cancel 6 of the 14H⁺, which leaves 8H⁺(aq). Option C: 3CH₃OH(l) + Cr₂O₇²⁻(aq) + 8H⁺(aq) → 3CH₂O(aq) + 2Cr³⁺(aq) + 7H₂O(l). Option B forgets to cancel the H⁺, and options A and D do not balance the atoms.'},
@@ -4462,8 +4457,8 @@ EC_DIP[5]=[
     w:'Add step I and step II. SO₂(g) is made in step I and used in step II, thus it cancels. H₂S(g): 1 + 2 = 3. H₂O(g): 1 + 2 = 3. Net: 3H₂S(g) + 3/2 O₂(g) → 3S(l) + 3H₂O(g). By Hess’s law, ΔH = (−518 kJ) + (−93 kJ) = −611 kJ: option B. S is oxidized from −2 to 0 and O is reduced from 0 to −2.'}];
 
 /* ---------- review bank: new diploma-level items ---------- */
-const ec5Cu=ecCell({L:{el:'Cu(s)',sol:['Cu^2+(aq)','NO3^-(aq)']},R:{el:'C(s)',sol:['MnO4^-(aq)','Mn^2+(aq)','H^+(aq)']},bridge:'KNO3(aq)',lab:false,flow:false,
-  alt:'A voltaic cell. Left: a copper electrode in a solution of Cu²⁺(aq) and NO₃⁻(aq). Right: an inert carbon electrode in a solution of MnO₄⁻(aq), Mn²⁺(aq) and H⁺(aq). A salt bridge of KNO₃(aq) joins the two solutions, and a voltmeter joins the electrodes.'});
+const ec5Cu=ecCell({L:{el:'Cu(s)',sol:['Cu^2+(aq)','NO3^-(aq)']},R:{el:'C(s)',sol:['MnO4^-(aq)','H^+(aq)']},bridge:'KNO3(aq)',lab:false,flow:false,
+  alt:'A voltaic cell. Left: a copper electrode in a solution of Cu²⁺(aq) and NO₃⁻(aq). Right: an inert carbon electrode in an acidified solution of MnO₄⁻(aq) and H⁺(aq). A salt bridge of KNO₃(aq) joins the two solutions, and a voltmeter joins the electrodes.'});
 const ec5Ents=['K^+(aq)','Cr2O7^2-(aq)','H^+(aq)','Fe^2+(aq)','SO4^2-(aq)','H2O(l)'],ec5Rw=ecRows(['Cr2O7^2-(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Fe^3+(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','H^+(aq)','Fe^2+(aq)','H2O(l)','K^+(aq)']);
 EC_RQ[5]=[
   {q:'Use the diagram of a standard voltaic cell. The balanced net ionic equation for this cell is',fig:ec5Cu,
