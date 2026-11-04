@@ -748,6 +748,27 @@ body{--on-a1:#fff}
 .crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
 html .crumb-tools .crumb-b{margin-left:0;flex:none}
 @media(max-width:600px){.crumb-o>span,.crumb-o>.ic:last-child{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
+/* the site search: a box at the top of the rail (wide screens), a button and a panel under the breadcrumb (narrow screens) */
+.rail-find{padding:0 2px 6px}
+.find{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border-radius:6px;background:var(--glass);border:1px solid var(--hair);color:var(--ink2)}
+.find:focus-within{outline:2px solid var(--at);outline-offset:1px}
+html .find input{flex:1;min-width:0;width:100%;border:0;background:none;box-shadow:none;outline:none;font:inherit;font-size:13.5px;color:var(--ink);padding:0;margin:0;height:auto}
+.find input::placeholder{color:var(--ink2);opacity:1}
+.find kbd{font:600 11px/1 inherit;color:var(--ink2);border:1px solid var(--hair);border-radius:4px;padding:2px 5px}
+.find:focus-within kbd{display:none}
+.find-list{display:grid;gap:1px;margin-top:4px}
+.find-o{display:grid;gap:1px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink);line-height:1.3}
+.find-o b{font-weight:500}
+.find-o span{font-size:11.5px;color:var(--ink2)}
+.find-o.on,.find-o:hover{background:var(--hov)}
+.find-n{margin:0;font-size:12px;color:var(--ink2);padding:0 8px}
+.find-n:empty{display:none}
+.find-list:not([hidden])+.find-n{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.crumb-s{appearance:none;border:0;background:none;color:inherit;display:inline-grid;place-items:center;width:36px;height:36px;border-radius:6px;cursor:pointer}
+.crumb-s:hover,.crumb-s[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
+.find-pop{position:absolute;z-index:6;left:8px;right:8px;padding:8px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);max-height:min(70vh,30rem);overflow-y:auto}
+@media(max-width:900px){.rail-find{display:none}}
+@media(min-width:901px){.crumb-s,.find-pop{display:none!important}}
 /* the level pill under a lesson's title is a button: it goes to the lesson's questions */
 button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
 button.lvl:hover{background:var(--hov);color:var(--ink)}
@@ -807,6 +828,36 @@ function hashPos(p){let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)
 addEventListener('hashchange',()=>{let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)return;
   const on=document.querySelector('#main>.lesson:not([hidden])'),id=t.subj?null:SUBJ[t.s]?t.s+'-'+(t.i==null?curL[t.s]:t.i):t.s+'-0';if(on&&on.id===id)return;
   HASHNAV=1;try{if(t.subj||!SUBJ[t.s]){const i=SUBJECTS.indexOf(t.subj||SUBJECTS.find(s=>s.k===t.s));tabSeg.set(i);showTab(i);}else goLesson(t.s,t.i==null?curL[t.s]:t.i);}finally{HASHNAV=0;}});
+/* ----- site search: the lessons' titles, headings and descriptions and the reference sheets' terms, formulas and hormones (indexed at the
+   first search, from SUBJECTS, SUBJ and REF), and the card headings of the lessons already open ----- */
+const txt=h=>{const t=document.createElement('template');t.innerHTML=String(h==null?'':h);return t.content.textContent.replace(/\s+/g,' ').trim();};
+/* one plain form for the text and the query: no tags, no accents, no case; H₃O⁺ = H3O+, curly quotes and dashes as plain ones */
+const fold=s=>txt(s).normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'");
+let FIND=null;
+function findIndex(){if(FIND)return FIND;FIND=[];
+  SUBJECTS.forEach(S=>S.units.forEach(k=>{const U=SUBJ[k];if(!U)return;const path=S.name+' › '+U.name;
+    U.lessons.forEach((le,i)=>FIND.push({kind:0,t:txt(le.t),body:(le.h||'')+' '+(le.d||''),k,i,path:path+' › '+txt(le.t)}));
+    const R=typeof REF!=='undefined'&&REF[k],ri=U.lessons.findIndex(l=>l.rv)-1;
+    if(R&&ri>=0)[].concat(R.t||[],R.f||[],R.h||[]).forEach(r=>FIND.push({kind:1,t:txt(r[0]),body:r.slice(1).join(' '),k,i:ri,path:path+' › '+txt(U.lessons[ri].t)}));}));
+  FIND.forEach(x=>{x.ft=fold(x.t);x.fb=fold(x.body);});return FIND;}
+/* the card headings of the lessons that are built (they exist only once a lesson has been opened) */
+function findCards(){const out=[];document.querySelectorAll('#main>article.lesson').forEach(A=>{const m=/^(.+)-(\d+)$/.exec(A.id),U=m&&SUBJ[m[1]];if(!U)return;const k=m[1],i=+m[2],le=U.lessons[i];if(!le)return;
+  const S=SUBJECTS.find(s=>s.units.includes(k)),seen=new Set([fold(le.t),fold(le.h||'')]);
+  A.querySelectorAll('.card h2,.card h3').forEach(h=>{const t=txt(h.textContent),ft=fold(t);if(!ft||seen.has(ft))return;seen.add(ft);
+    out.push({kind:2,t,ft,fb:'',k,i,path:(S?S.name+' › ':'')+U.name+' › '+txt(le.t)});});});return out;}
+/* up to max matches: every word of the query is in the entry. Titles first, then card headings, terms, and matches in the text */
+function findTopics(q,max=8){const w=fold(q).split(' ').filter(Boolean);if(!w.length)return [];const hits=[];
+  for(const x of findIndex().concat(findCards())){const inT=w.every(v=>x.ft.includes(v));if(!inT&&!w.every(v=>x.ft.includes(v)||x.fb.includes(v)))continue;
+    let sc=inT?[100,60,80][x.kind]:[40,20,0][x.kind];if(x.ft.startsWith(w[0]))sc+=30;else if((' '+x.ft).includes(' '+w[0]))sc+=15;hits.push([sc-Math.min(10,x.ft.length/20),x]);}
+  hits.sort((a,b)=>b[0]-a[0]);const seen=new Set(),res=[];
+  for(const [,x] of hits){const key=x.k+'|'+x.i+'|'+x.ft;if(seen.has(key))continue;seen.add(key);res.push(x);if(res.length>=max)break;}return res;}
+/* open a match: a lesson at its top; a card heading: its card; a reference entry: the reference sheet with its search box filled in */
+function findGo(x){TOP=x.kind===0?1:0;goLesson(x.k,x.i);const A=document.getElementById(x.k+'-'+x.i);if(!A)return;
+  if(x.kind===1){const inp=A.querySelector('input[aria-label="Search the formulas and terms"]');if(inp){inp.value=x.t;inp.dispatchEvent(new Event('input'));const c=inp.closest('.card');goTo(c);
+      if(matchMedia('(pointer:fine)').matches)inp.focus({preventScroll:true});else focusTo(c,'h3');return;}}
+  if(x.kind===2){const c=[...A.querySelectorAll('.card')].find(c=>{const h=c.querySelector('h2,h3');return h&&fold(h.textContent)===x.ft;});if(c){goTo(c,'h2,h3');return;}}
+  focusTo(A,'h1');}
+
 /* the browser's own scroll restoration would move the page during Back and Forward before the page changes, thus the site keeps the places itself.
    For a reload, or a return to the site, the place of the page on screen is kept for this tab when the page is hidden */
 try{history.scrollRestoration='manual';}catch(e){}
@@ -11553,11 +11604,38 @@ html{scroll-padding-top:62px}
     const c=[{lv:'s',t:parts[1],sub:parts[1]}];if(typeof SUBJ!=='undefined'&&SUBJ[curS]&&SUBJ[curS].name!==parts[1])c.push({lv:'u',t:SUBJ[curS].name,sub:parts[1]});
     c.push({lv:'l',t:parts[0],sub:parts[1],cur:1});return c;};
   const menu=document.createElement('div');menu.className='crumb-menu';menu.setAttribute('role','menu');menu.hidden=true;crumb.append(menu);let mBtn=null,ckey='';
+  /* the site search: 'Find a topic' at the top of the rail on a wide screen, a button and a panel under the bar on a narrow one; '/' goes to it */
+  ICON.search=ICON.search||'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>';let fseq=0;
+  const findBox=host=>{const id='find'+(++fseq),box=document.createElement('div');box.className='find';box.setAttribute('role','search');
+    box.innerHTML=icon('search',15)+`<input type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-l" aria-label="Find a topic" placeholder="Find a topic" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd>`;
+    const inp=box.querySelector('input'),list=document.createElement('div'),n=document.createElement('p');list.className='find-list';list.id=id+'-l';list.setAttribute('role','listbox');list.setAttribute('aria-label','Topics');list.hidden=true;
+    n.className='find-n';n.setAttribute('aria-live','polite');host.append(box,list,n);let res=[],act=-1;
+    const mark=j=>{act=j;[...list.children].forEach((o,k)=>{o.classList.toggle('on',k===j);o.setAttribute('aria-selected',String(k===j));});if(j>=0)inp.setAttribute('aria-activedescendant',id+'-'+j);else inp.removeAttribute('aria-activedescendant');};
+    const show=()=>{const q=inp.value.trim();res=q?findTopics(q):[];list.innerHTML=res.map((x,j)=>`<div role="option" id="${id}-${j}" class="find-o" aria-selected="false"><b>${esc(x.t)}</b><span>${esc(x.path)}</span></div>`).join('');
+      list.hidden=!res.length;inp.setAttribute('aria-expanded',String(res.length>0));mark(res.length?0:-1);n.textContent=!q?'':res.length?res.length+(res.length===1?' topic':' topics')+' found':'No topic has this text.';};
+    const choose=j=>{const x=res[j];if(!x)return;inp.value='';show();box.dispatchEvent(new Event('found'));findGo(x);};
+    inp.addEventListener('input',show);inp.addEventListener('focus',()=>{if(inp.value)show();});inp.addEventListener('blur',()=>{list.hidden=true;inp.setAttribute('aria-expanded','false');});
+    inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(res.length)mark((act+(e.key==='ArrowDown'?1:-1)+res.length)%res.length);}
+      else if(e.key==='Enter'){if(res.length){e.preventDefault();choose(Math.max(0,act));}}
+      else if(e.key==='Escape'){e.preventDefault();if(inp.value){inp.value='';show();}else box.dispatchEvent(new Event('done'));}});
+    /* an option takes the click without taking focus from the input */
+    list.addEventListener('mousedown',e=>e.preventDefault());list.addEventListener('click',e=>{const o=e.target.closest('.find-o');if(o)choose([...list.children].indexOf(o));});
+    return {box,inp};};
+  const rf=document.createElement('div');rf.className='rail-find';rail.firstChild.after(rf);const railFind=findBox(rf);
+  const sb=document.createElement('button');sb.type='button';sb.className='crumb-s';sb.setAttribute('aria-label','Find a topic');sb.setAttribute('aria-expanded','false');sb.title='Find a topic';sb.innerHTML=icon('search',16);
+  const pop=document.createElement('div');pop.className='find-pop';pop.hidden=true;const popFind=findBox(pop);
+  const popClose=focus=>{if(pop.hidden)return;pop.hidden=true;sb.setAttribute('aria-expanded','false');if(focus)sb.focus();};
+  const popOpen=()=>{closeMenu();pop.hidden=false;sb.setAttribute('aria-expanded','true');pop.style.top=Math.round(crumb.offsetHeight+4)+'px';popFind.inp.focus();};
+  sb.onclick=()=>{if(pop.hidden)popOpen();else popClose(true);};popFind.box.addEventListener('done',()=>popClose(true));popFind.box.addEventListener('found',()=>popClose());
+  document.addEventListener('pointerdown',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!sb.contains(e.target))popClose();},true);
+  pop.addEventListener('keydown',e=>{if(e.key==='Tab'){popClose(true);}});
+  document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;const t=e.target;if(t.closest&&t.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"],dialog'))return;
+    e.preventDefault();if(rf.offsetParent)railFind.inp.focus();else popOpen();});
   /* the bar's tools at its right end: 'On this page', a menu of the headed cards of the page on screen */
   ICON.list=ICON.list||'<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>';ICON.dash=ICON.dash||'<path d="M8 12h8"/>';
   const ctools=document.createElement('div');ctools.className='crumb-tools';crumb.insertBefore(ctools,menu);
   const ob=document.createElement('button');ob.type='button';ob.className='crumb-b crumb-o';ob.dataset.lv='o';ob.setAttribute('aria-haspopup','menu');ob.setAttribute('aria-expanded','false');
-  ob.setAttribute('aria-label','On this page');ob.title='Go to a part of this page';ob.innerHTML=icon('list',15)+'<span>On this page</span>'+icon('down',12);ctools.append(ob);
+  ob.setAttribute('aria-label','On this page');ob.title='Go to a part of this page';ob.innerHTML=icon('list',15)+'<span>On this page</span>'+icon('down',12);ctools.append(ob,sb);crumb.insertBefore(pop,menu);
   const closeMenu=focus=>{if(menu.hidden)return;menu.hidden=true;menu.innerHTML='';if(mBtn){mBtn.setAttribute('aria-expanded','false');if(focus)mBtn.focus();}mBtn=null;};
   const items=(lv,sub)=>{if(lv==='s')return SUBJECTS.map((S,i)=>({t:S.name,ic:S.k,cur:S.name===sub,go:()=>{tabSeg.set(i);showTab(i);}}));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
@@ -11569,7 +11647,7 @@ html{scroll-padding-top:62px}
     cs.forEach((x,i)=>{if(x.c.getBoundingClientRect().top<=y0)on=i;});
     return [{h:'On this page'},{t:h1?h1.textContent:'Top of the page',ic:'up',here:on<0,go:()=>{window.scrollTo({top:0,behavior:RM?'auto':'smooth'});focusTo(L,'h1');return 1;}}]
       .concat(cs.map((x,i)=>({t:x.h.textContent.replace(/\s+/g,' ').trim(),ic:'dash',here:i===on,go:()=>{goTo(x.c,'h2,h3');return 1;}})));};
-  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';
+  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';if(typeof popClose==='function')popClose();
     (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
       const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
