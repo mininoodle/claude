@@ -962,13 +962,14 @@ function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n)return '';const r=x/n,n
   return '';}
 /* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
    cb receives {v,ok,s,hi}: hi is the number of hints used. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer.
-   opt.hintNote follows a correct answer that used a hint */
+   opt.hintNote follows a correct answer that used a hint. opt.retry(q): a 'Try again' button under a wrong multiple-choice answer or a shown answer calls it */
 function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt={}){
   const q=el('div',{class:'q'},`<p class="qt">${label?`<b>${label}</b> `:''}${it.q}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});
+  const rr=opt.retry?el('div',{class:'row',hidden:''},`<button type="button" class="btn sm ghost">${icon('reset',14)}Try again</button>`):null;if(rr)rr.firstChild.onclick=()=>opt.retry(q);
   const say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
   if(it.o){
     const ops=el('div',{class:'ops'}),btn={};
-    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>. ')+(it.w||''));};
+    const lock=(j,anim)=>{q.dataset.done=1;const ok=j===it.a;btn[j].classList.add(ok?'ok':'bad');btn[it.a].classList.add('ok');if(anim)fx(btn[j],ok?'pop':'shake');say(ok?'ok':'bad',(ok?'Correct. ':'Not correct. The answer is <b>'+ansText(it)+'</b>. ')+(it.w||''));if(rr)rr.hidden=ok;};
     optOrd(it).forEach(j=>{const b=el('button',{type:'button',class:'op'},optLbl(it,j));btn[j]=b;b.onclick=()=>{if(q.dataset.done)return;b.classList.add('picked');b.setAttribute('aria-pressed','true');lock(j,true);cb({v:j,ok:j===it.a?1:0});};ops.append(b);});
     q.append(ops);if(sv&&btn[sv.v])lock(sv.v,false);
   }else{
@@ -982,7 +983,7 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt
       if(e.s&&!e.ok)say('info',ans()+' <span class="hint">This question does not count as correct now.'+note+'</span>');
       else if(e.ok)say('ok','Correct. '+(it.w||'')+(e.hi&&opt.hintNote?' <span class="hint">'+opt.hintNote+'</span>':''));
       else say('bad',test?'Not correct. '+(d?d+' ':'')+ans():'Not correct. '+(d||(it.plain?'Check your reasoning and your arithmetic.':'Check the sign, the units and the conversions.'))+(steps.length?' Use a hint or try again.':' Try again.'));
-      if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);};
+      if(anim&&!e.s)fx(row,e.ok?'pop':'shake');if(sb)sb.disabled=!!(e.ok&&!e.s);if(rr)rr.hidden=!(e.s&&!e.ok);};
     const chk=()=>{if(test&&q.dataset.done)return;if(shown){show({v:inp.value.trim().slice(0,24),ok:0,s:1},false);return;}const x=parseNum(inp.value);if(isNaN(x)){say('info','Type a number. You can type 6.25e6 for 6.25 × 10⁶.');return;}
       const e={v:inp.value.trim().slice(0,24),ok:good(x)?1:0};if(hi)e.hi=hi;if(test){q.dataset.done=1;inp.readOnly=true;}show(e,true);cb(e);};
     row.children[2].onclick=chk;inp.addEventListener('keydown',e=>{if(e.key==='Enter')chk();});
@@ -991,7 +992,7 @@ function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt
     if(sb)sb.onclick=()=>{const e={v:inp.value.trim().slice(0,24),ok:0,s:1};show(e,false);if(!shown){shown=true;cb(e);}};
     q.append(row,hl);if(sv&&sv.re)say('info',sv.re);else if(sv){inp.value=sv.v??'';show(sv,false);}
   }
-  q.append(fb);return q;
+  q.append(fb);if(rr)q.append(rr);return q;
 }
 const QUIZ={};
 function quiz(host,items,title,base){
@@ -1005,14 +1006,20 @@ function quiz(host,items,title,base){
     const upd=b=>{sc.textContent=items.filter((_,i)=>{const e=Store.get(base+'_'+i);return e&&e.ok;}).length+' / '+items.length;if(b)fx(sc,'bump');};
     /* a shown answer does not count and logs one miss; the same correct answer checked again on the same day counts once */
     /* a correct answer that used a hint counts for Practised, not as a mastery day; checked again on the same day without the hint, it keeps the hint */
-    items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',saved(id,it),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
+    /* Try again clears only this question's saved answer: its spaced repetition and the day its answer was shown stay, thus a correct retry adds no mastery day today */
+    const retry=(q,it,i)=>{quiet=1;try{Store.clear((m,k)=>m==='a'&&k===base+'_'+i);}finally{quiet=0;}last=sg();const n=mk(it,i);q.replaceWith(n);upd(true);afterChange();focusTo(n,'.op,input');};
+    const mk=(it,i)=>{const id=base+'_'+i;return qEl(it,(i+1)+'.',saved(id,it),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
       const ok=!!(e.ok&&!e.s),same=ok&&p&&p.ok&&p.t&&dayOf(p.t)===today();if(same&&p.hi&&!e.hi)e=Object.assign({},e,{hi:p.hi});Store.set(id,e);last=sg();upd(true);if(same)return;
-      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v,hint:!!e.hi});},false,undefined,{hintNote:'You used a hint, thus this answer counts for Practised but not as a mastery day.'}));});
-    /* clears this lesson's own questions (not its review bank): answers, spaced repetition and the correct-count; the mastery history stays */
-    const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();};r.append(b);c.append(r);upd();};
-  render();QUIZ[base]=()=>{if(sg()!==last)render();};
+      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v,hint:!!e.hi});},false,' Select Try again to answer it again.',{hintNote:'You used a hint, thus this answer counts for Practised but not as a mastery day.',retry:q=>retry(q,it,i)});};
+    items.forEach((it,i)=>c.append(mk(it,i)));
+    /* clears this lesson's own questions (not its review bank): the answers and the correct-count. Spaced repetition and the mastery history stay.
+       It sits below a divider, and it needs a second selection within 5 s (a double tap does not count), like Submit in the timed exam */
+    const r=el('div',{class:'row',style:'border-top:1px solid var(--hair);margin-top:1.4em;padding-top:1em'}),b=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear my answers for this lesson');let armed=0;
+    b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent='Select again to clear. Your mastery level and review dates stay.';setTimeout(()=>{armed=0;if(b.isConnected)b.innerHTML=icon('reset',14)+'Clear my answers for this lesson';},5000);return;}if(now-armed<600)return;
+      const bp=base.split('_'),le=SUBJ[bp[0]]&&SUBJ[bp[0]].lessons[+bp[1]];Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();focusTo(c,'h3');toast('Your answers in '+(le?le.t:'this lesson')+' are cleared. Your mastery level and review dates stay.');};r.append(b);c.append(r);upd();};
+  let quiet=0;render();QUIZ[base]=()=>{if(!quiet&&sg()!==last)render();};
   /* a page left open past midnight: a correct answer from the day before is no longer filled in */
-  const day=()=>{if(!c.isConnected){LIVE.delete(day);return;}if(sg()!==last)render();};LIVE.add(day);return c;
+  const day=()=>{if(!c.isConnected){LIVE.delete(day);return;}if(!quiet&&sg()!==last)render();};LIVE.add(day);return c;
 }
 /* clickable diagram: explore, test and drag-the-labels modes */
 function hotspot(host,svg,parts,opt={}){
@@ -1362,10 +1369,10 @@ function showTab(i,first){
 /* clear answers: everything saved for one section (unit), then rebuild its lessons so the try-its start fresh */
 const unitKey=sk=>(m,k)=>m==='r'?k===sk:m==='w'?k.startsWith('hs_'+sk+'-')||k.startsWith('ord_'+sk+'-')||k.startsWith('mt_'+sk+'-')||k.startsWith('spd_'+sk+'-')||(sk==='eq'&&k.startsWith('ice_')):
   m==='g'?k==='boss_'+sk||k.startsWith('ch_'+sk+'_')||k.startsWith('cnt_'+sk+'_'):k.startsWith(sk+'_');
-/* what a recorded clear covers: 'u:mom' is a unit, 'l:mom_0' the quiz answers, spaced repetition and correct-count of one lesson's own questions (not its mastery history or its review bank) */
+/* what a recorded clear covers: 'u:mom' is a unit, 'l:mom_0' the quiz answers and correct-count of one lesson's own questions (not their spaced repetition, the mastery history or the review bank) */
 /* rb2:bio: the Biology review banks were rewritten to be harder. Answers, spaced repetition and history of their items from before the rewrite no longer describe the new questions */
 const RB2='rb2:bio',RB2T=Date.parse('2026-11-02T16:01:43Z'),rb2Scope=(m,k)=>(m==='a'||m==='s'||m==='h')&&/^(ns|sn|en)_\d+_r\d+$/.test(k);
-const clearScope=id=>id===RB2?rb2Scope:id.startsWith('u:')?unitKey(id.slice(2)):id.startsWith('l:')?(m,k)=>(m==='a'||m==='s')&&k.startsWith(id.slice(2)+'_')&&/^\d+$/.test(k.slice(id.length-1))||m==='g'&&k==='cnt_'+id.slice(2):null;Store.setScope(clearScope);
+const clearScope=id=>id===RB2?rb2Scope:id.startsWith('u:')?unitKey(id.slice(2)):id.startsWith('l:')?(m,k)=>m==='a'&&k.startsWith(id.slice(2)+'_')&&/^\d+$/.test(k.slice(id.length-1))||m==='g'&&k==='cnt_'+id.slice(2):null;Store.setScope(clearScope);
 function clearUnit(sk){
   Store.clear(unitKey(sk),'u:'+sk);try{sessionStorage.removeItem(EXK(sk));}catch(e){}
   Object.keys(QUIZ).forEach(k=>{if(k.startsWith(sk+'_'))delete QUIZ[k];});
