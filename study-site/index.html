@@ -990,7 +990,7 @@ function quiz(host,items,title,base){
     /* a shown answer does not count and logs one miss; the same correct answer checked again on the same day counts once */
     items.forEach((it,i)=>{const id=base+'_'+i;c.append(qEl(it,(i+1)+'.',Store.get(id),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
       const ok=!!(e.ok&&!e.s);Store.set(id,e);last=sg();upd(true);if(ok&&p&&p.ok&&p.t&&dayOf(p.t)===today())return;
-      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre});},false));});
+      srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v});},false));});
     /* clears this lesson's own questions (not its review bank): answers, spaced repetition and the correct-count; the mastery history stays */
     const r=el('div',{class:'row'}),b=el('button',{type:'button',class:'btn sm ghost'},'Clear my answers for this lesson');b.onclick=()=>{Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();};r.append(b);c.append(r);upd();};
   render();QUIZ[base]=()=>{if(sg()!==last)render();};return c;
@@ -1192,7 +1192,7 @@ function reviewUI(g,sk,le){
   function ask(){view='test';host.innerHTML='';const x=T.list[T.i],tot=T.list.length,right=()=>T.res.filter(r=>r.ok).length;
     const c=el('section',{class:'card glass rv-q'},`<div class="qh"><h3>Question ${T.i+1} of ${tot}</h3><span class="score">${right()} correct</span></div><div class="bar2" style="margin:.2em 0 1em"><i class="b2" style="width:${100*T.i/tot}%"></i></div><p class="hint">Lesson: ${S.lessons[x.L].t}${x.gen?' (new numbers)':''}</p>`);
     const nav=el('div',{class:'row'}),nx=el('button',{type:'button',class:'btn',disabled:''},T.i+1<tot?'Next question':'See the results'),end=el('button',{type:'button',class:'btn ghost'},'End the test now');
-    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.re?null:(x.id||null),!!e.ok,x.re?{}:{sk,L:x.L,rv:1});srMark(x.id||null,!!e.ok);nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
+    c.append(qEl(x.it,'',null,e=>{T.res.push({x,ok:e.ok,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')});onAnswer(x.re?null:(x.id||null),!!e.ok,x.re?{}:{sk,L:x.L,rv:1,v:e.v});srMark(x.id||null,!!e.ok);nx.disabled=false;const sc=$('.score',c);sc.textContent=right()+' correct';if(e.ok)fx(sc,'bump');$('.b2',c).style.width=100*(T.i+1)/tot+'%';},true));
     nx.onclick=()=>{T.i++;if(T.i<tot){ask();toQ(host);}else results();};end.onclick=()=>results();nav.append(nx,end);c.append(nav);host.append(c);const h=$('h3',c);h.tabIndex=-1;h.focus({preventScroll:true});}
   /* ----- timed exam ----- */
   function exStart(mins){const wr=wrs.length?wrs[Math.floor(Math.random()*wrs.length)]:null,skip=new Set(wr&&wr.skip||[]),items=balanced(nMC,x=>!!x.it.o&&!skip.has(x.id)).map(x=>Object.assign(x,{kind:'mc',ord:optOrd(x.it)}));
@@ -1234,10 +1234,10 @@ function reviewUI(g,sk,le){
     x.marks.forEach(m=>{const b=el('button',{type:'button',class:'tile','aria-pressed':'false'},m);b.onclick=()=>{b.classList.toggle('on');b.setAttribute('aria-pressed',b.classList.contains('on'));};box.append(b);});c.append(box);
     c.append(el('details',{class:'ex'},`<summary>Model response</summary><div>${x.model}</div>`));const r=el('div',{class:'row'}),fin=el('button',{type:'button',class:'btn'},'Show my results');
     fin.onclick=()=>exDone({got:$$('.tile.on',box).length,max:x.marks.length,q:x.q});r.append(fin);c.append(r);host.append(c);toHost();}
-  function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j],na=a==null||a==='';if(x.kind==='mc')res.push({x,na,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a]});
-      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:numOK(v,x.it,nrHalf(x.nr,x.it.n))?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:'')});}});
+  function exDone(wr){const res=[];E.items.forEach((x,j)=>{const a=E.ans[j],na=a==null||a==='';if(x.kind==='mc')res.push({x,na,ok:a===x.it.a?1:0,va:a==null?'no answer':x.it.o[a],v:a});
+      else if(x.kind==='nr'){const v=nrVal(x.nr,a);res.push({x,na,ok:numOK(v,x.it,nrHalf(x.nr,x.it.n))?1:0,va:nrShow(x.nr,a)+(a&&x.it.u?' '+x.it.u:''),v:plain(nrShow(x.nr,a))});}});
     /* a question without an answer (na) counts in the score, but not as answered: no history, study day or spaced repetition */
-    res.forEach(r=>{if(r.x.L>=0&&!r.na)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1});});if(E.items.some((x,j)=>x.kind==='wr'&&(E.ans[j]||'').trim()))markStudy();
+    res.forEach(r=>{if(r.x.L>=0&&!r.na)onAnswer(r.x.id||null,!!r.ok,{sk,L:r.x.L,nocombo:1,v:r.v});});if(E.items.some((x,j)=>x.kind==='wr'&&(E.ans[j]||'').trim()))markStudy();
     T={res};const used=E.used;E=null;exSave();results({wr,used});}
   function results(o){const back=host.contains(document.activeElement);o=o||{};const exam=o.used!=null,R=T.res,wr=o.wr,n=R.length+(wr?wr.max:0),c=R.filter(r=>r.ok).length+(wr?wr.got:0);if(!n){home();return;}view='res';host.innerHTML='';
     /* a test or practice round already updated spaced repetition with each answer; the exam does it here */
@@ -10882,7 +10882,10 @@ const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} quest
 /* ----- every answer goes through here. o.rv: a wrong answer shows the right one, and a correct answer on that day adds no mastery day ----- */
 function onAnswer(id,ok,o={}){
   const td=today(),has=o.sk&&SUBJ[o.sk]&&o.L!=null&&o.L>=0,before=has?(o.before||lessonLevel(o.sk,o.L)):null;
-  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&rv!==td&&!d.includes(td))d.push(td);Store.xs('h',id,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv});}
+  /* the history entry also keeps l, the latest result (1 correct, 0 wrong), and for the mistake log lv and lm: the last wrong answer (an option index, a text of at most 24 characters,
+     or '' when the answer was shown) and the time of that miss. Fields that this version does not set are kept */
+  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;
+    if(!ok){e.lm=Date.now();if(o.v!=null)e.lv=typeof o.v==='number'?o.v:String(o.v).trim().slice(0,24);}Store.xs('h',id,e);}
   if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
   markStudy();if(!o.nocombo)comboStep(ok);
@@ -10931,7 +10934,7 @@ function runRound(box,o){let i=0,over=false,tm=0,tEnd=0;const res=[],t0=Date.now
     const cr=o.conf?el('div',{class:'confrow',hidden:''},`<span class="hint">Before you see the result: how sure were you?</span>`+CONF.map(([k,nm,d])=>`<button type="button" class="chip" data-c="${k}" title="${d}">${nm}</button>`).join('')):null;
     const q=qEl(x.it,'',null,e=>{if(over)return;const r={x,ok:e.ok?1:0,conf:null,va:x.it.o?x.it.o[e.v]:(e.v||'no answer')+' '+(x.it.u||'')};res.push(r);if(o.limit&&res.length===n){clearInterval(tm);tEnd=Date.now();}
       /* with confidence on, the combo, toasts and achievements of the answer also wait for the rating */
-      const rec=()=>{onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L,rv:1});quizKeep(x,e);};if(cr){const f=RR_PEND;RR_PEND=rec;if(f)f();}else rec();srMark(x.id,!!e.ok);o.step&&o.step(res);
+      const rec=()=>{onAnswer(x.id,!!e.ok,{sk:x.sk,L:x.L,rv:1,v:e.v});quizKeep(x,e);};if(cr){const f=RR_PEND;RR_PEND=rec;if(f)f();}else rec();srMark(x.id,!!e.ok);o.step&&o.step(res);
       const upd=()=>{nx.disabled=false;$('.b2',box).style.width=100*(off+i+1)/tot+'%';const sc=$('[data-c]',box);if(sc)sc.textContent=base+res.filter(r=>r.ok).length+' correct';};
       if(cr){q.classList.add('prec');cr.hidden=false;$$('.chip',cr).forEach(b=>b.onclick=()=>{r.conf=b.dataset.c;$$('.chip',cr).forEach(x=>x.classList.toggle('on',x===b));q.classList.remove('prec');cr.hidden=true;if(RR_PEND===rec){RR_PEND=null;rec();}upd();nx.focus({preventScroll:true});});return;}
       upd();},true);
