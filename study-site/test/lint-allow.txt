@@ -1,0 +1,5 @@
+# Accepted findings of lint.test.js, one per line: "<id> <check>", or "<id>" alone for every check of that id.
+# Add a line only after you have read the item and decided the finding is not a defect (for example an answer in words,
+# or two lessons that ask the same short question on purpose). Say why in a comment after the entry.
+# Example:
+#   ch_th_8 w-none   # the answer is "twice the fuel": a ratio stated in words
