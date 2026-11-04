@@ -5262,8 +5262,261 @@ EC_DIP[3]=[{q:'The oxidation number of Mo in '+C('CaMoO4(s)')+' is',o:['+2','+4'
 }catch(e){console.error('[ec] slot 3d stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 7d ----- */
 {try{
-/* the diploma questions 48 to 91 of lesson 7 (EC_DIP[7]). Placeholder (written by the framework): question 57 only */
-EC_DIP[7]=[{q:'A net cell potential value that would represent a spontaneous reaction is',o:['−1.05 V','−0.08 V','0.00 V','+0.15 V'],a:3,w:'A spontaneous reaction has a positive E°net.'}];
+/* the diploma questions 48 to 91 of lesson 7 (EC_DIP[7]): notes pages 43 to 55, key on page 85. EC_DIP[7][j] is question 48 + j.
+   Items are also shown alone (review, tests), thus every item carries its own copy of the shared information in fig. The stem comes first on the site,
+   then the fig, thus the stems say "Use the information below". Figure text is HTML with inline styles, because the figures are also shown outside the lesson page */
+const ip=h=>`<p style="margin:.35em .5em">${h}</p>`,                                   /* a paragraph of the information */
+  ic=h=>`<p style="margin:.5em .5em;text-align:center">${h}</p>`,                      /* a centred line: an equation */
+  ih=h=>`<p style="margin:.15em .5em .3em;text-align:center;font-weight:650">${h}</p>`, /* the title of a diagram */
+  /* a label in a drawing (text in C notation becomes unicode). In a question figure on a phone, every label is drawn at 15.5 units (.qfig CSS): leave room for that */
+  T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
+  /* a formula or an equation (C notation) as HTML in which a line never breaks inside a species: with C() alone, a line can break
+     after a charge and before the state, as in "Cl⁻ | (aq)" */
+  Cn=s=>C(s).split(' ').map(t=>t.includes('<sup>')?`<span style="white-space:nowrap">${t}</span>`:t).join(' '),
+  /* more room under an ecCell drawing, for labels under the beakers (ecCell sets its height from the labels it draws itself) */
+  tall=(svg,h)=>{const s=svg.replace(/^<svg viewBox="0 0 (\d+) \d+"/,'<svg viewBox="0 0 $1 '+h+'"');if(s===svg)console.error('[ec] slot 7d: the ecCell output changed, a figure may cut off its labels');return s;},
+  /* an arrow and its label, for a part that is named from the side */
+  lead=(x1,y1,x2,y2)=>sArrow(x1,y1,x2,y2,'var(--ink2)',1.4),
+  eArrow=(x1,x2,y)=>sArrow(x1,y,x2,y,'var(--s1)',2.2)+T('e⁻',(x1+x2)/2,y-9,{s:12.5,w:700,f:'s1'}),
+  /* the labels of a porous-cup cell (ecCell sep 'cup', names false): the electrodes above, the beaker solution and the cup under the beaker, in two columns */
+  cupL=(eL,eR,sL,sR)=>T(eL,100,130,{a:'end'})+T(eR,324,130,{a:'start'})+sL.map((t,i)=>T(t,140,298+16*i,{w:500})).join('')+
+    ['porous cup with'].concat(sR).map((t,i)=>T(t,312,298+16*i,{w:500,f:i?'ink':'ink2'})).join('')+lead(140,285,140,262)+lead(312,285,312,266);
+
+/* ---------- figures ---------- */
+/* 48 */
+const F48=ip('During the operation of a propane-oxygen fuel cell, 15.7 g of gas are consumed at the anode.');
+/* 49, 50 */
+const F49=ip('Electronic hobbyists often “etch” circuit boards. In this process, unwanted copper foil is removed from a copper-clad plastic circuit board by immersing the board in a bath of iron(III) chloride solution. The equation for the net reaction is')+
+  ic(Cn('Cu(s) + 2Fe^3+(aq) -> Cu^2+(aq) + 2Fe^2+(aq)'));
+/* 51, 52, 53 */
+const F51=ip('A student dipped 12.50 g strips of four different metals, '+Cn('Ag(s), Cu(s), Pb(s)')+' and '+Cn('Mg(s)')+', into a beaker containing 250 mL of 1.00 mol/L '+Cn('HCl(aq)')+' in order to determine an activity series. One of the metals reacted immediately and vigorously with the acid.');
+/* 54 */
+const F54=ic(Cn('2RhCl6^3-(aq) + 3Zn(s) -> 3Zn^2+(aq) + 2Rh(s) + 12Cl^-(aq)')+'&emsp;'+ecEs('net')+'&nbsp;=&nbsp;+1.20&nbsp;V');
+/* 60 */
+const F60=ip('The following reaction will occur at high temperatures.')+ic(Cn('2Na(g) + Cl2(g) -> 2NaCl(g)')+' + energy');
+/* 62, 63: a nickel-cadmium cell cut open. The sheets of the roll, from the inside: NiO2(s), separator, Cd(s), separator */
+const NICD=(()=>{const x0=36,x1=176,cx=106,rx=70,ty=58,by=196,ry=13,w0=114,bw=15,y0=72,
+    B=[['var(--steel2)','NiO₂(s)'],['var(--fig)','separator'],['color-mix(in srgb,var(--ink) 82%,var(--fig))','Cd(s)'],['var(--fig)','separator']],lx=204,ly=[278,260,242,224];
+  let s=`<path d="M${x0},${ty}V${by}A${rx},${ry} 0 0 0 ${x1},${by}V${ty}Z" fill="color-mix(in srgb,var(--steel) 70%,var(--fig))" stroke="var(--ink2)" stroke-width="1.5"/>`;
+  /* the sheets seen through the cut: a stack of thin plates on the left part, the four layers in the cut */
+  for(let x=52;x<=100;x+=8)s+=`<rect x="${x}" y="${y0+8}" width="4" height="${by-y0-6}" fill="var(--fig2)" stroke="var(--ink2)" stroke-width=".8"/>`;
+  s+=`<rect x="${w0-6}" y="${y0-6}" width="${bw*4+12}" height="${by-y0+10}" fill="var(--fig)" stroke="var(--ink2)" stroke-width="1"/>`;
+  B.forEach(([c],i)=>{s+=`<rect x="${w0+i*bw}" y="${y0}" width="${bw}" height="${by-y0}" fill="${c}" stroke="var(--ink2)" stroke-width="1"/>`;});
+  s+=`<ellipse cx="${cx}" cy="${ty}" rx="${rx}" ry="${ry}" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.5"/><ellipse cx="${cx}" cy="${ty}" rx="${rx-10}" ry="${ry-3}" fill="none" stroke="var(--mute)" stroke-width="1"/>`+
+    `<path d="M${cx-9},${ty}V${ty-16}h18V${ty}" fill="color-mix(in srgb,var(--steel) 70%,var(--fig))" stroke="var(--ink2)" stroke-width="1.3"/><ellipse cx="${cx}" cy="${ty-16}" rx="9" ry="3" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.2"/>`;
+  /* leader lines: from each layer down, then to its name */
+  B.forEach(([c,n],i)=>{const x=w0+i*bw+bw/2,y=ly[i];s+=`<path d="M${x},${y-5}H${lx-6}" stroke="var(--ink2)" stroke-width="1.3" fill="none"/>`+sArrow(x,y-5,x,by+3,'var(--ink2)',1.3)+T(n,lx,y,{a:'start',w:500});});
+  return `<svg viewBox="0 0 330 292" style="max-width:360px;margin:0 auto" role="img" aria-label="A nickel-cadmium cell: a metal cylinder with a terminal on top, cut open to show thin sheets rolled together. From the inside out, the sheets are NiO₂(s), a separator, Cd(s) and a separator.">${s}</svg>`;})();
+const F62=ip('Voltaic cells are used as portable sources of electrical energy. One common cell is the rechargeable nickel-cadmium cell.')+NICD+
+  ip('The equation representing the discharge of this cell is')+ic(Cn('NiO2(s) + Cd(s) + 2H2O(l) -> Cd(OH)2(s) + Ni(OH)2(s)'));
+/* 64 */
+const F64=ic(Cn('C(s) + 2O^2-(l) -> CO2(g) + 4e^-'))+ic(Cn('Al^3+(l) + 3e^- -> Al(l)'));
+/* 67 */
+const F67=ip('A sample of '+Cn('Na2S2O3(aq)')+' is titrated with acidified '+Cn('KMnO4(aq)')+' to a pink endpoint. One product of this redox reaction is '+Cn('SO4^2-(aq)')+'.');
+/* 68 */
+const F68=ip('Some pacemakers use specialized lithium cells as a power source. The half-reactions and electrode potentials in these cells are')+
+  ic(Cn('2SOCl2(aq) + 4e^- -> 4Cl^-(aq) + S(s) + SO2(aq)')+`&emsp;<span style="white-space:nowrap">${ecEs('')} = +0.36 V</span>`)+
+  ic(Cn('Li^+(aq) + e^- -> Li(s)')+`&emsp;<span style="white-space:nowrap">${ecEs('')} = −3.04 V</span>`);
+/* 69 */
+const F69=ip('A possible alternative to the internal combustion engine used in present-day automobiles is an electric motor powered with energy supplied by an aluminum-air battery, which uses a sodium hydroxide solution as an electrolyte. When air is bubbled through the sodium hydroxide solution, the half-reaction that occurs at the cathode is')+
+  ic(Cn('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)'));
+/* 70, 71: a circuit board (a photograph in the notes) */
+const BOARD=(()=>{let s=`<rect x="10" y="10" width="340" height="128" rx="8" fill="color-mix(in srgb,var(--s3) 55%,var(--fig))" stroke="var(--ink2)" stroke-width="1.4"/>`;
+  const cu='color-mix(in srgb,#c47a4a 85%,var(--fig))';
+  /* copper tracks */
+  [[34,40,90,40,90,70],[34,52,80,52,80,96,128,96],[150,30,150,58],[176,30,176,58],[214,44,252,44,252,30],[214,72,262,72,262,104,306,104],[130,118,214,118],[48,118,48,140],[96,118,96,140],[288,40,330,40],[288,58,330,58,330,80]].forEach(p=>{
+    s+=`<polyline points="${p.join(',')}" fill="none" stroke="${cu}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;});
+  /* chips with their pins */
+  const chip=(x,y,w,h)=>{let c='';for(let i=x+5;i<x+w-2;i+=7)c+=`<rect x="${i}" y="${y-4}" width="3" height="${h+8}" fill="var(--steel)"/>`;return c+`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="var(--rubber)" stroke="var(--ink2)" stroke-width=".8"/>`;};
+  s+=chip(128,48,86,52)+chip(30,62,44,22)+chip(270,66,36,22)+chip(232,20,40,16);
+  s+=`<rect x="286" y="28" width="46" height="36" rx="3" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1"/><circle cx="66" cy="34" r="7" fill="var(--s4)" stroke="var(--ink2)" stroke-width="1"/>`;
+  /* the gold contacts at the edge */
+  for(let x=40;x<330;x+=9)s+=`<rect x="${x}" y="130" width="5" height="16" rx="1" fill="var(--s4)"/>`;
+  return `<svg viewBox="0 0 360 150" style="max-width:400px;margin:.2em auto" role="img" aria-label="A circuit board: a plastic board with copper tracks, chips and a row of contacts along one edge.">${s}</svg>`;})();
+const F70=ip('Electronic circuit boards can be made by etching a copper board that is coated with plastic on one side. A special masking tape is applied to the surface of the copper board in the shape of the desired circuit pattern. The circuit board is then etched by reacting it with '+Cn('FeCl3(aq)')+' to remove the unwanted copper.')+BOARD;
+/* 72 */
+const F72=ip('Common household bleach is an aqueous solution that contains approximately 5% sodium hypochlorite. The equilibrium involved in the production of bleach from chlorine can be represented by the reaction equation')+
+  ic(Cn('Cl2(g) + 2OH^-(aq) <=> ClO^-(aq) + Cl^-(aq) + H2O(l)'));
+/* 73 to 76: the copper cell in a porous cup, in acidified permanganate */
+const F73=ip('A chemistry student constructs the cell shown below.')+
+  tall(ecCell({sep:'cup',L:{el:'C(s)',sol:'MnO4^-(aq)'},R:{el:'Cu(s)',sol:'Cu^2+(aq)'},anode:'R',names:false,lab:false,flow:false,sign:false,
+    extra:cupL('C(s)','Cu(s)',['acidified 1.00 mol/L','KMnO4(aq)/Mn^2+(aq)'],['1.00 mol/L CuSO4(aq)']),
+    alt:'A beaker of acidified 1.00 mol/L KMnO₄(aq) and Mn²⁺(aq) with a carbon electrode, C(s). In the beaker stands a porous cup of 1.00 mol/L CuSO₄(aq) with a copper electrode, Cu(s). A voltmeter is connected to the two electrodes by a wire.'}),326);
+/* 77 */
+const F77=ih('Electrochemical cell')+tall(ecCell({sep:'cup',L:{el:'Zn(s)',sol:'Zn^2+(aq)'},R:{el:'Cu(s)',sol:'Cu^2+(aq)'},names:false,lab:false,flow:false,sign:false,
+  extra:cupL('Zn(s)','Cu(s)',['1.0 mol/L Zn^2+(aq)'],['1.0 mol/L Cu^2+(aq)']),
+  alt:'A beaker of 1.0 mol/L Zn²⁺(aq) with a zinc electrode, Zn(s). In the beaker stands a porous cup of 1.0 mol/L Cu²⁺(aq) with a copper electrode, Cu(s). A voltmeter is connected to the two electrodes.'}),326);
+/* 78 */
+const F78=ip('The following materials are used by Chemistry 30 students in laboratory work.')+
+  /* two columns, 1 to 4 and 5 to 8, as in the notes. A column is at least 7.5em wide, thus on a narrow phone the second column goes under the first */
+  `<div style="display:flex;flex-wrap:wrap;column-gap:1.6em;max-width:28em;margin:.2em auto .5em;padding:0 .5em">${[['electrodes','insulated containers','pH paper','porous boundary'],['thermometer','electrolytes','external circuit','buret']]
+    .map((col,c)=>`<div style="flex:1 1 7.5em">${col.map((t,i)=>`<div style="display:flex;gap:.6em;padding:.2em 0"><b style="flex:none;min-width:.7em;text-align:right">${4*c+i+1}</b><span>${t}</span></div>`).join('')}</div>`).join('')}</div>`;
+/* 79: numbered parts */
+const F79=ecCell({L:{el:'Cu(s)',sol:'1.0 mol/L Cu^2+(aq)'},R:{el:'Ni(s)',sol:'1.0 mol/L Ni^2+(aq)'},meter:'none',lab:false,flow:false,sign:false,nums:{elL:4,solL:3,elR:1,solR:2,bridge:5,wire:6},
+  alt:'Two beakers joined by a salt bridge (5) and by a wire (6). Left: a copper electrode, Cu(s) (4), in 1.0 mol/L Cu²⁺(aq) (3). Right: a nickel electrode, Ni(s) (1), in 1.0 mol/L Ni²⁺(aq) (2).'});
+/* 80: Q(s) in a porous cup; the arrow shows the electrons that flow toward the zinc */
+const F80=tall(ecCell({sep:'cup',L:{el:'Zn(s)',sol:'Zn(NO3)2(aq)'},R:{el:'Q(s)',sol:'Q(NO3)2(aq)',c:'var(--liq)'},anode:'R',names:false,lab:false,flow:false,sign:false,
+  extra:eArrow(180,132,34)+cupL('Zn(s)','Q(s)',['1.0 mol/L','Zn(NO3)2(aq)'],['1.0 mol/L Q(NO3)2(aq)']),alt:'A beaker of 1.0 mol/L Zn(NO₃)₂(aq) with a zinc electrode, Zn(s). In the beaker stands a porous cup of 1.0 mol/L Q(NO₃)₂(aq) with an electrode of metal Q(s). A voltmeter is connected to the two electrodes. An arrow on the wire shows electrons flowing toward the zinc electrode.'}),326);
+/* 83, 84: a metal X and a hydrogen half-cell */
+const F83=ih('Voltaic cell')+ecCell({L:{el:'X(s)',sol:'X^2+(aq)'},R:{el:'Pt(s)',gas:'H2(g)',sol:'H^+(aq)'},names:false,lab:false,flow:false,sign:false,
+  extra:T('X(s)',64,128,{a:'end'})+T('X^2+(aq)',122,262)+T('H^+(aq)',318,262)+T('H2(g)',324,101,{a:'end'})+T('salt bridge',220,142,{w:500,f:'ink2'})+T('inert electrode',436,24,{a:'end',w:500})+lead(410,31,382,98),
+  alt:'Left: a metal electrode X(s) in a solution of X²⁺(aq). Right: an inert electrode in a glass tube, with hydrogen gas, H₂(g), fed over it, in a solution of H⁺(aq). A salt bridge joins the two solutions, and a voltmeter is connected to the two electrodes.'})+
+  ip('In this apparatus, the anions in the solution move from the hydrogen half-cell solution into the salt bridge and migrate toward the '+Cn('X(s)')+' electrodes.');
+/* 85 */
+const F85=ih('An electrochemical cell')+tall(ecCell({L:{el:'Cu(s)',sol:'Cu^2+(aq)'},R:{el:'Zn(s)',sol:'Zn^2+(aq)'},anode:'R',names:false,lab:false,flow:false,sign:false,
+  extra:T('Cu(s)',64,128,{a:'end'})+T('Zn(s)',376,128,{a:'start'})+T('salt bridge',220,78,{w:500,f:'ink2'})+T('1.0 mol/L NaNO3(aq)',220,94,{w:500})+
+    T('1.0 mol/L',102,296)+T('Cu^2+(aq) and SO4^2-(aq)',102,312)+T('1.0 mol/L',338,296)+T('Zn^2+(aq) and SO4^2-(aq)',338,312)+
+    T('porous',220,238,{w:500,f:'ink2'})+T('cotton',220,254,{w:500,f:'ink2'})+T('plugs',220,270,{w:500,f:'ink2'})+lead(194,236,148,224)+lead(246,236,292,224),
+  alt:'Left: a copper electrode, Cu(s), in 1.0 mol/L Cu²⁺(aq) and SO₄²⁻(aq). Right: a zinc electrode, Zn(s), in 1.0 mol/L Zn²⁺(aq) and SO₄²⁻(aq). A salt bridge of 1.0 mol/L NaNO₃(aq) with porous cotton plugs joins the solutions, and a meter is connected to the two electrodes.'}),320);
+/* 86: the U-tube holds methanol, a non-electrolyte */
+const F86=ih('Electrochemical cell')+tall(ecCell({L:{el:'Cu(s)',sol:'Cu(NO3)2(aq)'},R:{el:'Zn(s)',sol:'ZnSO4(aq)',c:'var(--liq)'},anode:'R',names:false,lab:false,flow:false,sign:false,
+  extra:eArrow(340,262,35)+T('Cu(s)',64,128,{a:'end'})+T('Zn(s)',376,128,{a:'start'})+T('U-tube with',220,142,{w:500,f:'ink2'})+T('CH3OH(aq)',220,158,{w:500})+
+    T('0.10 mol/L',102,296)+T('Cu(NO3)2(aq)',102,312)+T('0.10 mol/L',338,296)+T('ZnSO4(aq)',338,312),
+  alt:'Left: a copper electrode, Cu(s), in 0.10 mol/L Cu(NO₃)₂(aq). Right: a zinc electrode, Zn(s), in 0.10 mol/L ZnSO₄(aq). A U-tube that contains CH₃OH(aq) joins the two solutions, and a voltmeter is connected to the electrodes. An arrow shows electrons flowing from the zinc toward the copper.'}),320);
+/* 87 to 90: an unknown metal ion */
+const F87=ip('To determine the identity of an unknown metallic ion in a solution, a student designed the voltaic cell shown below.')+tall(ecCell({L:{el:'C(s)'},R:{el:'Zn(s)'},names:false,lab:false,flow:false,sign:false,
+  extra:T('inert',64,124,{a:'end'})+T('cathode',64,140,{a:'end'})+T('zinc',376,124,{a:'start'})+T('anode',376,140,{a:'start'})+T('salt bridge',220,142,{w:500,f:'ink2'})+
+    T('unknown metallic',102,296)+T('ion solution',102,312)+T('Zn(NO3)2(aq)',338,296),
+  alt:'Left: an inert cathode in a solution of an unknown metallic ion. Right: a zinc anode in Zn(NO₃)₂(aq). A salt bridge joins the solutions, and a voltmeter is connected to the two electrodes.'}),320);
+/* 91: a lemon cell with numbered parts */
+const LEMON=(()=>{const cu='#c47a4a',zn='#a4adbb',lemon='color-mix(in srgb,var(--s4) 42%,var(--fig))';
+  let s=`<path d="M135,150V66H172M225,150V66H188" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linejoin="round"/>`+
+    /* the bulb */
+    `<path d="M171,52a16,16 0 1 1 18,0v6h-18Z" fill="color-mix(in srgb,var(--s4) 22%,var(--fig))" stroke="var(--ink2)" stroke-width="1.6" stroke-linejoin="round"/><path d="M175,50l3,-12 2,6 2,-6 3,12" fill="none" stroke="var(--s4)" stroke-width="1.4" stroke-linejoin="round"/>`+
+    `<rect x="170" y="58" width="20" height="10" rx="2" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.2"/>`+T('light',180,88,{w:500,f:'ink2'})+T('bulb',180,106,{w:500,f:'ink2'})+
+    /* the strips go into the lemon */
+    `<rect x="128" y="146" width="14" height="80" fill="${cu}" stroke="var(--ink2)" stroke-width="1.1"/><rect x="218" y="146" width="14" height="80" fill="${zn}" stroke="var(--ink2)" stroke-width="1.1"/>`+
+    `<path d="M66,236C62,206 98,190 132,192S206,186 238,190 298,200 296,232 260,282 196,284 106,282 80,266 68,252 66,236Z" fill="${lemon}" stroke="var(--ink2)" stroke-width="1.6"/>`+
+    `<path d="M124,198h22M214,197h22" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round"/>`+
+    [[104,222],[170,214],[246,226],[132,256],[214,262],[268,244],[188,240],[96,250]].map(([x,y])=>`<path d="M${x},${y}l4,2" stroke="var(--ink2)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>`).join('')+
+    /* the two arrows beside the wires point up */
+    sArrow(121,132,121,100,'var(--ink2)',1.6)+sArrow(239,132,239,100,'var(--ink2)',1.6)+
+    T('Cu(s)',104,172,{a:'end'})+lead(108,168,124,168)+T('Zn(s)',256,172,{a:'start'})+lead(252,168,236,168)+
+    ecBadge(6,180,16)+ecBadge(5,100,116)+ecBadge(4,260,116)+ecBadge(1,82,192)+ecBadge(2,278,192)+ecBadge(3,180,258);
+  return `<svg viewBox="0 0 360 296" style="max-width:380px;margin:0 auto" role="img" aria-label="A lemon with a copper strip (1) and a zinc strip (2) pushed into it. The lemon is part 3. A wire from each strip goes up to a light bulb (6). An arrow beside the wire on the copper side (5) and an arrow beside the wire on the zinc side (4) both point up, toward the bulb.">${s}</svg>`;})();
+const F91=ip('A voltaic cell capable of lighting a small light bulb can be made by placing copper and zinc strips in a lemon.')+LEMON;
+
+/* ---------- the questions ---------- */
+const NR='<b>Numerical response.</b> ';
+EC_DIP[7]=[
+/* 48 */ {q:'Use the information below. The number of moles of gas consumed is',fig:F48,o:['9.981 mol','0.693 mol','0.491 mol','0.356 mol'],a:3,
+  w:'At the anode the fuel is oxidized, thus the gas consumed there is propane, C₃H₈(g). M(C₃H₈) = 3(12.01 g/mol) + 8(1.01 g/mol) = 44.11 g/mol. n = m/M = 15.7 g ÷ 44.11 g/mol = 0.356 mol. (0.491 mol would be oxygen, M = 32.00 g/mol, which is consumed at the cathode.)'},
+/* 49 */ {q:'Use the information below. In the reaction, in which the unwanted copper foil is removed,',fig:F49,o:['copper ions are reduced','copper atoms are oxidized','iron(II) ions act as the oxidizing agent','iron(III) ions act as the reducing agent'],a:1,
+  w:'Each copper atom loses two electrons: Cu(s) → Cu²⁺(aq) + 2e⁻. A loss of electrons is oxidation, thus copper atoms are oxidized. The Fe³⁺(aq) ions gain the electrons: Fe³⁺(aq) + e⁻ → Fe²⁺(aq). Thus the iron(III) ions are reduced and act as the oxidizing agent. Copper ions and iron(II) ions are products.'},
+/* 50 */ {q:'Use the information below. Which of the following statements and corresponding net voltages are correct for this reaction?',fig:F49,
+  o:['It is a spontaneous reaction with an E°net = +0.43 V.','It is a spontaneous reaction with an E°net = +1.11 V.','A power supply is required because the E°net = −0.43 V.','A power supply is required because the E°net = −1.11 V.'],a:0,
+  w:'The reduction is Fe³⁺(aq) + e⁻ → Fe²⁺(aq), E°r = +0.77 V (cathode). The oxidation is Cu(s) → Cu²⁺(aq) + 2e⁻, and Cu²⁺(aq)/Cu(s) has E°r = +0.34 V (anode). E°net = +0.77 V − (+0.34 V) = +0.43 V. E°net is positive, thus the reaction is spontaneous and no power supply is needed. (+1.11 V adds the two values instead of subtracting them.)'},
+/* 51 */ {q:'Use the information below. The balanced net ionic equation for the first reaction that occurred is',fig:F51,
+  o:['2Ag(s) + 2H⁺(aq) → H₂(g) + 2Ag⁺(aq)','Cu(s) + 2H⁺(aq) → H₂(g) + Cu²⁺(aq)','Pb(s) + 2H⁺(aq) → H₂(g) + Pb²⁺(aq)','Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq)'],a:3,
+  w:'The oxidizing agent in the acid is H⁺(aq) (0.00 V). A metal reacts with it when the metal’s half-reaction is below the H⁺(aq) half-reaction in the table. Ag⁺/Ag (+0.80 V) and Cu²⁺/Cu (+0.34 V) are above it: no reaction. Pb²⁺/Pb (−0.13 V) is only just below it: lead reacts very slowly. Mg²⁺/Mg (−2.37 V) is far below it: magnesium is the strongest reducing agent, and it reacts first and vigorously, Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq).'},
+/* 52 */ {q:NR+'Use the information below. The electrical potential for the reaction of the metal that reacted immediately and vigorously with the acid is +/− __________ V.',fig:F51,n:2.37,u:'V',abs:.005,tol:0,
+  m:'Find the metal that reacted: the strongest reducing agent. Then E°net = E°r(cathode) − E°r(anode).',
+  w:'The metal that reacts immediately and vigorously is the strongest reducing agent, Mg(s). H⁺(aq) is reduced at the cathode: 2H⁺(aq) + 2e⁻ → H₂(g), E°r = 0.00 V. Mg(s) is oxidized at the anode: Mg(s) → Mg²⁺(aq) + 2e⁻, and Mg²⁺(aq)/Mg(s) has E°r = −2.37 V. E°net = 0.00 V − (−2.37 V) = +2.37 V. Record 2.37.'},
+/* 53 */ {q:NR+'Use the information below. The mass of metal that reacted with the hydrochloric acid is __________ g.',fig:F51,n:3.04,u:'g',tol:.01,
+  m:'Write the balanced equation. Find the limiting reagent: compare the amount of H⁺(aq) with the amount of Mg(s). Then m = nM.',
+  w:'The metal that reacts is magnesium: Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq). n(H⁺) = cV = 1.00 mol/L × 0.250 L = 0.250 mol. The strip has n(Mg) = 12.50 g ÷ 24.31 g/mol = 0.514 mol, but the acid can react with only 0.250 mol ÷ 2 = 0.125 mol of Mg. Thus H⁺(aq) is the limiting reagent, and some magnesium is left over. m = 0.125 mol × 24.31 g/mol = 3.04 g. Record 3.04.'},
+/* 54 */ {q:NR+'Use the equation below. The standard electrode potential for the half-reaction<br>'+Cn('RhCl6^3-(aq) + 3e^- -> Rh(s) + 6Cl^-(aq)')+'<br>is +/− __________ V.',fig:F54,n:.44,u:'V',abs:.005,tol:0,ex:1,
+  m:'E°net = E°r(cathode) − E°r(anode). Find the half-reaction at the anode and look up its E°r. Then solve for E°r(cathode).',
+  w:'Zn(s) is oxidized, thus the zinc half-cell is the anode: Zn²⁺(aq) + 2e⁻ ⇌ Zn(s), E°r = −0.76 V. RhCl₆³⁻(aq) is reduced, thus its half-reaction is at the cathode. E°r(cathode) = E°net + E°r(anode). E°r = +1.20 V + (−0.76 V) = +0.44 V. Record 0.44.'},
+/* 55 */ {q:'If the '+Cn('Cu^2+(aq)')+' / '+Cn('Cu(s)')+' reduction half-reaction was assigned a reduction potential value of 0.00 V for an electrode potential table, then the '+Cn('Ni^2+(aq)')+' / '+Cn('Ni(s)')+' half-reaction on that table would have a reduction potential value of',
+  o:['+0.26 V','+0.08 V','−0.26 V','−0.60 V'],a:3,
+  w:'In the data booklet, Cu²⁺(aq)/Cu(s) is +0.34 V and Ni²⁺(aq)/Ni(s) is −0.26 V. Setting copper to 0.00 V subtracts 0.34 V from every value in the table. Ni²⁺(aq)/Ni(s): −0.26 V − 0.34 V = −0.60 V. The difference between the two half-cells, 0.60 V, stays the same.'},
+/* 56 */ {q:'When chlorine gas is bubbled through a sodium iodide solution, the solution',
+  o:['becomes reddish-brown because iodide ions are oxidized','becomes reddish-brown because the iodide ions are reduced','becomes reddish-brown because chlorine is oxidized','stays colourless'],a:0,
+  w:'Cl₂(g) (+1.36 V) is a stronger oxidizing agent than I₂(s) (+0.54 V), thus chlorine oxidizes the iodide ions: Cl₂(g) + 2I⁻(aq) → 2Cl⁻(aq) + I₂(s). E°net = +1.36 V − (+0.54 V) = +0.82 V: spontaneous. The iodine that forms colours the solution reddish-brown. Chlorine gains electrons: it is reduced, not oxidized.'},
+/* 57 */ {q:'A net cell potential value that would represent a spontaneous reaction is',o:['−1.05 V','−0.08 V','0.00 V','+0.15 V'],a:3,
+  w:'A reaction is spontaneous when E°net is positive. Only +0.15 V is positive. A negative E°net means that the reaction needs a power supply, and 0.00 V means that there is no net reaction.'},
+/* 58 */ {q:'The voltage of an electrochemical cell is +0.20 V. If one of the half-reactions is the reduction of '+Cn('Cu^2+(aq)')+', then the other half-reaction that occurs could be',
+  o:['2I⁻(aq) → I₂(s) + 2e⁻','S(s) + 2H⁺(aq) + 2e⁻ → H₂S(aq)','H₂S(aq) → S(s) + 2H⁺(aq) + 2e⁻','I₂(s) + 2e⁻ → 2I⁻(aq)'],a:2,
+  w:'The reduction of Cu²⁺(aq) is at the cathode: E°r = +0.34 V. The other half-reaction must be an oxidation, at the anode. E°r(anode) = E°r(cathode) − E°net = +0.34 V − 0.20 V = +0.14 V. The half-reaction S(s) + 2H⁺(aq) + 2e⁻ ⇌ H₂S(aq) has E°r = +0.14 V, and at the anode it runs as an oxidation: H₂S(aq) → S(s) + 2H⁺(aq) + 2e⁻. The iodide oxidation (+0.54 V) would give −0.20 V, and a reduction cannot pair with another reduction.'},
+/* 59 */ {q:'In the reaction of sodium metal with water, the reduction half-reaction produces',
+  o:['hydroxide ions, which results in a pH above 7','hydroxide ions, which results in a pH below 7','hydrogen gas, which results in a pH below 7','hydrogen gas, which results in a pH of 7'],a:0,
+  w:'Na(s) is the SRA and water is the SOA. The reduction is 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq), E°r = −0.83 V. It produces hydrogen gas and hydroxide ions, and the OH⁻(aq) makes the solution basic: the pH rises above 7. Net: 2Na(s) + 2H₂O(l) → 2Na⁺(aq) + H₂(g) + 2OH⁻(aq), E°net = −0.83 V − (−2.71 V) = +1.88 V.'},
+/* 60 */ {q:'Use the information below. The half-reaction for the reduction that occurs in this reaction is',fig:F60,o:['Na(g) → Na⁺(g) + e⁻','Na(g) + e⁻ → Na⁺(g)','Cl₂(g) + 2e⁻ → 2Cl⁻(g)','Cl₂(g) → 2Cl⁻(g) + 2e⁻'],a:2,
+  w:'Reduction is a gain of electrons. Each chlorine atom goes from 0 in Cl₂(g) to −1 in NaCl(g): Cl₂(g) + 2e⁻ → 2Cl⁻(g). Na(g) → Na⁺(g) + e⁻ is the oxidation. The other two equations do not balance for charge.'},
+/* 61 */ {q:NR+'Under standard conditions, hydrogen gas reacts with '+Cn('Au^3+(aq)')+' ions to produce '+Cn('Au(s)')+'. The net cell potential for the reaction is +/− __________ V.',n:1.5,u:'V',abs:.005,tol:0,
+  m:'The oxidizing agent is reduced at the cathode, and hydrogen is oxidized at the anode. E°net = E°r(cathode) − E°r(anode).',
+  w:'H₂(g) is oxidized at the anode: H₂(g) → 2H⁺(aq) + 2e⁻, E°r = 0.00 V (the hydrogen reference). Au³⁺(aq) is reduced at the cathode: Au³⁺(aq) + 3e⁻ → Au(s), E°r = +1.50 V. E°net = +1.50 V − 0.00 V = +1.50 V. Record 1.50.'},
+/* 62 */ {q:'Use the information below. The oxidation half-reaction for the discharge of this cell is',fig:F62,
+  o:['Cd(s) + 2OH⁻(aq) → Cd(OH)₂(s) + 2e⁻','NiO₂(s) + 2H₂O(l) + 2e⁻ → Ni(OH)₂(s) + 2OH⁻(aq)','NiO₂(s) + 2H₂O(l) → Ni(OH)₂(s) + 2OH⁻(aq) + 2e⁻','Cd(s) + 2OH⁻(aq) + 2e⁻ → Cd(OH)₂(s)'],a:0,
+  w:'Oxidation is a loss of electrons, thus the electrons are on the right side. Cd goes from 0 in Cd(s) to +2 in Cd(OH)₂(s): cadmium is oxidized, Cd(s) + 2OH⁻(aq) → Cd(OH)₂(s) + 2e⁻. Ni goes from +4 in NiO₂(s) to +2 in Ni(OH)₂(s): that is the reduction, NiO₂(s) + 2H₂O(l) + 2e⁻ → Ni(OH)₂(s) + 2OH⁻(aq). The other two equations do not balance for charge.'},
+/* 63 */ {q:'Use the information below. In this system, the strongest oxidizing agent is',fig:F62,o:['NiO₂(s)','Cd(s)','Cd(OH)₂(s)','H₂O(l)'],a:0,
+  w:'In the spontaneous discharge, the SOA reacts with the SRA. NiO₂(s) gains electrons (Ni: +4 → +2), thus it is the oxidizing agent, and the strongest one present. Cd(s) is the reducing agent (Cd: 0 → +2). Cd(OH)₂(s) is a product, and the oxidation numbers in H₂O(l) do not change.'},
+/* 64 */ {q:'In the Hall-Héroult process, aluminum is produced by the electrolysis of molten '+Cn('Al2O3(l)')+'. The half-reactions that occur are shown below. The mass of '+Cn('Al(l)')+' produced for each 1.00 kg of '+Cn('C(s)')+' consumed is',fig:F64,
+  o:['1.69 kg','2.45 kg','3.00 kg','6.00 kg'],a:2,
+  w:'n(C) = 1000 g ÷ 12.01 g/mol = 83.26 mol. Each C(s) gives 4 electrons: n(e⁻) = 4 × 83.26 mol = 333.1 mol. Each Al³⁺ ion takes 3 electrons: n(Al) = 333.1 mol ÷ 3 = 111.0 mol. m(Al) = 111.0 mol × 26.98 g/mol = 2995 g = 3.00 kg.'},
+/* 65 */ {q:'The half-reaction to which all other half-cell potentials are compared is',o:['Li⁺(aq) + e⁻ → Li(s)','Au³⁺(aq) + 3e⁻ → Au(s)','F₂(g) + 2e⁻ → 2F⁻(aq)','2H⁺(aq) + 2e⁻ → H₂(g)'],a:3,
+  w:'The standard hydrogen half-cell is the reference: 2H⁺(aq) + 2e⁻ ⇌ H₂(g) is assigned E° = 0.00 V. Every other E° in the table is measured against it. F₂(g) (+2.87 V) and Li⁺(aq) (−3.04 V) are only the two ends of the table.'},
+/* 66 */ {q:'Iodine solutions, which contain a suspension of '+Cn('I2(s)')+', have a brown colour. Which of the following metals will <b>not</b> cause an iodine solution to change colour?',o:['Ni(s)','Cu(s)','Ag(s)','Mg(s)'],a:2,
+  w:'A metal removes the colour when it reduces I₂(s) to colourless I⁻(aq): I₂(s) + 2e⁻ → 2I⁻(aq), E°r = +0.54 V. A metal can do this when its own half-reaction is lower in the table. Ni²⁺/Ni (−0.26 V), Cu²⁺/Cu (+0.34 V) and Mg²⁺/Mg (−2.37 V) are all lower, thus these metals react. Ag⁺/Ag is +0.80 V, higher than iodine: E°net = +0.54 V − (+0.80 V) = −0.26 V. Silver does not react, and the colour stays.'},
+/* 67 */ {q:'Use the information below. A product of the reduction half-reaction is',fig:F67,o:['H⁺(aq)','Mn²⁺(aq)','SO₄²⁻(aq)','S₂O₃²⁻(aq)'],a:1,
+  w:'Acidified permanganate is the oxidizing agent: MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). Thus Mn²⁺(aq) is a product of the reduction. S₂O₃²⁻(aq) is oxidized to SO₄²⁻(aq) (S goes from +2 to +6), thus SO₄²⁻(aq) is a product of the oxidation. H⁺(aq) is a reactant in the reduction. (It is a product of the oxidation: S₂O₃²⁻(aq) + 5H₂O(l) → 2SO₄²⁻(aq) + 10H⁺(aq) + 8e⁻.)'},
+/* 68 */ {q:'Use the information below. The net equation and potential of this lithium cell are',fig:F68,
+  o:['2SOCl₂(aq) + Li⁺(aq) → 4Cl⁻(aq) + S(s) + SO₂(aq) + Li(s), E°net = +3.40 V','2SOCl₂(aq) + 4Li⁺(aq) → 4Cl⁻(aq) + S(s) + SO₂(aq) + 4Li(s), E°net = +2.68 V','2SOCl₂(aq) + Li(s) → 4Cl⁻(aq) + S(s) + SO₂(aq) + Li⁺(aq), E°net = +2.68 V','2SOCl₂(aq) + 4Li(s) → 4Cl⁻(aq) + S(s) + SO₂(aq) + 4Li⁺(aq), E°net = +3.40 V'],a:3,
+  w:'The SOCl₂ half-reaction (+0.36 V) is higher than the lithium half-reaction (−3.04 V), thus SOCl₂(aq) is reduced at the cathode and Li(s) is oxidized at the anode: Li(s) → Li⁺(aq) + e⁻. Multiply the lithium half-reaction by 4 to balance the electrons. Net: 2SOCl₂(aq) + 4Li(s) → 4Cl⁻(aq) + S(s) + SO₂(aq) + 4Li⁺(aq). E°net = +0.36 V − (−3.04 V) = +3.40 V. The E° values are not multiplied by the coefficients. The other three equations do not balance for charge, and 2.68 V comes from adding the two values instead of subtracting them.'},
+/* 69 */ {q:'Use the information below. The reduction potential for this half-reaction is',fig:F69,o:['−0.40 V','+0.40 V','−0.70 V','+0.70 V'],a:1,
+  w:'Find O₂(g) + 2H₂O(l) + 4e⁻ ⇌ 4OH⁻(aq) in the table of reduction potentials: E°r = +0.40 V. The value +0.70 V belongs to a different half-reaction, O₂(g) + 2H⁺(aq) + 2e⁻ ⇌ H₂O₂(l). The half-reaction occurs as a reduction at the cathode, thus its reduction potential keeps the sign of the table.'},
+/* 70 */ {q:'Use the information below. The net equation for the spontaneous reaction that occurs when the circuit board is immersed in '+Cn('FeCl3(aq)')+' is',fig:F70,
+  o:['Fe²⁺(aq) + Cu(s) → Cu²⁺(aq) + Fe(s)','Cu⁺(aq) + Fe²⁺(aq) → Fe³⁺(aq) + Cu(s)','2Fe³⁺(aq) + Cu(s) → Cu²⁺(aq) + 2Fe²⁺(aq)','2Fe³⁺(aq) + 3Cu(s) → 3Cu²⁺(aq) + 2Fe(s)'],a:2,
+  w:'FeCl₃(aq) contains Fe³⁺(aq), the SOA: Fe³⁺(aq) + e⁻ → Fe²⁺(aq), E°r = +0.77 V. The copper is the SRA: Cu(s) → Cu²⁺(aq) + 2e⁻ (Cu²⁺/Cu, +0.34 V). In the table, Fe³⁺(aq) is reduced only to Fe²⁺(aq), not to Fe(s), and Fe²⁺(aq) (−0.45 V) is too weak to oxidize copper. Multiply the iron half-reaction by 2: 2Fe³⁺(aq) + Cu(s) → Cu²⁺(aq) + 2Fe²⁺(aq), E°net = +0.77 V − (+0.34 V) = +0.43 V.'},
+/* 71 */ {q:'Use the information below. In this reaction, the copper acts as the',fig:F70,o:['oxidizing agent and is oxidized','oxidizing agent and is reduced','reducing agent and is oxidized','reducing agent and is reduced'],a:2,
+  w:'Copper atoms lose electrons: Cu(s) → Cu²⁺(aq) + 2e⁻. A loss of electrons is oxidation, and a substance that gives electrons to another substance is a reducing agent. Thus copper is the reducing agent and is oxidized. Fe³⁺(aq) is the oxidizing agent and is reduced.'},
+/* 72 */ {q:'Use the information below. In the production of bleach, the reduction half-reaction is',fig:F72,
+  o:['Cl₂(g) + 2e⁻ → 2Cl⁻(aq)','2Cl⁻(aq) → Cl₂(g) + 2e⁻','4OH⁻(aq) → O₂(g) + 2H₂O(l) + 4e⁻','ClO⁻(aq) + H₂O(l) + 2e⁻ → Cl⁻(aq) + 2OH⁻(aq)'],a:0,
+  w:'Chlorine is both reduced and oxidized here: a disproportionation. Each Cl atom in Cl₂(g) is 0. In Cl⁻(aq) it is −1, a gain of electrons: the reduction is Cl₂(g) + 2e⁻ → 2Cl⁻(aq). In ClO⁻(aq) it is +1: the oxidation is Cl₂(g) + 4OH⁻(aq) → 2ClO⁻(aq) + 2H₂O(l) + 2e⁻. 2Cl⁻(aq) → Cl₂(g) + 2e⁻ is an oxidation, no oxygen forms, and the ClO⁻(aq) half-reaction would use up the bleach instead of making it.'},
+/* 73 */ {q:'Use the diagram below. The net equation and the predicted voltage for the operating cell are',fig:F73,
+  o:['MnO₄⁻(aq) + 8H⁺(aq) + Cu(s) → Mn²⁺(aq) + 4H₂O(l) + Cu²⁺(aq), E°net = +1.17 V','MnO₄⁻(aq) + 8H⁺(aq) + Cu(s) → Mn²⁺(aq) + 4H₂O(l) + Cu²⁺(aq), E°net = +1.85 V',
+    '2MnO₄⁻(aq) + 16H⁺(aq) + 5Cu(s) → 2Mn²⁺(aq) + 8H₂O(l) + 5Cu²⁺(aq), E°net = +1.17 V','2MnO₄⁻(aq) + 16H⁺(aq) + 5Cu(s) → 2Mn²⁺(aq) + 8H₂O(l) + 5Cu²⁺(aq), E°net = +1.85 V'],a:2,
+  w:'The SOA is MnO₄⁻(aq) with H⁺(aq) (+1.51 V), and the SRA is Cu(s) (Cu²⁺/Cu, +0.34 V). Reduction at the carbon cathode: MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). Oxidation at the copper anode: Cu(s) → Cu²⁺(aq) + 2e⁻. Balance the electrons at 10: multiply the reduction by 2 and the oxidation by 5. Net: 2MnO₄⁻(aq) + 16H⁺(aq) + 5Cu(s) → 2Mn²⁺(aq) + 8H₂O(l) + 5Cu²⁺(aq). E°net = +1.51 V − (+0.34 V) = +1.17 V. The equation with one Cu(s) does not balance for charge, and +1.85 V adds the two values.'},
+/* 74 */ {q:NR+'Use the diagram below. During the operation of this cell, if 0.354 mol of '+Cn('MnO4^-(aq)')+' were consumed, then the mass of the copper electrode would decrease by __________ g.',fig:F73,n:56.2,u:'g',tol:.01,
+  m:'Balance the net equation first. Use the mole ratio of Cu(s) to MnO₄⁻(aq), then m = nM.',
+  w:'The net equation is 2MnO₄⁻(aq) + 16H⁺(aq) + 5Cu(s) → 2Mn²⁺(aq) + 8H₂O(l) + 5Cu²⁺(aq). 5 mol of Cu(s) react for each 2 mol of MnO₄⁻(aq). n(Cu) = 0.354 mol × 5/2 = 0.885 mol. m = 0.885 mol × 63.55 g/mol = 56.2 g. Record 56.2.'},
+/* 75 */ {q:'Use the diagram below. During the operation of this cell,',fig:F73,
+  o:['electrons flow from the copper electrode to the carbon electrode','cations migrate through the porous cup toward the copper electrode','anions migrate through the porous cup toward the carbon electrode','the concentration of sulfate ions in the cell decreases'],a:0,
+  w:'Copper is the anode: Cu(s) → Cu²⁺(aq) + 2e⁻. The electrons flow through the wire to the carbon cathode, where MnO₄⁻(aq) is reduced. Cations migrate toward the cathode (carbon) and anions toward the anode (copper), the opposite of the two statements about migration. SO₄²⁻(aq) is a spectator ion: it moves, but it is not used up.'},
+/* 76 */ {q:'Use the diagram below. Which of the following statements does <b>not</b> apply to the operation of this cell?',fig:F73,
+  o:['The oxidation state of the reducing agent changes from 0 to +2.','MnO₄⁻(aq) is reduced at the carbon cathode.','Cu(s) is oxidized at the anode.','MnO₄⁻(aq) loses electrons.'],a:3,
+  w:'Cu(s) is the reducing agent: its oxidation number changes from 0 to +2 as it is oxidized at the copper anode. MnO₄⁻(aq) is reduced at the carbon cathode: Mn changes from +7 to +2, a gain of 5 electrons for each ion. Thus MnO₄⁻(aq) gains electrons, and the statement that it loses electrons does not apply.'},
+/* 77 */ {q:'Use the diagram below. For this cell, the potential is',fig:F77,o:['+1.10 V','+0.42 V','−0.42 V','−1.10 V'],a:0,
+  w:'Cu²⁺(aq) (+0.34 V) is a stronger oxidizing agent than Zn²⁺(aq) (−0.76 V), thus the copper half-cell in the porous cup is the cathode and zinc is the anode. E°net = +0.34 V − (−0.76 V) = +1.10 V. A voltaic cell has a positive E°net. The values ±0.42 V come from adding the two potentials.'},
+/* 78 */ {q:NR+'Use the information below. The materials necessary to construct an operational voltaic cell are, in numerical order, ___, ___, ___ and ___. (Record all four digits of your answer.)',fig:F78,n:1467,ans:'1467',tol:0,abs:0,
+  m:'A voltaic cell is two half-cells joined in two ways: a path for the electrons and a path for the ions.',
+  w:'Each half-cell is an electrode in an electrolyte. The half-cells are joined by a porous boundary, such as a salt bridge or a porous cup, so that ions can move between them. An external circuit, a wire, carries the electrons from the anode to the cathode. Insulated containers, pH paper, a thermometer and a buret are not needed. Thus the materials are 1 (electrodes), 4 (porous boundary), 6 (electrolytes) and 7 (external circuit): record 1467.'},
+/* 79 */ {q:NR+'Use the diagram below. Identify the part of the electrochemical cell, as numbered in the diagram, that corresponds to each of the terms listed below.<br>Cathode&emsp;__________<br>External electron circuit&emsp;__________<br>Oxidizing agent&emsp;__________<br>Anode&emsp;__________<br>(Record all four digits of your answer in the order of the terms.)',fig:F79,n:4631,ans:'4631',tol:0,abs:0,
+  m:'Find the stronger oxidizing agent: its half-cell is the cathode. The other electrode is the anode.',
+  w:'Cu²⁺(aq) (+0.34 V) is a stronger oxidizing agent than Ni²⁺(aq) (−0.26 V). Thus Cu²⁺(aq) is reduced at the copper electrode, the cathode, and nickel is oxidized at the nickel electrode, the anode. The wire is the external circuit: it carries the electrons from the anode to the cathode. Thus cathode 4 (Cu(s)), external circuit 6 (the wire), oxidizing agent 3 (the Cu²⁺(aq) solution) and anode 1 (Ni(s)): record 4631.'},
+/* 80 */ {q:'Use the diagram below. Given that the reading on the voltmeter for this cell is +1.74 V, which of the following statements is correct?',fig:F80,
+  o:['The reduction potential of Q²⁺(aq) is +2.50 V.','Zn(s) is a weaker reducing agent than Q(s).','Q²⁺(aq) would react spontaneously with Cu(s).','Q²⁺(aq) is a stronger oxidizing agent than Zn²⁺(aq).'],a:1,
+  w:'The arrow shows the electrons leaving Q(s) and flowing through the wire to Zn(s). Thus Q(s) is oxidized at the anode, and Zn²⁺(aq) is reduced at the zinc cathode. E°net = E°r(cathode) − E°r(anode): +1.74 V = −0.76 V − E°r(Q), thus Q²⁺(aq) + 2e⁻ ⇌ Q(s) has E°r = −2.50 V, not +2.50 V. Q(s) is a stronger reducing agent than Zn(s). Q²⁺(aq) is a weaker oxidizing agent than Zn²⁺(aq) and Cu²⁺(aq), thus it cannot oxidize Cu(s).'},
+/* 81 */ {q:'In an experiment, a student compares several electrochemical cells. Each cell contains two metal strips in their metallic ion solutions. A voltmeter is connected by a wire between the metal strips, and a salt bridge connects the solutions. The dependent (responding) variable is the',
+  o:['voltage','concentration of the solution','reaction of a metal and a metallic ion','metal and metallic ion solution selected'],a:0,
+  w:'The responding variable is what the student measures as the result: the voltage of each cell, read on the voltmeter. The metal and metallic ion solution selected for each cell is the manipulated variable. The concentration of the solutions is kept the same: a controlled variable.'},
+/* 82 */ {q:'In a voltaic cell, there is a conversion of',
+  o:['chemical energy to electrical energy in a spontaneous change','chemical energy to electrical energy in a non-spontaneous change','electrical energy to chemical energy in a spontaneous change','electrical energy to chemical energy in a non-spontaneous change'],a:0,
+  w:'A voltaic cell uses a spontaneous redox reaction (a positive E°net) to produce an electric current: chemical energy becomes electrical energy. An electrolytic cell does the opposite: electrical energy from a power supply drives a non-spontaneous reaction.'},
+/* 83 */ {q:'Use the information below. As this cell operates, electrons flow from',fig:F83,
+  o:['X(s) to the inert electrode and the pH in the hydrogen half-cell increases','X(s) to the inert electrode and the pH in the hydrogen half-cell decreases','the inert electrode to X(s) and the pH in the hydrogen half-cell increases','the inert electrode to X(s) and the pH in the hydrogen half-cell decreases'],a:0,
+  w:'Anions migrate toward the anode, thus X(s) is the anode: X(s) → X²⁺(aq) + 2e⁻. The electrons flow through the wire from X(s) to the inert electrode, the cathode. There H⁺(aq) is reduced: 2H⁺(aq) + 2e⁻ → H₂(g). The concentration of H⁺(aq) decreases, thus the pH in the hydrogen half-cell increases.'},
+/* 84 */ {q:'Use the information below. If the voltmeter reads +0.45 V under standard conditions, then '+Cn('X(s)')+' is most likely',fig:F83,o:['Ni(s)','Fe(s)','Zn(s)','Mg(s)'],a:1,
+  w:'The hydrogen half-cell is the cathode: E°r = 0.00 V. E°net = E°r(cathode) − E°r(anode): +0.45 V = 0.00 V − E°r(X), thus X²⁺(aq) + 2e⁻ ⇌ X(s) has E°r = −0.45 V. Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) has E°r = −0.45 V. Nickel would give +0.26 V, zinc +0.76 V and magnesium +2.37 V.'},
+/* 85 */ {q:NR+'Use the diagram below. A student attempted to replicate a traditional Daniell cell by setting up the electrochemical cell shown. Under standard conditions, the electrical potential of the cell should be +/− __________ V.',fig:F85,n:1.1,u:'V',abs:.005,tol:0,
+  m:'Find the cathode: the half-cell with the stronger oxidizing agent. E°net = E°r(cathode) − E°r(anode).',
+  w:'Cu²⁺(aq) (+0.34 V) is a stronger oxidizing agent than Zn²⁺(aq) (−0.76 V), thus the copper half-cell is the cathode and zinc is oxidized at the anode. The NaNO₃(aq) salt bridge only lets ions move between the half-cells. E°net = +0.34 V − (−0.76 V) = +1.10 V. Record 1.10.'},
+/* 86 */ {q:'Use the diagram below. The cell in the diagram was constructed and connected by a chemistry student. The voltage of the cell remained at 0.00 V trial after trial. One possible reason for the malfunction of the cell was that the',fig:F86,
+  o:['concentrations of the two solutions were too low','solution in the U-tube was a non-electrolyte','redox reaction was non-spontaneous','voltmeter was connected backward'],a:1,
+  w:'CH₃OH(aq) is a molecular compound: it does not form ions, thus it is a non-electrolyte. The U-tube cannot carry ions between the half-cells, the circuit is not complete, and no current flows. A lower concentration changes the voltage only a little. The copper-zinc reaction is spontaneous (+1.10 V at standard conditions), and a voltmeter connected backward reads a negative value, not 0.00 V.'},
+/* 87 */ {q:'Use the information below. The student chose zinc for the anode because zinc',fig:F87,o:['gains electrons easily','can be easily reduced','is an oxidizing agent','is a reducing agent'],a:3,
+  w:'Oxidation occurs at the anode. Zn(s) loses electrons easily (Zn²⁺/Zn is −0.76 V, low in the table), thus zinc is a good reducing agent. Gaining electrons and being reduced describe an oxidizing agent, which reacts at the cathode.'},
+/* 88 */ {q:'Use the information below. If the cell generates a voltage of +1.24 V under standard conditions, the half-reaction occurring at the cathode will have an electrode potential of',fig:F87,o:['+2.00 V','−2.00 V','+0.48 V','−0.48 V'],a:2,
+  w:'E°net = E°r(cathode) − E°r(anode), thus E°r(cathode) = E°net + E°r(anode). The zinc anode has E°r = −0.76 V. E°r(cathode) = +1.24 V + (−0.76 V) = +0.48 V. (+2.00 V would come from +1.24 V − (−0.76 V).)'},
+/* 89 */ {q:'Use the information below. If the zinc anode loses 200 g of mass during the operation of the cell, then the number of moles of electrons transferred is',fig:F87,o:['1.53 mol','3.06 mol','6.12 mol','12.2 mol'],a:2,
+  w:'n(Zn) = 200 g ÷ 65.38 g/mol = 3.06 mol. Each zinc atom loses 2 electrons: Zn(s) → Zn²⁺(aq) + 2e⁻. n(e⁻) = 2 × 3.06 mol = 6.12 mol.'},
+/* 90 */ {q:NR+'Use the information below. If the charge on the unidentified metal ion is 3+, then the number of moles of the metal produced when the zinc anode decreases in mass by 200 g is __________ mol.',fig:F87,n:2.04,u:'mol',tol:.01,
+  m:'Find n(e⁻) from the mass of zinc: 2 electrons for each zinc atom. Each 3+ ion takes 3 electrons.',
+  w:'n(Zn) = 200 g ÷ 65.38 g/mol = 3.059 mol. Zn(s) → Zn²⁺(aq) + 2e⁻, thus n(e⁻) = 2 × 3.059 mol = 6.118 mol. At the cathode each metal ion takes 3 electrons: M³⁺(aq) + 3e⁻ → M(s). n(M) = 6.118 mol ÷ 3 = 2.04 mol. Record 2.04.'},
+/* 91 */ {q:NR+'Use the information below. Identify the part of the voltaic cell, as numbered in the diagram, that corresponds to each of the descriptors listed below.<br>Anode&emsp;__________<br>Cathode&emsp;__________<br>Electron flow&emsp;__________<br>Electrolyte&emsp;__________<br>(Record all four digits of your answer in the order of the descriptors.)',fig:F91,n:2143,ans:'2143',tol:0,abs:0,
+  m:'Find the stronger reducing agent: that metal is the anode. Electrons leave the anode through the wire.',
+  w:'Zn(s) (Zn²⁺/Zn, −0.76 V) is a stronger reducing agent than Cu(s) (Cu²⁺/Cu, +0.34 V), thus zinc is oxidized: the zinc strip is the anode, and the copper strip is the cathode. Electrons leave the zinc, flow up the wire on the zinc side, through the bulb and down to the copper: the arrow beside the zinc wire shows this, and the arrow beside the copper wire points against the electron flow. The lemon juice is a solution of ions: the electrolyte. Thus anode 2, cathode 1, electron flow 4 and electrolyte 3: record 2143.'}];
 }catch(e){console.error('[ec] slot 7d stopped with an error: '+(e&&e.stack||e));}}
 /* ===== EC LESSON SLOTS END ===== */
 
