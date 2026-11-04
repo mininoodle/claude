@@ -4214,15 +4214,368 @@ EC_REF.t.push(['Corrosion','The oxidation of a metal by substances in its enviro
 }catch(e){console.error('[ec] slot 9 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 10 ----- */
 {try{
-/* placeholder of lesson 10 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[10]={t:EC_T[10],h:'Electrolytic cells',d:'An electrolytic cell uses electrical energy from a power supply to drive a non-spontaneous redox reaction.',build(g){
-  card(g,'Electrolysis',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.2k, 30–B2.3k, 30–B2.4k</p><ul><li><span class="key">Electrolysis</span> uses electrical energy to drive a non-spontaneous reaction.</li>
-    <li>The anode is positive and the cathode is negative. Oxidation still occurs at the anode and reduction at the cathode.</li><li>The minimum voltage is the size of the negative ${ecEs('net')}.</li></ul>`+
-    CF(ecCell({type:'electrolytic',L:{el:'C(s)',sol:'KI(aq)'},R:{el:'C(s)',bub:true}}),'The electrolysis of KI(aq): iodine forms at the anode, and hydrogen gas at the cathode.'));
+/* lesson 10: Electrolytic cells. Class notes pages 69 to 78, diploma questions 112 to 121 (answer key on page 85).
+   Lesson-local helpers (prefix ec10): ec10Info (the "Use the following information" box of a diploma question), ec10Gas (gas labels on an ecCell),
+   ec10Tb (a mini reduction table with the SOA and the SRA tagged), ec10Plate (the electroplating cell of question 113), ec10Downs (the Downs cell), ec10Brine (the chlor-alkali cell) */
+/* an equation in C notation as HTML whose species never break across lines: a line can break only after + or an arrow */
+const ec10Q=s=>{const g=[];String(s).replace(/, /g,',\u00a0').split(' ').forEach(t=>{if(/^(\+|->|<=>)$/.test(t)&&g.length)g[g.length-1]+=' '+t;else g.push(t);});return g.map(t=>`<span class="ec10n">${C(t)}</span>`).join(' ');};
+const ec10V=s=>String(s).replace(/(\d) V\b/g,'$1\u00a0V');
+const ec10Info=t=>`<p style="margin:.25em .35em;line-height:1.45">${t}</p>`;
+/* gas labels over the liquid of a one-beaker ecCell (electrodes at x 110 and 330) */
+const ec10Gas=(l,r)=>(l?svgText(ecU(l),124,170,{a:'start',s:12,w:650,f:'ink',c:'l'}):'')+(r?svgText(ecU(r),316,170,{a:'end',s:12,w:650,f:'ink',c:'r'}):'');
+/* a mini table: rows (keys or half-reactions), the SOA row and the SRA row tagged and shaded, the entities present underlined */
+const ec10Tb=(rows,soa,sra,hl,cap)=>{const R=ecRows(rows),i=R.indexOf(ecRow(soa)),j=R.indexOf(ecRow(sra));return ecTableH(R,{hl,mark:{soa:i,sra:j},rows:[i,j],cap});};
+/* diploma question 113: the electroplating cell with its numbered parts */
+const ec10Plate=()=>{const T=(t,x,y,o)=>svgText(t,x,y,Object.assign({s:12.5,w:600,f:'ink'},o)),B=ecBadge,A=(a,b,c,d)=>sArrow(a,b,c,d,'var(--ink2)',1.8);
+  return `<svg viewBox="0 0 460 300" role="img" aria-label="An electroplating cell. A power source is joined by one wire to a carbon rod, C(s), labelled 1, and by a second wire to a car bumper, labelled 4. The rod and the bumper are in a solution of Cr²⁺(aq), labelled 5, and NO₃⁻(aq), labelled 6. Arrow 2, on the wire to the carbon rod, points from the power source toward the rod. Arrow 3, on the wire to the bumper, points from the power source down toward the bumper. In the solution, arrow 7 points toward the carbon rod and arrow 8 points toward the bumper.">`+
+    T('Electroplating cell',220,19,{s:13.5,w:700,c:'s'})+
+    `<rect x="41.5" y="148" width="343" height="130.5" rx="8" fill="var(--liq)" fill-opacity=".62"/><path d="M41.5,148H384.5" stroke="var(--gl)" stroke-width="1.4"/>`+
+    `<path d="M190,68V84Q190,90 184,90H112Q100,90 100,102" fill="none" stroke="var(--ink2)" stroke-width="2"/><path d="M262,68V201" fill="none" stroke="var(--ink2)" stroke-width="2"/>`+
+    `<rect x="175" y="32" width="120" height="36" rx="6" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+T('Power source',235,55,{s:12,c:'s'})+
+    `<path d="M92,100H108L136,278H120Z" fill="#3d3a40" stroke="var(--ink2)" stroke-width="1.1"/>`+
+    `<path d="M168,188Q256,214 344,188V212Q256,240 168,212Z" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<path d="M34,116Q40,116 40,124V270Q40,280 50,280H376Q386,280 386,270V124Q386,116 392,116" fill="none" stroke="var(--gl)" stroke-width="2.6" stroke-linejoin="round"/>`+
+    B(1,15,114)+T('C(s)',30,118.5,{a:'start',c:'l'})+A(62,114,90,114)+
+    A(152,74,120,74)+B(2,166,74)+
+    B(3,286,94)+A(286,108,286,140)+
+    T('Car',398,196,{a:'start',c:'l'})+T('bumper',398,212,{a:'start',c:'l'})+A(395,200,349,200)+B(4,414,234)+
+    A(206,170,174,170)+B(7,220,170)+
+    B(8,146,254)+A(160,254,188,254)+
+    B(5,202,254)+T('Cr²⁺(aq)',216,258.5,{a:'start',c:'l'})+
+    B(6,298,254)+T('NO₃⁻(aq)',312,258.5,{a:'start',c:'l'})+'</svg>';};
+/* the Downs cell: molten NaCl, a central graphite anode under a hood, a ring-shaped iron cathode, an iron screen between them */
+const ec10Downs=()=>{const T=(t,x,y,o)=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),melt='color-mix(in srgb,var(--s4) 24%,var(--liq))',gas='color-mix(in srgb,var(--s3) 26%,var(--fig))';
+  const bub=[[214,166],[226,156],[218,144],[225,132],[216,116],[224,100],[217,84],[224,68],[218,54]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3" fill="var(--fig)" fill-opacity=".8" stroke="var(--ink2)" stroke-width="1"/>`).join('');
+  const na=[[150,206],[146,178],[152,152],[142,128],[290,206],[296,178],[288,152]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.6" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1"/>`).join('');
+  return `<svg viewBox="0 0 460 304" role="img" aria-label="A Downs cell for the electrolysis of molten sodium chloride. A graphite anode, positive, rises from the bottom in the centre of the cell. A hood above it collects chlorine gas, which leaves through a pipe at the top. A ring-shaped iron cathode, negative, surrounds the anode. A cylindrical iron screen between them keeps the products apart. Liquid sodium rises outside the screen and leaves through a pipe at the side. Solid NaCl is added at the top to replace the salt that is used."><g transform="translate(12,0)">`+
+    `<rect x="100" y="96" width="240" height="170" fill="${melt}"/>`+
+    `<path d="M208,122V40H372V52H232V122Z" fill="${gas}"/><path d="M192,150L208,122H232L248,150Z" fill="${gas}"/>`+
+    `<path d="M208,96H100V266H340V96H232" fill="none" stroke="var(--ink2)" stroke-width="3" stroke-linejoin="round"/>`+
+    `<path d="M192,150L208,122V40H372M248,150L232,122V52H372" fill="none" stroke="var(--ink2)" stroke-width="2.2" stroke-linejoin="round"/>`+
+    `<path d="M192,154V252M248,154V252" stroke="var(--ink2)" stroke-width="2" stroke-dasharray="4 3"/>`+
+    `<rect x="164" y="168" width="14" height="84" rx="2" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.1"/><rect x="262" y="168" width="14" height="84" rx="2" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.1"/>`+
+    `<path d="M164,240H78" stroke="var(--steel2)" stroke-width="4"/>`+
+    `<rect x="207" y="176" width="26" height="90" fill="#3d3a40" stroke="var(--ink2)" stroke-width="1.1"/><rect x="214" y="266" width="12" height="16" fill="#3d3a40" stroke="var(--ink2)" stroke-width="1"/>`+
+    `<path d="M100,104H62M100,116H62" stroke="var(--ink2)" stroke-width="2"/><rect x="62" y="105" width="38" height="10" fill="var(--steel)"/>`+
+    `<path d="M140,96V72M150,96V72" stroke="var(--ink2)" stroke-width="2"/>`+bub+na+
+    sArrow(376,46,400,46,'var(--s3)',2.2)+T('Cl₂(g)',404,50,{a:'start',c:'l'})+
+    sArrow(60,110,30,110,'var(--mute)',2.2)+T('Na(l)',26,114,{a:'end',c:'r'})+
+    sArrow(145,46,145,90,'var(--mute)',2)+T('NaCl(s)',145,40,{c:'s'})+
+    T('NaCl(l)',309,235,{w:500,f:'ink2',c:'s'})+
+    T('Anode (+)',220,298,{w:700,c:'s'})+T('Cathode (−)',74,256,{a:'end',w:700,c:'r'})+'</g></svg>';};
+/* the chlor-alkali cell: anode and chlorine on the left, cathode, hydrogen and NaOH(aq) on the right, a porous diaphragm in the middle */
+const ec10Brine=()=>{const T=(t,x,y,o)=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),cl='color-mix(in srgb,var(--s3) 24%,var(--fig))',h2='color-mix(in srgb,var(--s1) 16%,var(--fig))';
+  const bub=x=>[[-10,226],[9,214],[-9,198],[10,184],[-10,168],[9,152],[-8,140]].map(([d,y])=>`<circle cx="${x+d}" cy="${y}" r="2.8" fill="var(--fig)" fill-opacity=".75" stroke="var(--ink2)" stroke-width="1"/>`).join('');
+  return `<svg viewBox="0 0 470 304" role="img" aria-label="A chlor-alkali cell for the electrolysis of brine. A porous diaphragm divides the tank into two parts. On the left, the anode, joined to the positive terminal of the power supply, gives off chlorine gas. On the right, the cathode, joined to the negative terminal, gives off hydrogen gas. Brine, NaCl(aq), flows in on the left. Sodium ions move through the diaphragm to the right, where NaOH(aq) collects and is drawn off. Electrons flow from the anode to the power supply and from the power supply to the cathode."><g transform="translate(10,0)">`+
+    `<rect x="62" y="86" width="154" height="38" fill="${cl}"/><rect x="224" y="86" width="154" height="38" fill="${h2}"/><rect x="62" y="124" width="316" height="144" fill="var(--liq)" fill-opacity=".62"/>`+
+    `<rect x="216" y="86" width="8" height="182" fill="var(--fig2)" stroke="var(--mute)" stroke-width="1.2" stroke-dasharray="2 2"/>`+
+    `<rect x="60" y="84" width="320" height="186" rx="8" fill="none" stroke="var(--gl)" stroke-width="2.4"/>`+
+    `<path d="M180,26H120V100M260,26H320V100" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linejoin="round"/>`+
+    `<rect x="112" y="98" width="16" height="140" rx="2" fill="#3d3a40" stroke="var(--ink2)" stroke-width="1.1"/><rect x="312" y="98" width="16" height="140" rx="2" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.1"/>`+bub(120)+bub(320)+
+    `<rect x="180" y="8" width="80" height="38" rx="7" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+T('power',220,23,{s:11,f:'ink2',c:'s'})+T('supply',220,37,{s:11,f:'ink2',c:'s'})+T('+',189,31,{s:15,w:800,c:'s'})+T('−',251,31,{s:15,w:800,c:'s'})+
+    sArrow(134,14,168,14,'var(--s1)',2.2)+T('e⁻',151,10,{s:12,w:700,f:'s1',c:'s'})+sArrow(272,14,306,14,'var(--s1)',2.2)+T('e⁻',289,10,{s:12,w:700,f:'s1',c:'s'})+
+    T('Cl₂(g)',176,110,{c:'s'})+T('H₂(g)',268,110,{c:'s'})+
+    sArrow(84,84,84,58,'var(--s3)',2.2)+sArrow(356,84,356,58,'var(--s1)',2.2)+T('Cl₂(g) out',84,52,{s:11,w:500,f:'ink2',c:'s'})+T('H₂(g) out',356,52,{s:11,w:500,f:'ink2',c:'s'})+
+    sArrow(4,140,58,140,'var(--mute)',2.2)+T('NaCl(aq)',-6,130,{a:'start',s:11,w:500,f:'ink2',c:'l',mx:56})+
+    sArrow(382,240,420,240,'var(--mute)',2.2)+T('NaOH(aq)',414,258,{s:11,w:500,f:'ink2',c:'s'})+
+    T('Na⁺  Cl⁻',170,160,{w:500,f:'ink2',c:'s'})+T('Na⁺  OH⁻',272,160,{w:500,f:'ink2',c:'s'})+
+    sArrow(190,206,252,206,'var(--s2)',5)+T('Na⁺',221,196,{w:700,f:'s2',c:'s'})+
+    T('Anode (+)',120,290,{w:700,c:'s'})+T('diaphragm',220,290,{s:11,w:500,f:'ink2',c:'s'})+T('Cathode (−)',320,290,{w:700,c:'s'})+'</g></svg>';};
+
+ECL[10]={t:EC_T[10],h:'Electrolytic cells',d:'An electrolytic cell uses electrical energy from a power supply to drive a non-spontaneous redox reaction. The same table predicts the reactions: the SOA is reduced at the cathode and the SRA is oxidized at the anode.',build(g){
+  ecCSS(10,'#ec-10 .ec10-two{display:grid;grid-template-columns:1fr;gap:12px;margin:.6em 0}#ec-10 .ec10-two figure.cf{margin:0}@media(min-width:880px){#ec-10 .ec10-two{grid-template-columns:1fr 1fr}}'+
+    '#ec-10 .ec10-eq{margin:.35em 0 .5em .1em;line-height:1.6}#ec-10 .ec10-eq>div{display:flex;gap:.6em;align-items:baseline;margin:.12em 0}#ec-10 .ec10-eq>div>b{flex:none;min-width:5.6em}#ec-10 .ec10n{white-space:nowrap}');
+  const eqs=rows=>`<div class="ec10-eq">${rows.map(([l,e])=>`<div><b>${l}</b><span>${e}</span></div>`).join('')}</div>`,Q=ec10Q;
+  /* ---- 1. electrolysis ---- */
+  card(g,'Electrolysis',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.2k, 30–B2.3k, 30–B2.4k</p>
+    <p><span class="key">Electrolysis</span> is the process in which electrical energy is used to bring about a <b>non-spontaneous</b> redox reaction.</p>
+    <ul><li>A spontaneous redox reaction (a voltaic cell) can be used to <i>generate</i> an electric current.</li><li>A non-spontaneous redox reaction (an electrolytic cell) <i>requires</i> an electric current.</li></ul>
+    <p>An <span class="key">electrolytic cell</span> is an electrochemical cell that is used to cause a chemical change by the application of electrical energy. A <span class="key">power supply</span> (a battery or a DC supply) pushes electrons into one electrode and pulls electrons out of the other.</p>
+    <ul><li>The electrode joined to the negative terminal receives electrons. Reduction occurs there, thus it is the <b>cathode (−)</b>.</li>
+      <li>The electrode joined to the positive terminal loses electrons. Oxidation occurs there, thus it is the <b>anode (+)</b>.</li>
+      <li>${ecEs('net')} is negative. The power supply must provide at least the size of ${ecEs('net')}: this is the <span class="key">minimum voltage</span>.</li></ul>
+    <p class="note">LEO A and GER C still hold: oxidation at the anode, reduction at the cathode. Only the signs of the electrodes change.</p>`,'w7');
+  card(g,'An electrolytic cell',CF(ecCell({type:'electrolytic',L:{el:'C(s)',sol:'KI(aq)'},R:{el:'C(s)',bub:true},cat:'K⁺',an:'I⁻',extra:ec10Gas('I₂','H₂(g)')}),
+    'The electrolysis of KI(aq) with carbon electrodes. Iodine forms at the anode (+). Hydrogen gas and OH⁻(aq) form at the cathode (−). The power supply pumps electrons from the anode to the cathode.'),'w5');
+  /* ---- 2. voltaic and electrolytic cells compared ---- */
+  const cmp=card(g,'Comparing voltaic and electrolytic cells',`<table class="t3"><tr><th></th><th>Voltaic cell</th><th>Electrolytic cell</th></tr>
+    <tr><th colspan="3">Similarities</th></tr>
+    <tr><td><b>Anode reaction</b></td><td colspan="2">oxidation (LEO A): the SRA loses electrons</td></tr>
+    <tr><td><b>Cathode reaction</b></td><td colspan="2">reduction (GER C): the SOA gains electrons</td></tr>
+    <tr><td><b>Direction of electron flow</b></td><td colspan="2">from the anode to the cathode, through the external circuit</td></tr>
+    <tr><td><b>Direction of ion flow</b></td><td colspan="2">cations move toward the cathode, anions toward the anode</td></tr>
+    <tr><th colspan="3">Differences</th></tr>
+    <tr><td><b>Anode charge</b></td><td>negative (−)</td><td>positive (+)</td></tr>
+    <tr><td><b>Cathode charge</b></td><td>positive (+)</td><td>negative (−)</td></tr>
+    <tr><td><b>Spontaneity</b></td><td>spontaneous</td><td>non-spontaneous</td></tr>
+    <tr><td><b>Cell potential</b></td><td>${ecEs('net')} is positive</td><td>${ecEs('net')} is negative</td></tr>
+    <tr><td><b>Source of current</b></td><td>the redox reaction itself (chemical energy → electrical energy)</td><td>an external power supply (electrical energy → chemical energy)</td></tr>
+    <tr><td><b>Porous boundary</b></td><td>needed: a salt bridge or a porous cup keeps the SOA and the SRA apart</td><td>usually not needed: the reactants do not react on their own, thus one container is enough</td></tr>
+    <tr><td><b>Cell notation</b></td><td>${Q('Zn(s) | Zn^2+(aq) || Cu^2+(aq) | Cu(s)')}<br><span class="hint">anode first; || is the salt bridge</span></td><td>${Q('Pt(s) | K2SO4(aq) | Pt(s)')}<br><span class="hint">anode | electrolyte | cathode: one container, no ||</span></td></tr></table>
+    <p class="hint">The same zinc-copper cell, two ways. With a voltmeter, the spontaneous reaction runs. With a power supply of more than 1.10 V, the reverse reaction is forced: the copper electrode becomes the anode (+) and zinc plates on the zinc electrode, the cathode (−). This is how a rechargeable battery is charged.</p>`);
+  const two=el('div',{class:'ec10-two'});cmp.append(two);
+  two.innerHTML=CF(ecCell({L:{el:'Zn(s)',sol:['Zn^2+(aq)','SO4^2-(aq)']},R:{el:'Cu(s)',sol:['Cu^2+(aq)','SO4^2-(aq)']},bridge:'KNO3(aq)',E:'+1.10 V'}),'Voltaic: Zn(s) is oxidized at the anode (−) and Cu²⁺(aq) is reduced at the cathode (+). E°net = +1.10 V.')+
+    CF(ecCell({type:'electrolytic',sep:'bridge',L:{el:'Zn(s)',sol:['Zn^2+(aq)','SO4^2-(aq)']},R:{el:'Cu(s)',sol:['Cu^2+(aq)','SO4^2-(aq)']},bridge:'KNO3(aq)',anode:'R'}),'Electrolytic: Cu(s) is oxidized at the anode (+) and Zn²⁺(aq) is reduced at the cathode (−). E°net = −1.10 V.');
+  const vt=card(g,'Voltaic, electrolytic or both?','<p class="hint">For each statement, choose the kind of cell that it describes. Then check.</p>');
+  eqTable(vt,{cols:['Statement','The statement is true for'],opt:[['voltaic cells only','electrolytic cells only','both kinds of cells']],
+    rows:[['Oxidation occurs at the anode.',[2]],['The anode is the negative electrode.',[0]],['The anode is the positive electrode.',[1]],['The redox reaction is spontaneous.',[0]],['The value of '+ecEs('net')+' is negative.',[1]],
+      ['Electrons move through the external circuit from the anode to the cathode.',[2]],['Cations move toward the cathode.',[2]],['A power supply forces the reaction to occur.',[1]],['Chemical energy is converted to electrical energy.',[0]],['A porous boundary must keep the SOA and the SRA apart.',[0]]],
+    after:'The reactions at the electrodes, the direction of the electrons and the direction of the ions are the same in both cells. The signs of the electrodes, the spontaneity, the sign of E°net and the source of the energy are different.'},0);
+  /* ---- 3. predicting the electrode reactions ---- */
+  card(g,'Predicting the anode and cathode reactions',`<p>The half-reactions in an electrolytic cell are predicted with the <b>same process</b> as for a voltaic cell: the strongest oxidizing agent and the strongest reducing agent react.</p>
+    <ol><li>List every entity present: the ions of the dissolved compound and ${C('H2O(l)')}. A metal electrode can also react. Inert electrodes (carbon or platinum) do not react.</li>
+      <li>The SOA is the highest entity on the left side of the table. It is reduced at the <b>cathode</b>.</li>
+      <li>The SRA is the lowest entity on the right side of the table. It is oxidized at the <b>anode</b>.</li>
+      <li>Write the two half-reactions, balance the electrons and add them for the net reaction.</li>
+      <li>${ecEs('net')} = ${ecEs('r')} cathode − ${ecEs('r')} anode. It is negative. The SOA and the SRA give the negative ${ecEs('net')} that is closest to zero. Its size is the <b>minimum voltage</b> needed to run the cell.</li></ol>
+    <p class="note">Water is on both sides of the table. As an oxidizing agent: ${Q('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')} (−0.83 V). As a reducing agent: ${Q('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')} (+1.23 V). Thus a metal ion below water on the left side (for example ${C('K^+')}, ${C('Na^+')}, ${C('Al^3+')}) is never reduced in an aqueous solution.</p>`+
+    ex('Example 1. An electric current is passed through a solution of '+C('KI(aq)')+'. Predict the anode and cathode reactions, the overall reaction and the minimum voltage required.',
+      `<p>Entities: ${C('K^+(aq)')}, ${C('I^-(aq)')}, ${C('H2O(l)')}. The SOA is ${C('H2O(l)')}: ${C('K^+(aq)')} (−2.93 V) is much weaker. The SRA is ${C('I^-(aq)')} (+0.54 V), below ${C('H2O(l)')} (+1.23 V).</p>`+
+      ec10Tb(['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','I2(s)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','K^+(aq)'],'2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','I2(s)',['K^+(aq)','I^-(aq)','H2O(l)'])+
+      eqs([['Cathode (red):',Q('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = −0.83 V</span>'],['Anode (ox):',Q('2I^-(aq) -> I2(s) + 2e^-')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = +0.54 V</span>'],['Net:',Q('2H2O(l) + 2I^-(aq) -> H2(g) + 2OH^-(aq) + I2(s)')]])+
+      `<p>${ecEs('net')} = −0.83 V − (+0.54 V) = −1.37 V. The minimum voltage required is <b>1.37 V</b>.</p>`)+
+    ex('Example 2. An electric current is passed through a solution of nickel(II) nitrate using inert electrodes. Predict the anode and cathode reactions, the overall reaction and the minimum voltage required.',
+      `<p>Entities: ${C('Ni^2+(aq)')}, ${C('NO3^-(aq)')}, ${C('H2O(l)')}. ${C('NO3^-(aq)')} is an oxidizing agent only together with ${C('H^+(aq)')}, which is not present. The SOA is ${C('Ni^2+(aq)')} (−0.26 V), above ${C('H2O(l)')} (−0.83 V). The SRA is ${C('H2O(l)')} (+1.23 V).</p>`+
+      ec10Tb(['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','2NO3^-(aq) + 4H^+(aq) + 2e^- <=> N2O4(g) + 2H2O(l)','Ni^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)'],'Ni^2+(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)',['Ni^2+(aq)','NO3^-(aq)','H2O(l)'])+
+      eqs([['Cathode (red):',Q('Ni^2+(aq) + 2e^- -> Ni(s)')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = −0.26 V</span>'],['Anode (ox):',Q('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = +1.23 V</span>'],['Net:',Q('2Ni^2+(aq) + 2H2O(l) -> 2Ni(s) + O2(g) + 4H^+(aq)')]])+
+      `<p class="hint">The cathode half-reaction is multiplied by 2, so that 4 electrons are gained and 4 are lost.</p><p>${ecEs('net')} = −0.26 V − (+1.23 V) = −1.49 V. The minimum voltage required is <b>1.49 V</b>.</p>`)+
+    ex('Example 3. An electric current is passed through a solution of copper(II) sulfate. Predict the anode and cathode reactions, the overall reaction and the minimum voltage required.',
+      `<p>Entities (inert electrodes): ${C('Cu^2+(aq)')}, ${C('SO4^2-(aq)')}, ${C('H2O(l)')}. The SOA is ${C('Cu^2+(aq)')} (+0.34 V). ${C('SO4^2-(aq)')} needs ${C('H^+(aq)')} to react at +0.17 V; with water only it is −0.93 V, weaker than water. The SRA is ${C('H2O(l)')} (+1.23 V).</p>`+
+      ec10Tb(['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Cu^2+(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','SO4^2-(aq) + H2O(l) + 2e^- <=> SO3^2-(aq) + 2OH^-(aq)'],'Cu^2+(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)',['Cu^2+(aq)','SO4^2-(aq)','H2O(l)'])+
+      eqs([['Cathode (red):',Q('Cu^2+(aq) + 2e^- -> Cu(s)')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = +0.34 V</span>'],['Anode (ox):',Q('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = +1.23 V</span>'],['Net:',Q('2Cu^2+(aq) + 2H2O(l) -> 2Cu(s) + O2(g) + 4H^+(aq)')]])+
+      `<p>${ecEs('net')} = +0.34 V − (+1.23 V) = −0.89 V. The minimum voltage required is <b>0.89 V</b>.</p><p class="hint">With copper electrodes, ${C('Cu(s)')} (+0.34 V) would be the SRA instead: the copper anode dissolves and copper plates on the cathode, with ${ecEs('net')} = 0.00 V. This is how copper is refined (below).</p>`));
+  /* ---- 4. specific electrolytic processes ---- */
+  card(g,'Electrolysis of water',`<p>Water and electricity produce hydrogen and oxygen. This reaction is <b>non-spontaneous</b>.</p>
+    <ul><li>Two inert electrodes (platinum or carbon) are placed in water.</li><li>A small amount of an electrolyte (ions) is added, because pure water conducts electricity very poorly.</li></ul>
+    <p>Water is reduced to hydrogen at the cathode, and water is oxidized to oxygen at the anode:</p>${eqs([['Cathode:',Q('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')],['Anode:',Q('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')]])}
+    <p>The region around the cathode becomes <b>basic</b>, and the region around the anode becomes <b>acidic</b>.</p>`+
+    CF(ecCell({type:'electrolytic',L:{el:'Pt(s)',sol:'water with an electrolyte',bub:true},R:{el:'Pt(s)',bub:true},extra:ec10Gas('O₂(g)','H₂(g)')}),'Oxygen forms at the anode (+) and hydrogen at the cathode (−). The volume of hydrogen is twice the volume of oxygen.')+
+    ex('The overall cell reaction',`<p>Multiply the cathode half-reaction by 2, so that 4 electrons are gained and 4 are lost, then add:</p>
+      ${eqs([['2 × cathode:',Q('4H2O(l) + 4e^- -> 2H2(g) + 4OH^-(aq)')],['Anode:',Q('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')],['Sum:',Q('6H2O(l) -> 2H2(g) + O2(g) + 4H^+(aq) + 4OH^-(aq)')]])}
+      <p>The ions ${C('H^+(aq)')} and ${C('OH^-(aq)')} re-form water (${Q('4H^+(aq) + 4OH^-(aq) -> 4H2O(l)')}), and are not included in the net reaction:</p><div class="fx">${Q('2H2O(l) -> 2H2(g) + O2(g)')}</div>
+      <p>With a neutral electrolyte, ${ecEs('net')} = −0.83 V − (+1.23 V) = −2.06 V.</p>`),'half');
+  card(g,'Electrolysis of molten sodium chloride',`<ul><li>An electric current is run through <b>molten</b> sodium chloride. The cell is called a Downs cell, after its inventor.</li>
+      <li>Chloride ions are oxidized to chlorine gas at the anode. Sodium ions are reduced to sodium metal at the cathode.</li>
+      <li>The chlorine gas bubbles out of the top of the cell. The liquid sodium is drawn off at the side.</li>
+      <li>The products must be kept apart, or they react to form NaCl again. A special cell, with an iron screen, keeps them apart.</li></ul>
+    ${eqs([['Cathode:',Q('2Na^+(l) + 2e^- -> 2Na(l)')],['Anode:',Q('2Cl^-(l) -> Cl2(g) + 2e^-')],['Net:',Q('2Na^+(l) + 2Cl^-(l) -> 2Na(l) + Cl2(g)')]])}`+
+    CF(ec10Downs(),'Electrolysis of molten sodium chloride. The dashed lines are the iron screen between the anode and the ring-shaped cathode.')+
+    `<p class="note">A molten salt contains no water. Thus ${C('Na^+')} is the only oxidizing agent, although it is very weak. In ${C('NaCl(aq)')}, water would be reduced instead, and no sodium would form.</p>`,'half');
+  card(g,'Electrolysis of brine: the chlor-alkali process',`<p>This electrolysis is an important commercial process. It produces three products at the same time, from a concentrated solution of sodium chloride (brine):</p>
+    <ul><li>chlorine gas (for making bleach)</li><li>hydrogen gas (for the industrial production of ammonia)</li><li>sodium hydroxide (an industrial cleaner)</li></ul>
+    <p><b>At the cathode</b>, water is reduced to hydrogen gas and hydroxide ions. Sodium metal does not form, because water is more easily reduced (a stronger oxidizing agent) than sodium ions.</p>
+    <p><b>At the anode</b>, chloride ions are oxidized to chlorine gas. The table predicts that water should be oxidized, because water (+1.23 V) is a stronger reducing agent than chloride (+1.36 V). But the chloride ions are oxidized first: this is called the <span class="key">chloride anomaly</span>.</p>
+    <p>To oxidize water, a greater voltage is needed than the electrode potentials show. This additional voltage is called <span class="key">overvoltage</span>. The overvoltage for the formation of ${C('O2')} from water is high enough that chlorine gas is produced instead. The overvoltage can be thought of as an activation energy: the oxidation of chloride ions has a lower activation energy than the oxidation of water.</p>
+    ${eqs([['Anode:',Q('2Cl^-(aq) -> Cl2(g) + 2e^-')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = +1.36 V</span>'],['Cathode:',Q('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+' &nbsp; <span class="ec10n">'+ecEs('r')+' = −0.83 V</span>'],['Overall:',Q('2H2O(l) + 2Cl^-(aq) -> H2(g) + 2OH^-(aq) + Cl2(g)')]])}
+    <p>${ecEs('net')} = −0.83 V − (+1.36 V) = −2.19 V: the observed reaction needs at least 2.19 V.</p>
+    <p><b>Uses of the chlor-alkali process</b></p><ul><li>${C('Cl2(g)')} is used in plastics and in agriculture.</li><li>${C('H2(g)')} is used as a fuel and in industrial reactions.</li><li>The two gases are combined to form hydrogen chloride gas, and then hydrochloric acid, ${C('HCl(aq)')}.</li><li>${C('NaOH(aq)')} (about a 50% solution) is a strong base used in cleaning, for example drain cleaner and automatic dishwasher detergent.</li></ul>`,'w7');
+  card(g,'A chlor-alkali cell',CF(ec10Brine(),'Brine flows into the anode side. Na⁺(aq) ions move through the porous diaphragm to the cathode side, where NaOH(aq) collects. The diaphragm keeps the chlorine away from the hydrogen and the hydroxide ions.'),'w5');
+  const bt=card(g,'Predicted or observed?',`<p class="hint">Brine is electrolyzed with inert electrodes. Match each product and minimum voltage, predicted from the table or observed. Then check.</p>`);
+  matching(bt,[['The product at the cathode, predicted from the table','H₂(g) and OH⁻(aq)'],['The product at the cathode, observed','H₂(g) and OH⁻(aq)'],['The product at the anode, predicted from the table','O₂(g) and H⁺(aq)'],
+    ['The product at the anode, observed','Cl₂(g)'],['The minimum voltage, predicted from the table','2.06 V'],['The minimum voltage, observed','2.19 V'],['A product that does not form at all','Na(s)']],'',2);
+  bt.insertAdjacentHTML('beforeend',ex('Why?',`<p>Predicted: water is the SOA (−0.83 V) and the SRA (+1.23 V), thus ${ecEs('net')} = −0.83 V − (+1.23 V) = −2.06 V.</p><p>Observed: chloride ions are oxidized instead of water (the chloride anomaly), thus ${ecEs('net')} = −0.83 V − (+1.36 V) = −2.19 V.</p><p>${C('Na^+(aq)')} (−2.71 V) is a much weaker oxidizing agent than water, thus sodium metal never forms in an aqueous solution.</p>`));
+  /* ---- 5. electroplating ---- */
+  card(g,'Electroplating',`<p><span class="key">Electroplating</span> is an electrolytic process that deposits a thin layer of a metal on an object. It makes things more attractive, and it protects metals from corrosion.</p>
+    <ul><li><b>Cathode:</b> the object to be plated (remember, the cathode “grows”).</li><li><b>Anode:</b> usually the metal to be plated (or an inert electrode).</li><li><b>Electrolyte:</b> a solution of the ions of the metal to be plated.</li></ul>
+    <p>When the voltage is applied, electrons are forced toward the cathode. The metal ions (cations) move to the cathode and combine with the electrons (GER C) to form the metal.</p>
+    <p><b>Chromium plating.</b> Chromium metal resists oxidation by the environment better than iron and most other metals: the thin oxide coat that forms on chromium protects it from further oxidation. Chromium is plated onto iron objects (for example, the bumper of a car). The object is made the cathode (electrons are forced toward it) and placed in a solution of chromium ions, among other chemicals.</p>
+    <p>The chemistry of this cell is complex, but the overall reaction at the cathode can be summarized as:</p><div class="fx">${Q('CrO3(aq) + 6H^+(aq) + 6e^- -> Cr(s) + 3H2O(l)')}</div>
+    <p>The thickness of the plating depends on the current and on the time that the cell runs. The next lesson (Faraday’s law) shows how to calculate it.</p>`,'w7');
+  card(g,'A chromium plating cell',CF(ecCell({type:'electrolytic',L:{el:'Pb(s)',sol:'chromium(VI) solution',bub:true,c:'color-mix(in srgb,var(--s2) 36%,var(--liq))'},R:{el:'Fe(s) bumper',bub:true},extra:ec10Gas('O₂(g)','H₂(g)')}),
+    'The car bumper is the cathode (−): chromium(VI) is reduced to Cr(s) on it, some only to Cr³⁺, and some hydrogen gas forms. At the lead anode (+), oxygen gas forms, the lead gets a coat of PbO₂, and Cr³⁺ is oxidized back to chromium(VI).')+
+    '<p class="hint">One of the chemicals put into the plating solution is chromium(VI) oxide, '+C('CrO3(s)')+'.</p>','w5');
+  const pl=card(g,'Set up a plating cell',`<p class="hint">A student wants to plate a copper spoon with silver. Match each part of the cell to its choice. Then check.</p>`);
+  matching(pl,[['The electrode that the spoon must be','the cathode'],['The terminal of the power supply that the spoon is joined to','the negative terminal'],['The other electrode','a bar of silver, the anode'],['The electrolyte','AgNO₃(aq)'],
+    ['The half-reaction on the spoon','Ag⁺(aq) + e⁻ → Ag(s)'],['The half-reaction at the other electrode','Ag(s) → Ag⁺(aq) + e⁻']],'',1);
+  pl.insertAdjacentHTML('beforeend',ex('Practice question 3. If you wish to electroplate an object with a metal in an electrolytic cell, at which electrode in the cell should it be located? Explain.',
+    `<p>The object must be the <b>cathode</b>, joined to the negative terminal of the power supply. Reduction occurs at the cathode: the ions of the plating metal in the electrolyte gain electrons there and form a layer of the metal on the object, for example ${C('Ag^+(aq) + e^- -> Ag(s)')}. At the anode, oxidation would remove metal from the object instead.</p>`));
+  /* ---- 6. refining ---- */
+  card(g,'Purifying metals by electrolysis',`<p>Metals can also be purified (refined) by electrolysis. This is called <span class="key">electrorefining</span>.</p>
+    <ul><li>The impure metal is the <b>anode</b>. It is oxidized to its cations at the anode.</li><li>The cations are then reduced to the pure metal at the <b>cathode</b>.</li></ul>
+    <p><b>Purifying copper.</b> Impure copper, called blister copper, is obtained from the reaction of molten copper(II) sulfide in the hot oxygen atmosphere of a smelter:</p><div class="fx">${Q('CuS(l) + O2(g) -> Cu(l) + SO2(g)')}</div>
+    <p>The blister copper is made into anodes for an electrolytic cell. The electrolyte is aqueous copper(II) sulfate, and the cathode is a very thin sheet of pure copper.</p>
+    ${eqs([['Cathode:',Q('Cu^2+(aq) + 2e^- -> Cu(s, pure)')],['Anode:',Q('Cu(s, blister) -> Cu^2+(aq) + 2e^-')],['Net:',Q('Cu(s, blister) + Cu^2+(aq) -> Cu^2+(aq) + Cu(s, pure)')]])}
+    <p>The copper obtained this way is 99.5% pure. The <b>anode mud</b> under the anode contains gold, silver and other precious metals that are less easily oxidized. The sale of these metals pays for the copper refining.</p>
+    <p class="note">${ecEs('net')} = +0.34 V − (+0.34 V) = 0.00 V, thus only a small voltage is needed. Metals that are stronger reducing agents than copper (zinc, iron) are oxidized at the anode, but their ions stay in the solution: only ${C('Cu^2+(aq)')}, the strongest oxidizing agent, is reduced at the cathode.</p>`,'w7');
+  card(g,'Refining copper',CF(ecCell({type:'electrolytic',L:{el:'Cu(s), impure',sol:['Cu^2+(aq)','SO4^2-(aq)']},R:{el:'Cu(s), pure'},cat:'Cu²⁺',an:'SO₄²⁻',
+    extra:'<path d="M80,272Q110,250 140,272Z" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1"/>'+svgText('anode mud',144,271,{a:'start',s:11,w:600,f:'ink',c:'l'})}),
+    'The impure (blister) copper anode (+) dissolves. Pure copper plates on the thin copper cathode (−). Silver and gold fall to the bottom as anode mud.'),'w5');
+  const rf=card(g,'Where do the impurities go?','<p class="hint">Blister copper contains small amounts of other metals. For each metal, choose what happens to it in the refining cell. Then check.</p>');
+  matching(rf,[['Zinc, '+C('Zn(s)'),'oxidized at the anode; its ions stay in the solution'],['Iron, '+C('Fe(s)'),'oxidized at the anode; its ions stay in the solution'],['Copper, '+C('Cu(s)'),'oxidized at the anode; its ions plate on the cathode'],
+    ['Silver, '+C('Ag(s)'),'not oxidized; it falls into the anode mud'],['Gold, '+C('Au(s)'),'not oxidized; it falls into the anode mud']],'',3);
+  rf.insertAdjacentHTML('beforeend',ex('Why?',`<p>${C('Zn(s)')} (−0.76 V) and ${C('Fe(s)')} (−0.45 V) are stronger reducing agents than ${C('Cu(s)')} (+0.34 V), thus they are oxidized at the anode. Their ions are weaker oxidizing agents than ${C('Cu^2+(aq)')}, thus they stay in the solution.</p><p>${C('Ag(s)')} (+0.80 V) and ${C('Au(s)')} (+1.50 V) are weaker reducing agents than copper: they are not oxidized, and they fall into the anode mud.</p><p>Only ${C('Cu^2+(aq)')}, the strongest oxidizing agent in the solution, is reduced at the cathode.</p>`));
+  /* ---- 7. practice ---- */
+  const PR=[
+    {k:'A',n:'cobalt(II) iodide',f:'CoI2(aq)',e:['Co^2+(aq)','I^-(aq)','H2O(l)'],r:['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','I2(s)','Co^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)'],
+      w:'SOA: Co²⁺(aq) (−0.28 V), above water (−0.83 V). SRA: I⁻(aq) (+0.54 V), below water (+1.23 V). Cathode: Co²⁺(aq) + 2e⁻ → Co(s). Anode: 2I⁻(aq) → I₂(s) + 2e⁻. E°net = −0.28 V − (+0.54 V) = −0.82 V.',
+      red:'Co^2+(aq) + 2e^- -> Co(s)',ox:'2I^-(aq) -> I2(s) + 2e^-',net:'Co^2+(aq) + 2I^-(aq) -> Co(s) + I2(s)',E:'−0.28 V − (+0.54 V) = −0.82 V',ev:'A grey solid (cobalt) forms on the cathode. Near the anode, the solution turns yellow-brown (iodine). The pink colour of Co²⁺(aq) fades.'},
+    {k:'B',n:'potassium sulfate',f:'K2SO4(aq)',e:['K^+(aq)','SO4^2-(aq)','H2O(l)'],r:['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','SO4^2-(aq) + H2O(l) + 2e^- <=> SO3^2-(aq) + 2OH^-(aq)','K^+(aq)'],
+      w:'SOA: H₂O(l) (−0.83 V). K⁺(aq) (−2.93 V) and SO₄²⁻(aq) with water (−0.93 V) are weaker, and SO₄²⁻(aq) with H⁺(aq) cannot react without H⁺(aq). SRA: H₂O(l) (+1.23 V). Net: 2H₂O(l) → 2H₂(g) + O₂(g). E°net = −0.83 V − (+1.23 V) = −2.06 V.',
+      red:'2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)',ox:'2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-',net:'2H2O(l) -> 2H2(g) + O2(g)',E:'−0.83 V − (+1.23 V) = −2.06 V',ev:'Gas bubbles form at both electrodes, with twice as much gas at the cathode (H₂) as at the anode (O₂). With an indicator, the solution near the cathode turns basic and the solution near the anode turns acidic.'},
+    {k:'C',n:'zinc bromide',f:'ZnBr2(aq)',e:['Zn^2+(aq)','Br^-(aq)','H2O(l)'],r:['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Br2(l)','Zn^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)'],
+      w:'SOA: Zn²⁺(aq) (−0.76 V), just above water (−0.83 V). SRA: Br⁻(aq) (+1.07 V), below water (+1.23 V). Cathode: Zn²⁺(aq) + 2e⁻ → Zn(s). Anode: 2Br⁻(aq) → Br₂(l) + 2e⁻. E°net = −0.76 V − (+1.07 V) = −1.83 V.',
+      red:'Zn^2+(aq) + 2e^- -> Zn(s)',ox:'2Br^-(aq) -> Br2(l) + 2e^-',net:'Zn^2+(aq) + 2Br^-(aq) -> Zn(s) + Br2(l)',E:'−0.76 V − (+1.07 V) = −1.83 V',ev:'A grey solid (zinc) forms on the cathode. Near the anode, the solution turns orange-brown (bromine).'},
+    {k:'D',n:'calcium chloride',f:'CaCl2(aq)',e:['Ca^2+(aq)','Cl^-(aq)','H2O(l)'],r:['Cl2(g)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Ca^2+(aq)'],
+      w:'The table predicts H₂O(l) as the SOA (−0.83 V) and as the SRA (+1.23 V, below Cl⁻(aq) at +1.36 V): E°net = −2.06 V. In fact chlorine forms at the anode (the chloride anomaly): 2Cl⁻(aq) → Cl₂(g) + 2e⁻, with E°net = −0.83 V − (+1.36 V) = −2.19 V.',
+      red:'2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)',ox:'2Cl^-(aq) -> Cl2(g) + 2e^-',net:'2H2O(l) + 2Cl^-(aq) -> H2(g) + 2OH^-(aq) + Cl2(g)',E:'−0.83 V − (+1.36 V) = −2.19 V',
+      pre:'The table predicts that water is oxidized at the anode (+1.23 V), which gives 2H₂O(l) → 2H₂(g) + O₂(g) and E°net = −2.06 V. Because of the chloride anomaly, chloride ions are oxidized instead. The observed reactions are:',
+      ev:'Gas bubbles form at both electrodes. The gas at the anode is pale yellow-green and smells like bleach (chlorine). The solution near the cathode turns basic (phenolphthalein turns pink).'},
+    {k:'E',n:'nickel(II) nitrate',f:'Ni(NO3)2(aq)',e:['Ni^2+(aq)','NO3^-(aq)','H2O(l)'],r:['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','2NO3^-(aq) + 4H^+(aq) + 2e^- <=> N2O4(g) + 2H2O(l)','Ni^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)'],
+      w:'SOA: Ni²⁺(aq) (−0.26 V). NO₃⁻(aq) needs H⁺(aq) to act at +0.80 V. SRA: H₂O(l) (+1.23 V). Cathode: Ni²⁺(aq) + 2e⁻ → Ni(s). Anode: 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻. E°net = −0.26 V − (+1.23 V) = −1.49 V.',
+      red:'Ni^2+(aq) + 2e^- -> Ni(s)',ox:'2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-',net:'2Ni^2+(aq) + 2H2O(l) -> 2Ni(s) + O2(g) + 4H^+(aq)',E:'−0.26 V − (+1.23 V) = −1.49 V',ev:'A grey solid (nickel) forms on the cathode. Gas bubbles (oxygen) form at the anode, and the solution near the anode turns acidic. The green colour of Ni²⁺(aq) fades.'},
+    {k:'F',n:'sodium hydroxide',f:'NaOH(aq)',e:['Na^+(aq)','OH^-(aq)','H2O(l)'],r:['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Na^+(aq)'],
+      w:'SOA: H₂O(l) (−0.83 V); Na⁺(aq) (−2.71 V) is much weaker. SRA: OH⁻(aq) (+0.40 V), below water (+1.23 V). Cathode: 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq). Anode: 4OH⁻(aq) → O₂(g) + 2H₂O(l) + 4e⁻. Net: 2H₂O(l) → 2H₂(g) + O₂(g). E°net = −0.83 V − (+0.40 V) = −1.23 V.',
+      red:'2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)',ox:'4OH^-(aq) -> O2(g) + 2H2O(l) + 4e^-',net:'2H2O(l) -> 2H2(g) + O2(g)',E:'−0.83 V − (+0.40 V) = −1.23 V',ev:'Gas bubbles form at both electrodes, with twice as much gas (hydrogen) at the cathode as at the anode (oxygen).'}];
+  const pc=card(g,'Electrolytic cell practice',`<p><b>Practice question 1.</b> For each of the following solutions, predict the cathode and anode half-reactions, the net reaction, the ${ecEs('net')} and the evidence of the reaction. The electrodes are inert.</p>
+    <p class="hint">Choose a solution. The entities that are present are underlined in the table. Tap the SOA in the left column and the SRA in the right column that the table predicts, then check.</p>`);
+  const ph=el('div');
+  const showP=i=>{const P=PR[i];ph.innerHTML=`<p><b>${P.k}.</b> ${P.n}, ${C(P.f)}. Entities: ${P.e.map(C).join(', ')}.</p>`;ecTable(ph,ecRows(P.r),{hl:P.e,pick:true,slot:i,w:ec10V(P.w)});};
+  seg(pc,PR.map(P=>P.k+'. '+P.n),showP);pc.append(ph);showP(0);
+  pc.insertAdjacentHTML('beforeend','<p class="hint">The full answers:</p>'+PR.map(P=>ex(`Practice question 1${P.k}. ${P.n[0].toUpperCase()+P.n.slice(1)}, ${C(P.f)}`,
+    (P.pre?`<p>${P.pre}</p>`:'')+eqs([['Cathode:',Q(P.red)],['Anode:',Q(P.ox)],['Net:',Q(P.net)]])+`<p>${ecEs('net')} = ${P.E}. Minimum voltage: ${P.E.split('= −')[1]}.</p><p><b>Evidence:</b> ${P.ev}</p>`)).join('')+
+    ex('Practice question 2. Sketch the cells in 1B and 1D (above) and write the cell notation.',
+      `<div class="ec10-two">${CF(ecCell({type:'electrolytic',L:{el:'Pt(s)',sol:'K2SO4(aq)',bub:true},R:{el:'Pt(s)',bub:true},cat:'K⁺',an:'SO₄²⁻',extra:ec10Gas('O₂(g)','H₂(g)')}),'1B: '+Q('Pt(s) | K2SO4(aq) | Pt(s)')+'. Platinum is used, because a carbon anode would react with the oxygen.')}`+
+      `${CF(ecCell({type:'electrolytic',L:{el:'C(s)',sol:'CaCl2(aq)',bub:true},R:{el:'C(s)',bub:true},cat:'Ca²⁺',an:'Cl⁻',extra:ec10Gas('Cl₂(g)','H₂(g)')}),'1D: '+Q('C(s) | CaCl2(aq) | C(s)')+'. Chlorine forms at the anode (+), hydrogen at the cathode (−).')}</div>
+      <p>An electrolytic cell with one container has no salt bridge, thus its cell notation has no ||: anode | electrolyte | cathode. The power supply pushes electrons from the anode to the cathode. The cations (${C('K^+')}, ${C('Ca^2+')}) move toward the cathode and the anions (${C('SO4^2-')}, ${C('Cl^-')}) toward the anode.</p>`));
+  /* keep a value and its unit V on one line */
+  const tw=document.createTreeWalker(g,NodeFilter.SHOW_TEXT);for(let n=tw.nextNode();n;n=tw.nextNode())if(/\d V\b/.test(n.nodeValue))n.nodeValue=ec10V(n.nodeValue);
 },qz:[
-  {q:'Calculate the minimum voltage needed to electrolyze 1.0 mol/L KI(aq) with inert electrodes.',n:1.37,u:'V',abs:.005,tol:0,w:'The SOA is H₂O(l) (−0.83 V). The SRA is I⁻(aq) (+0.54 V). E°net = −0.83 V − (+0.54 V) = −1.37 V, thus the power supply must provide at least 1.37 V.'},
-  {q:'In an electrolytic cell, the anode is',o:['positive, and oxidation occurs there','negative, and oxidation occurs there','positive, and reduction occurs there','negative, and reduction occurs there'],a:0,w:'The power supply pulls electrons from the anode, thus the anode is positive. Oxidation always occurs at the anode.'}]};
-EC_REF.t.push(['Electrolysis','The use of electrical energy to drive a non-spontaneous redox reaction.']);
+  {q:'In an electrolytic cell, the anode is',o:['positive, and oxidation occurs there','negative, and oxidation occurs there','positive, and reduction occurs there','negative, and reduction occurs there'],a:0,
+    w:'The power supply pulls electrons out of the anode, thus the anode is positive. Oxidation always occurs at the anode (LEO A), in voltaic and in electrolytic cells.'},
+  {q:'Calculate the minimum voltage needed to electrolyze 1.0 mol/L '+C('Cd(NO3)2(aq)')+' with inert electrodes.',n:1.63,u:'V',abs:.005,tol:0,
+    w:'The entities are Cd²⁺(aq), NO₃⁻(aq) and H₂O(l). NO₃⁻(aq) is an oxidizing agent only with H⁺(aq), which is not present. The SOA is Cd²⁺(aq) (−0.40 V), because it is above H₂O(l) (−0.83 V). The SRA is H₂O(l) (+1.23 V). E°net = −0.40 V − (+1.23 V) = −1.63 V, thus the power supply must provide at least 1.63 V.'},
+  {q:'Calculate '+ecEs('net')+' for the electrolysis of 1.0 mol/L '+C('AgNO3(aq)')+' with inert electrodes. Include the sign.',n:-0.43,u:'V',abs:.005,tol:0,
+    w:'The entities are Ag⁺(aq), NO₃⁻(aq) and H₂O(l). The SOA is Ag⁺(aq) (+0.80 V). The SRA is H₂O(l) (+1.23 V). Cathode: Ag⁺(aq) + e⁻ → Ag(s). Anode: 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻. E°net = +0.80 V − (+1.23 V) = −0.43 V.'},
+  {q:'Calculate the minimum voltage needed to electrolyze 1.0 mol/L '+C('ZnSO4(aq)')+' with inert electrodes.',n:1.99,u:'V',abs:.005,tol:0,
+    w:'The entities are Zn²⁺(aq), SO₄²⁻(aq) and H₂O(l). Zn²⁺(aq) (−0.76 V) is just above H₂O(l) (−0.83 V), thus Zn²⁺(aq) is the SOA. SO₄²⁻(aq) with water (−0.93 V) is weaker. The SRA is H₂O(l) (+1.23 V). E°net = −0.76 V − (+1.23 V) = −1.99 V. The minimum voltage is 1.99 V.'},
+  {q:'A solution of sodium bromide, '+C('NaBr(aq)')+', is electrolyzed with inert electrodes. The products are',
+    o:[C('H2(g)')+' at the cathode and '+C('Br2(l)')+' at the anode',C('Na(s)')+' at the cathode and '+C('Br2(l)')+' at the anode',C('H2(g)')+' at the cathode and '+C('O2(g)')+' at the anode',C('Na(s)')+' at the cathode and '+C('O2(g)')+' at the anode'],a:0,
+    w:'The SOA is H₂O(l) (−0.83 V): Na⁺(aq) (−2.71 V) is much weaker. Water is reduced to H₂(g) and OH⁻(aq) at the cathode. The SRA is Br⁻(aq) (+1.07 V), below H₂O(l) (+1.23 V): it is oxidized to Br₂(l) at the anode.'},
+  {q:'In the electrolysis of brine, sodium metal does not form at the cathode, because',o:['water is a stronger oxidizing agent than '+C('Na^+(aq)'),C('Na^+(aq)')+' is a stronger oxidizing agent than water',C('Na^+(aq)')+' ions move toward the anode',C('Na^+(aq)')+' is a stronger reducing agent than water'],a:0,
+    w:'H₂O(l) (−0.83 V) is above Na⁺(aq) (−2.71 V) on the left side of the table. The SOA is reduced, thus water forms H₂(g) and OH⁻(aq) at the cathode. Cations such as Na⁺(aq) move toward the cathode, and Na⁺(aq) is not a reducing agent.'},
+  {q:'In the electrolysis of brine, '+C('Cl2(g)')+' forms at the anode, although water is a stronger reducing agent than '+C('Cl^-(aq)')+'. The reason for this chloride anomaly is that',o:['the oxidation of water needs an overvoltage',C('Cl^-(aq)')+' is a stronger reducing agent than water','water molecules cannot reach the anode',C('Na^+(aq)')+' ions block the oxidation of water'],a:0,
+    w:'To oxidize water, a greater voltage is needed than the table predicts. This extra voltage, the overvoltage, acts like an activation energy. The oxidation of chloride ions has a lower activation energy, thus chlorine forms.'},
+  {q:'Molten sodium chloride is electrolyzed in a Downs cell. The products are',o:[C('Na(l)')+' at the cathode and '+C('Cl2(g)')+' at the anode',C('Cl2(g)')+' at the cathode and '+C('Na(l)')+' at the anode',C('H2(g)')+' at the cathode and '+C('Cl2(g)')+' at the anode',C('Na(l)')+' at the cathode and '+C('O2(g)')+' at the anode'],a:0,
+    w:'A molten salt contains no water. Na⁺ is the only oxidizing agent: it is reduced to Na(l) at the cathode. Cl⁻ is the only reducing agent: it is oxidized to Cl₂(g) at the anode.'},
+  {q:'A student wants to plate a steel key with nickel. The key must be joined to the',o:['negative terminal, as the cathode','positive terminal, as the anode','negative terminal, as the anode','positive terminal, as the cathode'],a:0,
+    w:'The object to be plated is the cathode, where Ni²⁺(aq) ions gain electrons: Ni²⁺(aq) + 2e⁻ → Ni(s). The cathode of an electrolytic cell is joined to the negative terminal of the power supply.'},
+  {q:'In the electrolytic refining of copper, the silver and the gold in the impure copper',o:['fall to the bottom as anode mud','plate onto the pure copper cathode','dissolve and stay in the solution','are oxidized and give off a gas'],a:0,
+    w:'Ag(s) (+0.80 V) and Au(s) (+1.50 V) are weaker reducing agents than Cu(s) (+0.34 V). They are not oxidized at the anode, thus they fall to the bottom as anode mud. The sale of these metals pays for the refining.'},
+  {q:'During the electrolysis of water, the solution near the anode becomes',o:['acidic, because '+C('H^+(aq)')+' ions form there','basic, because '+C('OH^-(aq)')+' ions form there','acidic, because '+C('OH^-(aq)')+' ions form there','basic, because '+C('H^+(aq)')+' ions form there'],a:0,
+    w:'At the anode, water is oxidized: 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻. The H⁺(aq) ions make the region acidic. At the cathode, OH⁻(aq) ions form and the region becomes basic.'}]};
+
+/* ---- diploma questions 112 to 121 (answer key, p. 85: 112 B, 113 4386, 114 B, 115 B, 116 D, 117 C, 118 A, 119 D, 120 C, 121 B) ---- */
+{const I1=ec10Info('Chromium plating of objects, such as iron car bumpers, to prevent corrosion actually involves the plating of three different metals in three separate electrolytic cells. The first cell contains a solution of a copper salt, the second a solution of nickel salt, and the third a solution of chromium salt.'),
+  I2=ec10Info('Restorers of antique cars often refinish chrome-plated parts by electroplating them. The part is attached to one electrode of an electrolytic cell in which the other electrode is lead. The electrolyte is a solution of dichromic acid, '+C('H2Cr2O7(aq)')+'.'),
+  I3=ec10Info('When chromium is electroplated onto a car bumper, one of the chemicals put into the electrolytic solution is '+C('CrO3(s)')+'. This chemical reacts with water as represented by the equation<br><span style="display:block;text-align:center;margin-top:.3em">'+C('2CrO3(s) + H2O(l) -> 2H^+(aq) + Cr2O7^2-(aq)')+'</span>'),
+  I4=ec10Info('In the late 1980s, the Canadian dollar bill was replaced by a coin commonly called the “loonie.” The loonie is manufactured from nickel disks that are stamped and then coated with a thin layer of copper (87.5%) and tin (12.5%) to provide the shiny gold-coloured appearance. This layer is applied through an electrolysis process in which the stamped loonie is one of the electrodes and copper metal is the other electrode.');
+EC_DIP[10]=[
+  {q:'Use the following information. During the nickel stage of the electroplating process, the nickel(II) ions',fig:I1,
+    o:['gain electrons, and metal is deposited on the anode','gain electrons, and metal is deposited on the cathode','lose electrons, and metal is deposited on the anode','lose electrons, and metal is deposited on the cathode'],a:1,
+    w:'The object to be plated is the cathode. There the Ni²⁺(aq) ions gain electrons (GER C) and are reduced: Ni²⁺(aq) + 2e⁻ → Ni(s). Thus the nickel metal is deposited on the cathode.'},
+  {q:'Numerical response. Use the following information and the diagram. Use the numbers that identify the parts of the electroplating cell to complete the statements below.<br>The cathode is identified by ______.<br>The electron movement is identified by ______.<br>The cation movement is identified by ______.<br>The anion is identified by ______.<br>(Record all four digits of your answer.)',
+    fig:I1+ec10Plate(),n:4386,ans:'4386',tol:0,abs:0,
+    w:'The object to be plated is the cathode. In the wires, electrons move away from the anode and from the power source toward the cathode. In the solution, cations move toward the cathode and anions toward the anode. Thus the cathode is the car bumper (4), the electron movement is arrow 3 (arrow 2 points the wrong way), the cation movement is arrow 8 (arrow 7 is the movement of the anions), and the anion is NO₃⁻(aq) (6): record 4386.'},
+  {q:'An electrolytic cell differs from a voltaic cell in that the electrolytic cell',o:['is spontaneous','consumes electricity','has an anode and a cathode','has a positive '+ecEs('net')+' value'],a:1,
+    w:'An electrolytic cell consumes electrical energy from a power supply to drive a non-spontaneous reaction, thus its E°net is negative. Both kinds of cells have an anode and a cathode.'},
+  {q:'“Tin” cans used to store food are made from steel electroplated with a thin layer of tin. The standard electrical potential for the reduction of '+C('Sn^2+(aq)')+' ions for this process is',o:['−0.15 V','−0.14 V','+0.14 V','+0.15 V'],a:1,
+    w:'The data booklet gives Sn²⁺(aq) + 2e⁻ ⇌ Sn(s), E° = −0.14 V. The value −0.15 V belongs to AgI(s), and +0.15 V to Sn⁴⁺(aq) + 2e⁻ ⇌ Sn²⁺(aq).'},
+  {q:'Use the following information. The plating of chromium metal will take place at the',fig:I2,o:['anode where oxidation occurs','anode where reduction occurs','cathode where oxidation occurs','cathode where reduction occurs'],a:3,
+    w:'The chromium(VI) in the dichromic acid gains electrons and is reduced to Cr(s). Reduction occurs at the cathode (GER C), thus the part to be plated is the cathode.'},
+  {q:'Use the following information. During the operation of this cell,',fig:I2,o:[C('Pb(s)')+' is reduced',C('H2Cr2O7(aq)')+' is oxidized','the pH of the solution increases','the total energy of the system decreases'],a:2,
+    w:'At the cathode, chromium(VI) is reduced to chromium metal, a reaction that uses H⁺(aq) ions. At the lead anode, water is oxidized to O₂(g). Overall, the acid is used up: H₂Cr₂O₇(aq) → 2Cr(s) + 3O₂(g) + H₂O(l). Thus [H⁺(aq)] decreases and the pH increases. Pb(s) is the anode, where oxidation, not reduction, occurs, and H₂Cr₂O₇(aq) is reduced, not oxidized. The power supply adds energy to the system, thus its energy increases.'},
+  {q:'Use the following information. A metal that will react spontaneously with '+C('Cr^3+(aq)')+' in a chromium-plating solution is',fig:I2,o:[C('Al(s)'),C('Cd(s)'),C('Pb(s)'),C('Sn(s)')],a:0,
+    w:'Cr³⁺(aq) is an oxidizing agent: Cr³⁺(aq) + e⁻ ⇌ Cr²⁺(aq), E° = −0.41 V. A spontaneous reaction needs a reducing agent below it on the table. Al(s) (−1.66 V) is below it: E°net = −0.41 V − (−1.66 V) = +1.25 V. Cd(s) (−0.40 V), Sn(s) (−0.14 V) and Pb(s) (−0.13 V) are above it, thus their E°net is negative.'},
+  {q:'Use the following information. A correct statement concerning this reaction is that',fig:I3,o:['the chromium undergoes oxidation','the resulting solution will have a pH &gt; 7','this is a Brønsted-Lowry acid-base reaction','the oxidation state of Cr does not change'],a:3,
+    w:'In CrO₃: Cr + 3(−2) = 0, thus Cr is +6. In Cr₂O₇²⁻: 2Cr + 7(−2) = −2, thus Cr is +6. The oxidation state of chromium does not change, thus this is not a redox reaction. H⁺(aq) ions form, thus the solution is acidic (pH &lt; 7). No proton moves from an acid to a base, thus it is not a Brønsted-Lowry acid-base reaction.'},
+  {q:'Use the following information. If the plating of the loonie occurs in a '+C('Sn^2+(aq)')+' and '+C('Cu^2+(aq)')+' solution, then the reaction that occurs at the cathode is',fig:I4,
+    o:[C('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)'),C('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-'),C('Cu^2+(aq) + 2e^- -> Cu(s)'),C('Cu(s) -> Cu^2+(aq) + 2e^-')],a:2,
+    w:'The loonie is the cathode, where reduction occurs. The oxidizing agents are Cu²⁺(aq) (+0.34 V), Sn²⁺(aq) (−0.14 V) and H₂O(l) (−0.83 V). The strongest, Cu²⁺(aq), is reduced: Cu²⁺(aq) + 2e⁻ → Cu(s). The oxidation of water and the oxidation of copper metal are anode reactions.'},
+  {q:'Use the following information. Which of the following statements describes what happens during the operation of this cell?',
+    fig:ec10Info('<b>Electrochemical cell.</b> The beaker holds 1.00 L of 1.0 mol/L '+C('NaI(aq)')+' with a pH of 7.00. The power supply is a battery.')+ecCell({type:'electrolytic',L:{el:'C(s)',sol:'1.0 mol/L NaI(aq)'},R:{el:'C(s)'},anode:'R',lab:false,sign:false,flow:false,
+      extra:sArrow(162,34,124,34,'var(--s1)',2.2)+svgText('e⁻',143,27,{s:12.5,w:700,f:'s1'}),alt:'An electrochemical cell. A battery is joined by wires to two carbon rods, C(s), in a beaker of 1.00 L of 1.0 mol/L NaI(aq) with a pH of 7.00. An arrow labelled e⁻ shows electrons moving along the wire from the battery toward the left rod.'})+
+      ec10Info('The diagram above provides a representation of the process of electrolysis.'),
+    o:['Chemical energy is converted to electrical energy.','Electrical energy is converted to chemical energy.','Electrons flow toward the anode.','Plating takes place at the anode.'],a:1,
+    w:'In electrolysis, the battery drives a non-spontaneous reaction: electrical energy is converted to chemical energy. Electrons flow away from the anode, through the battery, to the cathode: the arrow shows them entering the left rod, the cathode. Plating is a reduction, thus it would take place at the cathode. In NaI(aq), water is reduced at the cathode and I⁻(aq) is oxidized at the anode.'}];}
+
+/* ---- review bank, challenge, written response ---- */
+EC_RQ[10]=[
+  {q:'The diagram shows the electrolysis of 1.0 mol/L '+C('CuSO4(aq)')+' with platinum electrodes. Which statement is correct?',
+    fig:ecCell({type:'electrolytic',L:{el:'Pt(s)',sol:'1.0 mol/L CuSO4(aq)',c:'color-mix(in srgb,var(--s1) 34%,var(--liq))'},R:{el:'Pt(s)'},lab:false,flow:false,nums:{elL:1,elR:2}}),
+    o:['Copper forms on electrode 2, and oxygen gas forms at electrode 1.','Copper forms on electrode 1, and oxygen gas forms at electrode 2.','Copper forms on electrode 2, and hydrogen gas forms at electrode 1.','Hydrogen gas forms at electrode 2, and oxygen gas forms at electrode 1.'],a:0,
+    w:'Electrode 1 is joined to the + terminal of the power supply, thus it is the anode, and electrode 2 is the cathode. The SOA is Cu²⁺(aq) (+0.34 V): Cu²⁺(aq) + 2e⁻ → Cu(s) at electrode 2. The SRA is H₂O(l) (+1.23 V): 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻ at electrode 1.'},
+  {q:'Calculate '+ecEs('net')+' for the electrolysis of 1.0 mol/L '+C('NiI2(aq)')+' with inert electrodes. Include the sign.',n:-0.80,u:'V',abs:.005,tol:0,
+    w:'The entities are Ni²⁺(aq), I⁻(aq) and H₂O(l). The SOA is Ni²⁺(aq) (−0.26 V), above H₂O(l) (−0.83 V). The SRA is I⁻(aq) (+0.54 V), below H₂O(l) (+1.23 V). Cathode: Ni²⁺(aq) + 2e⁻ → Ni(s). Anode: 2I⁻(aq) → I₂(s) + 2e⁻. E°net = −0.26 V − (+0.54 V) = −0.80 V.'},
+  {q:'Brine, a concentrated solution of '+C('NaCl(aq)')+', is electrolyzed with inert electrodes. Hydrogen gas forms at the cathode and chlorine gas at the anode. Calculate the minimum voltage for this reaction.',n:2.19,u:'V',abs:.005,tol:0,
+    w:'Cathode: 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq), E°r = −0.83 V. Anode: 2Cl⁻(aq) → Cl₂(g) + 2e⁻, E°r = +1.36 V: chloride is oxidized instead of water (the chloride anomaly). E°net = −0.83 V − (+1.36 V) = −2.19 V. The minimum voltage is 2.19 V.'},
+  {q:'A few drops of phenolphthalein are added to '+C('KI(aq)')+'. The solution is then electrolyzed with carbon electrodes. Which observations are expected?',
+    o:['pink colour at the cathode, and brown colour at the anode','pink colour at the anode, and brown colour at the cathode','pink colour at the cathode, and a grey solid at the anode','a grey solid at the cathode, and brown colour at the anode'],a:0,
+    w:'At the cathode, water is reduced: 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq). The OH⁻(aq) ions turn the phenolphthalein pink. At the anode, I⁻(aq) is oxidized to iodine, which is brown. K⁺(aq) (−2.93 V) is not reduced, thus no metal forms.'},
+  {q:'Which metal can be produced at the cathode by the electrolysis of a 1.0 mol/L aqueous solution of its nitrate, with inert electrodes?',o:[C('Zn(s)'),C('Al(s)'),C('Mg(s)'),C('Na(s)')],a:0,
+    w:'A metal ion is reduced only if it is a stronger oxidizing agent than water (−0.83 V). Zn²⁺(aq) is −0.76 V, thus zinc plates on the cathode. Al³⁺(aq) (−1.66 V), Mg²⁺(aq) (−2.37 V) and Na⁺(aq) (−2.71 V) are weaker, thus water is reduced to H₂(g) instead.'},
+  {q:'Blister copper that contains small amounts of zinc and silver is refined in an electrolytic cell. During the refining,',
+    o:['zinc dissolves as '+C('Zn^2+(aq)')+', and silver falls to the anode mud','zinc falls to the anode mud, and silver dissolves as '+C('Ag^+(aq)'),'zinc and silver both plate onto the pure copper cathode','zinc plates onto the cathode, and silver stays in the solution'],a:0,
+    w:'Zn(s) (−0.76 V) is a stronger reducing agent than Cu(s) (+0.34 V), thus it is oxidized at the anode. Zn²⁺(aq) is a weaker oxidizing agent than Cu²⁺(aq), thus it stays in the solution. Ag(s) (+0.80 V) is a weaker reducing agent than copper: it is not oxidized and falls into the anode mud.'},
+  {q:'Numerical response. A solution contains 1.0 mol/L of each of these ions, as nitrates:<br>1 '+C('Cu^2+(aq)')+' &nbsp; 2 '+C('Zn^2+(aq)')+' &nbsp; 3 '+C('Ni^2+(aq)')+' &nbsp; 4 '+C('Ag^+(aq)')+'<br>The voltage across two inert electrodes is increased slowly from zero. Record the numbers of the ions in the order in which their metals plate on the cathode, from first to last. (Record all four digits of your answer.)',
+    n:4132,ans:'4132',tol:0,abs:0,
+    w:'The strongest oxidizing agent is reduced first, at the lowest voltage. All four ions are stronger oxidizing agents than water (−0.83 V), thus each metal plates in turn. From the strongest: Ag⁺(aq) (+0.80 V), Cu²⁺(aq) (+0.34 V), Ni²⁺(aq) (−0.26 V), Zn²⁺(aq) (−0.76 V): record 4132.'},
+  {q:'Sodium metal is produced by the electrolysis of molten NaCl, not of '+C('NaCl(aq)')+', because in an aqueous solution',o:['water is reduced instead of '+C('Na^+(aq)'),C('Na^+(aq)')+' ions do not move to the cathode','chloride ions cannot be oxidized','the solution does not conduct an electric current'],a:0,
+    w:'Water (−0.83 V) is a much stronger oxidizing agent than Na⁺(aq) (−2.71 V). In NaCl(aq), water is reduced to H₂(g) at the cathode. A molten salt has no water, thus Na⁺ is reduced to sodium metal.'},
+  {q:'Which statement is true for both voltaic cells and electrolytic cells?',o:['Reduction occurs at the cathode.','The anode is the negative electrode.','The net reaction is spontaneous.','The cathode is the positive electrode.'],a:0,
+    w:'In every electrochemical cell, reduction occurs at the cathode and oxidation at the anode. The signs of the electrodes and the spontaneity are different: a voltaic cell has a negative anode and a spontaneous reaction, an electrolytic cell a positive anode and a non-spontaneous reaction.'},
+  {q:'Calculate the minimum voltage needed to electrolyze 1.0 mol/L '+C('KBr(aq)')+' with inert electrodes.',n:1.90,u:'V',abs:.005,tol:0,
+    w:'The entities are K⁺(aq), Br⁻(aq) and H₂O(l). The SOA is H₂O(l) (−0.83 V): K⁺(aq) (−2.93 V) is much weaker. The SRA is Br⁻(aq) (+1.07 V), below H₂O(l) (+1.23 V). E°net = −0.83 V − (+1.07 V) = −1.90 V. The minimum voltage is 1.90 V.'}];
+EC_CH[10]={q:'A 1.0 mol/L solution of tin(II) chloride, '+C('SnCl2(aq)')+', is electrolyzed with carbon electrodes. Predict the reactions at the electrodes and calculate the minimum voltage. Think about every role that each entity can play.',n:0.29,u:'V',abs:.005,tol:0,
+  w:'The entities are Sn²⁺(aq), Cl⁻(aq) and H₂O(l). Oxidizing agents: Sn²⁺(aq) (−0.14 V) and H₂O(l) (−0.83 V), thus the SOA is Sn²⁺(aq). Reducing agents: Sn²⁺(aq) (+0.15 V, in Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻), H₂O(l) (+1.23 V) and Cl⁻(aq) (+1.36 V). The SRA is Sn²⁺(aq), the lowest on the right side. The chloride anomaly does not matter, because Sn²⁺(aq) is a much stronger reducing agent than water or Cl⁻(aq). Cathode: Sn²⁺(aq) + 2e⁻ → Sn(s). Anode: Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻. Net: 2Sn²⁺(aq) → Sn(s) + Sn⁴⁺(aq). E°net = −0.14 V − (+0.15 V) = −0.29 V. The minimum voltage is 0.29 V.'};
+EC_WRQ.push({q:'Brine, a concentrated solution of sodium chloride, is electrolyzed with inert electrodes in the chlor-alkali process. (a) Use the table of standard electrode potentials to predict the cathode and the anode half-reactions, the net reaction and the minimum voltage. (b) Chlorine gas, not oxygen, is observed at the anode. Explain why, and write the net reaction that actually occurs. (c) Calculate the minimum voltage for the observed reaction, and give one use of each of the three products.',
+  marks:['(a) Lists Na⁺(aq), Cl⁻(aq) and H₂O(l), and identifies H₂O(l) as the SOA and as the SRA','(a) Cathode: 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq). Anode: 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻','(a) Net: 2H₂O(l) → 2H₂(g) + O₂(g). E°net = −0.83 V − (+1.23 V) = −2.06 V, thus a minimum of 2.06 V',
+    '(b) The chloride anomaly: the oxidation of water needs an overvoltage (a higher activation energy), thus Cl⁻(aq) is oxidized: 2Cl⁻(aq) → Cl₂(g) + 2e⁻','(b) Net: 2H₂O(l) + 2Cl⁻(aq) → H₂(g) + 2OH⁻(aq) + Cl₂(g)','(c) E°net = −0.83 V − (+1.36 V) = −2.19 V: at least 2.19 V. Uses: Cl₂ for bleach or plastics, H₂ as a fuel or for ammonia, NaOH as a cleaner'],
+  model:'<p>(a) The entities are Na⁺(aq), Cl⁻(aq) and H₂O(l). The SOA is H₂O(l) (−0.83 V), because Na⁺(aq) (−2.71 V) is weaker. The table predicts H₂O(l) (+1.23 V) as the SRA, because it is below Cl⁻(aq) (+1.36 V).<br>Cathode: '+C('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+'<br>Anode: '+C('2H2O(l) -> O2(g) + 4H^+(aq) + 4e^-')+'<br>Net: '+C('2H2O(l) -> 2H2(g) + O2(g)')+'. '+ecEs('net')+' = −0.83 V − (+1.23 V) = −2.06 V, thus at least 2.06 V.</p>'+
+    '<p>(b) This is the chloride anomaly. The oxidation of water needs a greater voltage than the table shows: an overvoltage, which acts like an activation energy. The oxidation of chloride ions has a lower activation energy, thus they are oxidized: '+C('2Cl^-(aq) -> Cl2(g) + 2e^-')+'.<br>Net: '+C('2H2O(l) + 2Cl^-(aq) -> H2(g) + 2OH^-(aq) + Cl2(g)')+'</p>'+
+    '<p>(c) '+ecEs('net')+' = −0.83 V − (+1.36 V) = −2.19 V, thus at least 2.19 V. Chlorine is used to make bleach and plastics, hydrogen as a fuel or to make ammonia, and sodium hydroxide as a strong base in cleaners such as drain cleaner.</p>',
+  skip:['ec_10_r2']});
+
+/* ---- generators: the minimum voltage of an electrolysis with inert electrodes (no chloride), and with the chloride anomaly ---- */
+const EC10_SALT=[['copper(II) sulfate','CuSO4','Cu^2+(aq)','SO4^2-(aq)'],['copper(II) nitrate','Cu(NO3)2','Cu^2+(aq)','NO3^-(aq)'],['copper(II) bromide','CuBr2','Cu^2+(aq)','Br^-(aq)'],
+  ['nickel(II) sulfate','NiSO4','Ni^2+(aq)','SO4^2-(aq)'],['nickel(II) nitrate','Ni(NO3)2','Ni^2+(aq)','NO3^-(aq)'],['nickel(II) bromide','NiBr2','Ni^2+(aq)','Br^-(aq)'],['nickel(II) iodide','NiI2','Ni^2+(aq)','I^-(aq)'],
+  ['cobalt(II) sulfate','CoSO4','Co^2+(aq)','SO4^2-(aq)'],['cobalt(II) nitrate','Co(NO3)2','Co^2+(aq)','NO3^-(aq)'],['cobalt(II) bromide','CoBr2','Co^2+(aq)','Br^-(aq)'],['cobalt(II) iodide','CoI2','Co^2+(aq)','I^-(aq)'],
+  ['zinc sulfate','ZnSO4','Zn^2+(aq)','SO4^2-(aq)'],['zinc nitrate','Zn(NO3)2','Zn^2+(aq)','NO3^-(aq)'],['zinc bromide','ZnBr2','Zn^2+(aq)','Br^-(aq)'],['zinc iodide','ZnI2','Zn^2+(aq)','I^-(aq)'],
+  ['cadmium sulfate','CdSO4','Cd^2+(aq)','SO4^2-(aq)'],['cadmium nitrate','Cd(NO3)2','Cd^2+(aq)','NO3^-(aq)'],['cadmium bromide','CdBr2','Cd^2+(aq)','Br^-(aq)'],['cadmium iodide','CdI2','Cd^2+(aq)','I^-(aq)'],
+  ['silver nitrate','AgNO3','Ag^+(aq)','NO3^-(aq)'],['lead(II) nitrate','Pb(NO3)2','Pb^2+(aq)','NO3^-(aq)'],['iron(II) sulfate','FeSO4','Fe^2+(aq)','SO4^2-(aq)'],
+  ['magnesium sulfate','MgSO4','Mg^2+(aq)','SO4^2-(aq)'],['magnesium nitrate','Mg(NO3)2','Mg^2+(aq)','NO3^-(aq)'],['magnesium bromide','MgBr2','Mg^2+(aq)','Br^-(aq)'],['magnesium iodide','MgI2','Mg^2+(aq)','I^-(aq)'],
+  ['sodium sulfate','Na2SO4','Na^+(aq)','SO4^2-(aq)'],['sodium nitrate','NaNO3','Na^+(aq)','NO3^-(aq)'],['sodium bromide','NaBr','Na^+(aq)','Br^-(aq)'],['sodium iodide','NaI','Na^+(aq)','I^-(aq)'],
+  ['potassium sulfate','K2SO4','K^+(aq)','SO4^2-(aq)'],['potassium nitrate','KNO3','K^+(aq)','NO3^-(aq)'],['potassium bromide','KBr','K^+(aq)','Br^-(aq)'],['potassium iodide','KI','K^+(aq)','I^-(aq)'],
+  ['calcium nitrate','Ca(NO3)2','Ca^2+(aq)','NO3^-(aq)'],['calcium bromide','CaBr2','Ca^2+(aq)','Br^-(aq)'],['calcium iodide','CaI2','Ca^2+(aq)','I^-(aq)'],
+  ['aluminum sulfate','Al2(SO4)3','Al^3+(aq)','SO4^2-(aq)'],['aluminum nitrate','Al(NO3)3','Al^3+(aq)','NO3^-(aq)']];
+const EC10_CL=[['sodium chloride','NaCl','Na^+(aq)'],['potassium chloride','KCl','K^+(aq)'],['lithium chloride','LiCl','Li^+(aq)'],['magnesium chloride','MgCl2','Mg^2+(aq)'],['calcium chloride','CaCl2','Ca^2+(aq)'],['barium chloride','BaCl2','Ba^2+(aq)'],
+  ['zinc chloride','ZnCl2','Zn^2+(aq)'],['nickel(II) chloride','NiCl2','Ni^2+(aq)'],['cobalt(II) chloride','CoCl2','Co^2+(aq)'],['copper(II) chloride','CuCl2','Cu^2+(aq)'],['cadmium chloride','CdCl2','Cd^2+(aq)']];
+EC_GEN[10]=[
+  ()=>{const X=EC10_SALT[RN(0,EC10_SALT.length-1)],p=ecPredict([X[2],X[3],'H2O(l)']),v=-p.E;
+    return {q:`Calculate the minimum voltage needed to electrolyze 1.0 mol/L ${X[0]}, ${C(X[1]+'(aq)')}, with inert electrodes.`,n:v,u:'V',abs:.005,tol:0,
+      w:`The entities are ${ecU(X[2])}, ${ecU(X[3])} and H₂O(l). The SOA is ${ecU(p.soa)} (${ecV(p.rr.E)}). The SRA is ${ecU(p.sra)} (${ecV(p.or.E)}). Cathode: ${p.redU}. Anode: ${p.oxU}. E°net = ${ecV(p.rr.E)} − (${ecV(p.or.E)}) = ${ecV(p.E)}. The minimum voltage is ${v.toFixed(2)} V.`};},
+  ()=>{const X=EC10_CL[RN(0,EC10_CL.length-1)],p=ecPredict([X[2],'Cl^-(aq)','H2O(l)'],{cl:true}),v=-p.E;
+    return {q:`A 1.0 mol/L solution of ${X[0]}, ${C(X[1]+'(aq)')}, is electrolyzed with carbon electrodes. Chlorine gas forms at the anode. Calculate the minimum voltage for the reaction that occurs.`,n:v,u:'V',abs:.005,tol:0,
+      w:`The entities are ${ecU(X[2])}, Cl⁻(aq) and H₂O(l). The SOA is ${ecU(p.soa)} (${ecV(p.rr.E)}). The table predicts H₂O(l) (+1.23 V) as the SRA, but Cl⁻(aq) is oxidized instead: the chloride anomaly. Cathode: ${p.redU}. Anode: ${p.oxU}. E°net = ${ecV(p.rr.E)} − (${ecV(p.or.E)}) = ${ecV(p.E)}. The minimum voltage is ${v.toFixed(2)} V.`};}];
+EC_METHOD[10]='List the entities, with H₂O(l). The SOA is reduced at the cathode and the SRA is oxidized at the anode. E°net = E°r(cathode) − E°r(anode) is negative: the minimum voltage is its size.';
+EC_HT[10]={pre:'List every entity first: the ions of the dissolved compound, H₂O(l) for any aqueous solution, and the electrodes if they are not inert. Then use the table as for a voltaic cell.',items:[
+  {q:'Predict the electrode reactions of an electrolysis',s:['Underline the entities on the table. Water is on both sides: as an OA (−0.83 V) and as an RA (+1.23 V).','The SOA is the highest entity on the left side. It is reduced at the cathode (−).','The SRA is the lowest entity on the right side. It is oxidized at the anode (+).','Write both half-reactions, balance the electrons, and add them. Cancel what is on both sides.'],
+    chk:'A metal ion below water on the left side (Al³⁺, Mg²⁺, Na⁺, K⁺) is never reduced in an aqueous solution: water is reduced to H₂(g) instead.'},
+  {q:'Calculate the minimum voltage',s:['Find E°r of the SOA half-reaction (cathode) and of the SRA half-reaction (anode).','E°net = E°r(cathode) − E°r(anode). For an electrolytic cell it is negative.','The minimum voltage is the size of E°net: an E°net of −1.37 V needs at least 1.37 V.'],chk:'Do not multiply E° by the coefficients. Only the electrons are balanced.'},
+  {q:'Is it the chloride anomaly?',s:['Look for Cl⁻(aq) in an aqueous solution where water is the predicted SRA.','Chlorine gas forms at the anode instead of oxygen: 2Cl⁻(aq) → Cl₂(g) + 2e⁻ (E°r = +1.36 V).','Use +1.36 V for the anode to find the minimum voltage of the observed reaction.'],
+    chk:'If a stronger reducing agent than water is present (I⁻, Br⁻, Sn²⁺, Fe²⁺), it is oxidized first and the anomaly does not matter.'},
+  {q:'Molten salt or aqueous solution?',s:['A molten salt contains no water: the metal ion is the only OA and the anion is the only RA.','Thus very active metals, such as sodium, are made from molten compounds, not from their solutions.'],chk:'The products of a molten salt (for example Na and Cl₂) must be kept apart, or they react again.'},
+  {q:'Set up an electroplating or a refining cell',s:['The object to be plated, or the thin sheet of pure metal, is the cathode, joined to the − terminal.','The anode is the plating metal, or the impure metal, joined to the + terminal.','The electrolyte contains ions of the plating metal.'],chk:'The cathode grows and the anode dissolves.'},
+  {q:'Voltaic or electrolytic?',s:['Spontaneous, E°net positive, with a voltmeter or a load: voltaic. Its anode is − and its cathode is +.','Non-spontaneous, E°net negative, with a power supply: electrolytic. Its anode is + and its cathode is −.','In both cells: oxidation at the anode, reduction at the cathode, electrons from the anode to the cathode through the wire, cations toward the cathode.'],
+    chk:'The signs of the electrodes change. The reactions at each electrode do not.'}]};
+EC_REF.f.push(['Minimum voltage of an electrolysis','<i>V</i><sub>min</sub> = −'+ecEs('net')+' &nbsp; (for an electrolytic cell, '+ecEs('net')+' &lt; 0)']);
+EC_REF.t.push(['Electrolysis','The process that uses electrical energy to bring about a non-spontaneous redox reaction.'],
+  ['Electrolytic cell','An electrochemical cell that uses electrical energy from a power supply to cause a chemical change. Its anode is positive and its cathode is negative.'],
+  ['Power supply','A source of direct current (a battery or a DC supply). It pushes electrons into the cathode and pulls them out of the anode of an electrolytic cell.'],
+  ['Minimum voltage','The smallest voltage that runs an electrolytic cell: the size of its negative E°net.'],
+  ['Chloride anomaly','In the electrolysis of a chloride solution, Cl⁻(aq) is oxidized to Cl₂(g) at the anode instead of water, because the oxidation of water needs an overvoltage.'],
+  ['Overvoltage','The extra voltage, above the value from the table, that a reaction at an electrode needs. It acts like an activation energy.'],
+  ['Electroplating','Depositing a thin layer of a metal on an object that is the cathode of an electrolytic cell. The electrolyte contains ions of that metal.'],
+  ['Electrorefining','Purifying a metal by electrolysis: the impure metal is the anode, and the pure metal plates on the cathode.']);
 }catch(e){console.error('[ec] slot 10 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 11 ----- */
 {try{
