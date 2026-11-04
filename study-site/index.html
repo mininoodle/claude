@@ -853,6 +853,13 @@ const SRI=[1,3,7],DAY=864e5;
 function srMark(id,ok){if(!id)return;const e=Store.sr(id),now=Date.now();
   if(!ok){Store.srSet(id,{b:0,d:now+SRI[0]*DAY});return;}
   if(e&&now>=e.d){const b=e.b+1;if(b>=SRI.length){Store.srSet(id,{x:1});Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}else Store.srSet(id,{b,d:now+SRI[b]*DAY});}}
+/* change counters for the saved progress. SV moves with every write through the Store's methods and with every change that the Store merges
+   from another tab, device or backup (it calls its subscribers). SVQ moves only when the results of a question can change: answers (a), history (h), clears and merges.
+   Values derived from the progress, such as lessonLevel, are kept until their counter moves */
+let SV=0,SVQ=0;const svBump=()=>{SV++;SVQ++;};Store.on(svBump);
+['set','setRev','srSet','wSet','xs','clear'].forEach(k=>{const f=Store[k];Store[k]=function(m){const q=k==='set'||k==='clear'||k==='xs'&&m==='h';SV++;if(q)SVQ++;try{return f.apply(this,arguments);}finally{SV++;if(q)SVQ++;queueMicrotask(svBump);}};});
+/* a cache that is emptied when its counter moves (q: SVQ, else SV), and with day also when the date changes */
+function svMemo(f,{q,day}={}){let v=-1,d='',m=new Map();return (...a)=>{const c=q?SVQ:SV,td=day?today():'';if(v!==c||d!==td){v=c;d=td;m.clear();}const k=a.join('|');if(m.has(k))return m.get(k);const r=f(...a);m.set(k,r);return r;};}
 
 /* ---------- controls ---------- */
 function ctl(host,defs,on){
@@ -10846,7 +10853,9 @@ const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
 function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));return s;}
-function lessonLevel(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
+/* lessonLevel runs for every lesson after each answer (badges, chips, the Today page): it is computed once for each change of the progress, and each caller gets its own copy */
+const lvMemo=svMemo((sk,L)=>lessonLevel0(sk,L),{q:1});function lessonLevel(sk,L){const r=lvMemo(sk,L);return r&&Object.assign({},r);}
+function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
   le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(d.size>=2)ok2++;});
   const n=le.qz.length;return {n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
 /* questions that still need a correct answer today to move toward Mastered */
