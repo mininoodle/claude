@@ -115,10 +115,17 @@ async function mastery(b) {
   const m2 = await p.evaluate(([sk, L]) => lvName(lessonLevel(sk, L)), [sk, L]);
   ok(m2 === 'Mastered', 'needs review: a correct answer clears it', m2);
   /* the old rule for days saved before the change, the new rule after it */
-  const old = await p.evaluate(() => { const set = (sk, L, d) => SUBJ[sk].lessons[L].qz.forEach((_, j) => Store.xs('h', sk + '_' + L + '_' + j, { d, c: 2, m: 0 }));
-    set('eq', 1, ['2026-11-01', '2026-11-02']); set('eq', 2, ['2026-11-05', '2026-11-06']); set('eq', 3, ['2026-11-05', '2026-11-07']);
-    return [lessonLevel('eq', 1).lv, lessonLevel('eq', 2).lv, lessonLevel('eq', 3).lv]; });
+  /* l (the latest result) marks a history entry that this version wrote; an entry without it was written by an older version of the site */
+  const old = await p.evaluate(() => { const set = (sk, L, d, l) => SUBJ[sk].lessons[L].qz.forEach((_, j) => Store.xs('h', sk + '_' + L + '_' + j, Object.assign({ d, c: 2, m: 0 }, l ? { l } : {})));
+    set('eq', 1, ['2026-11-01', '2026-11-02']); set('eq', 2, ['2026-11-05', '2026-11-06'], 1); set('eq', 3, ['2026-11-05', '2026-11-07'], 1); set('eq', 4, ['2026-11-05', '2026-11-06']);
+    return [lessonLevel('eq', 1).lv, lessonLevel('eq', 2).lv, lessonLevel('eq', 3).lv, lessonLevel('eq', 4).lv]; });
   ok(old[0] === 3 && old[1] === 2 && old[2] === 3, 'mastery: two days in a row before 2026-11-05 still count (old rule); after it they must be 2 days apart', old);
+  ok(old[3] === 3, 'mastery: days in a row saved by an older version of the site after 2026-11-05 still count, so no lesson drops from Mastered when the change arrives late', old);
+  const mig = await p.evaluate(() => { const id = 'eq_4_0'; onAnswer(id, false, { sk: 'eq', L: 4, v: '0' }); const h = Store.x('h', id), v = lessonLevel('eq', 4);
+    const y = dayStr(dayNum(today()) - 1), id2 = 'eq_5_0'; Store.xs('h', id2, { d: [y], c: 1, m: 0 }); onAnswer(id2, true, { sk: 'eq', L: 5 });
+    return { o2: h.o2, l: h.l, lv: v.lv, nr: v.nr, two: okTwo(okDays(id2)), d2: Store.x('h', id2).d.length }; });
+  ok(mig.o2 === 1 && mig.l === 0 && mig.lv === 3 && mig.nr === 1, 'mastery: the first answer of this version keeps the pair of an older entry (o2): a wrong answer shows Needs review, not a lower level', mig);
+  ok(mig.d2 === 2 && mig.two === false, 'mastery: a correct answer of this version the day after an older single day follows the new rule', mig);
   ok(!errs.length, 'mastery: no page errors', errs);
   await ctx.close();
 }
@@ -317,11 +324,58 @@ async function queue(b) {
   await ctx.close();
 }
 
+/* ----- 10. reloads, long lists and saving: the daily challenge and a diploma practice exam continue after a reload; My mistakes shows 25 rows at a time;
+   opening the Test page saves nothing new; a value below 1 fills the four boxes with 3 digits; the one-time lesson check starts 3 lessons a day ----- */
+async function reloads(b) {
+  const { ctx, p, errs } = await open(b, '2026-11-10T10:00:00');
+  const ready = () => p.waitForFunction(() => typeof SUBJ !== 'undefined' && document.querySelector('.lesson:not([hidden])'));
+  /* the daily challenge: 2 answers, a reload, then it continues */
+  await p.evaluate(() => { ['mom', 'th'].forEach(sk => [0, 1].forEach(L => { const n = SUBJ[sk].lessons[L].qz.length; for (let j = 0; j < n; j += 2) onAnswer(sk + '_' + L + '_' + j, j % 4 === 0, { sk, L }); })); tabSeg.set(0); showTab(0); });
+  const dcard = () => p.evaluate(() => { const c = [...document.querySelectorAll('#home-0 .card')].find(c => /Daily challenge/.test((c.querySelector('h3') || {}).textContent || '')); return c ? c.innerText.replace(/\s+/g, ' ') : ''; });
+  await p.evaluate(() => { const c = [...document.querySelectorAll('#home-0 .card')].find(c => /Daily challenge/.test((c.querySelector('h3') || {}).textContent || '')); c.querySelector('.row .btn').click();
+    for (let i = 0; i < 2; i++) { const q = c.querySelector('.q'), op = q.querySelector('.op'); if (op) op.click(); else { q.querySelector('.num input').value = '1'; q.querySelector('.num .btn').click(); }
+      [...c.querySelectorAll('.row .btn')].find(x => /Next|Finish/.test(x.textContent)).click(); } });
+  await p.reload(); await ready(); await p.addStyleTag({ content: '.cele{display:none!important}' });
+  await p.evaluate(() => { tabSeg.set(0); showTab(0); });
+  const mid = await dcard();
+  ok(/You answered 2 of 5/.test(mid) && /3 questions/.test(mid), 'reload: the daily challenge continues where it stopped after a reload of the page', mid);
+  /* a value below 1: three digits in the four boxes (.456), give or take 1 in the last box */
+  const nr = await p.evaluate(() => { const it = { n: 0.456 }, sp = nrSpec(0.456); return { sp, ok: [0.455, 0.456, 0.457, 0.45, 0.47, 0.466].map(v => nrOK(sp, v, it)) }; });
+  ok(nr.sp.m === 'd' && nr.sp.p === 3 && JSON.stringify(nr.ok) === '[true,true,true,false,false,false]', 'exam: a value below 1 is recorded as .456 and graded on its third digit', nr);
+  /* My mistakes: 25 rows at a time */
+  const mist = await p.evaluate(() => { let k = 0; for (const sk of ['mom', 'th', 'ns', 'en']) SUBJ[sk].lessons.forEach((le, L) => (le.rq || []).slice(0, 3).forEach((_, j) => { if (k++ < 30) onAnswer(sk + '_' + L + '_r' + j, false, { sk, L, v: '0' }); }));
+    openMistakes(); const L = document.getElementById('test-0'), n1 = L.querySelectorAll('.miss').length, more = L.querySelector('[data-more]'), t = more && more.textContent; if (more) more.click();
+    const rows = L.querySelectorAll('.miss'); return { all: mistAll().length, n1, t, n2: rows.length, focus: document.activeElement === rows[25] }; });
+  ok(mist.n1 === 25 && /Show \d+ more/.test(mist.t) && mist.n2 === Math.min(50, mist.all) && mist.focus, 'mistakes: the list shows 25 rows, Show more adds the next ones and moves the focus to the first new row', mist);
+  /* opening the Test page saves only the position */
+  const saves = await p.evaluate(() => { let n = 0; const o = Storage.prototype.setItem; Storage.prototype.setItem = function (k) { if (k === 'unit-study-site.v2') n++; return o.apply(this, arguments); };
+    const i = SUBJECTS.findIndex(s => s.test); tabSeg.set(0); showTab(0); const n0 = n; tabSeg.set(i); showTab(i); testSetupPage(document.getElementById('test-0')); Storage.prototype.setItem = o; return n - n0; });
+  ok(saves <= 1, 'test page: opening it does not save the diploma exam settings again', saves);
+  /* a diploma practice exam: an answer, a reload, it continues; Stop says that it is not saved */
+  const start = await p.evaluate(() => { const L = document.getElementById('test-0'), c = [...L.querySelectorAll('.card')].find(c => /Diploma practice exam/.test(c.textContent));
+    [...c.querySelectorAll('.btn')].find(x => /Start the exam/.test(x.textContent)).click(); const op = L.querySelector('.ops .op'); if (op) op.click(); else [...L.querySelectorAll('.nr input')].forEach((x, k) => { x.value = '1234'[k]; x.dispatchEvent(new Event('input')); });
+    const v = JSON.parse(sessionStorage.getItem('exam:dip')); return { h1: L.querySelector('h1').textContent, n: v && v.E.items.length, a0: v && v.E.ans[0] }; });
+  await p.reload(); await ready();
+  const back = await p.evaluate(() => { const i = SUBJECTS.findIndex(s => s.test); tabSeg.set(i); showTab(i); const L = document.getElementById('test-0'), nav = L.querySelectorAll('[data-nav] button');
+    const sb = [...L.querySelectorAll('.btn')].find(x => /Stop this test/.test(x.textContent)); sb.click(); return { h1: L.querySelector('h1').textContent, n: nav.length, placed: nav[0] && nav[0].classList.contains('placed'), stop: sb.textContent }; });
+  await p.waitForTimeout(700);
+  const stopped = await p.evaluate(() => { const L = document.getElementById('test-0'); [...L.querySelectorAll('.btn')].find(x => /Select again to stop/.test(x.textContent)).click(); return { h1: L.querySelector('h1').textContent, kept: sessionStorage.getItem('exam:dip') }; });
+  ok(start.a0 != null && back.h1 === start.h1 && back.n === start.n && back.placed, 'diploma exam: after a reload it continues with the same questions and answers', { start, back });
+  ok(/not saved/.test(back.stop) && stopped.h1 === 'Test' && stopped.kept === null, 'diploma exam: Stop says that the answers are not saved, and stopping forgets the exam', { stop: back.stop, stopped });
+  /* the one-time lesson check of lessons mastered before it existed: 3 lessons a day from 2 days on */
+  const seed = await p.evaluate(() => { const ls = SUBJ.th.lessons.map((le, L) => le.qz ? L : -1).filter(L => L >= 0).slice(0, 7);
+    ls.forEach(L => SUBJ.th.lessons[L].qz.forEach((_, j) => Store.xs('h', 'th_' + L + '_' + j, { d: ['2026-10-01', '2026-10-03'], c: 2, m: 0 })));
+    lcSeedAll(); const days = {}; ls.forEach(L => { const e = SUBJ.th.lessons[L].qz.map((_, j) => Store.sr('th_' + L + '_' + j)).find(e => e && e.k === 1); const d = e ? Math.round((e.d - Date.now()) / 864e5) : -1; days[d] = (days[d] || 0) + 1; }); return days; });
+  ok(JSON.stringify(seed) === '{"2":3,"3":3,"4":1}', 'lesson check: lessons mastered before it existed start 3 a day, from 2 days on', seed);
+  ok(!errs.length, 'reloads: no page errors', errs);
+  await ctx.close();
+}
+
 (async () => {
   const t0 = Date.now();
   const browser = await pw.chromium.launch();
   try {
-    for (const t of [schedule, mastery, quiz, generators, daily, week, midnight, clears, queue]) {
+    for (const t of [schedule, mastery, quiz, generators, daily, week, midnight, clears, queue, reloads]) {
       try { await t(browser); } catch (e) { ok(false, t.name + ': ' + String(e && e.message || e).split('\n')[0]); }
     }
   } finally { await browser.close(); }
