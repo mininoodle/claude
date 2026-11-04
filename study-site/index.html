@@ -744,6 +744,10 @@ body{--on-a1:#fff}
 @media(max-width:600px){#rail>#units,#rail>#chips{display:none}}
 /* the progress ring and the due badge of a lesson in the breadcrumb's lesson menu */
 .cm-i .pr{margin:0;flex:none}.cm-i .due{margin:0;flex:none}
+/* the breadcrumb's tools at its right end: 'On this page' (on a phone, its icon only) */
+.crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
+html .crumb-tools .crumb-b{margin-left:0;flex:none}
+@media(max-width:600px){.crumb-o>span,.crumb-o>.ic:last-child{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
 /* the level pill under a lesson's title is a button: it goes to the lesson's questions */
 button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
 button.lvl:hover{background:var(--hov);color:var(--ink)}
@@ -11518,25 +11522,36 @@ html{scroll-padding-top:62px}
     const c=[{lv:'s',t:parts[1],sub:parts[1]}];if(typeof SUBJ!=='undefined'&&SUBJ[curS]&&SUBJ[curS].name!==parts[1])c.push({lv:'u',t:SUBJ[curS].name,sub:parts[1]});
     c.push({lv:'l',t:parts[0],sub:parts[1],cur:1});return c;};
   const menu=document.createElement('div');menu.className='crumb-menu';menu.setAttribute('role','menu');menu.hidden=true;crumb.append(menu);let mBtn=null,ckey='';
+  /* the bar's tools at its right end: 'On this page', a menu of the headed cards of the page on screen */
+  ICON.list=ICON.list||'<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>';ICON.dash=ICON.dash||'<path d="M8 12h8"/>';
+  const ctools=document.createElement('div');ctools.className='crumb-tools';crumb.insertBefore(ctools,menu);
+  const ob=document.createElement('button');ob.type='button';ob.className='crumb-b crumb-o';ob.dataset.lv='o';ob.setAttribute('aria-haspopup','menu');ob.setAttribute('aria-expanded','false');
+  ob.setAttribute('aria-label','On this page');ob.title='Go to a part of this page';ob.innerHTML=icon('list',15)+'<span>On this page</span>'+icon('down',12);ctools.append(ob);
   const closeMenu=focus=>{if(menu.hidden)return;menu.hidden=true;menu.innerHTML='';if(mBtn){mBtn.setAttribute('aria-expanded','false');if(focus)mBtn.focus();}mBtn=null;};
   const items=(lv,sub)=>{if(lv==='s')return SUBJECTS.map((S,i)=>({t:S.name,ic:S.k,cur:S.name===sub,go:()=>{tabSeg.set(i);showTab(i);}}));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
     if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});return out;}
     return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i)}));};
-  const openMenu=b=>{const x=crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';
-    items(x.lv,x.sub).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
-      const m=document.createElement('button');m.type='button';m.className='cm-i'+(it.cur?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',it.cur?'true':'false');
+  /* 'On this page': the top of the page, then each card that has a heading. The card on screen is marked; choosing one scrolls it to just below the bar and focuses its heading */
+  const outline=()=>{const L=document.querySelector('#main>.lesson:not([hidden])');if(!L)return [];const y0=topBar()+innerHeight/4,h1=L.querySelector('h1');let on=-1;
+    const cs=[...L.querySelectorAll('.card')].filter(c=>!c.parentElement.closest('.card')&&c.getClientRects().length).map(c=>({c,h:c.querySelector('h2,h3')})).filter(x=>x.h&&x.h.textContent.trim());
+    cs.forEach((x,i)=>{if(x.c.getBoundingClientRect().top<=y0)on=i;});
+    return [{h:'On this page'},{t:h1?h1.textContent:'Top of the page',ic:'up',here:on<0,go:()=>{window.scrollTo({top:0,behavior:RM?'auto':'smooth'});focusTo(L,'h1');return 1;}}]
+      .concat(cs.map((x,i)=>({t:x.h.textContent.replace(/\s+/g,' ').trim(),ic:'dash',here:i===on,go:()=>{goTo(x.c,'h2,h3');return 1;}})));};
+  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';
+    (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
+      const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
       /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
-      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();it.go();const L=document.querySelector('#main>.lesson:not([hidden])');if(L)focusTo(L,'h1');};menu.append(m);});
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;const L=document.querySelector('#main>.lesson:not([hidden])');if(L)focusTo(L,'h1');};menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
     /* the current item gets focus, and the menu (not the page: that would move the student's place) scrolls to show it */
     const its=[...menu.querySelectorAll('.cm-i')],t=its.find(e=>e.classList.contains('on'))||its[0];if(t){t.focus({preventScroll:true});
       if(t.offsetTop<menu.scrollTop)menu.scrollTop=t.offsetTop;else if(t.offsetTop+t.offsetHeight>menu.scrollTop+menu.clientHeight)menu.scrollTop=t.offsetTop+t.offsetHeight-menu.clientHeight;}};
-  path.addEventListener('click',e=>{const b=e.target.closest('.crumb-b');if(!b)return;const was=mBtn===b;closeMenu();if(!was)openMenu(b);});
-  path.addEventListener('keydown',e=>{const b=e.target.closest('.crumb-b');if(b&&e.key==='ArrowDown'){e.preventDefault();if(mBtn!==b){closeMenu();openMenu(b);}}});
+  [path,ctools].forEach(x=>{x.addEventListener('click',e=>{const b=e.target.closest('.crumb-b');if(!b)return;const was=mBtn===b;closeMenu();if(!was)openMenu(b);});
+    x.addEventListener('keydown',e=>{const b=e.target.closest('.crumb-b');if(b&&e.key==='ArrowDown'){e.preventDefault();if(mBtn!==b){closeMenu();openMenu(b);}}});});
   menu.addEventListener('keydown',e=>{const its=[...menu.querySelectorAll('.cm-i')],n=its.length,i=its.indexOf(document.activeElement);
     if(e.key==='Escape'){e.preventDefault();closeMenu(true);}
     else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;its[i<0?(d>0?0:n-1):(i+d+n)%n].focus();}
