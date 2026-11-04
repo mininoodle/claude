@@ -9,35 +9,45 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one centered column - hold + stats | well | next, with settings below */
+/* Layout: one centered column - hold + stats | well | next, then the bot in versus, with settings below */
 :root{
   --bg:#f3f4f6; --fg:#1d2026; --muted:#6b7280; --line:#d9dce2; --well:#e8eaee; --grid:#dde0e5; --accent:#3b5bdb;
   --I:#3aa6c2; --O:#d6a32a; --T:#9561c2; --S:#4aa465; --Z:#cf544c; --J:#4a6fc7; --L:#d78234;
+  --garbage:#a4a9b1; --danger:var(--Z); --warn:var(--O);
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;--garbage:#4f555e;--danger:var(--Z);--warn:var(--O);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;--garbage:#4f555e;--danger:var(--Z);--warn:var(--O);color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:13px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px}
-main{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
-.game{display:flex;gap:16px;justify-content:center;align-items:flex-start}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+main>section{width:100%;max-width:600px;align-self:center}
+.game{display:flex;flex-wrap:wrap;gap:24px 32px;justify-content:center;align-items:flex-start}
+.field{display:flex;gap:16px;align-items:flex-start;min-width:0}
 .side{display:flex;flex-direction:column;gap:12px;width:min(88px,19vw)}
 .side canvas{width:100%;height:auto;display:block}
 .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .stat{font-variant-numeric:tabular-nums;font-size:15px;font-weight:500}
-#action{min-height:5.6em;line-height:1.4;color:var(--accent);transition:opacity .4s}
-#action.fade{opacity:0}
+.action{min-height:5.6em;line-height:1.4;color:var(--accent);transition:opacity .4s}
+.action.fade{opacity:0}
 .well{position:relative;width:min(280px,52vw)}
-#board{width:100%;height:auto;display:block;border:1px solid var(--line)}
-#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-  background:color-mix(in srgb,var(--bg) 82%,transparent);text-align:center;padding:16px}
+.well canvas{width:100%;height:auto;display:block;border:1px solid var(--line)}
+.meter{position:absolute;top:1px;bottom:1px;left:-7px;width:4px;display:flex;flex-direction:column-reverse}
+.meter i{background:var(--danger)}
+.meter i+i{background:var(--warn)}
+.opp .field{gap:12px}
+.opp .well{width:min(200px,44vw)}
+.opp .side{width:min(64px,15vw)}
+.opp .action{font-size:11px}
+#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;justify-content:safe center;gap:12px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);text-align:center;padding:0 16px;overflow:auto}
 #overlay h1{font-size:18px;font-weight:500;margin:0;letter-spacing:.04em}
-#overlay p{margin:0;color:var(--muted);line-height:1.5}
+#overlay p{margin:0;color:var(--muted);line-height:1.5;white-space:pre-line}
 .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 button{font:inherit;color:var(--fg);background:transparent;border:1px solid var(--line);padding:6px 12px;cursor:pointer}
 button:hover{border-color:var(--muted)}
 button.current{border-color:var(--accent);color:var(--accent)}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;margin:0 0 10px}
 .binds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 24px}
 .row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
@@ -47,35 +57,59 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
 .row button.unset{color:var(--muted)}
 .tuning{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
 .tuning label{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.tuning label.wrap{flex-wrap:wrap}
 .tuning input[type=number]{font:inherit;width:64px;padding:4px 6px;background:var(--well);color:var(--fg);border:1px solid var(--line)}
+.tuning select{font:inherit;padding:3px 4px;background:var(--well);color:var(--fg);border:1px solid var(--line)}
 .tuning input[type=checkbox],.tuning input[type=range]{accent-color:var(--accent)}
+.tuning output{color:var(--fg);font-variant-numeric:tabular-nums}
 .note{color:var(--muted);margin:10px 0 0;line-height:1.5;max-width:65ch}
-@media (prefers-reduced-motion:reduce){#action{transition:none}}
+@media (prefers-reduced-motion:reduce){.action{transition:none}}
 </style>
 </head>
 <body>
 <main>
   <div class="game">
-    <div class="side">
-      <div><div class="label">Hold</div><canvas id="hold"></canvas></div>
-      <div><div class="label">Time</div><div class="stat" id="time">0:00.00</div></div>
-      <div><div class="label">Score</div><div class="stat" id="score">0</div></div>
-      <div><div class="label">Lines</div><div class="stat" id="lines">0</div></div>
-      <div><div class="label">Level</div><div class="stat" id="level">1</div></div>
-      <div><div class="label">Attack</div><div class="stat" id="attack">0</div></div>
-      <div><div class="label">APM</div><div class="stat" id="apm">0.0</div></div>
-      <div><div class="label">PPS</div><div class="stat" id="pps">0.00</div></div>
-    </div>
-    <div class="well">
-      <canvas id="board"></canvas>
-      <div id="overlay">
-        <h1 id="ovTitle">Blockfall</h1><p id="ovText"></p>
-        <div class="modes"><button id="mMarathon">Marathon</button><button id="mSprint">Sprint 40L</button><button id="mBlitz">Blitz 2:00</button></div>
+    <div class="field">
+      <div class="side">
+        <div><div class="label">Hold</div><canvas id="hold"></canvas></div>
+        <div><div class="label">Time</div><div class="stat" id="time">0:00.00</div></div>
+        <div><div class="label">Score</div><div class="stat" id="score">0</div></div>
+        <div><div class="label">Lines</div><div class="stat" id="lines">0</div></div>
+        <div><div class="label">Level</div><div class="stat" id="level">1</div></div>
+        <div><div class="label">Attack</div><div class="stat" id="attack">0</div></div>
+        <div><div class="label">APM</div><div class="stat" id="apm">0.0</div></div>
+        <div><div class="label">PPS</div><div class="stat" id="pps">0.00</div></div>
+      </div>
+      <div class="well">
+        <canvas id="board"></canvas>
+        <div class="meter" id="meter"><i></i><i></i></div>
+        <div id="overlay">
+          <h1 id="ovTitle">Blockfall</h1><p id="ovText"></p>
+          <button id="mNext" class="current" hidden>Next round</button>
+          <div class="modes"><button id="mMarathon">Marathon</button><button id="mSprint">Sprint 40L</button><button id="mBlitz">Blitz 2:00</button><button id="mVersus">Versus</button></div>
+        </div>
+      </div>
+      <div class="side">
+        <div><div class="label">Next</div><canvas id="next"></canvas></div>
+        <div id="action" class="action fade"></div>
       </div>
     </div>
-    <div class="side">
-      <div><div class="label">Next</div><canvas id="next"></canvas></div>
-      <div id="action" class="fade"></div>
+    <div class="opp" id="opp" hidden>
+      <div class="label" id="botName">Bot, level 5</div>
+      <div class="field">
+        <div class="well">
+          <canvas id="board2"></canvas>
+          <div class="meter" id="meter2"><i></i><i></i></div>
+        </div>
+        <div class="side">
+          <div><div class="label">Hold</div><canvas id="hold2"></canvas></div>
+          <div><div class="label">Next</div><canvas id="next2"></canvas></div>
+          <div><div class="label">Attack</div><div class="stat" id="attack2">0</div></div>
+          <div><div class="label">APM</div><div class="stat" id="apm2">0.0</div></div>
+          <div><div class="label">PPS</div><div class="stat" id="pps2">0.00</div></div>
+          <div id="action2" class="action fade"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -102,6 +136,20 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
   </section>
 
   <section>
+    <h2>Opponent</h2>
+    <div class="tuning">
+      <label for="botLevel" class="wrap">Difficulty <input id="botLevel" data-cfg="botLevel" type="range" min="1" max="10"> <output id="botText" for="botLevel"></output></label>
+      <label for="bestOf">Best of <select id="bestOf" data-cfg="bestOf"><option>1</option><option>3</option><option>5</option><option>7</option></select></label>
+      <label for="samePieces"><input id="samePieces" data-cfg="samePieces" type="checkbox"> Same pieces</label>
+      <label for="messiness">Garbage messiness <input id="messiness" data-cfg="messiness" type="range" min="0" max="100" step="10"> <output id="messText" for="messiness"></output></label>
+    </div>
+    <p class="note">In Versus the first player to top out loses the round. Your attack first cancels your own incoming garbage, and the rest goes to the other well.
+      The bar left of each well shows incoming lines. Red lines rise when you lock a piece that clears nothing. Yellow lines are still on the way.
+      Difficulty sets how well and how fast the bot plays. A change starts with its next piece. Same pieces gives you both the same pieces each round.
+      Garbage messiness is the chance that the hole moves between the lines of one attack.</p>
+  </section>
+
+  <section>
     <h2>Display</h2>
     <div class="tuning">
       <label for="ghost">Ghost <input id="ghost" data-cfg="ghost" type="range" min="0" max="60"></label>
@@ -112,9 +160,808 @@ h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
   </section>
 </main>
 
+<script id="bot-engine" type="text/plain">
+/* BOT ENGINE START */
+// Blockfall bot engine "a": beam search over the whole queue with hold, and a cheap board evaluation.
+// Move generation is a flood fill over row bitmasks (left, right, down, sonic, cw, ccw, 180 with kicks),
+// so tucks and spins are found. The input path for the chosen move comes from a BFS with the game's step rules.
+(function (G) {
+  'use strict';
+  const now = typeof performance !== 'undefined' && performance && typeof performance.now === 'function'
+    ? () => performance.now() : () => Date.now();
+  const NAMES = 'IJLOSTZ', PI = 0, PO = 3, PT = 5;
+  const OFF = 3, YO = 8, NY = 40, NR = 4 * NY, NB = 36;
+  let COLS = 10, ROWS = 24, HID = 4, FULL = 1023, XM = 8191, WALL = 0, GROW = 2047;
+  let ATKN = [0, 0, 1, 2, 4], ATKM = [0, 0, 1], ATKF = [0, 2, 4, 6], CMB = [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5];
+
+  // ---- piece tables (pr = p * 4 + r, row entries pr * 4 + k) ----
+  const NROW = new Int8Array(28), ROFF = new Int8Array(112), RC0 = new Int8Array(112), RLEN = new Int8Array(112);
+  const OMAX = new Int8Array(28), OPENF = new Int32Array(28), CANR = new Int8Array(28), CANDX = new Int8Array(28), CANDY = new Int8Array(28);
+  const KN = new Int8Array(84), KTO = new Int8Array(84), KX = new Int8Array(84 * 8), KY = new Int8Array(84 * 8);
+  const SPX = new Int8Array(7), DUP = new Uint8Array(7);
+  const POP = new Uint8Array(4096), RT = new Uint8Array(2048);
+
+  // ---- move generation buffers ----
+  const E = new Int32Array(NY), SP = new Int32Array(5 * NY);
+  const FIT = new Int32Array(NR), REACH = new Int32Array(NR), PEND = new Int32Array(NR), RA = new Int32Array(NR), RK = new Int32Array(NR), CREST = new Int32Array(NR);
+  const STK = new Int32Array(NR + 8);
+  const MAXO = 512, OR_ = new Int8Array(MAXO), OX = new Int8Array(MAXO), OY = new Int8Array(MAXO), OS = new Int8Array(MAXO);
+  let prevTop = 0, spawnYi = 0, fitOpen = 0, openOK = true, kdy = 2;
+
+  // ---- weights ----
+  const DEF = {
+    holes: -104, covd: -14, hmax: -6, hsum: -0.975, bump: -18, bump2: -5, rowT: -9, colT: -9, well: 19.5, wellCap: 6,
+    dangerAt: 10, danger: -40, tslot1: 120, tslot2: 330, b2b: 71.5, holdT: 40, holdI: 15,
+    atk: 70, cl1: -120, cl2: -90, cl3: -60, cl4: 160, tss: 40, tsd: 220, tst: 320, mini1: -60, mini2: -20, pc: 600, wasteT: -110,
+    comboK: 30,
+  };
+  let W = Object.assign({}, DEF);
+  let TUNE = null;
+  let wHo = 0, wCo = 0, wHm = 0, wHs = 0, wBu = 0, wBu2 = 0, wRt = 0, wCt = 0, wWe = 0, wWc = 0, wDa = 0, wDg = 0, wT1 = 0, wT2 = 0;
+  let wB2b = 0, wHT = 0, wHI = 0, wAtk = 0, wC1 = 0, wC2 = 0, wC3 = 0, wC4 = 0, wTss = 0, wTsd = 0, wTst = 0, wM1 = 0, wM2 = 0, wPc = 0, wWt = 0, wCk = 0;
+  function loadW() {
+    wHo = +W.holes; wCo = +W.covd; wHm = +W.hmax; wHs = +W.hsum; wBu = +W.bump; wBu2 = +W.bump2; wRt = +W.rowT; wCt = +W.colT;
+    wWe = +W.well; wWc = +W.wellCap; wDa = +W.dangerAt; wDg = +W.danger; wT1 = +W.tslot1; wT2 = +W.tslot2; wB2b = +W.b2b;
+    wHT = +W.holdT; wHI = +W.holdI; wAtk = +W.atk; wC1 = +W.cl1; wC2 = +W.cl2; wC3 = +W.cl3; wC4 = +W.cl4; wTss = +W.tss;
+    wTsd = +W.tsd; wTst = +W.tst; wM1 = +W.mini1; wM2 = +W.mini2; wPc = +W.pc; wWt = +W.wasteT; wCk = +W.comboK;
+  }
+
+  function init(cfg) {
+    COLS = cfg.cols; ROWS = cfg.rows; HID = cfg.hidden; FULL = (1 << COLS) - 1;
+    XM = (1 << (COLS + OFF)) - 1; WALL = ((1 << OFF) - 1) | (~0 << (COLS + OFF)); GROW = FULL | (1 << COLS);
+    ATKN = cfg.atk.none; ATKM = cfg.atk.mini; ATKF = cfg.atk.full; CMB = cfg.comboAtk;
+    for (let i = 0; i < 4096; i++) { let c = 0, v = i; while (v) { c += v & 1; v >>= 1; } POP[i] = c; }
+    for (let i = 0; i < (1 << COLS); i++) { const w = (i << 1) | 1 | (1 << (COLS + 1)); RT[i] = POP[(w ^ (w >> 1)) & ((1 << (COLS + 1)) - 1)]; }
+    for (let p = 0; p < 7; p++) {
+      const t = NAMES[p], mats = cfg.pieces[t];
+      SPX[p] = t === 'O' ? 4 : 3;
+      DUP[p] = 0;
+      const norm = [];
+      for (let r = 0; r < 4; r++) {
+        const m = mats[r], pr = p * 4 + r;
+        let n = 0, omax = 0, minc = 99, minr = 99;
+        const cells = [];
+        for (let i = 0; i < m.length; i++) {
+          let c = 0;
+          while (c < m[i].length) {
+            if (!m[i][c]) { c++; continue; }
+            const c0 = c;
+            while (c < m[i].length && m[i][c]) { cells.push([c, i]); c++; }
+            ROFF[pr * 4 + n] = i; RC0[pr * 4 + n] = c0; RLEN[pr * 4 + n] = c - c0; n++; omax = i;
+          }
+        }
+        NROW[pr] = n; OMAX[pr] = omax;
+        let f = 0;
+        for (let k = 0; k < n; k++) { let s = WALL; for (let j = 1; j < RLEN[pr * 4 + k]; j++) s |= WALL >> j; f |= s >> RC0[pr * 4 + k]; }
+        OPENF[pr] = ~f & XM;
+        for (const [c, i] of cells) { if (c < minc) minc = c; if (i < minr) minr = i; }
+        const key = cells.map(([c, i]) => (c - minc) + ',' + (i - minr)).sort().join(' ');
+        norm.push({key, minc, minr});
+        let cr = r, dx = 0, dy = 0;
+        if (t !== 'O') for (let q = 0; q < r; q++) if (norm[q].key === key) { cr = q; dx = minc - norm[q].minc; dy = minr - norm[q].minr; break; }
+        CANR[pr] = cr; CANDX[pr] = dx; CANDY[pr] = dy;
+        if (cr !== r) DUP[p] = 1;
+        for (let dir = 0; dir < 3; dir++) {
+          const kb = pr * 3 + dir, to = (r + [1, 3, 2][dir]) & 3;
+          KTO[kb] = to;
+          const tab = dir === 2 ? cfg.kicks.R180 : t === 'I' ? cfg.kicks.I : cfg.kicks.JLSTZ;
+          const ks = (t === 'O' ? null : tab['' + r + to]) || [];
+          KN[kb] = Math.min(ks.length, 8);
+          for (let k = 0; k < KN[kb]; k++) { KX[kb * 8 + k] = ks[k][0]; KY[kb * 8 + k] = ks[k][1]; }
+        }
+      }
+    }
+    // The open-row shortcut of flood() needs: first kick (0, 0), and in open air (walls only) the first kick that
+    // fits never moves the piece up. kdy = the largest row change of any kick.
+    openOK = true; kdy = 0;
+    for (let kb = 0; kb < 84; kb++) {
+      const p = (kb / 12) | 0, r = ((kb / 3) | 0) & 3, to = KTO[kb];
+      for (let k = 0; k < KN[kb]; k++) { const d = Math.abs(KY[kb * 8 + k]); if (d > kdy) kdy = d; }
+      if (!KN[kb]) continue;
+      if (KX[kb * 8] || KY[kb * 8]) openOK = false;
+      for (let X = 0; X < 16; X++) {
+        if (!((OPENF[p * 4 + r] >> X) & 1)) continue;
+        for (let k = 0; k < KN[kb]; k++) {
+          const tx = X + KX[kb * 8 + k];
+          if (tx < 0 || tx > 15 || !((OPENF[p * 4 + to] >> tx) & 1)) continue;
+          if (KY[kb * 8 + k] < 0) openOK = false;
+          break;
+        }
+      }
+    }
+    for (let i = 0; i < NY; i++) { const e = i - YO >= ROWS ? -1 : WALL; E[i] = e; setSP(i, e); }
+    prevTop = ROWS;
+    TUNE = cfg.botTune || null;
+    W = Object.assign({}, DEF, TUNE && TUNE.w || {});
+    loadW();
+    curLevel = -1;
+    if (!(TUNE && TUNE.noWarm)) warm();
+    return true;
+  }
+  // A short search at init so that the first real request does not pay for JIT compilation
+  function warm() {
+    try {
+      const b = [];
+      for (let y = 0; y < ROWS; y++) b.push(y < ROWS - 4 ? 0 : FULL & ~(1 << (y % COLS)) & ~(y === ROWS - 1 ? 6 : 0));
+      const base = {board: b, curPos: {x: 3, y: HID - 1, r: 0}, hold: null, canHold: true, b2b: -1, combo: -1, incoming: 0, incomingReady: 0, seed: 1, maxMs: 300};
+      think(Object.assign({}, base, {id: 0, cur: 'T', queue: ['I', 'O', 'L', 'J', 'S', 'Z'], difficulty: 9}));
+      think(Object.assign({}, base, {id: 0, cur: 'S', queue: ['T', 'I', 'Z', 'L', 'O', 'J'], hold: 'T', difficulty: 10, incoming: 3, incomingReady: 3}));
+    } catch (e) { /* warm-up only */ }
+    curLevel = -1;
+  }
+  function setSP(i, e) { const s2 = e | (e >> 1), s3 = s2 | (e >> 2); SP[NY + i] = e; SP[2 * NY + i] = s2; SP[3 * NY + i] = s3; SP[4 * NY + i] = s3 | (e >> 3); }
+
+  // Load a board (rows bo .. bo + ROWS - 1 of B) into the walled row buffers. Returns the top row index.
+  function prep(B, bo, top) {
+    if (top === undefined) { top = 0; while (top < ROWS && B[bo + top] === 0) top++; }
+    for (let y = top < prevTop ? top : prevTop; y < ROWS; y++) { const e = (B[bo + y] << OFF) | WALL; E[y + YO] = e; setSP(y + YO, e); }
+    prevTop = top;
+    return top;
+  }
+  // FIT[r * NY + yi] = bitmask of X = x + OFF where piece p in rotation r fits at y = yi - YO
+  function computeFit(p, top) {
+    const nrot = p === PO ? 1 : 4, topi = top + YO;
+    fitOpen = NB;
+    for (let r = 0; r < nrot; r++) {
+      const pr = p * 4 + r, n = NROW[pr], base = r * NY, of = OPENF[pr], open = topi - OMAX[pr];
+      if (open < fitOpen) fitOpen = open;
+      let yi = 0;
+      for (; yi < open && yi < NB; yi++) FIT[base + yi] = of;
+      for (; yi < NB; yi++) {
+        let f = 0;
+        for (let k = 0; k < n; k++) { const e = pr * 4 + k; f |= SP[RLEN[e] * NY + yi + ROFF[e]] >> RC0[e]; }
+        FIT[base + yi] = ~f & XM;
+      }
+      for (; yi < NY; yi++) FIT[base + yi] = 0;
+    }
+  }
+  // Spawn rule of the game (needs computeFit for p). Returns yi, or -1 for a block out.
+  function spawnRow(p) {
+    const X = SPX[p] + OFF;
+    let y = HID - 2;
+    while (!((FIT[y + YO] >> X) & 1) && y > -1) y--;
+    if (!((FIT[y + YO] >> X) & 1)) return -1;
+    if ((FIT[y + 1 + YO] >> X) & 1) y++;
+    return y + YO;
+  }
+  // Flood fill of every reachable state from (r0, X0, yi0). Fills REACH, and for T the rotation arrivals RA / RK (kick 4).
+  function flood(p, r0, X0, yi0) {
+    REACH.fill(0); PEND.fill(0);
+    const isT = p === PT, rot = p !== PO;
+    if (isT) { RA.fill(0); RK.fill(0); }
+    let sp = 0;
+    // Rows above the stack are open for every rotation. Starting there, every position of the open rows below the start
+    // is reachable (in open air no kick moves a piece up), and only the last kdy + 1 open rows can reach a resting
+    // state or set a spin flag.
+    const nrot = rot ? 4 : 1;
+    let open = openOK && yi0 < fitOpen;
+    for (let r = 0; r < nrot && open; r++) if (!((OPENF[p * 4 + r] >> X0) & 1)) open = false;
+    if (open) {
+      const yB = fitOpen - 1, ys = yB - kdy > yi0 ? yB - kdy : yi0;
+      for (let r = 0; r < nrot; r++) {
+        const of = OPENF[p * 4 + r], base = r * NY;
+        for (let yi = yi0; yi < ys; yi++) REACH[base + yi] = of;
+        for (let yi = ys; yi <= yB; yi++) { PEND[base + yi] = of; STK[sp++] = base + yi; }
+      }
+    } else { const i0 = r0 * NY + yi0; PEND[i0] = 1 << X0; STK[sp++] = i0; }
+    while (sp > 0) {
+      const idx = STK[--sp];
+      const s = PEND[idx] & ~REACH[idx];
+      PEND[idx] = 0;
+      if (!s) continue;
+      const f = FIT[idx];
+      let g = s, q = f;
+      g |= q & (g << 1); q &= q << 1; g |= q & (g << 2); q &= q << 2; g |= q & (g << 4); q &= q << 4; g |= q & (g << 8);
+      let h = s; q = f;
+      h |= q & (h >> 1); q &= q >> 1; h |= q & (h >> 2); q &= q >> 2; h |= q & (h >> 4); q &= q >> 4; h |= q & (h >> 8);
+      const nb = (g | h) & ~REACH[idx];
+      REACH[idx] |= nb;
+      const dn = nb & FIT[idx + 1] & ~REACH[idx + 1];
+      if (dn) { if (!PEND[idx + 1]) STK[sp++] = idx + 1; PEND[idx + 1] |= dn; }
+      if (!rot) continue;
+      const r = (idx / NY) | 0, yi = idx - r * NY, pr3 = (p * 4 + r) * 3;
+      for (let dir = 0; dir < 3; dir++) {
+        const kb = pr3 + dir, tb = KTO[kb] * NY + yi, kn = KN[kb];
+        let rem = nb;
+        for (let k = 0; k < kn; k++) {
+          const kx = KX[kb * 8 + k], ti = tb + KY[kb * 8 + k], tf = FIT[ti];
+          const hit = rem & (kx >= 0 ? tf >> kx : (tf << -kx) & XM);
+          if (!hit) continue;
+          rem ^= hit;
+          const tg = kx >= 0 ? hit << kx : hit >> -kx;
+          if (isT) { if (k === 4 && dir !== 2) RK[ti] |= tg; else RA[ti] |= tg; }
+          const nt = tg & ~REACH[ti];
+          if (nt) { if (!PEND[ti]) STK[sp++] = ti; PEND[ti] |= nt; }
+          if (!rem) break;
+        }
+      }
+    }
+  }
+  // Resting outcomes after flood(): one per distinct cell set, with the best spin. simple: only straight drops, no spins.
+  function collect(p, simple) {
+    let n = 0;
+    const y0 = fitOpen > 0 ? fitOpen - 1 : 0;   // rows above the last open row cannot hold a resting piece
+    if (p === PT) {
+      for (let r = 0; r < 4; r++) {
+        const base = r * NY;
+        let drop = y0 > 0 ? OPENF[p * 4 + r] : XM;
+        for (let yi = y0; yi < NB; yi++) {
+          if (simple) drop &= FIT[base + yi];
+          const reach = REACH[base + yi];
+          if (!reach) continue;
+          let rest = reach & ~FIT[base + yi + 1];
+          if (simple) rest &= drop;
+          if (!rest) continue;
+          const rot = simple ? 0 : (RA[base + yi] | RK[base + yi]) & rest, k4 = RK[base + yi];
+          const e0 = E[yi], e2 = E[yi + 2];
+          while (rest) {
+            const b = rest & -rest, X = 31 - Math.clz32(b);
+            rest ^= b;
+            let spin = 0;
+            if (rot & b) {
+              const tl = (e0 >> X) & 1, tr = (e0 >> (X + 2)) & 1, br = (e2 >> (X + 2)) & 1, bl = (e2 >> X) & 1;
+              if (tl + tr + br + bl >= 3) {
+                const front = r === 0 ? tl & tr : r === 1 ? tr & br : r === 2 ? br & bl : bl & tl;
+                spin = front || (k4 & b) ? 2 : 1;
+              }
+            }
+            OR_[n] = r; OX[n] = X; OY[n] = yi; OS[n] = spin; n++;
+          }
+        }
+      }
+      return n;
+    }
+    if (DUP[p]) {
+      CREST.fill(0);
+      for (let r = 0; r < 4; r++) {
+        const base = r * NY, pr = p * 4 + r, cb = CANR[pr] * NY + CANDY[pr], dx = CANDX[pr];
+        let drop = y0 > 0 ? OPENF[p * 4 + r] : XM;
+        for (let yi = y0; yi < NB; yi++) {
+          if (simple) drop &= FIT[base + yi];
+          let rest = REACH[base + yi] & ~FIT[base + yi + 1];
+          if (simple) rest &= drop;
+          if (rest) CREST[cb + yi] |= dx >= 0 ? rest << dx : rest >> -dx;
+        }
+      }
+      for (let r = 0; r < 2; r++) {
+        const base = r * NY;
+        for (let yi = y0; yi < NY; yi++) {
+          let rest = CREST[base + yi];
+          while (rest) { const b = rest & -rest; rest ^= b; OR_[n] = r; OX[n] = 31 - Math.clz32(b); OY[n] = yi; OS[n] = 0; n++; }
+        }
+      }
+      return n;
+    }
+    const nrot = p === PO ? 1 : 4;
+    for (let r = 0; r < nrot; r++) {
+      const base = r * NY;
+      let drop = y0 > 0 ? OPENF[p * 4 + r] : XM;
+      for (let yi = y0; yi < NB; yi++) {
+        if (simple) drop &= FIT[base + yi];
+        let rest = REACH[base + yi] & ~FIT[base + yi + 1];
+        if (simple) rest &= drop;
+        while (rest) { const b = rest & -rest; rest ^= b; OR_[n] = r; OX[n] = 31 - Math.clz32(b); OY[n] = yi; OS[n] = 0; n++; }
+      }
+    }
+    return n;
+  }
+  // All outcomes for piece p on board B, from (r0, x0, y0), or from the spawn if r0 < 0. Returns the count, -1 on block out.
+  function gen(B, bo, p, r0, x0, y0, simple) { return gen2(prep(B, bo), p, r0, x0, y0, simple); }
+  // Same, for the board loaded by the last prep() (top = its result)
+  function gen2(top, p, r0, x0, y0, simple) {
+    computeFit(p, top);
+    let yi0;
+    if (r0 < 0) { yi0 = spawnRow(p); if (yi0 < 0) return -1; r0 = 0; x0 = SPX[p]; }
+    else yi0 = y0 + YO;
+    spawnYi = yi0;
+    flood(p, r0, x0 + OFF, yi0);
+    let n = collect(p, simple);
+    if (simple && n === 0) n = collect(p, false);
+    return n;
+  }
+
+  // ---- placing pieces ----
+  // Results of place(): lines, attack, b2b, combo, garbage left, perfect clear, top row, dead
+  let rL = 0, rA = 0, rB = 0, rC = 0, rG = 0, rPC = 0, rTop = 0, rDead = 0, tmpLo = 0;
+  // Place piece p at (r, X, yi) with spin on board S (top row = top) into D, then apply the clear, attack and garbage
+  // rules. Rows of TMP above tmpLo are known to be empty, so only the rows below are copied.
+  function place(S, so, top, D, dd, p, r, X, yi, spin, b2b, combo, gr, gl) {
+    let lo = 0;
+    if (D === TMP) { lo = top < tmpLo ? top : tmpLo; tmpLo = 0; }
+    for (let y = lo; y < ROWS; y++) D[dd + y] = S[so + y];
+    const pr = p * 4 + r, y0 = yi - YO, x = X - OFF;
+    rDead = 0;
+    if (y0 + OMAX[pr] < HID) { rDead = 1; return; }
+    let full = 0;
+    for (let k = 0; k < NROW[pr]; k++) {
+      const e = pr * 4 + k, y = y0 + ROFF[e];
+      if (y < 0) continue;
+      const v = D[dd + y] | (((1 << RLEN[e]) - 1) << (x + RC0[e]));
+      D[dd + y] = v;
+      if (v === FULL) full++;
+    }
+    let mt = y0 + ROFF[pr * 4];
+    if (mt < 0) mt = 0;
+    if (top < mt) mt = top;
+    let n = 0, atk = 0;
+    rPC = 0;
+    if (full) {
+      let w = ROWS - 1;
+      for (let y = ROWS - 1; y >= mt; y--) { const v = D[dd + y]; if (v === FULL) { n++; continue; } D[dd + w--] = v; }
+      for (let y = w; y >= mt; y--) D[dd + y] = 0;
+      mt = w + 1;
+      atk = (spin === 2 ? ATKF[n] : spin === 1 ? ATKM[n] : ATKN[n]) || 0;
+      if (n === 4 || spin > 0) { b2b++; if (b2b > 0) atk++; } else b2b = -1;
+      combo++;
+      if (combo > 0) atk += CMB[combo < CMB.length - 1 ? combo : CMB.length - 1];
+      if (mt >= ROWS) { atk += 10; rPC = 1; }
+      let c = atk < gr ? atk : gr; gr -= c;
+      c = atk - c; gl -= c < gl ? c : gl;
+    } else {
+      combo = -1;
+      if (gr > 0) {
+        const g = gr < 8 ? gr : 8;
+        if (mt < g) { rDead = 1; return; }
+        for (let y = mt; y < ROWS; y++) D[dd + y - g] = D[dd + y];
+        for (let y = ROWS - g; y < ROWS; y++) D[dd + y] = GROW;
+        mt -= g; gr -= g;
+      }
+    }
+    if (D === TMP) tmpLo = mt;
+    rL = n; rA = atk; rB = b2b; rC = combo; rG = gr + gl; rTop = mt;
+  }
+  // Can piece p spawn on board B (block-out rule)?
+  function canSpawn(B, bo, p) {
+    if (!(B[bo] | B[bo + 1] | B[bo + 2] | B[bo + 3] | B[bo + 4])) return true;
+    const pr = p * 4, x = SPX[p];
+    for (let y = HID - 2; y >= -1; y--) {
+      let ok = true;
+      for (let k = 0; k < NROW[pr] && ok; k++) {
+        const e = pr * 4 + k, yy = y + ROFF[e];
+        if (yy >= 0 && (B[bo + yy] & (((1 << RLEN[e]) - 1) << (x + RC0[e])))) ok = false;
+      }
+      if (ok) return true;
+    }
+    return false;
+  }
+
+  // ---- evaluation ----
+  // Board value: holes, cells above holes, heights, bumpiness, row / column transitions, well depth, danger.
+  const H = new Int32Array(16);
+  let fHo = 0, fCo = 0, fRt = 0, fCt = 0, fHm = 0, fHs = 0;
+  // Features of board T from row top down: heights H, holes, cells above holes (up to 7 per hole), row and column
+  // transitions, max and summed height.
+  function scan(T, to, top) {
+    for (let c = 0; c < COLS; c++) H[c] = 0;
+    let cov = 0, holes = 0, covd = 0, rowT = 0, colT = 0, prev = 0, c0 = 0, c1 = 0, c2 = 0, hm = 0, hs = 0;
+    for (let y = top; y < ROWS; y++) {
+      const row = T[to + y] & FULL;
+      let nb = row & ~cov;
+      if (nb) {
+        const hy = ROWS - y;
+        if (!hm) hm = hy;
+        hs += hy * POP[nb];
+        do { const b = nb & -nb; H[31 - Math.clz32(b)] = hy; nb ^= b; } while (nb);
+      }
+      const hole = cov & ~row;
+      if (hole) { holes += POP[hole]; covd += POP[hole & c0] + 2 * POP[hole & c1] + 4 * POP[hole & c2]; }
+      let k = row, t = c0 & k; c0 ^= k; k = t; t = c1 & k; c1 ^= k; k = t; t = c2 & k; c2 ^= k; k = t;
+      c0 |= k; c1 |= k; c2 |= k;
+      cov |= row;
+      rowT += RT[row]; colT += POP[row ^ prev]; prev = row;
+    }
+    fHo = holes; fCo = covd; fRt = rowT; fCt = colT + POP[FULL & ~prev]; fHm = hm; fHs = hs;
+  }
+  // The same, with a virtual T: rows yf / ys get the extra cells mF / mS; cF / cS = 1 if that row is then full
+  // (it is skipped, and heights above it drop by one).
+  function scanT(T, to, top, yf, ys, mF, mS, cF, cS) {
+    for (let c = 0; c < COLS; c++) H[c] = 0;
+    let cov = 0, holes = 0, covd = 0, rowT = 0, colT = 0, prev = 0, c0 = 0, c1 = 0, c2 = 0, hm = 0, hs = 0;
+    for (let y = top; y < ROWS; y++) {
+      let row = T[to + y] & FULL;
+      if (y === yf) { if (cF) continue; row |= mF; } else if (y === ys) { if (cS) continue; row |= mS; }
+      let nb = row & ~cov;
+      if (nb) {
+        const hy = ROWS - y - (y < yf ? cF : 0) - (y < ys ? cS : 0);
+        if (!hm) hm = hy;
+        hs += hy * POP[nb];
+        do { const b = nb & -nb; H[31 - Math.clz32(b)] = hy; nb ^= b; } while (nb);
+      }
+      const hole = cov & ~row;
+      if (hole) { holes += POP[hole]; covd += POP[hole & c0] + 2 * POP[hole & c1] + 4 * POP[hole & c2]; }
+      let k = row, t = c0 & k; c0 ^= k; k = t; t = c1 & k; c1 ^= k; k = t; t = c2 & k; c2 ^= k; k = t;
+      c0 |= k; c1 |= k; c2 |= k;
+      cov |= row;
+      rowT += RT[row]; colT += POP[row ^ prev]; prev = row;
+    }
+    fHo = holes; fCo = covd; fRt = rowT; fCt = colT + POP[FULL & ~prev]; fHm = hm; fHs = hs;
+  }
+  function value(pendLines) {
+    let wc = 0, hmin = H[0], bump = 0, bump2 = 0, hp = H[0];
+    for (let c = 1; c < COLS; c++) {
+      const h = H[c], d = h - hp;
+      if (h < hmin) { hmin = h; wc = c; }
+      bump += d < 0 ? -d : d; bump2 += d * d; hp = h;
+    }
+    let lh = 99, rh = 99;
+    if (wc > 0) { lh = H[wc - 1]; const d = lh - hmin; bump -= d < 0 ? -d : d; bump2 -= d * d; }
+    if (wc < COLS - 1) { rh = H[wc + 1]; const d = rh - hmin; bump -= d < 0 ? -d : d; bump2 -= d * d; }
+    let well = (lh < rh ? lh : rh) - hmin;
+    if (well > wWc) well = wWc;
+    const eh = fHm + pendLines, dg = eh > wDa ? (eh - wDa) * (eh - wDa) : 0;
+    return wHo * fHo + wCo * fCo + wHm * fHm + wHs * fHs + wBu * bump + wBu2 * bump2 + wRt * fRt + wCt * fCt + wWe * well + wDg * dg;
+  }
+  // With tslots, the best T-slot (T in rotation 2 under an overhang, 3 solid corners, clearing 1-2 lines) is filled
+  // virtually and the board after that T-spin is valued, plus a bonus.
+  function evalBoard(T, to, top, pendLines, tslots) {
+    scan(T, to, top);
+    if (tslots) {
+      let best = 0, yf = 0, ys = 0, mF = 0, mS = 0, cF = 0, cS = 0;
+      for (let c = 0; c < COLS - 2; c++) {
+        const s = ROWS - 1 - H[c + 1];
+        if (s < 2) continue;
+        const f = s - 1, rs = T[to + s], rf = T[to + f], ra = T[to + f - 1];
+        if (((rs >> c) & 5) !== 5 || ((rf >> c) & 7) || ((ra >> (c + 1)) & 1) || !((ra >> c) & 5)) continue;
+        const l1 = ((rs | (2 << c)) & FULL) === FULL ? 1 : 0, l2 = ((rf | (7 << c)) & FULL) === FULL ? 1 : 0;
+        if (l1 + l2 > best) { best = l1 + l2; ys = s; yf = f; mS = 2 << c; mF = 7 << c; cS = l1; cF = l2; }
+      }
+      if (best) { scanT(T, to, top, yf, ys, mF, mS, cF, cS); return value(pendLines) + (best === 2 ? wT2 : wT1); }
+    }
+    return value(pendLines);
+  }
+  // Reward for one placement (uses the results of place())
+  function moveReward(p, spin) {
+    const n = rL;
+    if (n === 0) return p === PT ? wWt : 0;
+    let v = wAtk * rA;
+    if (rPC) v += wPc;
+    if (spin === 2) v += n === 1 ? wTss : n === 2 ? wTsd : wTst;
+    else if (spin === 1) v += n === 1 ? wM1 : wM2;
+    else {
+      v += n === 1 ? wC1 : n === 2 ? wC2 : n === 3 ? wC3 : wC4;
+      if (p === PT) v += wWt;
+    }
+    if (rC > 0) v += wCk * rC;
+    return v;
+  }
+  function stateBonus(b2b, hold) { return (b2b >= 0 ? wB2b : 0) + (hold === PT ? wHT : hold === PI ? wHI : 0); }
+
+  // ---- beam pools ----
+  const MS = 8;   // metadata per state: cur, hold, qi, b2b, combo, garbage, root, top row
+  let MAXW = 0, bA = null, bB = null, mA = null, mB = null, rewA = null, rewB = null, sA = null, sB = null;
+  let hScore = null, hSeq = null, hPar = null, hOpt = null, hP = null, hR = null, hX = null, hY = null, hS = null, heap = null;
+  const HS = 1 << 14, hashK1 = new Int32Array(HS), hashK2 = new Int32Array(HS), hashSt = new Int32Array(HS);
+  let hashStamp = 0;
+  const TMP = new Int32Array(32), RB = new Int32Array(32);
+  function ensure(w) {
+    if (w <= MAXW) return;
+    MAXW = w;
+    const K = w * 2 + 8;
+    bA = new Int32Array(w * ROWS); bB = new Int32Array(w * ROWS);
+    mA = new Int32Array(w * MS); mB = new Int32Array(w * MS);
+    rewA = new Float64Array(w); rewB = new Float64Array(w); sA = new Float64Array(w); sB = new Float64Array(w);
+    hScore = new Float64Array(K); hSeq = new Int32Array(K); hPar = new Int32Array(K); hOpt = new Int8Array(K);
+    hP = new Int8Array(K); hR = new Int8Array(K); hX = new Int8Array(K); hY = new Int8Array(K); hS = new Int8Array(K); heap = new Int32Array(K);
+  }
+  // min-heap of slot ids ordered by (score, -seq): keeps the best hcap children
+  let hn = 0, hcap = 0, seq = 0;
+  function less(a, b) { const x = hScore[a], y = hScore[b]; return x < y || (x === y && hSeq[a] > hSeq[b]); }
+  function offer(score) {
+    seq++;
+    if (hn < hcap) {
+      const s = hn;
+      hScore[s] = score; hSeq[s] = seq;
+      let i = hn++;
+      heap[i] = s;
+      while (i > 0) { const pa = (i - 1) >> 1; if (!less(heap[i], heap[pa])) break; const t = heap[i]; heap[i] = heap[pa]; heap[pa] = t; i = pa; }
+      return s;
+    }
+    const m = heap[0];
+    if (score <= hScore[m]) return -1;
+    hScore[m] = score; hSeq[m] = seq;
+    let i = 0;
+    for (;;) {
+      const l = 2 * i + 1, r = l + 1;
+      let k = i;
+      if (l < hn && less(heap[l], heap[k])) k = l;
+      if (r < hn && less(heap[r], heap[k])) k = r;
+      if (k === i) break;
+      const t = heap[i]; heap[i] = heap[k]; heap[k] = t; i = k;
+    }
+    return m;
+  }
+  // Insert the state key (board + extra) into the transposition set. Returns false if it was there already.
+  function hashInsert(B, bo, x1, x2) {
+    let a = 0x811c9dc5 ^ x1, b = 0x9e3779b9 ^ x2;
+    for (let y = 0; y < ROWS; y++) { const v = B[bo + y]; a = Math.imul(a ^ v, 16777619); b = Math.imul(b ^ v, 0x85ebca6b) ^ (b >>> 13); }
+    let i = (a ^ (b >>> 9)) & (HS - 1);
+    for (;;) {
+      if (hashSt[i] !== hashStamp) { hashSt[i] = hashStamp; hashK1[i] = a; hashK2[i] = b; return true; }
+      if (hashK1[i] === a && hashK2[i] === b) return false;
+      i = (i + 1) & (HS - 1);
+    }
+  }
+
+  // ---- difficulty ----
+  // depth: pieces placed in the search (1 = the current piece or the hold piece only); beam: states kept per depth;
+  // hold: may use hold; tslots: T-slot bonus; simple: straight drops only (no tucks, no spins) when one exists;
+  // noise: random spread added to each root move value; slip: chance to take another move within gap of the best;
+  // miss: chance to drop one column off (within 2 * gap); w: weight changes for the level.
+  const LEVELS = [null,
+    {depth: 1, beam: 1, hold: true, tslots: false, simple: true, noise: 130, slip: 0.2, miss: 0.12, gap: 200,
+      w: {well: 0, b2b: 0, tsd: 0, tss: 0, tst: 0, wasteT: 0, holdT: 0, holdI: 0, bump: -10, bump2: -2, holes: -80}},
+    {depth: 1, beam: 1, hold: true, tslots: false, simple: true, noise: 100, slip: 0.16, miss: 0.09, gap: 170,
+      w: {well: 8, b2b: 0, tsd: 0, tss: 0, tst: 0, wasteT: 0, holdT: 0, holdI: 0, bump: -13, bump2: -3, holes: -90}},
+    {depth: 1, beam: 1, hold: true, tslots: false, simple: true, noise: 70, slip: 0.11, miss: 0.06, gap: 130,
+      w: {well: 15, b2b: 30, tsd: 0, tss: 0, tst: 0, wasteT: 0}},
+    {depth: 2, beam: 8, hold: true, tslots: true, simple: false, noise: 30, slip: 0.04, miss: 0.02, gap: 80},
+    {depth: 3, beam: 10, hold: true, tslots: true, simple: false, noise: 22, slip: 0.03, miss: 0.015, gap: 70},
+    {depth: 4, beam: 16, hold: true, tslots: true, simple: false, noise: 12, slip: 0.015, miss: 0, gap: 50},
+    {depth: 5, beam: 35, hold: true, tslots: true, simple: false, noise: 0, slip: 0, miss: 0, gap: 0},
+    {depth: 6, beam: 70, hold: true, tslots: true, simple: false, noise: 0, slip: 0, miss: 0, gap: 0},
+    {depth: 7, beam: 150, hold: true, tslots: true, simple: false, noise: 0, slip: 0, miss: 0, gap: 0},
+    {depth: 7, beam: 280, hold: true, tslots: true, simple: false, noise: 0, slip: 0, miss: 0, gap: 0},
+  ];
+  let curLevel = -1;
+  function settings(d) {
+    d = Math.max(1, Math.min(10, Math.round(+d) || 1));
+    const s = Object.assign({}, LEVELS[d]);
+    if (TUNE && TUNE.s && TUNE.s[d]) Object.assign(s, TUNE.s[d]);
+    if (d !== curLevel) { curLevel = d; W = Object.assign({}, DEF, TUNE && TUNE.w || {}, s.w || {}); loadW(); }
+    return s;
+  }
+  function rng(seed) {
+    let a = seed | 0;
+    return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+
+  // ---- exact BFS for the input path (the game's step rules, same move order as the stub) ----
+  const MOVES = ['left', 'right', 'cw', 'ccw', '180', 'sonic', 'down'];
+  const BN = NR * 16 * 3, BSt = new Int32Array(BN), BPar = new Int32Array(BN), BMv = new Int8Array(BN), BQ = new Int32Array(BN);
+  let bStamp = 0;
+  function fitAt(r, yi, X) { return yi >= 0 && yi < NY && X >= 0 && X < 16 && ((FIT[r * NY + yi] >> X) & 1) === 1; }
+  function spinAt(r, X, yi, f) {
+    if (!f) return 0;
+    const e0 = E[yi], e2 = E[yi + 2];
+    const tl = (e0 >> X) & 1, tr = (e0 >> (X + 2)) & 1, br = (e2 >> (X + 2)) & 1, bl = (e2 >> X) & 1;
+    if (tl + tr + br + bl < 3) return 0;
+    const front = r === 0 ? tl & tr : r === 1 ? tr & br : r === 2 ? br & bl : bl & tl;
+    return front || f === 2 ? 2 : 1;
+  }
+  // Shortest input path from (r0, X0, yi0) to a resting state with the canonical cells (cr, cX, cyi) and this spin.
+  // FIT and E must be loaded for piece p on the root board.
+  function findPath(p, r0, X0, yi0, cr, cX, cyi, spin) {
+    bStamp++;
+    const isT = p === PT;
+    let qh = 0, qt = 0;
+    const s0 = ((r0 * NY + yi0) * 16 + X0) * 3;
+    BSt[s0] = bStamp; BPar[s0] = -1; BQ[qt++] = s0;
+    while (qh < qt) {
+      const s = BQ[qh++];
+      const f = s % 3, rest = (s - f) / 3, X = rest & 15, ry = rest >> 4, yi = ry % NY, r = (ry - yi) / NY;
+      if (!fitAt(r, yi + 1, X)) {
+        const pr = p * 4 + r;
+        if (CANR[pr] === cr && X + CANDX[pr] === cX && yi + CANDY[pr] === cyi && (isT ? spinAt(r, X, yi, f) : 0) === spin) {
+          const path = [];
+          for (let e = s; BPar[e] >= 0; e = BPar[e]) path.push(MOVES[BMv[e]]);
+          path.reverse();
+          return {path, r, x: X - OFF, y: yi - YO};
+        }
+      }
+      for (let mv = 0; mv < 7; mv++) {
+        let nr = r, nx = X, ny = yi, nf = 0;
+        if (mv < 2) { nx = X + (mv === 0 ? -1 : 1); if (!fitAt(r, yi, nx)) continue; }
+        else if (mv === 5) { while (fitAt(r, ny + 1, X)) ny++; if (ny === yi) continue; }
+        else if (mv === 6) { ny = yi + 1; if (!fitAt(r, ny, X)) continue; }
+        else {
+          if (p === PO) continue;
+          const dir = mv - 2, kb = (p * 4 + r) * 3 + dir;
+          let ok = false;
+          nr = KTO[kb];
+          for (let k = 0; k < KN[kb]; k++) {
+            const tx = X + KX[kb * 8 + k], ty = yi + KY[kb * 8 + k];
+            if (fitAt(nr, ty, tx)) { nx = tx; ny = ty; ok = true; nf = isT ? (dir !== 2 && k === 4 ? 2 : 1) : 0; break; }
+          }
+          if (!ok) continue;
+        }
+        const ns = ((nr * NY + ny) * 16 + nx) * 3 + nf;
+        if (BSt[ns] === bStamp) continue;
+        BSt[ns] = bStamp; BPar[ns] = s; BMv[ns] = mv; BQ[qt++] = ns;
+      }
+    }
+    return null;
+  }
+
+  // ---- think ----
+  const QP = new Int8Array(16);
+  function think(req) {
+    const t0 = now();
+    const st = settings(req.difficulty);
+    const maxMs = req.maxMs > 0 ? req.maxMs : 1e9;
+    const rand = rng((req.seed | 0) ^ 0x5bd1e995);
+    for (let y = 0; y < ROWS; y++) RB[y] = req.board[y] | 0;
+    let rbTop = 0;
+    while (rbTop < ROWS && RB[rbTop] === 0) rbTop++;
+    tmpLo = 0;
+    const qn = Math.min(req.queue.length, 14);
+    for (let i = 0; i < qn; i++) QP[i] = NAMES.indexOf(req.queue[i]);
+    const cur = NAMES.indexOf(req.cur), hold0 = req.hold ? NAMES.indexOf(req.hold) : -1;
+    const canHold = !!req.canHold && st.hold;
+    const gR = Math.max(0, req.incomingReady | 0), gL = Math.max(0, (req.incoming | 0) - gR);
+    const b2b0 = req.b2b | 0, combo0 = req.combo | 0;
+    const depth = Math.max(1, Math.min(st.depth, qn + 1));
+    const W0 = Math.max(1, st.beam);
+    ensure(Math.max(W0, 64, st.beams ? Math.max.apply(null, st.beams) : 0));
+    let nodes = 0, reached = 1, stopped = 0;
+
+    // root options: the current piece, and the hold piece (or queue[0] when the hold is empty)
+    const opts = [{hold: false, p: cur, r0: req.curPos.r, x0: req.curPos.x, y0: req.curPos.y, yi0: 0}];
+    if (canHold) {
+      const hp = hold0 >= 0 ? hold0 : qn > 0 ? QP[0] : -1;
+      if (hp >= 0 && hold0 !== cur) opts.push({hold: true, p: hp, r0: -1, x0: 0, y0: 0, yi0: 0});
+    }
+    const cand = [];
+    let safe = 0;
+    for (let oi = 0; oi < opts.length; oi++) {
+      const o = opts[oi];
+      const n = gen(RB, 0, o.p, o.r0, o.x0, o.y0, st.simple);
+      if (n < 0) continue;
+      o.yi0 = spawnYi;
+      const nh = o.hold ? cur : hold0, nq = o.hold && hold0 < 0 ? 2 : 1, nc = nq - 1 < qn ? QP[nq - 1] : -1;
+      for (let i = 0; i < n; i++) {
+        nodes++;
+        place(RB, 0, rbTop, TMP, 0, o.p, OR_[i], OX[i], OY[i], OS[i], b2b0, combo0, gR, gL);
+        if (rDead) {   // a lock out or a garbage top out: legal, kept only for when every move loses
+          cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew: 0, sc: -2e9, fatal: true, nh, nq, nc, b2b: -1, combo: -1, g: 0});
+          continue;
+        }
+        const fatal = nc >= 0 && !canSpawn(TMP, 0, nc);
+        if (!fatal) safe++;
+        const rew = moveReward(o.p, OS[i]);
+        const sc = rew + evalBoard(TMP, 0, rTop, rG, st.tslots) + stateBonus(rB, nh);
+        cand.push({o: oi, p: o.p, r: OR_[i], X: OX[i], yi: OY[i], spin: OS[i], rew, sc, fatal, nh, nq, nc, b2b: rB, combo: rC, g: rG});
+      }
+    }
+    if (!cand.length) return {id: req.id, hold: false, inputs: [], expect: null, dead: true, nodes, ms: now() - t0};
+    const nc0 = cand.length;
+    const val = new Float64Array(nc0).fill(-Infinity);
+    for (let i = 0; i < nc0; i++) if (safe && cand[i].fatal) cand[i].sc -= 1e9;
+    const order = cand.map((c, i) => i).sort((a, b) => cand[b].sc - cand[a].sc || a - b);
+
+    if (depth === 1 || !safe) for (let i = 0; i < nc0; i++) val[i] = cand[i].sc;
+    else {
+      let na = 0;
+      for (const ci of order) {
+        if (na >= W0) break;
+        const c = cand[ci];
+        if (safe && c.fatal) continue;
+        place(RB, 0, rbTop, bA, na * ROWS, c.p, c.r, c.X, c.yi, c.spin, b2b0, combo0, gR, gL);
+        const m = na * MS;
+        mA[m] = c.nc; mA[m + 1] = c.nh; mA[m + 2] = c.nq; mA[m + 3] = c.b2b; mA[m + 4] = c.combo; mA[m + 5] = c.g; mA[m + 6] = ci; mA[m + 7] = rTop;
+        rewA[na] = c.rew; sA[na] = c.sc;
+        na++;
+      }
+      // Safety stops (maxMs): no new depth after 35% of it, and a depth is dropped if it is still running at 45%
+      const tA = t0 + maxMs * 0.35, tB = t0 + maxMs * 0.45;
+      let done = false;
+      for (let d = 1; d < depth && na > 0; d++) {
+        if (now() > tA) { stopped = 1; break; }
+        const last = d === depth - 1;
+        const Wd = st.beams ? st.beams[Math.min(d, st.beams.length - 1)] : W0;
+        hn = 0; hcap = Math.min(MAXW * 2, Math.ceil(Wd * 1.25) + 4); seq = 0;
+        for (let s = 0; s < na; s++) {
+          if ((s & 15) === 15 && now() > tB) { stopped = 2; break; }
+          const m = s * MS, sc = mA[m], sh = mA[m + 1], sq = mA[m + 2], sb = mA[m + 3], scb = mA[m + 4], sg = mA[m + 5], root = mA[m + 6];
+          const bo = s * ROWS;
+          if (sc >= 0 && !canSpawn(bA, bo, sc)) continue;
+          const top = prep(bA, bo, mA[m + 7]);
+          for (let opt = 0; opt < 3; opt++) {
+            let p, nh, nq;
+            if (opt === 0) { if (sc < 0) continue; p = sc; nh = sh; nq = sq + 1; }
+            else if (opt === 1) { if (sh < 0 || sh === sc) continue; p = sh; nh = sc; nq = sq + 1; }
+            else { if (sh >= 0 || sc < 0 || sq >= qn) continue; p = QP[sq]; nh = sc; nq = sq + 2; }
+            const nc = nq - 1 < qn ? QP[nq - 1] : -1;
+            const n = gen2(top, p, -1, 0, 0, false);
+            if (n < 0) continue;
+            const base = rewA[s];
+            for (let i = 0; i < n; i++) {
+              nodes++;
+              place(bA, bo, top, TMP, 0, p, OR_[i], OX[i], OY[i], OS[i], sb, scb, sg, 0);
+              if (rDead) continue;
+              if (last && nc >= 0 && !canSpawn(TMP, 0, nc)) continue;
+              const score = base + moveReward(p, OS[i]) + evalBoard(TMP, 0, rTop, rG, st.tslots) + stateBonus(rB, nh);
+              if (last) { if (score > val[root]) val[root] = score; done = true; continue; }
+              const slot = offer(score);
+              if (slot < 0) continue;
+              hPar[slot] = s; hOpt[slot] = opt; hP[slot] = p; hR[slot] = OR_[i]; hX[slot] = OX[i]; hY[slot] = OY[i]; hS[slot] = OS[i];
+            }
+          }
+        }
+        if (stopped === 2) { if (done) { val.fill(-Infinity); done = false; } break; }
+        if (last) { if (done) reached = depth; break; }
+        // next beam: best children first, skipping transpositions
+        const sl = Array.from(heap.subarray(0, hn));
+        sl.sort((a, b) => hScore[b] - hScore[a] || hSeq[a] - hSeq[b]);
+        hashStamp++;
+        let nb = 0;
+        for (let k = 0; k < sl.length && nb < Wd; k++) {
+          const slot = sl[k], s = hPar[slot], m = s * MS, opt = hOpt[slot];
+          const sc = mA[m], sh = mA[m + 1], sq = mA[m + 2];
+          const nh = opt === 0 ? sh : sc, nq = opt === 2 ? sq + 2 : sq + 1;
+          place(bA, s * ROWS, mA[m + 7], bB, nb * ROWS, hP[slot], hR[slot], hX[slot], hY[slot], hS[slot], mA[m + 3], mA[m + 4], mA[m + 5], 0);
+          if (!hashInsert(bB, nb * ROWS, (nh + 2) * 64 + nq, ((rB + 2) * 64 + rC + 2) * 4096 + rG)) continue;
+          const mm = nb * MS;
+          mB[mm] = nq - 1 < qn ? QP[nq - 1] : -1; mB[mm + 1] = nh; mB[mm + 2] = nq; mB[mm + 3] = rB; mB[mm + 4] = rC; mB[mm + 5] = rG; mB[mm + 6] = mA[m + 6]; mB[mm + 7] = rTop;
+          rewB[nb] = rewA[s] + moveReward(hP[slot], hS[slot]);
+          sB[nb] = hScore[slot];
+          nb++;
+        }
+        if (nb === 0) break;
+        let t = bA; bA = bB; bB = t; t = mA; mA = mB; mB = t;
+        let f = rewA; rewA = rewB; rewB = f; f = sA; sA = sB; sB = f;
+        na = nb; reached = d + 1;
+      }
+      if (!done) for (let s = 0; s < na; s++) { const root = mA[s * MS + 6]; if (sA[s] > val[root]) val[root] = sA[s]; }
+      let any = false;
+      for (let i = 0; i < nc0; i++) if (val[i] > -Infinity) { any = true; break; }
+      if (!any) for (let i = 0; i < nc0; i++) val[i] = cand[i].sc;
+    }
+
+    // choose the root move, with the mistakes of this level. They fade out as the stack grows (none from 13 rows)
+    // and stop while garbage waits. A slip or a one-column misdrop only picks a move within st.gap of the best.
+    const hgt = ROWS - rbTop, calm = gR + gL > 0 ? 0 : hgt <= 7 ? 1 : hgt >= 13 ? 0 : (13 - hgt) / 6;
+    const ok = i => val[i] > -Infinity && !(safe && cand[i].fatal);
+    let pick = -1, pv = -Infinity, best = -1;
+    for (let i = 0; i < nc0; i++) {
+      if (!ok(i)) continue;
+      if (best < 0 || val[i] > val[best]) best = i;
+      const v = val[i] + (calm && st.noise > 0 ? (rand() + rand() - 1) * st.noise * calm : 0);
+      if (v > pv) { pv = v; pick = i; }
+    }
+    if (pick < 0) pick = best = order[0];
+    if (calm && st.slip > 0 && rand() < st.slip * calm) {
+      const near = [];
+      for (let i = 0; i < nc0; i++) if (ok(i) && i !== pick && val[i] >= val[best] - st.gap) near.push(i);
+      if (near.length) pick = near[Math.floor(rand() * near.length)];
+    }
+    if (calm && st.miss > 0 && rand() < st.miss * calm) {
+      const c = cand[pick], side = rand() < 0.5 ? -1 : 1;
+      for (const dx of [side, -side]) {
+        const j = cand.findIndex((e, i) => ok(i) && e.o === c.o && e.r === c.r && e.X === c.X + dx && e.spin === 0);
+        if (j >= 0 && val[j] >= val[best] - 2 * st.gap) { pick = j; break; }
+      }
+    }
+    // input path for the chosen move (exact BFS); if that fails, the next best moves
+    const ranked = [pick].concat(Array.from(val.keys()).sort((a, b) => val[b] - val[a] || a - b));
+    const tried = new Uint8Array(nc0);
+    for (const ci of ranked) {
+      if (tried[ci]) continue;
+      tried[ci] = 1;
+      const c = cand[ci], o = opts[c.o];
+      gen(RB, 0, o.p, o.r0, o.x0, o.y0, false);
+      const r0 = o.r0 < 0 ? 0 : o.r0, X0 = (o.r0 < 0 ? SPX[o.p] : o.x0) + OFF;
+      const res = findPath(o.p, r0, X0, o.yi0, c.r, c.X, c.yi, c.spin);
+      if (!res) continue;
+      return {id: req.id, hold: o.hold, inputs: res.path, expect: {t: NAMES[o.p], x: res.x, y: res.y, r: res.r, spin: c.spin},
+        dead: false, nodes, ms: now() - t0, depth: reached, stop: stopped};
+    }
+    return {id: req.id, hold: false, inputs: [], expect: null, dead: true, nodes, ms: now() - t0};
+  }
+
+  G.BlockfallBot = {init, think};
+  if (typeof importScripts === 'function' && typeof postMessage === 'function') {
+    G.onmessage = e => {
+      const m = e.data;
+      if (m.type === 'init') init(m.cfg);
+      else if (m.type === 'think') postMessage(think(m.req));
+    };
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : self);
+/* BOT ENGINE END */
+</script>
 <script>
 const $ = s => document.querySelector(s);
-const COLS = 10, VIS = 20, HIDDEN = 4, ROWS = VIS + HIDDEN, CS = 30, SPRINT = 40, BLITZ_MS = 120000;
+const COLS = 10, VIS = 20, HIDDEN = 4, ROWS = VIS + HIDDEN, CS = 30, SPRINT = 40, BLITZ_MS = 120000, DELAY = 500;
 
 const SHAPES = {
   I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -146,13 +993,16 @@ const K180 = {
 // Garbage lines sent, indexed by lines cleared
 const ATK = {none: [0,0,1,2,4], mini: [0,0,1], full: [0,2,4,6]};
 const COMBO_ATK = [0,0,1,1,1,2,2,3,3,4,4,4,5];
+// Bot speed in pieces per second, by difficulty 1-10
+const PPS = [0, .4, .55, .7, .9, 1.1, 1.4, 1.7, 2, 2.5, 3];
 
 // ---- settings ----
 const ACTIONS = [['left','Move left'],['right','Move right'],['soft','Soft drop'],['hard','Hard drop'],
   ['cw','Rotate right'],['ccw','Rotate left'],['r180','Rotate 180'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
 const DEFAULT_KEYS = {left:['ArrowLeft',''],right:['ArrowRight',''],soft:['ArrowDown',''],hard:['Space',''],
   cw:['ArrowUp','KeyX'],ccw:['KeyZ','ControlLeft'],r180:['KeyA',''],hold:['KeyC','ShiftLeft'],pause:['Escape',''],restart:['KeyR','']};
-const TUNE = {das:133, arr:10, dcd:17, sdf:20, lock:500, resets:15, keepDas:false, irs:true, ghost:22, grid:true, outline:false};
+const TUNE = {das:133, arr:10, dcd:17, sdf:20, lock:500, resets:15, keepDas:false, irs:true, ghost:22, grid:true, outline:false,
+  botLevel:5, bestOf:3, samePieces:true, messiness:0};
 const copyKeys = k => Object.fromEntries(Object.entries(k).map(([a, v]) => [a, v.slice()]));
 const cfg = {keys: copyKeys(DEFAULT_KEYS), ...TUNE, mode: 'marathon', best: 0, bestBlitz: 0};
 try {
@@ -163,11 +1013,14 @@ try {
       cfg.keys[a] = Array.isArray(v) ? [v[0] || '', v[1] || ''] : [v, ''];
     }
     for (const k in TUNE) if (typeof s[k] === typeof TUNE[k]) cfg[k] = s[k];
-    if (s.mode === 'sprint' || s.mode === 'blitz') cfg.mode = s.mode;
+    if (['sprint', 'blitz', 'versus'].includes(s.mode)) cfg.mode = s.mode;
     if (typeof s.best === 'number') cfg.best = s.best;
     if (typeof s.bestBlitz === 'number') cfg.bestBlitz = s.bestBlitz;
   }
 } catch (e) {}
+cfg.botLevel = Math.min(10, Math.max(1, Math.round(cfg.botLevel) || TUNE.botLevel));
+cfg.messiness = Math.min(100, Math.max(0, cfg.messiness || 0));
+if (![1, 3, 5, 7].includes(cfg.bestOf)) cfg.bestOf = TUNE.bestOf;
 const save = () => { try { localStorage.setItem('blockfall', JSON.stringify(cfg)); } catch (e) {} };
 const actionFor = code => code && Object.keys(cfg.keys).find(a => cfg.keys[a].includes(code));
 
@@ -204,6 +1057,8 @@ function syncInputs() {
     if (el.type === 'checkbox') el.checked = cfg[el.dataset.cfg];
     else el.value = cfg[el.dataset.cfg];
   }
+  $('#botText').textContent = `Level ${cfg.botLevel} - about ${PPS[cfg.botLevel]} pieces per second`;
+  $('#messText').textContent = cfg.messiness + '%';
 }
 function assign({a, i}, code) {
   if (code === 'Backspace') code = '';
@@ -212,9 +1067,10 @@ function assign({a, i}, code) {
   document.activeElement?.blur();
 }
 for (const el of document.querySelectorAll('[data-cfg]')) {
-  el.addEventListener(el.type === 'number' ? 'change' : 'input', () => {
+  const sel = el.tagName === 'SELECT';
+  el.addEventListener(el.type === 'number' || sel ? 'change' : 'input', () => {
     const k = el.dataset.cfg;
-    cfg[k] = el.type === 'checkbox' ? el.checked
+    cfg[k] = el.type === 'checkbox' ? el.checked : sel ? +el.value
       : Math.max(+el.min, Math.min(+el.max, parseInt(el.value) || +el.min));
     save(); syncInputs(); dirty = true;
   });
@@ -222,204 +1078,382 @@ for (const el of document.querySelectorAll('[data-cfg]')) {
 $('#reset').onclick = () => { Object.assign(cfg, {keys: copyKeys(DEFAULT_KEYS)}, TUNE); listening = null; save(); renderBinds(); syncInputs(); dirty = true; };
 
 // ---- game ----
-let board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state = 'ready';
-let gAcc, lockT, lockResets, lowestY, lastRot, lastKick, actionT = 0, dirty = true, newBest = false;
+let players = [], bots = [], vs = null, playMs = 0, mode, state = 'ready', dirty = true, newBest = false, humanLv = null;
 let repeatFrom = 0, steps = 0; // auto-shift: time the next repeat run starts, and shifts done in that run
 const down = new Set(), dirs = [];
 const isHeld = a => cfg.keys[a].some(c => c && down.has(c));
 const dirOf = a => a === 'left' ? -1 : 1;
 
 const empty = () => Array(COLS).fill(null);
-function fits(m, x, y) {
-  for (let r = 0; r < m.length; r++) for (let c = 0; c < m.length; c++) {
-    if (!m[r][c]) continue;
-    const nx = x + c, ny = y + r;
-    if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
-    if (ny >= 0 && board[ny][nx]) return false;
-  }
-  return true;
-}
-const grounded = () => !fits(cur.m, cur.x, cur.y + 1);
+const newSeed = () => Math.random() * 2 ** 32 >>> 0;
 function rot(m, d) {
   const n = m.length, o = m.map(r => r.slice());
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) o[y][x] = d > 0 ? m[n-1-x][y] : m[x][n-1-y];
   return o;
 }
-function fill() {
-  while (queue.length < 6) {
-    if (!bag.length) {
-      bag = [...'IJLOSTZ'];
-      for (let i = bag.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; }
-    }
-    queue.push(bag.pop());
+
+// One player: board, pieces, counters and rules. Player 0 is you, player 1 is the bot in versus.
+class Player {
+  constructor(i, seed) {
+    Object.assign(this, {i, seed, rs: seed, gs: seed ^ 0x2545F491, board: Array.from({length: ROWS}, empty), cur: null,
+      hold: null, canHold: true, queue: [], bag: [], score: 0, lines: 0, level: 1, attack: 0, combo: -1, b2b: -1, pieces: 0,
+      gAcc: 0, lockT: 0, lockResets: 0, lowestY: 0, lastRot: false, lastKick: 0, inc: [], lastHole: -1,
+      sent: 0, cancelled: 0, raised: 0, alive: true, cause: '', actionT: 0});
+    this.fill();
   }
+  // mulberry32: state 'rs' for the bag, 'gs' for garbage holes
+  rnd(k = 'rs') {
+    const a = this[k] = this[k] + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  fill() {
+    while (this.queue.length < 6) {
+      if (!this.bag.length) {
+        const b = this.bag = [...'IJLOSTZ'];
+        for (let i = b.length - 1; i > 0; i--) { const j = this.rnd() * (i + 1) | 0; [b[i], b[j]] = [b[j], b[i]]; }
+      }
+      this.queue.push(this.bag.pop());
+    }
+  }
+  fits(m, x, y) {
+    for (let r = 0; r < m.length; r++) for (let c = 0; c < m.length; c++) {
+      if (!m[r][c]) continue;
+      const nx = x + c, ny = y + r;
+      if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
+      if (ny >= 0 && this.board[ny][nx]) return false;
+    }
+    return true;
+  }
+  grounded() { const c = this.cur; return !this.fits(c.m, c.x, c.y + 1); }
+  // Spawn just above the visible field, move up if blocked, then drop one row if there is room
+  spawn(t) {
+    t = t ?? this.queue.shift(); this.fill();
+    const c = this.cur = {t, m: SHAPES[t].map(r => r.slice()), r: 0, x: t === 'O' ? 4 : 3, y: HIDDEN - 2, g: null};
+    this.gAcc = 0; this.lockT = 0; this.lockResets = 0; this.lastRot = false; this.lastKick = 0;
+    while (!this.fits(c.m, c.x, c.y) && c.y > -1) c.y--;
+    if (!this.fits(c.m, c.x, c.y)) return this.die('block');
+    if (this.fits(c.m, c.x, c.y + 1)) c.y++;
+    this.lowestY = c.y;
+  }
+  // Next piece from the queue: a bot asks for a plan, you get DAS cut and initial hold / rotation
+  next() {
+    this.spawn();
+    if (state !== 'play' || !this.alive) return;
+    if (bots[this.i]) return bots[this.i].begin();
+    const now = performance.now();
+    if (cfg.dcd > 0 && dirs.length && now >= repeatFrom) { repeatFrom = now + cfg.dcd; steps = 0; }
+    if (!cfg.irs) return;
+    if (isHeld('hold')) this.doHold();
+    if (state !== 'play') return;
+    if (isHeld('r180')) this.rotate(2);
+    else if (isHeld('cw')) this.rotate(1);
+    else if (isHeld('ccw')) this.rotate(-1);
+  }
+  // A move or rotation resets the lock timer only while the piece is (or was) on the ground
+  moved(wasGrounded) {
+    this.cur.g = null;
+    if ((wasGrounded || this.grounded()) && this.lockResets < cfg.resets) { this.lockT = 0; this.lockResets++; }
+  }
+  fall(y) {
+    const c = this.cur;
+    if (y === c.y) return;
+    c.y = y; this.lastRot = false;
+    if (y > this.lowestY) { this.lowestY = y; this.lockResets = 0; this.lockT = 0; }
+  }
+  shift(dx) {
+    const c = this.cur;
+    if (!this.fits(c.m, c.x + dx, c.y)) return false;
+    const g = this.grounded(); c.x += dx; this.lastRot = false; this.moved(g); return true;
+  }
+  rotate(d) {
+    const c = this.cur;
+    if (c.t === 'O') return;
+    const to = (c.r + d + 4) % 4;
+    const m = d === 2 ? rot(rot(c.m, 1), 1) : rot(c.m, d);
+    const kicks = (d === 2 ? K180 : c.t === 'I' ? KI : KJ)['' + c.r + to];
+    for (let k = 0; k < kicks.length; k++) {
+      const [kx, ky] = kicks[k];
+      if (!this.fits(m, c.x + kx, c.y + ky)) continue;
+      const g = this.grounded();
+      c.m = m; c.x += kx; c.y += ky; c.r = to;
+      this.lastRot = true; this.lastKick = d === 2 ? 0 : k; this.moved(g); return;
+    }
+  }
+  ghostY() {
+    const c = this.cur;
+    if (c.g == null) { let y = c.y; while (this.fits(c.m, c.x, y + 1)) y++; c.g = y; }
+    return c.g;
+  }
+  hardDrop() { const y = this.ghostY(); this.score += 2 * (y - this.cur.y); this.fall(y); this.lock(); }
+  doHold() {
+    if (!this.canHold) return;
+    const prev = this.hold; this.hold = this.cur.t; this.canHold = false; this.spawn(prev);
+  }
+  // 3-corner rule: 0 = none, 1 = mini, 2 = full T-spin
+  tspin() {
+    const c = this.cur;
+    if (c.t !== 'T' || !this.lastRot) return 0;
+    const solid = ([dx, dy]) => {
+      const x = c.x + dx, y = c.y + dy;
+      return x < 0 || x >= COLS || y >= ROWS || (y >= 0 && !!this.board[y][x]);
+    };
+    const corners = [[0,0],[2,0],[2,2],[0,2]].map(solid); // TL TR BR BL
+    if (corners.filter(Boolean).length < 3) return 0;
+    const front = [[0,1],[1,2],[2,3],[3,0]][c.r];
+    return front.every(i => corners[i]) || this.lastKick === 4 ? 2 : 1;
+  }
+  lock() {
+    const ts = this.tspin(), c = this.cur, b = this.board;
+    let above = true;
+    c.m.forEach((row, r) => row.forEach((v, x) => {
+      if (!v) return;
+      const y = c.y + r;
+      if (y >= 0) b[y][c.x + x] = c.t;
+      if (y >= HIDDEN) above = false;
+    }));
+    this.pieces++;
+    let n = 0;
+    for (let y = ROWS - 1; y >= 0; y--) if (b[y].every(Boolean)) { b.splice(y, 1); b.unshift(empty()); n++; y++; }
+
+    const kind = ts === 2 ? 'full' : ts === 1 ? 'mini' : 'none';
+    let pts = (kind === 'full' ? [400,800,1200,1600] : kind === 'mini' ? [100,200,400] : [0,100,300,500,800])[n] ?? 0;
+    let atk = ATK[kind][n] ?? 0;
+    const msg = [];
+    if (ts) msg.push((ts === 1 ? 'T-Spin Mini ' : 'T-Spin ') + (['','Single','Double','Triple'][n] || ''));
+    else if (n) msg.push(['','Single','Double','Triple','Quad'][n]);
+
+    if (n) {
+      const hard = n === 4 || ts > 0;
+      if (hard) { this.b2b++; if (this.b2b > 0) { pts *= 1.5; atk += 1; msg.push('B2B ×' + this.b2b); } }
+      else this.b2b = -1;
+      this.combo++;
+      if (this.combo > 0) { atk += COMBO_ATK[Math.min(this.combo, COMBO_ATK.length - 1)]; pts += 50 * this.combo; msg.push(this.combo + ' Combo'); }
+      if (b.every(r => r.every(v => !v))) { atk += 10; pts += 3000; msg.push('Perfect Clear'); }
+      this.lines += n;
+      if (mode !== 'sprint' && mode !== 'versus') this.level = Math.floor(this.lines / 10) + 1;
+    } else this.combo = -1;
+
+    this.score += Math.round(pts * this.level);
+    this.attack += atk;
+    if (atk) msg.push('+' + atk + ' attack');
+    if (msg.length) this.showAction(msg);
+    if (vs && atk) this.send(atk);
+
+    this.canHold = true;
+    if (above) return this.die('lock');
+    if (mode === 'sprint' && this.lines >= SPRINT) return finish();
+    if (vs && !n && !this.rise()) return;
+    this.next();
+  }
+  // Attack cancels your own incoming lines first (oldest first), the rest goes to the opponent
+  send(a) {
+    while (a > 0 && this.inc.length) {
+      const e = this.inc[0], k = Math.min(a, e.lines);
+      e.lines -= k; a -= k; this.cancelled += k;
+      if (!e.lines) this.inc.shift();
+    }
+    if (a > 0) { this.sent += a; players[1 - this.i].take(a); }
+  }
+  take(n) {
+    const h = this.lastHole < 0 ? this.rnd('gs') * COLS | 0 : (this.lastHole + 1 + (this.rnd('gs') * (COLS - 1) | 0)) % COLS;
+    this.lastHole = h;
+    this.inc.push({lines: n, hole: h, t: DELAY, k: 0});
+  }
+  // After a lock that clears nothing, up to 8 ready lines rise; false if that pushed blocks out of the top
+  rise() {
+    let n = 0, out = false;
+    while (n < 8 && this.inc.length && this.inc[0].t <= 0) {
+      const e = this.inc[0];
+      for (; e.lines && n < 8; e.lines--, n++, this.raised++) {
+        if (e.k++ && this.rnd('gs') * 100 < cfg.messiness) e.hole = (e.hole + 1 + (this.rnd('gs') * (COLS - 1) | 0)) % COLS;
+        if (this.board.shift().some(Boolean)) out = true;
+        const row = Array(COLS).fill('G'); row[e.hole] = null; this.board.push(row);
+      }
+      if (!e.lines) this.inc.shift();
+    }
+    if (out) this.die('garbage');
+    return !out;
+  }
+  showAction(msg) {
+    const el = $(this.i ? '#action2' : '#action');
+    el.innerHTML = msg.map(m => `<div>${m}</div>`).join('');
+    el.classList.toggle('fade', !msg.length);
+    this.actionT = 1600;
+  }
+  die(why) { this.alive = false; this.cause = why; topOut(this); }
 }
-// Spawn just above the visible field, move up if blocked, then drop one row if there is room
-function spawn(t) {
-  t = t ?? queue.shift(); fill();
-  cur = {t, m: SHAPES[t].map(r => r.slice()), r: 0, x: t === 'O' ? 4 : 3, y: HIDDEN - 2, g: null};
-  gAcc = 0; lockT = 0; lockResets = 0; lastRot = false; lastKick = 0;
-  while (!fits(cur.m, cur.x, cur.y) && cur.y > -1) cur.y--;
-  if (!fits(cur.m, cur.x, cur.y)) return end();
-  if (fits(cur.m, cur.x, cur.y + 1)) cur.y++;
-  lowestY = cur.y;
-}
-// Next piece from the queue, with DAS cut and initial hold / rotation
-function next() {
-  spawn();
-  if (state !== 'play') return;
-  const now = performance.now();
-  if (cfg.dcd > 0 && dirs.length && now >= repeatFrom) { repeatFrom = now + cfg.dcd; steps = 0; }
-  if (!cfg.irs) return;
-  if (isHeld('hold')) doHold();
-  if (state !== 'play') return;
-  if (isHeld('r180')) rotate(2);
-  else if (isHeld('cw')) rotate(1);
-  else if (isHeld('ccw')) rotate(-1);
-}
+
 function start(m) {
   cfg.mode = mode = m; save();
-  board = Array.from({length: ROWS}, empty);
-  queue = []; bag = []; hold = null; canHold = true;
-  score = 0; lines = 0; level = 1; attack = 0; combo = -1; b2b = -1; playMs = 0; pieces = 0;
-  down.clear(); dirs.length = 0; showAction([]); fill(); state = 'play'; next(); ui();
+  vs = m === 'versus' ? {bestOf: cfg.bestOf, round: 0, wins: [0, 0], last: -1,
+    tot: [0, 1].map(() => ({attack: 0, pieces: 0, ms: 0, sent: 0, cancelled: 0, raised: 0}))} : null;
+  if (vs) nextRound(); else go([new Player(0, newSeed())]);
+}
+// Both players start each round at once; with "Same pieces" they share the round's seed
+function nextRound() {
+  const s = newSeed();
+  vs.round++;
+  go([new Player(0, s), new Player(1, cfg.samePieces ? s : newSeed())]);
+}
+function go(ps) {
+  players = ps; playMs = 0;
+  bots = ps.map((p, i) => i ? new Bot(p) : humanLv ? new Bot(p, humanLv) : null);
+  down.clear(); dirs.length = 0; ps.forEach(p => p.showAction([])); state = 'play';
+  for (const p of ps) if (state === 'play') p.next();
+  ui();
   document.activeElement?.blur();
 }
 function end() { state = 'over'; ui(); }
 function finish() {
+  const P = players[0];
   state = 'done';
   if (mode === 'blitz') {
-    newBest = score > cfg.bestBlitz;
-    if (newBest) { cfg.bestBlitz = score; save(); }
+    newBest = P.score > cfg.bestBlitz;
+    if (newBest) { cfg.bestBlitz = P.score; save(); }
   } else {
     newBest = !cfg.best || playMs < cfg.best;
     if (newBest) { cfg.best = playMs; save(); }
   }
   ui();
 }
+// Game over in single-player; in versus the other player wins the round
+function topOut(p) {
+  if (!vs) return end();
+  const w = 1 - p.i;
+  vs.wins[w]++; vs.last = w;
+  players.forEach((q, i) => { const t = vs.tot[i]; t.ms += playMs; for (const k of ['attack', 'pieces', 'sent', 'cancelled', 'raised']) t[k] += q[k]; });
+  state = vs.wins[w] > vs.bestOf / 2 ? 'done' : 'round';
+  ui();
+}
 function togglePause() { if (state === 'play') state = 'pause'; else if (state === 'pause') state = 'play'; down.clear(); dirs.length = 0; ui(); }
-
-// A move or rotation resets the lock timer only while the piece is (or was) on the ground
-function moved(wasGrounded) {
-  cur.g = null;
-  if ((wasGrounded || grounded()) && lockResets < cfg.resets) { lockT = 0; lockResets++; }
-}
-function fall(y) { if (y === cur.y) return; cur.y = y; lastRot = false; if (y > lowestY) { lowestY = y; lockResets = 0; lockT = 0; } }
-function shift(dx) {
-  if (!fits(cur.m, cur.x + dx, cur.y)) return false;
-  const g = grounded(); cur.x += dx; lastRot = false; moved(g); return true;
-}
-function rotate(d) {
-  if (cur.t === 'O') return;
-  const to = (cur.r + d + 4) % 4;
-  const m = d === 2 ? rot(rot(cur.m, 1), 1) : rot(cur.m, d);
-  const kicks = (d === 2 ? K180 : cur.t === 'I' ? KI : KJ)['' + cur.r + to];
-  for (let k = 0; k < kicks.length; k++) {
-    const [kx, ky] = kicks[k];
-    if (!fits(m, cur.x + kx, cur.y + ky)) continue;
-    const g = grounded();
-    cur.m = m; cur.x += kx; cur.y += ky; cur.r = to;
-    lastRot = true; lastKick = d === 2 ? 0 : k; moved(g); return;
-  }
-}
-function ghostY() {
-  if (cur.g == null) { let y = cur.y; while (fits(cur.m, cur.x, y + 1)) y++; cur.g = y; }
-  return cur.g;
-}
-function hardDrop() { const y = ghostY(); score += 2 * (y - cur.y); fall(y); lock(); }
-function doHold() {
-  if (!canHold) return;
-  const prev = hold; hold = cur.t; canHold = false; spawn(prev);
-}
-
-// 3-corner rule: 0 = none, 1 = mini, 2 = full T-spin
-function tspin() {
-  if (cur.t !== 'T' || !lastRot) return 0;
-  const solid = ([dx, dy]) => {
-    const x = cur.x + dx, y = cur.y + dy;
-    return x < 0 || x >= COLS || y >= ROWS || (y >= 0 && !!board[y][x]);
-  };
-  const corners = [[0,0],[2,0],[2,2],[0,2]].map(solid); // TL TR BR BL
-  if (corners.filter(Boolean).length < 3) return 0;
-  const front = [[0,1],[1,2],[2,3],[3,0]][cur.r];
-  return front.every(i => corners[i]) || lastKick === 4 ? 2 : 1;
-}
-
-function lock() {
-  const ts = tspin();
-  let above = true;
-  cur.m.forEach((row, r) => row.forEach((v, c) => {
-    if (!v) return;
-    const y = cur.y + r;
-    if (y >= 0) board[y][cur.x + c] = cur.t;
-    if (y >= HIDDEN) above = false;
-  }));
-  pieces++;
-  let n = 0;
-  for (let y = ROWS - 1; y >= 0; y--) if (board[y].every(Boolean)) { board.splice(y, 1); board.unshift(empty()); n++; y++; }
-
-  const kind = ts === 2 ? 'full' : ts === 1 ? 'mini' : 'none';
-  let pts = (kind === 'full' ? [400,800,1200,1600] : kind === 'mini' ? [100,200,400] : [0,100,300,500,800])[n] ?? 0;
-  let atk = ATK[kind][n] ?? 0;
-  const msg = [];
-  if (ts) msg.push((ts === 1 ? 'T-Spin Mini ' : 'T-Spin ') + (['','Single','Double','Triple'][n] || ''));
-  else if (n) msg.push(['','Single','Double','Triple','Quad'][n]);
-
-  if (n) {
-    const hard = n === 4 || ts > 0;
-    if (hard) { b2b++; if (b2b > 0) { pts *= 1.5; atk += 1; msg.push('B2B ×' + b2b); } }
-    else b2b = -1;
-    combo++;
-    if (combo > 0) { atk += COMBO_ATK[Math.min(combo, COMBO_ATK.length - 1)]; pts += 50 * combo; msg.push(combo + ' Combo'); }
-    if (board.every(r => r.every(v => !v))) { atk += 10; pts += 3000; msg.push('Perfect Clear'); }
-    lines += n;
-    if (mode !== 'sprint') level = Math.floor(lines / 10) + 1;
-  } else combo = -1;
-
-  score += Math.round(pts * level);
-  attack += atk;
-  if (atk) msg.push('+' + atk + ' attack');
-  if (msg.length) showAction(msg);
-
-  canHold = true;
-  if (above) return end();
-  if (mode === 'sprint' && lines >= SPRINT) return finish();
-  next();
-}
-function showAction(msg) {
-  const el = $('#action');
-  el.innerHTML = msg.map(m => `<div>${m}</div>`).join('');
-  el.classList.toggle('fade', !msg.length);
-  actionT = 1600;
-}
-const gravityMs = () => Math.pow(Math.max(0.8 - (level - 1) * 0.007, 0.01), level - 1) * 1000;
+const gravityMs = p => Math.pow(Math.max(0.8 - (p.level - 1) * 0.007, 0.01), p.level - 1) * 1000;
 
 // Auto-shift counts from key timestamps, so ARR stays exact even below one frame
 function autoShift(now) {
   if (!dirs.length || now < repeatFrom) return;
-  const dir = dirOf(dirs[dirs.length - 1]);
-  if (cfg.arr === 0) { while (shift(dir)); return; }
+  const P = players[0], dir = dirOf(dirs[dirs.length - 1]);
+  if (cfg.arr === 0) { while (P.shift(dir)); return; }
   const target = Math.floor((now - repeatFrom) / cfg.arr) + 1;
-  while (steps < target) { steps++; if (!shift(dir)) { steps = target; break; } }
+  while (steps < target) { steps++; if (!P.shift(dir)) { steps = target; break; } }
 }
 function update(now, dt) {
   playMs += dt;
   if (mode === 'blitz' && playMs >= BLITZ_MS) { playMs = BLITZ_MS; return finish(); }
-  if (actionT > 0 && (actionT -= dt) <= 0) $('#action').classList.add('fade');
+  for (const p of players) {
+    if (p.actionT > 0 && (p.actionT -= dt) <= 0) $(p.i ? '#action2' : '#action').classList.add('fade');
+    for (const e of p.inc) e.t -= dt;
+  }
+  if (!bots[0]) human(now, dt);
+  for (const b of bots) if (b && state === 'play') b.tick();
+}
+// Gravity, soft drop and lock delay for you (bots have neither)
+function human(now, dt) {
+  const P = players[0];
   autoShift(now);
   if (state !== 'play') return;
   const soft = isHeld('soft');
-  if (soft && cfg.sdf >= 41) { const y = ghostY(); score += y - cur.y; fall(y); gAcc = 0; }
+  if (soft && cfg.sdf >= 41) { const y = P.ghostY(); P.score += y - P.cur.y; P.fall(y); P.gAcc = 0; }
   else {
-    const iv = soft ? gravityMs() / cfg.sdf : gravityMs();
-    gAcc += dt;
-    while (gAcc >= iv) {
-      gAcc -= iv;
-      if (grounded()) { gAcc = 0; break; }
-      fall(cur.y + 1); if (soft) score++;
+    const iv = soft ? gravityMs(P) / cfg.sdf : gravityMs(P);
+    P.gAcc += dt;
+    while (P.gAcc >= iv) {
+      P.gAcc -= iv;
+      if (P.grounded()) { P.gAcc = 0; break; }
+      P.fall(P.cur.y + 1); if (soft) P.score++;
     }
   }
-  if (grounded()) { lockT += dt; if (lockT >= cfg.lock) lock(); }
+  if (P.grounded()) { P.lockT += dt; if (P.lockT >= cfg.lock) P.lock(); }
+}
+
+// ---- bot ----
+// The engine source sits in #bot-engine. It runs in a worker, or on the main thread if the worker fails.
+let backend = 'worker', worker = null, engine = null, reqId = 0, botMismatch = 0, botSpinMismatch = 0;
+const engineSrc = () => $('#bot-engine').textContent;
+function engineCfg() {
+  const pieces = {};
+  for (const t in SHAPES) {
+    pieces[t] = [];
+    let m = SHAPES[t];
+    for (let r = 0; r < 4; r++) { pieces[t].push(m.map(row => row.slice())); if (t !== 'O') m = rot(m, 1); }
+  }
+  return {cols: COLS, rows: ROWS, hidden: HIDDEN, pieces, kicks: {JLSTZ: KJ, I: KI, R180: K180}, atk: ATK, comboAtk: COMBO_ATK};
+}
+function startWorker() {
+  try {
+    worker = new Worker(URL.createObjectURL(new Blob([engineSrc()], {type: 'text/javascript'})));
+    worker.onmessage = e => got(e.data);
+    worker.onerror = e => { e.preventDefault(); toMain(); };
+    worker.postMessage({type: 'init', cfg: engineCfg()});
+  } catch (e) { worker = null; backend = 'main'; }
+}
+// The worker failed: plan on the main thread from now on, and ask again for plans still missing
+function toMain() {
+  worker?.terminate(); worker = null; backend = 'main';
+  for (const b of bots) if (b?.req) think(b.req);
+}
+function think(req) {
+  if (backend === 'worker' && !worker) startWorker();
+  if (worker && backend === 'worker') return worker.postMessage({type: 'think', req});
+  let res;
+  try {
+    if (!engine) { new Function(engineSrc())(); engine = globalThis.BlockfallBot; engine.init(engineCfg()); }
+    res = engine.think(req);
+  } catch (e) { console.error(e); res = {id: req.id, dead: true}; }
+  got(res);
+}
+function got(res) { for (const b of bots) if (b && res && b.id === res.id) b.plan(res); }
+const mask = row => row.reduce((a, v, c) => v ? a | 1 << c : a, 0);
+
+// Drives one player: a plan per piece, its inputs spread over the piece's time slot (game time), then a hard drop
+class Bot {
+  constructor(p, lv) { this.p = p; this.lv = lv; this.level = lv || cfg.botLevel; this.id = 0; this.req = null; this.q = []; this.at = null; }
+  // maxMs is only a safety limit: one time slot (at most 500 ms), so a slow plan still keeps the bot's pace
+  begin() {
+    const p = this.p, c = p.cur, lv = this.level = this.lv || cfg.botLevel;
+    this.t0 = this.at ?? playMs; this.period = 1000 / PPS[lv]; this.q = [];
+    let inc = 0, ready = 0;
+    for (const e of p.inc) { inc += e.lines; if (e.t <= 0) ready += e.lines; }
+    this.req = {id: this.id = ++reqId, board: p.board.map(mask), cur: c.t, curPos: {x: c.x, y: c.y, r: c.r},
+      hold: p.hold, canHold: p.canHold, queue: p.queue.slice(), b2b: p.b2b, combo: p.combo, incoming: inc, incomingReady: ready,
+      difficulty: lv, seed: (p.seed ^ Math.imul(p.pieces + 1, 0x9E3779B1) ^ Math.imul(p.i, 0x85EBCA6B)) >>> 0,
+      maxMs: Math.min(500, this.period)};
+    think(this.req);
+  }
+  plan(res) {
+    if (!this.req) return;
+    this.req = null;
+    const now = this.at ?? playMs, keys = res.dead ? [] : (res.hold ? ['hold'] : []).concat(res.inputs || []);
+    const span = Math.max(0, this.t0 + 0.85 * this.period - now);
+    this.q = keys.map((k, i) => ({at: now + span * (i + 1) / keys.length, k}));
+    this.q.push({at: Math.max(this.t0 + this.period, now), k: 'drop', e: res.dead ? null : res.expect || {}});
+  }
+  key(k) {
+    const p = this.p, c = p.cur;
+    if (k === 'left' || k === 'right') p.shift(k === 'left' ? -1 : 1);
+    else if (k === 'cw') p.rotate(1);
+    else if (k === 'ccw') p.rotate(-1);
+    else if (k === '180') p.rotate(2);
+    else if (k === 'down') { if (p.fits(c.m, c.x, c.y + 1)) p.fall(c.y + 1); }
+    else if (k === 'sonic') p.fall(p.ghostY());
+    else if (k === 'hold') p.doHold();
+  }
+  // Run the steps that are due; before the drop, check the piece against the plan
+  tick() {
+    const p = this.p;
+    while (state === 'play' && p.alive && this.q.length && this.q[0].at <= playMs) {
+      const s = this.q.shift(), c = p.cur, e = s.e;
+      this.at = s.at;
+      if (s.k !== 'drop') this.key(s.k);
+      else {
+        if (e && (c.t !== e.t || c.x !== e.x || c.y !== e.y || c.r !== e.r)) botMismatch++;
+        else if (e && p.tspin() !== e.spin) botSpinMismatch++;
+        p.hardDrop();
+      }
+      this.at = null;
+    }
+  }
 }
 
 // ---- input ----
@@ -433,23 +1467,24 @@ addEventListener('keydown', e => {
   const a = actionFor(e.code);
   const idle = state === 'ready' || state === 'over' || state === 'done';
   if (idle && (e.code === 'Enter' || a === 'restart')) { e.preventDefault(); start(cfg.mode); return; }
+  if (state === 'round' && e.code === 'Enter') { e.preventDefault(); nextRound(); return; }
   if (!a) return;
   e.preventDefault();
   if (e.repeat) return;
   if (a === 'restart') return start(cfg.mode);
   if (a === 'pause') return togglePause();
-  if (state !== 'play') return;
-  const t = stamp(e);
+  if (state !== 'play' || bots[0]) return;
+  const P = players[0], t = stamp(e);
   down.add(e.code);
   if (a === 'left' || a === 'right') {
     const wasCharged = dirs.length > 0 && t >= repeatFrom;
-    dirs.push(a); shift(dirOf(a)); charge(t, wasCharged);
+    dirs.push(a); P.shift(dirOf(a)); charge(t, wasCharged);
   }
-  else if (a === 'cw') rotate(1);
-  else if (a === 'ccw') rotate(-1);
-  else if (a === 'r180') rotate(2);
-  else if (a === 'hard') hardDrop();
-  else if (a === 'hold') doHold();
+  else if (a === 'cw') P.rotate(1);
+  else if (a === 'ccw') P.rotate(-1);
+  else if (a === 'r180') P.rotate(2);
+  else if (a === 'hard') P.hardDrop();
+  else if (a === 'hold') P.doHold();
 });
 addEventListener('keyup', e => {
   const a = actionFor(e.code); if (!a) return;
@@ -464,17 +1499,19 @@ addEventListener('blur', () => { down.clear(); dirs.length = 0; });
 $('#mMarathon').onclick = () => start('marathon');
 $('#mSprint').onclick = () => start('sprint');
 $('#mBlitz').onclick = () => start('blitz');
+$('#mVersus').onclick = () => start('versus');
+$('#mNext').onclick = () => { if (state === 'round') nextRound(); };
 
 // ---- drawing ----
 const dpr = Math.min(devicePixelRatio || 1, 2);
 function setup(cv, w, h) { cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext('2d'); c.scale(dpr, dpr); return c; }
-const bx = setup($('#board'), COLS * CS, VIS * CS);
-const hx = setup($('#hold'), 84, 56);
-const nx = setup($('#next'), 84, 5 * 52);
+const views = ['', '2'].map(s => ({b: setup($('#board' + s), COLS * CS, VIS * CS), h: setup($('#hold' + s), 84, 56),
+  n: setup($('#next' + s), 84, 5 * 52), meter: $('#meter' + s), shown: ''}));
 let C = {};
 function readColors() {
   const s = getComputedStyle(document.documentElement);
   for (const k of ['well','grid','muted','I','O','T','S','Z','J','L']) C[k] = s.getPropertyValue('--' + k).trim();
+  C.G = s.getPropertyValue('--garbage').trim();
   dirty = true;
 }
 readColors();
@@ -494,61 +1531,90 @@ function mini(ctx, t, cx, cy, s, color) {
   const ox = cx - (Math.min(...xs) + Math.max(...xs) + 1) * s / 2, oy = cy - (Math.min(...ys) + Math.max(...ys) + 1) * s / 2;
   for (const [c, r] of pts) cell(ctx, ox + c * s, oy + r * s, s, color);
 }
-function draw() {
+function drawPlayer(v, p) {
+  const bx = v.b;
   bx.fillStyle = C.well; bx.fillRect(0, 0, COLS * CS, VIS * CS);
   if (cfg.grid) {
     bx.fillStyle = C.grid;
     for (let x = 1; x < COLS; x++) bx.fillRect(x * CS, 0, 1, VIS * CS);
     for (let y = 1; y < VIS; y++) bx.fillRect(0, y * CS, COLS * CS, 1);
   }
-  if (board) {
+  if (p) {
+    const {board, cur} = p;
     for (let y = HIDDEN; y < ROWS; y++) for (let x = 0; x < COLS; x++)
-      if (board[y][x]) cell(bx, x * CS, (y - HIDDEN) * CS, CS, C[board[y][x]], state === 'over' ? .45 : 1);
-    if (cur && state !== 'over' && state !== 'done') {
-      const gy = ghostY();
-      cur.m.forEach((row, r) => row.forEach((v, c) => {
-        if (!v) return;
+      if (board[y][x]) cell(bx, x * CS, (y - HIDDEN) * CS, CS, C[board[y][x]], p.alive ? 1 : .45);
+    if (cur && (state === 'play' || state === 'pause')) {
+      const gy = p.ghostY();
+      cur.m.forEach((row, r) => row.forEach((on, c) => {
+        if (!on) return;
         const x = (cur.x + c) * CS;
         if (cfg.ghost && gy + r >= HIDDEN) cell(bx, x, (gy + r - HIDDEN) * CS, CS, C[cur.t], cfg.ghost / 100, false);
         if (cur.y + r >= HIDDEN) cell(bx, x, (cur.y + r - HIDDEN) * CS, CS, C[cur.t]);
       }));
     }
   }
-  hx.clearRect(0, 0, 84, 56);
-  if (hold) mini(hx, hold, 42, 28, 16, canHold ? C[hold] : C.muted);
-  nx.clearRect(0, 0, 84, 5 * 52);
-  (queue || []).slice(0, 5).forEach((t, i) => mini(nx, t, 42, 26 + i * 52, i ? 14 : 16, C[t]));
+  v.h.clearRect(0, 0, 84, 56);
+  if (p?.hold) mini(v.h, p.hold, 42, 28, 16, p.canHold ? C[p.hold] : C.muted);
+  v.n.clearRect(0, 0, 84, 5 * 52);
+  (p?.queue || []).slice(0, 5).forEach((t, i) => mini(v.n, t, 42, 26 + i * 52, i ? 14 : 16, C[t]));
+  // Incoming meter: ready lines at the bottom, waiting lines above, 1 line = 1 cell
+  let ready = 0, wait = 0;
+  for (const e of p?.inc || []) if (e.t <= 0) ready += e.lines; else wait += e.lines;
+  ready = Math.min(ready, VIS); wait = Math.min(wait, VIS - ready);
+  if (v.shown !== ready + ',' + wait) {
+    v.shown = ready + ',' + wait;
+    v.meter.children[0].style.height = ready * 100 / VIS + '%';
+    v.meter.children[1].style.height = wait * 100 / VIS + '%';
+  }
+}
+function draw() {
+  drawPlayer(views[0], players[0]);
+  if (mode === 'versus') drawPlayer(views[1], players[1]);
 }
 
 const fmt = ms => { const s = ms / 1000; return Math.floor(s / 60) + ':' + (s % 60).toFixed(2).padStart(5, '0'); };
 const shown = {};
 function put(id, v) { if (shown[id] !== v) { shown[id] = v; $('#' + id).textContent = v; } }
 function stats() {
-  const min = (playMs || 0) / 60000;
-  put('time', fmt(mode === 'blitz' ? BLITZ_MS - (playMs || 0) : playMs || 0));
-  put('score', (score || 0).toLocaleString());
-  put('lines', mode === 'sprint' ? `${lines}/${SPRINT}` : String(lines || 0));
-  put('level', String(level || 1));
-  put('attack', String(attack || 0));
-  put('apm', min > 1 / 60 ? (attack / min).toFixed(1) : '0.0');
-  put('pps', min > 1 / 60 ? (pieces / (min * 60)).toFixed(2) : '0.00');
+  const P = players[0] || {}, B = players[1], min = playMs / 60000;
+  put('time', fmt(mode === 'blitz' ? BLITZ_MS - playMs : playMs));
+  put('score', (P.score || 0).toLocaleString());
+  put('lines', mode === 'sprint' ? `${P.lines}/${SPRINT}` : String(P.lines || 0));
+  put('level', String(P.level || 1));
+  put('attack', String(P.attack || 0));
+  put('apm', min > 1 / 60 ? (P.attack / min).toFixed(1) : '0.0');
+  put('pps', min > 1 / 60 ? (P.pieces / (min * 60)).toFixed(2) : '0.00');
+  if (!B) return;
+  put('botName', `Bot, level ${bots[1]?.level ?? cfg.botLevel}`);
+  put('attack2', String(B.attack));
+  put('apm2', min > 1 / 60 ? (B.attack / min).toFixed(1) : '0.0');
+  put('pps2', min > 1 / 60 ? (B.pieces / (min * 60)).toFixed(2) : '0.00');
 }
 function ui() {
   stats(); dirty = true;
+  const P = players[0] || {};
   $('#overlay').hidden = state === 'play';
+  $('#opp').hidden = mode !== 'versus';
+  $('#mNext').hidden = state !== 'round';
   $('#mMarathon').classList.toggle('current', cfg.mode === 'marathon');
   $('#mSprint').classList.toggle('current', cfg.mode === 'sprint');
   $('#mBlitz').classList.toggle('current', cfg.mode === 'blitz');
+  $('#mVersus').classList.toggle('current', cfg.mode === 'versus');
   const bests = [cfg.best && 'Sprint best ' + fmt(cfg.best), cfg.bestBlitz && 'Blitz best ' + cfg.bestBlitz.toLocaleString()].filter(Boolean);
   const best = bests.join('. ');
-  const doneText = mode === 'blitz'
-    ? [`${(score || 0).toLocaleString()} points`, `${lines} lines, ${attack} attack, ${shown.pps} PPS. ` + (newBest ? 'New best' : 'Best ' + cfg.bestBlitz.toLocaleString())]
+  const won = vs && (vs.last ? 'Bot wins' : 'You win'), sc = vs && `You ${vs.wins[0]} - ${vs.wins[1]} Bot`;
+  const rate = (n, ms, k, d) => (ms > 1000 ? n / ms * k : 0).toFixed(d);
+  const doneText = vs
+    ? [won + ' the match', sc + '\n' + vs.tot.map((t, i) => `${i ? 'Bot' : 'You'}: ${t.attack} attack, ${rate(t.attack, t.ms, 60000, 1)} APM, ${rate(t.pieces, t.ms, 1000, 2)} PPS, ${t.pieces} pieces`).join('\n')]
+    : mode === 'blitz'
+    ? [`${(P.score || 0).toLocaleString()} points`, `${P.lines} lines, ${P.attack} attack, ${shown.pps} PPS. ` + (newBest ? 'New best' : 'Best ' + cfg.bestBlitz.toLocaleString())]
     : [`${SPRINT} lines in ${fmt(playMs)}`, newBest ? 'New best' : 'Best ' + fmt(cfg.best)];
   const [title, text] = {
     ready: ['Blockfall', 'Choose a mode, or press Enter.'],
     pause: ['Paused', `${keyName(cfg.keys.pause[0] || cfg.keys.pause[1])} to resume. A mode button restarts.`],
-    over: ['Game over', `${(score || 0).toLocaleString()} points, ${attack} attack, ${shown.pps} PPS`],
+    over: ['Game over', `${(P.score || 0).toLocaleString()} points, ${P.attack} attack, ${shown.pps} PPS`],
     done: doneText,
+    round: vs && [`${won} round\u00a0${vs.round}`, `${sc}. First to ${(vs.bestOf + 1) / 2} wins. Press Enter for the next round.`],
   }[state] || ['', ''];
   $('#ovTitle').textContent = title;
   $('#ovText').textContent = state === 'ready' && best ? text + ' ' + best + '.' : text;
@@ -562,13 +1628,42 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Test hooks: step() runs the game in 16 ms ticks without frames (and goes on to the next round),
+// humanBot(level) lets a bot play for you, also in single-player
+window.blockfallTest = {
+  get players() { return players; }, get bots() { return bots; }, get vs() { return vs; }, get state() { return state; }, get playMs() { return playMs; },
+  get backend() { return backend; }, get botMismatch() { return botMismatch; }, get botSpinMismatch() { return botSpinMismatch; },
+  setBackend(b) { backend = b === 'main' ? 'main' : 'worker'; if (backend === 'worker' && !worker) startWorker(); return backend; },
+  step(ms) {
+    for (let t = 0; t < ms; t += 16) {
+      if (state === 'round') nextRound();
+      if (state !== 'play') break;
+      update(performance.now(), 16);
+    }
+    stats(); draw();
+  },
+  humanBot(lv) {
+    humanLv = lv || null;
+    const P = players[0];
+    if (!P?.alive || (state !== 'play' && state !== 'pause')) return;
+    bots[0] = humanLv ? new Bot(P, humanLv) : null;
+    if (bots[0]) { P.spawn(P.cur.t); bots[0].begin(); }
+  },
+};
+
 // Keep the game across page updates; a running game comes back paused
 const hot = window.claude?.hot;
-if (typeof hot?.snapshot === 'function') hot.snapshot(() => ({board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state}));
+if (typeof hot?.snapshot === 'function') hot.snapshot(() => ({players: players.map(p => ({...p})), vs, playMs, mode, state}));
 function boot(d) {
-  if (d && d.board) {
-    ({board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state} = d);
+  if (d && (d.players || d.board)) {
+    ({playMs = 0, mode, state} = d); vs = d.vs || null;
+    players = (d.players || [d]).map((q, i) => Object.assign(new Player(i, newSeed()), q));
+    if (!d.players && state === 'over') players[0].alive = false;
     if (state === 'play') state = 'pause';
+    bots = players.map((p, i) => i ? new Bot(p) : null);
+    // The bot plans its current piece again, from the spawn position
+    const B = players[1];
+    if (B?.alive && state === 'pause') { B.spawn(B.cur.t); bots[1].begin(); }
   }
   renderBinds(); syncInputs(); ui();
   requestAnimationFrame(frame);
