@@ -4107,15 +4107,283 @@ EC_REF.t.push(['Oxidation number','The charge that an atom would have if the ele
 }catch(e){console.error('[ec] slot 1 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 2 ----- */
 {try{
-/* placeholder of lesson 2 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[2]={t:EC_T[2],h:'Redox tables from experiments',d:'The evidence from a few reactions is enough to build a table of reduction half-reactions. A reaction is spontaneous when the oxidizing agent is above the reducing agent.',build(g){
-  const c=card(g,'Building a table from evidence',`<p class="hint">Outcomes: 30–B1.6k, 30–B1.3s</p><ol><li>Find the oxidizing agent and the reducing agent of each reaction.</li><li>Spontaneous: the oxidizing agent goes above the reducing agent. No evidence of reaction: it goes below.</li><li>Write each half-reaction as a reduction, with the oxidizing agents on the left.</li></ol>
-    <p>Evidence: ${C('3Co^2+(aq) + 2In(s) -> 2In^3+(aq) + 3Co(s)')}; ${C('Cu^2+(aq) + Co(s) -> Co^2+(aq) + Cu(s)')}; ${C('Cu^2+(aq) + Pd(s)')}: no evidence of reaction.</p>`);
-  ecTable(c,['Pd^2+(aq) + 2e^- <=> Pd(s)','Cu^2+(aq) + 2e^- <=> Cu(s)','Co^2+(aq) + 2e^- <=> Co(s)','In^3+(aq) + 3e^- <=> In(s)'],{cap:'The table built from the three reactions.'});
+/* ===== lesson 2: Redox tables from experiments. Notes pages 10 to 12: how to use the table of reduction half-reactions (rules 1 to 6), how to build a table
+   from the evidence of experiments, the example of page 10, and practice questions 1 to 9. This lesson has no diploma questions ===== */
+/* an equation, a half-reaction or an entity as HTML that breaks only between its terms: each entity stays on one line */
+const ec2N=s=>String(s).split(/(\s+\+\s+|\s*->\s*|\s*<=>\s*)/).map(x=>/^\s*(\+|->|<=>)\s*$/.test(x)?C(x):x?'<span style="white-space:nowrap">'+C(x)+'</span>':'').join('');
+/* text for a screen reader only */
+const ec2SR=t=>`<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap">${t}</span>`;
+/* one half-reaction of a table: s (C notation), oa and ra (the keys of its oxidizing agent and of its reducing agent) */
+const ec2Row=s=>{const p=ecParse(s);return {s,oa:p.L.find(x=>x[1]!=='e^-')[1],ra:p.R[0][1]};};
+/* the half-reaction of a metal ion: ec2M('Co',2) is 'Co^2+(aq) + 2e^- <=> Co(s)' */
+const ec2M=(m,z)=>`${m}^${z>1?z:''}+(aq) + ${z>1?z:''}e^- <=> ${m}(s)`;
+/* E° of an entity, from the data booklet table: ec2E('Cu^2+(aq)') is '+0.34 V' */
+const ec2E=k=>ecV(ecRow(k).E);
+/* a test is [the equation in C notation (the reactants only when there is no evidence of reaction), the oxidizing agent, the reducing agent, 1 for evidence of reaction] */
+const ec2Ev=(eq,yes)=>yes?ec2N(eq):ec2N(eq)+' → no evidence of reaction';
+const ec2List=r=>`<ol style="margin:.3em 0 .5em;padding-left:1.6em">${r.map(([eq,,,yes])=>`<li style="margin:.25em 0">${ec2Ev(eq,yes)}</li>`).join('')}</ol>`;
+/* the same tests as numbered lines, for a question paragraph or the title of a worked example */
+const ec2Lines=r=>r.map(([eq,,,yes],i)=>'<br>'+(i+1)+'. '+ec2Ev(eq,yes)).join('');
+/* a results grid: the columns are the solutions (oxidizing agents) and the rows are the metals (reducing agents). g: one string for each metal, 1 for a reaction (•)
+   and 0 for no evidence of reaction (−). o.cnt adds the number of reactions of each row and of each column */
+const ec2Grid=(oa,ra,g,o={})=>{const dot=v=>v==='1'?'<span aria-hidden="true" style="font-size:1.35em;line-height:1">•</span>'+ec2SR('reaction'):'<span aria-hidden="true">−</span>'+ec2SR('no evidence of reaction');
+  const c='style="text-align:center;padding:.3em .45em;vertical-align:middle"',hd=k=>{const m=String(k).match(/^(.*)(\([a-z]+\))$/);return m?`<span style="white-space:nowrap">${C(m[1])}</span><br>${m[2]}`:ec2N(k);};
+  const cc=oa.map((k,j)=>g.reduce((s,r)=>s+(+r[j]),0)),rc=g.map(r=>[...r].reduce((s,v)=>s+(+v),0));
+  return `<div class="ec2g"><table class="ec2grid" style="width:auto;margin:.3em auto"><thead><tr><th scope="col">${ec2SR('Metal')}</th>${oa.map(k=>`<th scope="col" ${c}>${hd(k)}</th>`).join('')}${o.cnt?`<th scope="col" ${c}>total</th>`:''}</tr></thead><tbody>`+
+    ra.map((m,i)=>`<tr><th scope="row" style="padding:.3em .45em;vertical-align:middle">${ec2N(m)}</th>${[...g[i]].map(v=>`<td ${c}>${dot(v)}</td>`).join('')}${o.cnt?`<td class="ec2n" ${c}>${rc[i]}</td>`:''}</tr>`).join('')+
+    (o.cnt?`<tr class="ec2t"><th scope="row" style="padding:.3em .45em">total</th>${cc.map(x=>`<td class="ec2n" ${c}>${x}</td>`).join('')}<td></td></tr>`:'')+'</tbody></table></div>';};
+/* the evidence as a picture: the oxidizing agents (left) and the reducing agents (right) of the table, the strongest oxidizing agent at the top. Each test is a line
+   from its oxidizing agent to its reducing agent, with its number: solid for a reaction (the OA is above the RA), dashed for no evidence of reaction (the OA is below
+   the RA). rows: the half-reactions, top first. tests: [number, OA key, RA key, 1 for a reaction] */
+const ec2Lad=(rows,tests)=>{const R=rows.map(ec2Row),n=R.length,W=300,y0=30,dy=42,bw=100,xl=4,xr=W-4-bw,yc=i=>y0+i*dy+15,H=y0+n*dy+48,box=(x,y)=>`<rect x="${x}" y="${y}" width="${bw}" height="30" rx="8" fill="var(--fig2)" stroke="var(--gridc)" stroke-width="1.2"/>`;
+  let s=svgText('Oxidizing agents',xl+bw/2,18,{s:11.5,w:650})+svgText('Reducing agents',xr+bw/2,18,{s:11.5,w:650});
+  R.forEach((r,i)=>{s+=box(xl,y0+i*dy)+box(xr,y0+i*dy)+svgText(ecU(r.oa),xl+bw/2,yc(i)+4.5,{s:13,w:600,f:'ink'})+svgText(ecU(r.ra),xr+bw/2,yc(i)+4.5,{s:13,w:600,f:'ink'});});
+  const used=[];tests.forEach(([k,oa,ra,yes])=>{const i=R.findIndex(r=>r.oa===oa),j=R.findIndex(r=>r.ra===ra);if(i<0||j<0)return;
+    const c=yes?'var(--s1)':'var(--s2)',x1=xl+bw,x2=xr,y1=yc(i),y2=yc(j);let mx=(x1+x2)/2;const my=(y1+y2)/2;while(used.some(([a,b])=>Math.abs(a-mx)<22&&Math.abs(b-my)<20))mx+=24;used.push([mx,my]);
+    s+=`<path d="M${x1},${y1}L${x2},${y2}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"${yes?'':' stroke-dasharray="6 4.5"'}/><circle cx="${x1}" cy="${y1}" r="3.2" fill="${c}"/><circle cx="${x2}" cy="${y2}" r="3.2" fill="${c}"/>`+badge(k,mx,my,c,10);});
+  const ly=y0+n*dy+8;
+  s+=`<path d="M10,${ly+6}H38" stroke="var(--s1)" stroke-width="2.4"/>`+svgText('reaction: OA above RA',44,ly+10,{a:'start',s:11.5,c:'l'})+
+    `<path d="M10,${ly+26}H38" stroke="var(--s2)" stroke-width="2.4" stroke-dasharray="6 4.5"/>`+svgText('no evidence of reaction: OA below RA',44,ly+30,{a:'start',s:11.5,c:'l'});
+  const alt='The evidence as a diagram. Oxidizing agents, from the strongest at the top: '+R.map(r=>ecU(r.oa)).join(', ')+'. Reducing agents on the same rows: '+R.map(r=>ecU(r.ra)).join(', ')+'. '+
+    tests.map(([k,oa,ra,yes])=>'Test '+k+', '+ecU(oa)+' with '+ecU(ra)+': '+(yes?'a reaction, thus the OA is above the RA.':'no evidence of reaction, thus the OA is below the RA.')).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${s}</svg>`;};
+/* zinc in copper(II) sulfate solution (copper forms on the zinc and the blue colour fades) and copper in zinc sulfate solution (no change) */
+const ec2Beakers=()=>{const bk=(x0,sol,metal,coat,t)=>{const x1=x0+120,cx=x0+60;
+    let s=`<rect x="${x0+2}" y="88" width="116" height="78" rx="7" fill="${sol}" fill-opacity=".8"/><rect x="${cx-8}" y="30" width="16" height="122" rx="2" fill="${metal}" stroke="var(--ink2)" stroke-width="1.1"/>`;
+    if(coat){const p=[];for(let y=98;y<=150;y+=6.5)p.push([cx-9.5-((y-98)/6.5%2?2.6:0),y]);for(let y=150;y>=98;y-=6.5)p.push([cx+9.5+((y-98)/6.5%2?2.6:0),y]);
+      s+=`<path d="M${p.map(q=>q.map(v=>+v.toFixed(1)).join(',')).join('L')}Z" fill="#8a4a2b" stroke="#5e3019" stroke-width=".9" stroke-linejoin="round"/>`+[[cx-22,161,2.4],[cx+18,162,2],[cx+27,160,1.6],[cx-31,162,1.8]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#8a4a2b"/>`).join('');}
+    s+=`<path d="M${x0-4},56L${x0},60V158a8 8 0 0 0 8,8H${x1-8}a8 8 0 0 0 8,-8V60L${x1+4},56" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    return s+svgText(t[0],cx,16,{s:12.5,w:700,f:t[4]})+svgText(t[1],cx,186,{s:12.5,w:650,f:'ink'})+svgText(t[2],cx,203,{s:11.5})+svgText(t[3],cx,218,{s:11.5});};
+  return `<svg viewBox="0 0 340 226" role="img" aria-label="Two beakers. Left: a zinc strip in blue copper(II) sulfate solution. A brown solid, copper, forms on the zinc and the blue colour fades: evidence of a spontaneous reaction. Right: a copper strip in colourless zinc sulfate solution. Nothing changes: no evidence of reaction.">`+
+    bk(34,'color-mix(in srgb,var(--s1) 26%,var(--liq))',EC_ELC.Zn,1,['spontaneous','Zn(s) in CuSO₄(aq)','brown copper forms,','the blue colour fades','s1'])+
+    bk(186,'var(--liq)',EC_ELC.Cu,0,['not spontaneous','Cu(s) in ZnSO₄(aq)','no evidence','of reaction','s2'])+'</svg>';};
+/* the example of page 10 and practice questions 1 to 9. Grids: oa (columns), ra (rows), g (results). Lists: r (tests). t: the table, top first. x: a note */
+const ec2EX={r:[['3Co^2+(aq) + 2In(s) -> 2In^3+(aq) + 3Co(s)','Co^2+(aq)','In(s)',1],['Cu^2+(aq) + Co(s) -> Co^2+(aq) + Cu(s)','Cu^2+(aq)','Co(s)',1],['Cu^2+(aq) + Pd(s)','Cu^2+(aq)','Pd(s)',0]],
+  t:[ec2M('Pd',2),ec2M('Cu',2),ec2M('Co',2),ec2M('In',3)]};
+const ec2QG='Use the following results table to construct a mini reduction half-reaction table for the entities involved (• = spontaneous reaction, − = no evidence of reaction).',
+  ec2QL='Construct a table of reduction half-reactions from the following evidence.',ec2H2='2H^+(aq) + 2e^- <=> H2(g)';
+const ec2PQ=[
+  {q:ec2QG,oa:['Pb^2+(aq)','V^2+(aq)','Cd^2+(aq)','Zn^2+(aq)'],ra:['Zn(s)','V(s)','Cd(s)','Pb(s)'],g:['1010','1011','1000','0000'],t:[ec2M('Pb',2),ec2M('Cd',2),ec2M('Zn',2),ec2M('V',2)]},
+  {q:ec2QG,oa:['Cd^2+(aq)','V^2+(aq)','Ra^2+(aq)','Be^2+(aq)'],ra:['Be(s)','Ra(s)','V(s)','Cd(s)'],g:['1100','1101','1000','0000'],t:[ec2M('Cd',2),ec2M('V',2),ec2M('Be',2),ec2M('Ra',2)]},
+  {q:ec2QG,oa:['Ga^3+(aq)','In^3+(aq)','Al^3+(aq)','Tl^+(aq)'],ra:['Ga(s)','Al(s)','In(s)','Tl(s)'],g:['0101','1101','0001','0000'],t:[ec2M('Tl',1),ec2M('In',3),ec2M('Ga',3),ec2M('Al',3)]},
+  {q:'Construct a table of reduction half-reactions from the following experimental evidence.',r:[['Co^2+(aq) + Zn(s) -> Co(s) + Zn^2+(aq)','Co^2+(aq)','Zn(s)',1],['Mg^2+(aq) + Zn(s)','Mg^2+(aq)','Zn(s)',0]],t:[ec2M('Co',2),ec2M('Zn',2),ec2M('Mg',2)]},
+  {q:'What is the redox half-reaction table for manganese, gallium, cadmium and cerium, based on the following reaction evidence?',
+    r:[['2Ga(s) + 3Cd^2+(aq) -> 2Ga^3+(aq) + 3Cd(s)','Cd^2+(aq)','Ga(s)',1],['Ga(s) + Mn^2+(aq)','Mn^2+(aq)','Ga(s)',0],['3Mn^2+(aq) + 2Ce(s) -> 3Mn(s) + 2Ce^3+(aq)','Mn^2+(aq)','Ce(s)',1]],t:[ec2M('Cd',2),ec2M('Ga',3),ec2M('Mn',2),ec2M('Ce',3)]},
+  {q:'What is the redox half-reaction table for strontium, nickel, platinum, hydrogen and cerium? The results of a series of reactions are reported below.',
+    r:[['3Sr(s) + 2Ce^3+(aq) -> 3Sr^2+(aq) + 2Ce(s)','Ce^3+(aq)','Sr(s)',1],['Ni(s) + 2H^+(aq) -> Ni^2+(aq) + H2(g)','H^+(aq)','Ni(s)',1],['2Ce^3+(aq) + 3Ni(s)','Ce^3+(aq)','Ni(s)',0],['Pt(s) + 2H^+(aq)','H^+(aq)','Pt(s)',0]],
+    t:[ec2M('Pt',2),ec2H2,ec2M('Ni',2),ec2M('Ce',3),ec2M('Sr',2)],x:'Platinum does not react, thus it is a weaker reducing agent than H₂(g). Its row needs an ion of platinum: Pt²⁺(aq) is used here. The hydrogen row is 2H⁺(aq) + 2e⁻ ⇌ H₂(g).'},
+  {q:ec2QL,r:[['Be(s) + Cd^2+(aq) -> Be^2+(aq) + Cd(s)','Cd^2+(aq)','Be(s)',1],['Cd(s) + 2H^+(aq) -> Cd^2+(aq) + H2(g)','H^+(aq)','Cd(s)',1],['Ca^2+(aq) + Be(s)','Ca^2+(aq)','Be(s)',0],['Cu(s) + 2H^+(aq)','H^+(aq)','Cu(s)',0]],
+    t:[ec2M('Cu',2),ec2H2,ec2M('Cd',2),ec2M('Be',2),ec2M('Ca',2)]},
+  {q:ec2QL,r:[['Pd(s) + Cu^2+(aq)','Cu^2+(aq)','Pd(s)',0],['3Co^2+(aq) + 2In(s) -> 3Co(s) + 2In^3+(aq)','Co^2+(aq)','In(s)',1],['Cu^2+(aq) + Co(s) -> Cu(s) + Co^2+(aq)','Cu^2+(aq)','Co(s)',1]],
+    t:[ec2M('Pd',2),ec2M('Cu',2),ec2M('Co',2),ec2M('In',3)],x:'This is the evidence of the example, in another order. The order in which the tests are listed does not change the table.'},
+  {q:ec2QL,r:[['Ag(s) + I2(s)','I2(s)','Ag(s)',0],['2Ag(s) + Br2(l) -> 2AgBr(s)','Br2(l)','Ag(s)',1],['Cu(s) + I2(s) -> CuI2(s)','I2(s)','Cu(s)',1],['Br2(l) + 2Cl^-(aq)','Br2(l)','Cl^-(aq)',0]],
+    t:['Cl2(g) + 2e^- <=> 2Cl^-(aq)','Br2(l) + 2e^- <=> 2Br^-(aq)','Ag^+(aq) + e^- <=> Ag(s)','I2(s) + 2e^- <=> 2I^-(aq)',ec2M('Cu',2)],
+    x:'The products AgBr(s) and CuI₂(s) hold the metal as an ion (Ag⁺, Cu²⁺) and the halogen as a halide ion (Br⁻, I⁻): the metal was oxidized and the halogen was reduced. In a real experiment, copper and iodine form copper(I) iodide, CuI(s); either way, iodine oxidizes copper.'}];
+/* the data booklet has some of the rows of a table: their E° values, and whether their order is the same */
+const ec2Book=t=>{const B=t.map(s=>ecRow(s)).filter(Boolean);if(B.length<2)return '';const same=B.every((r,i)=>!i||EC_E0.indexOf(r)>EC_E0.indexOf(B[i-1]));
+  return `<p class="hint">Compare with the data booklet: ${B.map(r=>ec2N(r.k)+' '+ecV(r.E)).join(', ')}. ${same?'The booklet lists these half-reactions in the same order: the evidence agrees with it.':'The booklet lists them in another order: check the evidence again.'}</p>`;};
+/* the worked solution of a list of tests: one test at a time, the order, the diagram and the table */
+const ec2SolL=d=>{const R=d.t.map(ec2Row),io=k=>R.findIndex(r=>r.oa===k),ir=k=>R.findIndex(r=>r.ra===k),nm=i=>ec2N(R[i].oa);
+  let h='<p>Take one reaction at a time. Identify the oxidizing agent (OA) and the reducing agent (RA).</p>';
+  d.r.forEach(([eq,oa,ra,yes],i)=>{const a=io(oa),b=ir(ra);
+    h+=`<p><b>Reaction ${i+1}:</b> ${ec2Ev(eq,yes)}.<br>`+(yes?`${ec2N(oa)} is the OA and ${ec2N(ra)} is the RA. The reaction is spontaneous, thus the OA is above the RA: the ${nm(a)} row is above the ${nm(b)} row.`:
+      `Not spontaneous. If a reaction did occur, ${ec2N(oa)} would be the OA and ${ec2N(ra)} the RA. Because it is not spontaneous, the OA is below the RA: the ${nm(a)} row is below the ${nm(b)} row.`)+'</p>';});
+  return h+`<p><b>Put the results together.</b> From the top: ${R.map((r,i)=>nm(i)).join(', ')}.</p>`+
+    CF(ec2Lad(d.t,d.r.map(([eq,oa,ra,yes],i)=>[i+1,oa,ra,yes])),'Each reaction joins its OA (left) to its RA (right). A solid line goes down: a reaction. A dashed line goes up: no evidence of reaction.','ec2-lad')+
+    ecTableH(d.t,{cap:'The table: the strongest oxidizing agent, '+ecU(R[0].oa)+', is at the top left, and the strongest reducing agent, '+ecU(R[R.length-1].ra)+', is at the bottom right.'})+(d.x?`<p class="note">${d.x}</p>`:'')+ec2Book(d.t);};
+/* the worked solution of a results grid: count the reactions of each column and of each row */
+const ec2SolG=d=>{const cc=d.oa.map((k,j)=>d.g.reduce((s,r)=>s+(+r[j]),0)),rc=d.g.map(r=>[...r].reduce((s,v)=>s+(+v),0)),R=d.t.map(ec2Row);
+  const oo=[...d.oa.keys()].sort((a,b)=>cc[b]-cc[a]),ro=[...d.ra.keys()].sort((a,b)=>rc[b]-rc[a]);
+  return `<p>Count the dots. Each column is an oxidizing agent: the more metals it reacts with, the stronger it is. Each row is a reducing agent: the more solutions it reacts with, the stronger it is.</p>`+ec2Grid(d.oa,d.ra,d.g,{cnt:1})+
+    `<p><b>Oxidizing agents</b>, the most reactions first: ${oo.map(j=>ec2N(d.oa[j])+' ('+cc[j]+')').join(', ')}. The strongest goes at the top left.<br><b>Reducing agents</b>, the most reactions first: ${ro.map(i=>ec2N(d.ra[i])+' ('+rc[i]+')').join(', ')}. The strongest goes at the bottom right.</p>`+
+    `<p>Both counts give the same order, because each metal and its own ion are on the same row.</p>`+
+    ecTableH(d.t,{cap:'The table: '+ecU(R[0].oa)+' is the strongest oxidizing agent and '+ecU(R[R.length-1].ra)+' the strongest reducing agent.'})+ec2Book(d.t);};
+/* the try-it of card 8: the table of the example, with strips of palladium and cobalt in a solution of Cu²⁺ and In³⁺ ions */
+const ec2Use=['Pd(s)','Co(s)','Cu^2+(aq)','In^3+(aq)'];
+/* the unknown metal X of card 9: its evidence and the table, top first */
+const ec2X=[['X(s) + Cu^2+(aq) -> X^2+(aq) + Cu(s)','Cu^2+(aq)','X(s)',1],['X(s) + Pb^2+(aq) -> X^2+(aq) + Pb(s)','Pb^2+(aq)','X(s)',1],['X(s) + Zn^2+(aq)','Zn^2+(aq)','X(s)',0]];
+const ec2XT=[ec2M('Cu',2),ec2M('Pb',2),ec2M('X',2),ec2M('Zn',2),ec2M('Mg',2)];
+/* the diploma-style grid of card 10: four metals G, J, Q and X. The table, top first: X²⁺, G²⁺, J²⁺, Q²⁺ */
+const ec2NR={oa:['G^2+(aq)','J^2+(aq)','Q^2+(aq)','X^2+(aq)'],ra:['G(s)','J(s)','Q(s)','X(s)'],g:['0001','1001','1101','0000']};
+ECL[2]={t:EC_T[2],h:'Will a redox reaction be spontaneous?',
+  d:'A redox reaction is spontaneous when the oxidizing agent is above the reducing agent in a table of reduction half-reactions. The evidence from a few experiments is enough to build such a table.',
+  build(g){
+  ecCSS(2,'#ec-2 table.ec2grid th,#ec-2 table.ec2grid td{min-width:0}#ec-2 table.ec2grid td.ec2n{color:var(--ink2);font-weight:650;font-size:.88rem}'+
+    '#ec-2 table.ec2grid tr.ec2t>*{border-top:2px solid var(--hair)}#ec-2 .cf.ec2-lad svg{max-width:340px}#ec-2 .cf.ec2-bk svg{max-width:370px}#ec-2 .ec2pq>p:first-child{margin-top:.2em}');
+  /* 1. how to use the table (page 10, rules 1 to 6) */
+  const c1=card(g,'How to use the table of reduction half-reactions',`<p class="hint">Outcomes: 30–B1.6k, 30–B1.3s</p>
+    <p>A <span class="key">spontaneous</span> reaction occurs on its own when the reactants are mixed. The table of reduction half-reactions on page 7 of the data booklet tells whether a redox reaction is spontaneous. How to use the table:</p>
+    <ol><li>All the reactions are written as <b>reduction</b> half-reactions: the electrons are on the left side.</li><li><b>Oxidizing agents</b> (OA) are on the <b>left</b>.</li><li><b>Reducing agents</b> (RA) are on the <b>right</b>.</li>
+    <li>The strongest oxidizing agent (<b>SOA</b>) is at the <b>top left</b>.</li><li>The strongest reducing agent (<b>SRA</b>) is at the <b>bottom right</b>.</li><li>If the SOA is <b>higher</b> in the table than the SRA, the reaction is <b>spontaneous</b>.</li></ol>
+    <div class="ec2t1"></div>
+    <p>Zinc in a solution of copper(II) ions: the OA, ${ec2N('Cu^2+(aq)')} (${ec2E('Cu^2+(aq)')}), is above the RA, ${ec2N('Zn(s)')} (${ec2E('Zn^2+(aq)')}). The reaction is spontaneous:</p><div class="fx">${ec2N('Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)')}</div>
+    <p>Copper in a solution of zinc ions: the OA, ${ec2N('Zn^2+(aq)')}, is below the RA, ${ec2N('Cu(s)')}. The reaction is not spontaneous: no reaction occurs.</p>
+    <p class="hint">The whole table is on the Formulas and terms page of this section.</p>`,'w7');
+  ecTable($('.ec2t1',c1),ecRows(['Ag^+(aq)','Cu^2+(aq)','H^+(aq)','Pb^2+(aq)','Zn^2+(aq)','Mg^2+(aq)']),{mark:{soa:0,sra:5},arrows:false,cap:'Six rows of the data booklet table. Of these entities, Ag⁺(aq) (top left) is the strongest oxidizing agent and Mg(s) (bottom right) is the strongest reducing agent.'});
+  /* 2. the evidence of a reaction */
+  card(g,'Evidence of a reaction',`<p>In the lab, a reaction is spontaneous when there is <b>evidence</b> of a change:</p><ul><li>a new solid forms on the metal (a coating or crystals),</li><li>the colour of the solution changes,</li><li>bubbles of a gas form.</li></ul>
+    <p>When nothing changes, the result is <span class="key">no evidence of reaction</span>: the reaction is not spontaneous.</p>
+    ${CF(ec2Beakers(),'Left: zinc in copper(II) sulfate solution. Copper forms on the zinc and the blue colour of Cu²⁺(aq) fades. Right: copper in zinc sulfate solution. Nothing changes.','ec2-bk')}
+    <p class="note">Each test compares one oxidizing agent with one reducing agent. A few tests are enough to put the half-reactions in order. This is how a table of reduction half-reactions is built from evidence.</p>`,'w5');
+  /* 3. try it: predict with the data booklet, then compare with the lab results (30-B1.6k) */
+  const c3=card(g,'Try it: predict, then compare with the lab',`<p class="hint">Use the rows of the data booklet table below. In each mixture, the oxidizing agent is the ion in the solution (the metal ion, or ${ec2N('H^+(aq)')} in hydrochloric acid) and the reducing agent is the metal. Predict: is the reaction spontaneous? Then Check, and read the lab results.</p><div class="ec2t3"></div>`);
+  ecTable($('.ec2t3',c3),ecRows(['Ag^+(aq)','Cu^2+(aq)','H^+(aq)','Zn^2+(aq)','Al^3+(aq)','Mg^2+(aq)']));
+  const mix=[['Zn(s)','CuSO4(aq)',0],['Cu(s)','ZnSO4(aq)',1],['Cu(s)','AgNO3(aq)',0],['Ag(s)','Cu(NO3)2(aq)',1],['Mg(s)','HCl(aq)',0],['Cu(s)','HCl(aq)',1],['Al(s)','CuSO4(aq)',0]];
+  eqTable(c3,{cols:['Mixture','Your prediction'],opt:[['spontaneous','not spontaneous']],rows:mix.map(([m,s,a],i)=>[(i+1)+'. '+ec2N(m)+' in '+ec2N(s),[a]]),
+    after:`<b>Predictions.</b> 1. ${ec2N('Cu^2+')} (${ec2E('Cu^2+(aq)')}) is above Zn (${ec2E('Zn^2+(aq)')}): spontaneous. 2. ${ec2N('Zn^2+')} is below Cu: not spontaneous. 3. ${ec2N('Ag^+')} (${ec2E('Ag^+(aq)')}) is above Cu: spontaneous. 4. ${ec2N('Cu^2+')} is below Ag: not spontaneous. 5. ${ec2N('H^+')} (${ec2E('H^+(aq)')}) is above Mg (${ec2E('Mg^2+(aq)')}): spontaneous. 6. ${ec2N('H^+')} is below Cu: not spontaneous. 7. ${ec2N('Cu^2+')} is above Al (${ec2E('Al^3+(aq)')}): spontaneous.<br>
+      <b>Lab results.</b> 1. A brown solid (copper) forms on the zinc and the blue colour fades. 2, 4 and 6. No evidence of reaction. 3. Grey crystals of silver grow on the copper and the solution turns blue. 5. Bubbles of hydrogen gas form quickly. 7. At first, almost nothing happens: a thin layer of aluminum oxide covers the metal and slows the reaction. With some sodium chloride added, copper forms quickly.<br>
+      The results agree with the predictions. The table tells whether a reaction can occur, not how fast it is.`},0);
+  /* 4. building a table from evidence, and the example of page 10 */
+  const c4=card(g,'Building a table from evidence',`<p>The results of a few experiments can be used to build a table of reduction half-reactions, like the table in the data booklet.</p>
+    <ol><li><b>Take one reaction at a time.</b> Identify the oxidizing agent (it gains electrons: a metal ion, ${ec2N('H^+(aq)')}, a halogen) and the reducing agent (it loses electrons: a metal, a halide ion).</li>
+    <li><b>Spontaneous</b> (evidence of reaction): the oxidizing agent must be <b>above</b> the reducing agent in the table.</li>
+    <li><b>Not spontaneous</b> (no evidence of reaction): if a reaction did occur, the same two entities would be the OA and the RA. Because it does not occur, the oxidizing agent must be <b>below</b> the reducing agent.</li>
+    <li><b>Put the results together</b> in one list, from the strongest oxidizing agent to the weakest.</li>
+    <li><b>Write each row as a reduction:</b> the oxidizing agent and the electrons on the left, the reducing agent on the right, as in ${ec2N('Co^2+(aq) + 2e^- <=> Co(s)')}.</li></ol>
+    <p class="note">A metal and its own ion are on the same row. When a metal is the reducing agent of one test, its row also holds its ion, which can be the oxidizing agent of another test.</p>`+
+    ex('Example. Given the following reactions, set up a reduction half-reaction table.'+ec2Lines(ec2EX.r),
+      `<p>Take one reaction at a time. Identify the oxidizing agent and the reducing agent.</p>
+      <p><b>Reaction 1:</b> ${ec2N('Co^2+')} is the oxidizing agent and In is the reducing agent. The reaction is spontaneous: the oxidizing agent must be above the reducing agent. The ${ec2N('Co^2+')} row is above the ${ec2N('In^3+')} row.</p>
+      <p><b>Reaction 2:</b> ${ec2N('Cu^2+')} is the oxidizing agent and Co is the reducing agent. The reaction is spontaneous, so ${ec2N('Cu^2+')} is above Co: the ${ec2N('Cu^2+')} row is above the ${ec2N('Co^2+')} row.</p>
+      <p><b>Reaction 3:</b> not spontaneous. If a reaction did occur, ${ec2N('Cu^2+')} would be the oxidizing agent and ${ec2N('Pd(s)')} would be the reducing agent. Because it is not spontaneous, ${ec2N('Cu^2+')} must be below Pd: the ${ec2N('Pd^2+')} row is above the ${ec2N('Cu^2+')} row.</p>
+      <p><b>Now create the list.</b> Reaction 3 puts ${ec2N('Pd^2+')} above ${ec2N('Cu^2+')}, reaction 2 puts ${ec2N('Cu^2+')} above ${ec2N('Co^2+')}, and reaction 1 puts ${ec2N('Co^2+')} above ${ec2N('In^3+')}.</p>`+
+      CF(ec2Lad(ec2EX.t,ec2EX.r.map(([eq,oa,ra,yes],i)=>[i+1,oa,ra,yes])),'Each reaction joins its OA (left) to its RA (right). A solid line goes down: a reaction. A dashed line goes up: no evidence of reaction.','ec2-lad')+
+      ecTableH(ec2EX.t,{mark:{soa:0,sra:3},arrows:false,cap:'The table built from the three reactions. No E° values were measured: the order comes from the evidence.'})+
+      `<p>The strongest oxidizing agent is ${ec2N('Pd^2+(aq)')} (top left) and the strongest reducing agent is ${ec2N('In(s)')} (bottom right).</p>`+ec2Book(ec2EX.t)),'w7');
+  /* 5. reading a results grid */
+  card(g,'Reading a results grid',`<p>A results grid shows many tests at once. Each column is a solution: its ion is an oxidizing agent. Each row is a metal: a reducing agent. A dot (•) means evidence of reaction, and a dash (−) means no evidence of reaction. The total is the number of reactions.</p>
+    <ul><li>The solution that reacts with the <b>most</b> metals has the strongest oxidizing agent: it goes at the <b>top</b>.</li><li>The metal that reacts with the <b>most</b> solutions is the strongest reducing agent: it goes at the <b>bottom</b>.</li><li>A metal in a solution of its own ions shows no change.</li></ul>
+    <p>Example: copper, lead and zinc in solutions of their ions.</p>${ec2Grid(['Cu^2+(aq)','Pb^2+(aq)','Zn^2+(aq)'],['Cu(s)','Pb(s)','Zn(s)'],['000','100','110'],{cnt:1})}
+    <p>${ec2N('Cu^2+(aq)')} reacts with 2 metals, ${ec2N('Pb^2+(aq)')} with 1 and ${ec2N('Zn^2+(aq)')} with none. Zinc reacts with 2 solutions, lead with 1 and copper with none.</p>
+    ${ecTableH([ec2M('Cu',2),ec2M('Pb',2),ec2M('Zn',2)],{cap:'The table from the grid.'})}${ec2Book([ec2M('Cu',2),ec2M('Pb',2),ec2M('Zn',2)])}`,'w5');
+  /* 6. try it: the nine practice questions (ordering slots 1 to 9) */
+  const c6=card(g,'Try it: practice questions 1 to 9','<p class="hint">Choose a question. Use the evidence to put the half-reactions in order, with the strongest oxidizing agent at the top, then check the order. The worked solutions are in the next card.</p>');
+  const sh=el('div'),qb=el('div',{class:'ec2pq'});c6.append(sh,qb);
+  const showQ=i=>{const d=ec2PQ[i];qb.innerHTML=`<p><b>${i+1}.</b> ${d.q}</p>`+(d.g?ec2Grid(d.oa,d.ra,d.g):ec2List(d.r));
+    ordering(qb,d.t.map(ec2N),'Put the half-reactions in order: the strongest oxidizing agent at the top.',i+1);};
+  seg(sh,ec2PQ.map((d,i)=>String(i+1)),showQ);showQ(0);
+  /* 7. the worked solutions of practice questions 1 to 9 */
+  card(g,'Practice questions 1 to 9: worked solutions','<p>For each question, take one test at a time, or count the reactions in the grid. Then write the half-reactions in order, with the strongest oxidizing agent at the top.</p>'+
+    ec2PQ.map((d,i)=>ex('Practice question '+(i+1)+'. '+d.q+(d.g?'':ec2Lines(d.r)),d.g?ec2SolG(d):ec2SolL(d))).join(''));
+  /* 8. try it: use a table built from evidence (SOA and SRA, slot et0) */
+  const c8=card(g,'Try it: use a table built from evidence',`<p>The table below was built in the example. Strips of palladium and cobalt are placed in a solution that contains ${ec2N('Cu^2+(aq)')} and ${ec2N('In^3+(aq)')} ions. Which reaction occurs?</p>
+    <p class="hint">The entities present are underlined. Tap the strongest oxidizing agent on the left side and the strongest reducing agent on the right side, then Check.</p>`,'half');
+  ecTable(c8,ec2EX.t,{hl:ec2Use,pick:true,slot:0,w:`SOA: ${ec2N('Cu^2+(aq)')}, the highest oxidizing agent present. SRA: ${ec2N('Co(s)')}, the lowest reducing agent present. ${ec2N('Cu^2+(aq)')} is above ${ec2N('Co(s)')}, thus they react: ${ec2N('Cu^2+(aq) + Co(s) -> Cu(s) + Co^2+(aq)')}. ${ec2N('Pd(s)')} is above both oxidizing agents and ${ec2N('In^3+(aq)')} is below both reducing agents, thus they do not react.`});
+  /* 9. try it: place an unknown metal among rows of the data booklet (ordering slot 10) */
+  const c9=card(g,'Try it: place an unknown metal',`<p>A student tests a new metal, X, that forms ${ec2N('X^2+(aq)')} ions:</p>${ec2List(ec2X)}<p class="hint">Put the five half-reactions in order, with the strongest oxidizing agent at the top. The E° values are from the data booklet.</p>`,'half');
+  ordering(c9,ec2XT.map(s=>{const r=ecRow(s);return ec2N(s)+' &nbsp; <span class="hint">'+(r?ecV(r.E):'E° = ?')+'</span>';}),'',10);
+  c9.insertAdjacentHTML('beforeend',ex('Solution',`<p>X(s) reacts with ${ec2N('Cu^2+(aq)')} and with ${ec2N('Pb^2+(aq)')}, thus both ions are above X(s): the ${ec2N('X^2+')} row is below the ${ec2N('Pb^2+')} row. X(s) does not react with ${ec2N('Zn^2+(aq)')}, thus ${ec2N('Zn^2+')} is below X(s): the ${ec2N('X^2+')} row is above the ${ec2N('Zn^2+')} row. ${ec2N('Mg^2+')} (${ec2E('Mg^2+(aq)')}) is below ${ec2N('Zn^2+')}.</p>
+    <p>The order: ${ec2XT.map(s=>ec2N(ec2Row(s).oa)).join(', ')}. The E° of ${ec2N('X^2+(aq) + 2e^- <=> X(s)')} is between ${ec2E('Zn^2+(aq)')} and ${ec2E('Pb^2+(aq)')}. Metals of the data booklet in this range are tin (${ec2E('Sn^2+(aq)')}), nickel (${ec2E('Ni^2+(aq)')}), cobalt (${ec2E('Co^2+(aq)')}), cadmium (${ec2E('Cd^2+(aq)')}) and iron (${ec2E('Fe^2+(aq)')}).</p>`));
+  /* 10. a diploma-style numerical response with a results grid (nrCode slot 0) */
+  const c10=card(g,'Diploma-style question: a results grid','<p class="hint">Numerical response, as on the diploma exam.</p>');
+  nrCode(c10,{q:`<p>A student places strips of four metals, G, J, Q and X, in solutions of their ions and records the results (• = evidence of reaction, − = no evidence of reaction).</p>${ec2Grid(ec2NR.oa,ec2NR.ra,ec2NR.g)}<p>Numbered: 1 G(s), 2 J(s), 3 Q(s), 4 X(s). The reducing agents, from the strongest to the weakest, are ____, ____, ____ and ____.</p><p class="hint">Record all four digits of your answer.</p>`,a:'3214',
+    w:'Count the reactions of each metal (row): Q 3, J 2, G 1, X 0. The metal that reacts with the most solutions is the strongest reducing agent: Q, then J, G and X. The columns agree: X²⁺ reacts with 3 metals, thus it is the strongest oxidizing agent, at the top, and X is the weakest reducing agent. Record 3214.'},0);
 },qz:[
-  {q:'From this evidence, '+C('3Co^2+(aq) + 2In(s) -> 2In^3+(aq) + 3Co(s)')+' and '+C('Cu^2+(aq) + Co(s) -> Co^2+(aq) + Cu(s)')+', the reducing agents from strongest to weakest are',o:['In(s), Co(s), Cu(s)','Cu(s), Co(s), In(s)','Co(s), In(s), Cu(s)','In(s), Cu(s), Co(s)'],a:0,w:'In(s) reduces Co²⁺, thus In(s) is a stronger reducing agent than Co(s). Co(s) reduces Cu²⁺, thus Co(s) is stronger than Cu(s).'},
-  {q:'A redox reaction is spontaneous when, in a table of reduction half-reactions, the oxidizing agent is',o:['above the reducing agent','below the reducing agent','on the same row as the reducing agent','on the right side of the table'],a:0,w:'The strongest oxidizing agent is at the top left and the strongest reducing agent at the bottom right. A reaction occurs when the OA is above the RA.'}]};
-EC_REF.t.push(['Spontaneous reaction','A reaction that occurs on its own. In a table of reduction half-reactions, the oxidizing agent is above the reducing agent.']);
+  {q:'Which statement about the table of reduction half-reactions in the data booklet is correct?',o:['Every half-reaction is written as a reduction','Reducing agents are on the left side of the table','The SOA is at the bottom of the left side','A reaction is spontaneous when the SOA is below the SRA'],a:0,
+    w:'All the half-reactions are written as reductions, with the electrons on the left side. Oxidizing agents are on the left and reducing agents on the right. The SOA is at the top left and the SRA at the bottom right. A reaction is spontaneous when the SOA is above the SRA.'},
+  {q:'A strip of metal A is placed in a solution of '+ec2N('M^2+(aq)')+' ions, and a coating of metal M forms on the strip. Which conclusion is correct?',o:[ec2N('M^2+(aq)')+' is a stronger oxidizing agent than '+ec2N('A^2+(aq)'),ec2N('A^2+(aq)')+' is a stronger oxidizing agent than '+ec2N('M^2+(aq)'),ec2N('M(s)')+' is a stronger reducing agent than '+ec2N('A(s)'),'The '+ec2N('A^2+(aq)')+' row is above the '+ec2N('M^2+(aq)')+' row'],a:0,
+    w:'A(s) gives electrons to M²⁺(aq): M²⁺ is the oxidizing agent and A is the reducing agent. The reaction is spontaneous, thus M²⁺(aq) is above A(s), and so above A²⁺(aq), which is on the same row as A(s). M²⁺(aq) is the stronger oxidizing agent, and A(s) is the stronger reducing agent.'},
+  {q:'Copper wire is placed in a solution of lead(II) nitrate. After an hour there is no evidence of reaction. In a table built from this evidence,',o:['the '+ec2N('Pb^2+')+' row is below the '+ec2N('Cu^2+')+' row','the '+ec2N('Pb^2+')+' row is above the '+ec2N('Cu^2+')+' row',ec2N('Cu(s)')+' is a stronger reducing agent than '+ec2N('Pb(s)'),ec2N('Pb^2+(aq)')+' is a stronger oxidizing agent than '+ec2N('Cu^2+(aq)')],a:0,
+    w:'If a reaction occurred, Pb²⁺(aq) would be the oxidizing agent and Cu(s) the reducing agent. There is no evidence of reaction, thus the OA, Pb²⁺(aq), is below the RA, Cu(s): the Pb²⁺ row is below the Cu²⁺ row. The data booklet agrees: Cu²⁺ is +0.34 V and Pb²⁺ is −0.13 V.'},
+  {q:'Use the following results (• = evidence of reaction, − = no evidence of reaction). The strongest oxidizing agent is',fig:ec2Grid(['A^2+(aq)','M^2+(aq)','R^2+(aq)'],['A(s)','M(s)','R(s)'],['011','000','010']),
+    o:[ec2N('M^2+(aq)'),ec2N('R^2+(aq)'),ec2N('A^2+(aq)'),ec2N('A(s)')],a:0,
+    w:'Count the reactions of each solution. M²⁺(aq) reacts with two metals, A and R. R²⁺(aq) reacts with one metal, A. A²⁺(aq) reacts with none. The oxidizing agent that reacts with the most metals is the strongest: M²⁺(aq) is at the top of the table. A(s) is the strongest reducing agent, not an oxidizing agent.'},
+  {q:'A student finds that metal X and metal Z both react with '+ec2N('Cu^2+(aq)')+'. What can the student conclude?',o:['Both are stronger reducing agents than Cu(s); their order is unknown','X is a stronger reducing agent than Z, because X was tested first','Z is a stronger reducing agent than X, because Z reacted faster','Both are weaker reducing agents than Cu(s), because both react with Cu²⁺'],a:0,
+    w:'Each test shows only that the metal is a stronger reducing agent than Cu(s): X and Z are both below Cu(s) on the right side of the table. The order of the tests and the speed of a reaction do not give the order. To order X and Z, test X(s) in a solution of Z ions, or Z(s) in a solution of X ions.'},
+  {q:'Platinum shows no evidence of reaction in hydrochloric acid, but nickel reacts and bubbles of hydrogen form. In a table built from this evidence, the oxidizing agents from the top are',o:[ec2N('Pt^2+(aq)')+', '+ec2N('H^+(aq)')+', '+ec2N('Ni^2+(aq)'),ec2N('H^+(aq)')+', '+ec2N('Pt^2+(aq)')+', '+ec2N('Ni^2+(aq)'),ec2N('Ni^2+(aq)')+', '+ec2N('H^+(aq)')+', '+ec2N('Pt^2+(aq)'),ec2N('Pt^2+(aq)')+', '+ec2N('Ni^2+(aq)')+', '+ec2N('H^+(aq)')],a:0,
+    w:'Nickel reacts: the OA, H⁺(aq), is above the RA, Ni(s), thus the H⁺ row is above the Ni²⁺ row. Platinum does not react: the OA, H⁺(aq), is below the RA, Pt(s), thus the Pt²⁺ row is above the H⁺ row. The order is Pt²⁺(aq), H⁺(aq), Ni²⁺(aq).'},
+  {q:'Use the data booklet. Which mixture shows evidence of a reaction?',o:[ec2N('Ni(s)')+' in '+ec2N('Pb(NO3)2(aq)'),ec2N('Pb(s)')+' in '+ec2N('Ni(NO3)2(aq)'),ec2N('Ag(s)')+' in '+ec2N('Cu(NO3)2(aq)'),ec2N('Cu(s)')+' in '+ec2N('Zn(NO3)2(aq)')],a:0,
+    w:'Ni(s) in Pb²⁺(aq): the OA, Pb²⁺ (−0.13 V), is above the RA, Ni(s) (−0.26 V), thus the reaction is spontaneous. In the other mixtures the OA is below the RA: Ni²⁺ (−0.26 V) is below Pb(s) (−0.13 V), Cu²⁺ (+0.34 V) is below Ag(s) (+0.80 V), and Zn²⁺ (−0.76 V) is below Cu(s) (+0.34 V).'},
+  {q:'Bromine water is added to a solution of sodium iodide, and the solution turns yellow-brown as iodine forms. Iodine added to a solution of sodium bromide shows no evidence of reaction. Which conclusion agrees with both results?',o:[ec2N('Br2')+' is a stronger oxidizing agent than '+ec2N('I2'),ec2N('I2')+' is a stronger oxidizing agent than '+ec2N('Br2'),ec2N('Br^-')+' is a stronger reducing agent than '+ec2N('I^-'),ec2N('Br2')+' and '+ec2N('I2')+' are equally strong oxidizing agents'],a:0,
+    w:'Br₂ oxidizes I⁻ to I₂: Br₂(l) + 2I⁻(aq) → 2Br⁻(aq) + I₂(s). The OA, Br₂, is above the RA, I⁻, thus the Br₂ row is above the I₂ row. I₂ does not oxidize Br⁻, which agrees. The data booklet: Br₂ is +1.07 V and I₂ is +0.54 V. Br₂ is the stronger oxidizing agent, and I⁻ is the stronger reducing agent.'},
+  {q:'In a results grid, metal M reacts with every solution except the solution of its own ions. Where is the half-reaction of M in the table built from the grid?',o:['At the bottom: M is the strongest reducing agent','At the top: M²⁺ is the strongest oxidizing agent','In the middle: M reacts with half of the solutions','At the bottom: M²⁺ is the strongest oxidizing agent'],a:0,
+    w:'A metal that reacts with every other solution is the strongest reducing agent of the set. Reducing agents get stronger down the right side of the table, thus its row is at the bottom. Its ion, M²⁺, is then the weakest oxidizing agent.'},
+  {q:'Use the following evidence about four metals that form 2+ ions.'+ec2Lines([['G(s) + J^2+(aq) -> G^2+(aq) + J(s)','J^2+(aq)','G(s)',1],['Q(s) + G^2+(aq) -> Q^2+(aq) + G(s)','G^2+(aq)','Q(s)',1],['A(s) + J^2+(aq)','J^2+(aq)','A(s)',0]])+'<br>Numbered: 1 '+ec2N('A^2+(aq)')+', 2 '+ec2N('G^2+(aq)')+', 3 '+ec2N('J^2+(aq)')+', 4 '+ec2N('Q^2+(aq)')+'. The oxidizing agents, from the strongest to the weakest, are ____, ____, ____ and ____. (Record all four digits of your answer.)',
+    n:1324,ans:'1324',u:'',tol:0,abs:0,
+    w:'Reaction 1: G(s) reacts with J²⁺(aq), thus J²⁺ is above G²⁺. Reaction 2: Q(s) reacts with G²⁺(aq), thus G²⁺ is above Q²⁺. Reaction 3: A(s) does not react with J²⁺(aq), thus J²⁺ is below A(s), and so below A²⁺. The order from the top is A²⁺, J²⁺, G²⁺, Q²⁺. Record 1324.'},
+  {q:'A student places strips of silver, copper, lead and zinc in 1.0 mol/L solutions of silver nitrate, copper(II) nitrate, lead(II) nitrate and zinc nitrate: each metal in each solution, 16 tests. The data booklet gives Ag⁺ +0.80 V, Cu²⁺ +0.34 V, Pb²⁺ −0.13 V and Zn²⁺ −0.76 V. How many of the 16 tests show evidence of a reaction?',n:6,u:'',tol:0,
+    w:'A metal reacts with the ions that are above its own row. Zn(s) reacts with Pb²⁺, Cu²⁺ and Ag⁺: 3 tests. Pb(s) reacts with Cu²⁺ and Ag⁺: 2 tests. Cu(s) reacts with Ag⁺: 1 test. Ag(s) reacts with none, and a metal in a solution of its own ions shows no change. The total is 3 + 2 + 1 = 6 tests.'},
+  {q:'Use the table that was built in the example. Which mixtures show evidence of a reaction?'+ec2Lines([['Pd(s) + Cu^2+(aq)'],['In(s) + Co^2+(aq)'],['Co(s) + Pd^2+(aq)'],['In(s) + Cu^2+(aq)'],['Cu(s) + In^3+(aq)'],['Cu(s) + Pd^2+(aq)']].map(x=>[x[0],0,0,1]))+'<br>Record the numbers of the four mixtures that react, in ascending order.',
+    fig:ecTableH(ec2EX.t,{cap:'The table from the example: the strongest oxidizing agent at the top.'}),n:2346,ans:'2346',u:'',tol:0,abs:0,
+    w:'A mixture reacts when its oxidizing agent is above its reducing agent. 1: Cu²⁺ is below Pd(s), no. 2: Co²⁺ is above In(s), yes. 3: Pd²⁺ is above Co(s), yes. 4: Cu²⁺ is above In(s), yes. 5: In³⁺ is below Cu(s), no. 6: Pd²⁺ is above Cu(s), yes. Record 2346.'}]};
+/* review bank: new diploma-level items (not repeats of the lesson questions) */
+EC_RQ[2]=[
+  {q:'Use the following information. A student tests four metals in solutions of their ions (• = evidence of reaction, − = no evidence of reaction). The oxidizing agents, from the strongest to the weakest, are',
+    fig:ec2Grid(['Q^2+(aq)','R^2+(aq)','X^2+(aq)','Z^2+(aq)'],['Q(s)','R(s)','X(s)','Z(s)'],['0010','1011','0000','1010']),
+    o:['X²⁺, Q²⁺, Z²⁺, R²⁺','R²⁺, Z²⁺, Q²⁺, X²⁺','X²⁺, Z²⁺, Q²⁺, R²⁺','Q²⁺, X²⁺, R²⁺, Z²⁺'],a:0,
+    w:'Count the reactions of each solution: X²⁺ 3, Q²⁺ 2, Z²⁺ 1, R²⁺ 0. The solution that reacts with the most metals holds the strongest oxidizing agent. The order is X²⁺, Q²⁺, Z²⁺, R²⁺. The reducing agents are in the reverse order: R(s) reacts with 3 solutions and is the strongest.'},
+  {q:'Use the following information. Numbered: 1 A(s), 2 J(s), 3 M(s), 4 R(s). The reducing agents, from the strongest to the weakest, are ____, ____, ____ and ____. (Record all four digits of your answer.)',
+    fig:ec2List([['2A(s) + 3J^2+(aq) -> 2A^3+(aq) + 3J(s)','J^2+(aq)','A(s)',1],['A(s) + 3R^+(aq)','R^+(aq)','A(s)',0],['M(s) + 2R^+(aq) -> M^2+(aq) + 2R(s)','R^+(aq)','M(s)',1]]),n:3412,ans:'3412',u:'',tol:0,abs:0,
+    w:'Test 1: J²⁺ is above A(s). Test 2: no evidence of reaction, thus R⁺ is below A(s): the A³⁺ row is above the R⁺ row. Test 3: R⁺ is above M(s). From the top: J²⁺, A³⁺, R⁺, M²⁺. The strongest reducing agent is at the bottom right: M, then R, A and J. Record 3412.'},
+  {q:'Metal Z forms '+ec2N('Z^2+')+' ions. A strip of Z reacts with 1.0 mol/L '+ec2N('Ni^2+(aq)')+', but shows no evidence of reaction in 1.0 mol/L '+ec2N('Fe^2+(aq)')+'. According to the data booklet, the reduction potential of '+ec2N('Z^2+(aq)')+' is between',
+    o:['−0.45 V and −0.26 V','−0.26 V and −0.13 V','−0.76 V and −0.45 V','+0.34 V and +0.80 V'],a:0,
+    w:'Z(s) reacts with Ni²⁺(aq), thus the OA Ni²⁺ (−0.26 V) is above the RA Z(s): the Z²⁺ row is below −0.26 V. Z(s) does not react with Fe²⁺(aq), thus Fe²⁺ (−0.45 V) is below Z(s): the Z²⁺ row is above −0.45 V. The E° of Z²⁺ is between −0.45 V and −0.26 V.'},
+  {q:'A metal forms 2+ ions. A strip of the metal reacts with 1.0 mol/L '+ec2N('Sn^2+(aq)')+', but shows no evidence of reaction in 1.0 mol/L '+ec2N('Cd^2+(aq)')+'. According to the data booklet, the metal could be',o:['nickel','zinc','silver','iron'],a:0,
+    w:'The metal reacts with Sn²⁺(aq), thus its row is below Sn²⁺ (−0.14 V). It does not react with Cd²⁺(aq), thus its row is above Cd²⁺ (−0.40 V). Of the four metals, only nickel (−0.26 V) is between −0.40 V and −0.14 V. Iron (−0.45 V) and zinc (−0.76 V) would react with Cd²⁺(aq), and silver (+0.80 V) would not react with Sn²⁺(aq).'},
+  {q:'Use the following information. A student built this table from evidence. Which mixture would show evidence of a reaction?',
+    fig:ecTableH(['Q^2+(aq) + 2e^- <=> Q(s)','Z^+(aq) + e^- <=> Z(s)','X^3+(aq) + 3e^- <=> X(s)','R^2+(aq) + 2e^- <=> R(s)'],{cap:'A table built from evidence: the strongest oxidizing agent at the top.'}),
+    o:[ec2N('R(s)')+' in a solution of '+ec2N('X^3+(aq)'),ec2N('Z(s)')+' in a solution of '+ec2N('X^3+(aq)'),ec2N('Q(s)')+' in a solution of '+ec2N('R^2+(aq)'),ec2N('X(s)')+' in a solution of '+ec2N('R^2+(aq)')],a:0,
+    w:'A mixture reacts when its oxidizing agent is above its reducing agent in the table. X³⁺(aq) is above R(s), thus R(s) reacts with X³⁺(aq): 3R(s) + 2X³⁺(aq) → 3R²⁺(aq) + 2X(s). In the other three mixtures, the oxidizing agent is below the reducing agent: X³⁺ is below Z(s), and R²⁺ is below Q(s) and X(s).'},
+  {q:'A student has five metals, each a reducing agent of a different strength, and a 1.0 mol/L solution of the ions of each metal. Each metal is placed in the solutions of the other four metals: 20 tests. How many of the tests show evidence of a reaction?',n:10,u:'',tol:0,
+    w:'Each pair of metals is tested two ways: metal 1 in the ions of metal 2, and metal 2 in the ions of metal 1. Only one of the two can react: the stronger reducing agent with the ions of the weaker one. Count the pairs: five metals give 5 × 4 ÷ 2 pairs. Thus 10 of the 20 tests show a reaction.'},
+  {q:'To decide whether tin or nickel is the stronger reducing agent, a student should',o:['place a strip of nickel in a solution of '+ec2N('Sn^2+(aq)')+' ions','place a strip of nickel in a solution of '+ec2N('Ni^2+(aq)')+' ions','place a strip of tin in a solution of '+ec2N('Sn^2+(aq)')+' ions','place a strip of each metal in a '+ec2N('Cu^2+(aq)')+' solution'],a:0,
+    w:'Test one metal in a solution of the ions of the other. If tin forms on the nickel, Ni(s) is the stronger reducing agent. The data booklet predicts this: Sn²⁺ (−0.14 V) is above Ni(s) (−0.26 V). A metal in its own ions shows no change. Cu²⁺(aq) (+0.34 V) reacts with both metals, thus it cannot tell them apart.'},
+  {q:'Use the following information. Numbered: 1 '+ec2N('H^+(aq)')+', 2 '+ec2N('Q^2+(aq)')+', 3 '+ec2N('X^2+(aq)')+', 4 '+ec2N('Z^2+(aq)')+'. The oxidizing agents, from the strongest to the weakest, are ____, ____, ____ and ____. (Record all four digits of your answer.)',
+    fig:ec2List([['X(s) + 2H^+(aq) -> X^2+(aq) + H2(g)','H^+(aq)','X(s)',1],['Q(s) + 2H^+(aq)','H^+(aq)','Q(s)',0],['Q(s) + Z^2+(aq) -> Q^2+(aq) + Z(s)','Z^2+(aq)','Q(s)',1]]),n:4213,ans:'4213',u:'',tol:0,abs:0,
+    w:'Test 1: X(s) reacts with the acid, thus H⁺ is above X²⁺. Test 2: Q(s) does not react with the acid, thus H⁺ is below Q(s): the Q²⁺ row is above the H⁺ row. Test 3: Z²⁺ is above Q(s). From the top: Z²⁺, Q²⁺, H⁺, X²⁺. Record 4213.'},
+  {q:'From the data booklet, a student predicts that aluminum foil reacts with copper(II) sulfate solution. At first, almost no change is observed. The best explanation is that',o:['a thin oxide layer on the aluminum slows the reaction','Cu²⁺(aq) is a weaker oxidizing agent than Al³⁺(aq)','the booklet values are measured at 25 °C, not at room temperature','aluminum is a weaker reducing agent than copper'],a:0,
+    w:'The prediction is correct: Cu²⁺(aq) (+0.34 V) is above Al(s) (−1.66 V), thus the reaction is spontaneous. A table tells whether a reaction can occur, not how fast it is. A thin layer of aluminum oxide covers the metal and slows the reaction. When chloride ions are added, the layer breaks down and copper forms quickly.'}];
+/* challenge: a results grid with one wrong result */
+EC_CH[2]={q:'Use the following information. A student tests four metals, A, G, J and M, in solutions of their ions and records the results (• = evidence of reaction, − = no evidence of reaction). One of the results is an error. Which test should the student repeat?',
+  fig:ec2Grid(['A^2+(aq)','G^2+(aq)','J^2+(aq)','M^2+(aq)'],['A(s)','G(s)','J(s)','M(s)'],['0001','0011','1001','0000']),
+  o:[ec2N('G(s)')+' in '+ec2N('A^2+(aq)'),ec2N('A(s)')+' in '+ec2N('G^2+(aq)'),ec2N('J(s)')+' in '+ec2N('A^2+(aq)'),ec2N('G(s)')+' in '+ec2N('J^2+(aq)')],a:0,
+  w:'For each pair of metals, one of the two tests should show a reaction: the stronger reducing agent reacts with the ions of the weaker one. Only the pair A and G shows no reaction either way, thus one of these two results is wrong. The other results give an order. G(s) reacts with J²⁺(aq), thus G is a stronger reducing agent than J. J(s) reacts with A²⁺(aq), thus J is stronger than A. Thus G is stronger than A, and G(s) should react with A²⁺(aq). The error is G(s) in A²⁺(aq): the table, top first, is M²⁺, A²⁺, J²⁺, G²⁺.'};
+/* written response for the timed exam: design an experiment that builds a table */
+EC_WRQ.push({q:'A student is given clean strips of copper, lead and zinc, and 1.0 mol/L solutions of copper(II) nitrate, lead(II) nitrate and zinc nitrate. (a) Describe a procedure that uses these materials to build a table of reduction half-reactions from evidence. (b) Use the data booklet to predict the results, and describe the evidence that shows a reaction. (c) Write the table that the results give, with the strongest oxidizing agent at the top. (d) Write the balanced net equation of one reaction that occurs.',
+  marks:['(a) Places each metal in the solutions of the other two metal ions (6 tests, in a well plate or test tubes) and records each result in a results grid','(a) Keeps the other variables the same: volume, concentration, temperature and time, and clean (sanded) strips','(b) Predicts from the table that zinc reacts with Cu²⁺(aq) and Pb²⁺(aq), lead reacts with Cu²⁺(aq), and copper reacts with neither: an OA above an RA reacts','(b) Evidence: a dark solid forms on the metal, or the blue colour of Cu²⁺(aq) fades; no change means no reaction','(c) From the top: Cu²⁺(aq) + 2e⁻ ⇌ Cu(s), Pb²⁺(aq) + 2e⁻ ⇌ Pb(s), Zn²⁺(aq) + 2e⁻ ⇌ Zn(s)','(d) For example, Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s)'],
+  model:'<p>(a) Sand each strip so that it is clean. Put a few millilitres of each solution in the wells of a well plate. Place a strip of each metal in the solutions of the ions of the other two metals: copper in Pb²⁺ and Zn²⁺, lead in Cu²⁺ and Zn²⁺, zinc in Cu²⁺ and Pb²⁺. Use the same volume, concentration and temperature, and wait the same time. Record a dot for a reaction and a dash for no evidence of reaction in a results grid.</p><p>(b) Data booklet: Cu²⁺ +0.34 V, Pb²⁺ −0.13 V, Zn²⁺ −0.76 V. An oxidizing agent above a reducing agent reacts. Zinc reacts with Cu²⁺ and with Pb²⁺, lead reacts with Cu²⁺, and copper reacts with neither: 3 reactions. Evidence: a brown solid (copper) or a dark grey solid (lead) forms on the metal, and the blue colour of Cu²⁺(aq) fades. No change means no evidence of reaction.</p><p>(c) Cu²⁺(aq) has the most reactions (2), thus it is at the top: Cu²⁺(aq) + 2e⁻ ⇌ Cu(s), then Pb²⁺(aq) + 2e⁻ ⇌ Pb(s), then Zn²⁺(aq) + 2e⁻ ⇌ Zn(s). Zinc, with the most reactions (2), is the strongest reducing agent, at the bottom right.</p><p>(d) Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s) (or Zn(s) + Pb²⁺(aq) → Zn²⁺(aq) + Pb(s), or Pb(s) + Cu²⁺(aq) → Pb²⁺(aq) + Cu(s)).</p>'});
+/* generators. RN exists only when they run. Letters that are not element symbols name the made-up metals */
+const ec2L=['A','G','J','M','Q','R','X','Z'],ec2Sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=RN(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const ec2Ion=(m,z)=>`${m}^${z>1?z:''}+(aq)`,ec2G=(a,b)=>b?ec2G(b,a%b):a,ec2And=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+/* a balanced equation for metal w (charge zw) with the ion of metal u (charge zu) */
+const ec2Eq=(u,zu,w,zw)=>{const l=zu*zw/ec2G(zu,zw),a=l/zu,b=l/zw,k=c=>c>1?c:'';return `${k(a)}${ec2Ion(u,zu)} + ${k(b)}${w}(s) -> ${k(a)}${u}(s) + ${k(b)}${ec2Ion(w,zw)}`;};
+EC_GEN[2]=[
+  /* the order of four made-up metals from three tests: a numerical-response code */
+  ()=>{const M=ec2Sh(ec2L).slice(0,4).sort(),z=M.map(()=>RN(1,3)),ord=ec2Sh([0,1,2,3]),tests=[];
+    for(let k=0;k<3;k++){const u=ord[k],w=ord[k+1];tests.push(RN(0,9)<6?[u,w,1]:[w,u,0]);}
+    const T=ec2Sh(tests),oa=RN(0,1)===1,code=(oa?ord:ord.slice().reverse()).map(i=>i+1).join(''),U=s=>ecU(s);
+    const line=([o,r,y],i)=>`${i+1}. `+(y?U(ec2Eq(M[o],z[o],M[r],z[r])):U(`${M[r]}(s) + ${ec2Ion(M[o],z[o])}`)+' → no evidence of reaction');
+    const I=k=>U(ec2Ion(M[k],z[k])),why=([o,r,y],i)=>`Test ${i+1}: `+(y?`${M[r]}(s) reacts with ${I(o)}, thus the ${I(o)} row is above the ${I(r)} row.`:`${M[r]}(s) does not react with ${I(o)}, thus the ${I(o)} row is below the ${I(r)} row.`);
+    return {q:`Use the following evidence about four metals.<br>${T.map(line).join('<br>')}<br>Numbered: ${M.map((m,i)=>(i+1)+' '+(oa?U(ec2Ion(m,z[i])):m+'(s)')).join(', ')}. The ${oa?'oxidizing':'reducing'} agents, from the strongest to the weakest, are ____, ____, ____ and ____. (Record all four digits of your answer.)`,
+      n:+code,ans:code,u:'',tol:0,abs:0,
+      w:T.map(why).join(' ')+` From the top: ${ord.map(I).join(', ')}. `+(oa?'The strongest oxidizing agent is at the top.':'The strongest reducing agent is at the bottom right, thus read the rows from the bottom.')+` Record ${code}.`};},
+  /* how many tests of metals in solutions react, from the data booklet */
+  ()=>{const S=[['Ag','Ag^+(aq)','AgNO3(aq)','silver'],['Cu','Cu^2+(aq)','Cu(NO3)2(aq)','copper'],['Pb','Pb^2+(aq)','Pb(NO3)2(aq)','lead'],['Ni','Ni^2+(aq)','Ni(NO3)2(aq)','nickel'],['Fe','Fe^2+(aq)','FeSO4(aq)','iron'],['Zn','Zn^2+(aq)','Zn(NO3)2(aq)','zinc']];
+    const E=s=>ecRow(s[1]).E,ms=ec2Sh(S).slice(0,RN(3,4)),ss=ec2Sh(S).slice(0,RN(3,4)),U=ecU;let n=0;
+    const per=ms.map(m=>{const r=ss.filter(s=>s!==m&&E(s)>E(m));n+=r.length;return `${U(m[0])}(s) reacts with ${r.length?ec2And(r.map(s=>U(s[1]))):'none of them'}: ${r.length} ${r.length===1?'test':'tests'}.`;});
+    const all=[...new Set(ms.concat(ss))].sort((a,b)=>E(b)-E(a));
+    return {q:`A student places strips of ${ec2And(ms.map(m=>m[3]))} in 1.0 mol/L solutions of ${ec2And(ss.map(s=>U(s[2])))}: each metal in each solution, ${ms.length*ss.length} tests. The data booklet gives ${ec2And(all.map(s=>U(s[1])+' '+ecV(E(s))))}. How many of the tests show evidence of a reaction?`,
+      n,u:'',tol:0,w:`A metal reacts with the ions that are above its own row, and a metal in a solution of its own ions shows no change. ${per.join(' ')} The total is ${n} tests.`};},
+  /* which mixtures react, from a table built from evidence: a numerical-response code */
+  ()=>{for(let t=0;t<200;t++){const M=ec2Sh(ec2L).slice(0,4),z=M.map(()=>RN(1,3)),pairs=[];for(let i=0;i<4;i++)for(let j=0;j<4;j++)if(i!==j)pairs.push([i,j]);
+      const P=ec2Sh(pairs).slice(0,6),yes=P.map(([r,o])=>o<r);if(yes.filter(Boolean).length!==4)continue;const code=yes.map((y,i)=>y?i+1:'').join(''),U=ecU;
+      return {q:`A student built this table from evidence (the strongest oxidizing agent at the top):<br>${M.map((m,i)=>U(ec2M(m,z[i]))).join('<br>')}<br>Which mixtures show evidence of a reaction?<br>${P.map(([r,o],i)=>`${i+1}. ${M[r]}(s) + ${U(ec2Ion(M[o],z[o]))}`).join('<br>')}<br>Record the numbers of the four mixtures that react, in ascending order.`,
+        n:+code,ans:code,u:'',tol:0,abs:0,
+        w:'A mixture reacts when its oxidizing agent is above its reducing agent in the table. '+P.map(([r,o],i)=>`${i+1}: ${U(ec2Ion(M[o],z[o]))} is ${o<r?'above':'below'} ${M[r]}(s), ${o<r?'yes':'no'}.`).join(' ')+` Record ${code}.`};}
+    throw new Error('ec2: no set of mixtures');}];
+EC_METHOD[2]='Take one test at a time: a reaction puts the oxidizing agent above the reducing agent, and no evidence of reaction puts it below. In a results grid, count the reactions of each solution and of each metal.';
+EC_HT[2]={pre:'In a table of reduction half-reactions, oxidizing agents are on the left (the strongest at the top) and reducing agents are on the right (the strongest at the bottom). A reaction is spontaneous when the oxidizing agent is above the reducing agent.',items:[
+  {q:'Decide if a reaction is spontaneous',s:['Find the oxidizing agent (it gains electrons) and the reducing agent (it loses electrons).','Find both in the table: the OA on the left side, the RA on the right side.','OA above the RA: spontaneous. OA below the RA: no reaction.'],chk:'Zn(s) in Cu²⁺(aq): Cu²⁺ (+0.34 V) is above Zn(s) (−0.76 V), thus copper forms on the zinc. Cu(s) in Zn²⁺(aq) shows no change.'},
+  {q:'Build a table from a list of reactions',s:['Take one reaction at a time. Identify the OA and the RA.','Evidence of reaction: put the OA above the RA. No evidence of reaction: put the OA below the RA.','Join the results in one list, from the strongest OA to the weakest.','Write each row as a reduction: the ion and the electrons on the left, the metal on the right.'],chk:'Read every test again from the finished table: each one must agree with it.'},
+  {q:'Build a table from a results grid',s:['Count the dots in each column: the solution with the most reactions has the strongest OA. It goes at the top.','Count the dots in each row: the metal with the most reactions is the strongest RA. It goes at the bottom.','Write the rows from the top: the OA with the most dots first.'],chk:'The two counts must give the same order. A tie or a mismatch means that a result is missing or wrong.'},
+  {q:'Use a table built from evidence to predict a reaction',s:['Find the entities present in the table.','The SOA is the highest OA present. The SRA is the lowest RA present.','If the SOA is above the SRA, they react. Write the two half-reactions and the net equation.'],chk:'A table from evidence has no E° values, but the positions of the rows are enough to predict.'},
+  {q:'Place an unknown metal in the data booklet table',s:['A reaction with an ion: the row of the unknown metal is below that ion.','No evidence of reaction with an ion: the row of the unknown metal is above that ion.','Its E° is between the E° values of the two closest ions.'],chk:'X reacts with Pb²⁺ (−0.13 V) but not with Zn²⁺ (−0.76 V): the E° of X²⁺ is between −0.76 V and −0.13 V.'},
+  {q:'Record a numerical-response code for an order',s:['Number the entities as the question does.','Oxidizing agents from the strongest: read the rows from the top.','Reducing agents from the strongest: read the rows from the bottom.'],chk:'The order of the reducing agents, from the strongest, is the reverse of the order of the rows.'}]};
+EC_REF.t.push(['Spontaneous reaction','A reaction that occurs on its own when the reactants are mixed. In a table of reduction half-reactions, the oxidizing agent is above the reducing agent.'],
+  ['Reduction table','A table of reduction half-reactions (a redox table): oxidizing agents on the left, the strongest at the top; reducing agents on the right, the strongest at the bottom. It can be built from the evidence of experiments.'],
+  ['No evidence of reaction','The result of a test in which nothing changes: no new solid, no colour change and no gas. The reaction is not spontaneous: the oxidizing agent is below the reducing agent.'],
+  ['Results grid','A table of tests: each solution (an oxidizing agent) is a column, each metal (a reducing agent) is a row, and a dot marks a reaction.']);
+EC_REF.f.push(['Order from evidence','Reaction: the OA is above the RA. No evidence of reaction: the OA is below the RA. In a results grid, the column with the most reactions is the strongest OA (top) and the row with the most reactions is the strongest RA (bottom).']);
 }catch(e){console.error('[ec] slot 2 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 3 ----- */
 {try{
