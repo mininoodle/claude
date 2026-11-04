@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Blockfall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centered column - hold + stats | well | next, with settings below */
+:root{
+  --bg:#f3f4f6; --fg:#1d2026; --muted:#6b7280; --line:#d9dce2; --well:#e8eaee; --grid:#dde0e5; --accent:#3b5bdb;
+  --I:#3aa6c2; --O:#d6a32a; --T:#9561c2; --S:#4aa465; --Z:#cf544c; --J:#4a6fc7; --L:#d78234;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111317;--fg:#e4e6ea;--muted:#8a9099;--line:#2a2e35;--well:#171a1f;--grid:#1f2329;--accent:#8ca0ff;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:13px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px}
+main{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.game{display:flex;gap:16px;justify-content:center;align-items:flex-start}
+.side{display:flex;flex-direction:column;gap:12px;width:min(88px,19vw)}
+.side canvas{width:100%;height:auto;display:block}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.stat{font-variant-numeric:tabular-nums;font-size:15px;font-weight:500}
+#action{min-height:5.6em;line-height:1.4;color:var(--accent);transition:opacity .4s}
+#action.fade{opacity:0}
+.well{position:relative;width:min(280px,52vw)}
+#board{width:100%;height:auto;display:block;border:1px solid var(--line)}
+#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);text-align:center;padding:16px}
+#overlay h1{font-size:18px;font-weight:500;margin:0;letter-spacing:.04em}
+#overlay p{margin:0;color:var(--muted);line-height:1.5}
+.modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button{font:inherit;color:var(--fg);background:transparent;border:1px solid var(--line);padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.current{border-color:var(--accent);color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;margin:0 0 10px}
+.binds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 24px}
+.row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.row span{flex:1;min-width:0}
+.row button{width:76px;text-align:center;padding:4px 6px}
+.row button.listen{border-color:var(--accent);color:var(--accent)}
+.row button.unset{color:var(--muted)}
+.tuning{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.tuning label{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.tuning input[type=number]{font:inherit;width:64px;padding:4px 6px;background:var(--well);color:var(--fg);border:1px solid var(--line)}
+.tuning input[type=checkbox],.tuning input[type=range]{accent-color:var(--accent)}
+.note{color:var(--muted);margin:10px 0 0;line-height:1.5;max-width:65ch}
+@media (prefers-reduced-motion:reduce){#action{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="game">
+    <div class="side">
+      <div><div class="label">Hold</div><canvas id="hold"></canvas></div>
+      <div><div class="label">Time</div><div class="stat" id="time">0:00.00</div></div>
+      <div><div class="label">Score</div><div class="stat" id="score">0</div></div>
+      <div><div class="label">Lines</div><div class="stat" id="lines">0</div></div>
+      <div><div class="label">Level</div><div class="stat" id="level">1</div></div>
+      <div><div class="label">Attack</div><div class="stat" id="attack">0</div></div>
+      <div><div class="label">APM</div><div class="stat" id="apm">0.0</div></div>
+      <div><div class="label">PPS</div><div class="stat" id="pps">0.00</div></div>
+    </div>
+    <div class="well">
+      <canvas id="board"></canvas>
+      <div id="overlay">
+        <h1 id="ovTitle">Blockfall</h1><p id="ovText"></p>
+        <div class="modes"><button id="mMarathon">Marathon</button><button id="mSprint">Sprint 40L</button></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><div class="label">Next</div><canvas id="next"></canvas></div>
+      <div id="action" class="fade"></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Controls</h2>
+    <div class="binds" id="binds"></div>
+    <p class="note">Each action has two key slots. Click a slot, then press a key. Press Backspace to clear the slot.</p>
+  </section>
+
+  <section>
+    <h2>Handling</h2>
+    <div class="tuning">
+      <label for="das">DAS <input id="das" data-cfg="das" type="number" min="0" max="500"> ms</label>
+      <label for="arr">ARR <input id="arr" data-cfg="arr" type="number" min="0" max="200"> ms</label>
+      <label for="dcd">DCD <input id="dcd" data-cfg="dcd" type="number" min="0" max="200"> ms</label>
+      <label for="sdf">SDF <input id="sdf" data-cfg="sdf" type="number" min="2" max="41"> ×</label>
+      <label for="lock">Lock delay <input id="lock" data-cfg="lock" type="number" min="100" max="5000"> ms</label>
+      <label for="resets">Lock resets <input id="resets" data-cfg="resets" type="number" min="0" max="99"></label>
+      <label for="keepDas"><input id="keepDas" data-cfg="keepDas" type="checkbox"> Keep DAS charge on direction change</label>
+      <label for="irs"><input id="irs" data-cfg="irs" type="checkbox"> IRS / IHS</label>
+    </div>
+    <p class="note">DCD (DAS cut delay) pauses auto-shift for the new piece after a lock. SDF is the soft drop speed as a multiple of gravity, and 41 is instant.
+      IRS / IHS rotates or holds the new piece at once if you hold a rotate or hold key when it appears.</p>
+  </section>
+
+  <section>
+    <h2>Display</h2>
+    <div class="tuning">
+      <label for="ghost">Ghost <input id="ghost" data-cfg="ghost" type="range" min="0" max="60"></label>
+      <label for="grid"><input id="grid" data-cfg="grid" type="checkbox"> Grid</label>
+      <label for="outline"><input id="outline" data-cfg="outline" type="checkbox"> Cell outlines</label>
+      <button id="reset">Reset all settings</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const COLS = 10, VIS = 20, HIDDEN = 4, ROWS = VIS + HIDDEN, CS = 30, SPRINT = 40;
+
+const SHAPES = {
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  J: [[1,0,0],[1,1,1],[0,0,0]],
+  L: [[0,0,1],[1,1,1],[0,0,0]],
+  O: [[1,1],[1,1]],
+  S: [[0,1,1],[1,1,0],[0,0,0]],
+  T: [[0,1,0],[1,1,1],[0,0,0]],
+  Z: [[1,1,0],[0,1,1],[0,0,0]],
+};
+// SRS wall kicks, screen coordinates (y down), keyed "from"+"to"
+const KJ = {
+  '01':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '10':[[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  '12':[[0,0],[1,0],[1,1],[0,-2],[1,-2]],   '21':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '23':[[0,0],[1,0],[1,-1],[0,2],[1,2]],    '32':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '30':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],'03':[[0,0],[1,0],[1,-1],[0,2],[1,2]],
+};
+const KI = {
+  '01':[[0,0],[-2,0],[1,0],[-2,1],[1,-2]], '10':[[0,0],[2,0],[-1,0],[2,-1],[-1,2]],
+  '12':[[0,0],[-1,0],[2,0],[-1,-2],[2,1]], '21':[[0,0],[1,0],[-2,0],[1,2],[-2,-1]],
+  '23':[[0,0],[2,0],[-1,0],[2,-1],[-1,2]], '32':[[0,0],[-2,0],[1,0],[-2,1],[1,-2]],
+  '30':[[0,0],[1,0],[-2,0],[1,2],[-2,-1]], '03':[[0,0],[-1,0],[2,0],[-1,-2],[2,1]],
+};
+// 180 kicks (TETR.IO SRS+), all pieces
+const K180 = {
+  '02':[[0,0],[0,-1],[1,-1],[-1,-1],[1,0],[-1,0]], '20':[[0,0],[0,1],[-1,1],[1,1],[-1,0],[1,0]],
+  '13':[[0,0],[1,0],[1,-2],[1,-1],[0,-2],[0,-1]], '31':[[0,0],[-1,0],[-1,-2],[-1,-1],[0,-2],[0,-1]],
+};
+// Garbage lines sent, indexed by lines cleared
+const ATK = {none: [0,0,1,2,4], mini: [0,0,1], full: [0,2,4,6]};
+const COMBO_ATK = [0,0,1,1,1,2,2,3,3,4,4,4,5];
+
+// ---- settings ----
+const ACTIONS = [['left','Move left'],['right','Move right'],['soft','Soft drop'],['hard','Hard drop'],
+  ['cw','Rotate right'],['ccw','Rotate left'],['r180','Rotate 180'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
+const DEFAULT_KEYS = {left:['ArrowLeft',''],right:['ArrowRight',''],soft:['ArrowDown',''],hard:['Space',''],
+  cw:['ArrowUp','KeyX'],ccw:['KeyZ','ControlLeft'],r180:['KeyA',''],hold:['KeyC','ShiftLeft'],pause:['Escape',''],restart:['KeyR','']};
+const TUNE = {das:133, arr:10, dcd:17, sdf:20, lock:500, resets:15, keepDas:false, irs:true, ghost:22, grid:true, outline:false};
+const copyKeys = k => Object.fromEntries(Object.entries(k).map(([a, v]) => [a, v.slice()]));
+const cfg = {keys: copyKeys(DEFAULT_KEYS), ...TUNE, mode: 'marathon', best: 0};
+try {
+  const s = JSON.parse(localStorage.getItem('blockfall'));
+  if (s) {
+    for (const a in cfg.keys) if (s.keys?.[a] != null) {
+      const v = s.keys[a];
+      cfg.keys[a] = Array.isArray(v) ? [v[0] || '', v[1] || ''] : [v, ''];
+    }
+    for (const k in TUNE) if (typeof s[k] === typeof TUNE[k]) cfg[k] = s[k];
+    if (s.mode === 'sprint') cfg.mode = 'sprint';
+    if (typeof s.best === 'number') cfg.best = s.best;
+  }
+} catch (e) {}
+const save = () => { try { localStorage.setItem('blockfall', JSON.stringify(cfg)); } catch (e) {} };
+const actionFor = code => code && Object.keys(cfg.keys).find(a => cfg.keys[a].includes(code));
+
+function keyName(c) {
+  if (!c) return '-';
+  const arrows = {ArrowLeft:'←',ArrowRight:'→',ArrowUp:'↑',ArrowDown:'↓'};
+  if (arrows[c]) return arrows[c];
+  if (c.startsWith('Key')) return c.slice(3);
+  if (c.startsWith('Digit')) return c.slice(5);
+  return c.replace(/(Left|Right)$/, ' $1').replace('Control', 'Ctrl');
+}
+
+let listening = null; // {a, i}
+function renderBinds() {
+  $('#binds').innerHTML = '';
+  for (const [a, label] of ACTIONS) {
+    const row = document.createElement('div'); row.className = 'row';
+    const name = document.createElement('span'); name.textContent = label; row.append(name);
+    for (let i = 0; i < 2; i++) {
+      const b = document.createElement('button'); b.id = `bind-${a}-${i}`;
+      const on = listening && listening.a === a && listening.i === i;
+      b.textContent = on ? 'press key' : keyName(cfg.keys[a][i]);
+      b.setAttribute('aria-label', `${label}, key ${i + 1}`);
+      if (on) b.classList.add('listen');
+      if (!cfg.keys[a][i]) b.classList.add('unset');
+      b.onclick = () => { listening = on ? null : {a, i}; if (state === 'play') togglePause(); renderBinds(); };
+      row.append(b);
+    }
+    $('#binds').append(row);
+  }
+}
+function syncInputs() {
+  for (const el of document.querySelectorAll('[data-cfg]')) {
+    if (el.type === 'checkbox') el.checked = cfg[el.dataset.cfg];
+    else el.value = cfg[el.dataset.cfg];
+  }
+}
+function assign({a, i}, code) {
+  if (code === 'Backspace') code = '';
+  else for (const k in cfg.keys) cfg.keys[k] = cfg.keys[k].map(c => c === code ? '' : c);
+  cfg.keys[a][i] = code; listening = null; save(); renderBinds();
+  document.activeElement?.blur();
+}
+for (const el of document.querySelectorAll('[data-cfg]')) {
+  el.addEventListener(el.type === 'number' ? 'change' : 'input', () => {
+    const k = el.dataset.cfg;
+    cfg[k] = el.type === 'checkbox' ? el.checked
+      : Math.max(+el.min, Math.min(+el.max, parseInt(el.value) || +el.min));
+    save(); syncInputs(); dirty = true;
+  });
+}
+$('#reset').onclick = () => { Object.assign(cfg, {keys: copyKeys(DEFAULT_KEYS)}, TUNE); listening = null; save(); renderBinds(); syncInputs(); dirty = true; };
+
+// ---- game ----
+let board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state = 'ready';
+let gAcc, lockT, lockResets, lowestY, lastRot, lastKick, actionT = 0, dirty = true, newBest = false;
+let repeatFrom = 0, steps = 0; // auto-shift: time the next repeat run starts, and shifts done in that run
+const down = new Set(), dirs = [];
+const isHeld = a => cfg.keys[a].some(c => c && down.has(c));
+const dirOf = a => a === 'left' ? -1 : 1;
+
+const empty = () => Array(COLS).fill(null);
+function fits(m, x, y) {
+  for (let r = 0; r < m.length; r++) for (let c = 0; c < m.length; c++) {
+    if (!m[r][c]) continue;
+    const nx = x + c, ny = y + r;
+    if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
+    if (ny >= 0 && board[ny][nx]) return false;
+  }
+  return true;
+}
+const grounded = () => !fits(cur.m, cur.x, cur.y + 1);
+function rot(m, d) {
+  const n = m.length, o = m.map(r => r.slice());
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) o[y][x] = d > 0 ? m[n-1-x][y] : m[x][n-1-y];
+  return o;
+}
+function fill() {
+  while (queue.length < 6) {
+    if (!bag.length) {
+      bag = [...'IJLOSTZ'];
+      for (let i = bag.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; }
+    }
+    queue.push(bag.pop());
+  }
+}
+// Spawn just above the visible field, move up if blocked, then drop one row if there is room
+function spawn(t) {
+  t = t ?? queue.shift(); fill();
+  cur = {t, m: SHAPES[t].map(r => r.slice()), r: 0, x: t === 'O' ? 4 : 3, y: HIDDEN - 2, g: null};
+  gAcc = 0; lockT = 0; lockResets = 0; lastRot = false; lastKick = 0;
+  while (!fits(cur.m, cur.x, cur.y) && cur.y > -1) cur.y--;
+  if (!fits(cur.m, cur.x, cur.y)) return end();
+  if (fits(cur.m, cur.x, cur.y + 1)) cur.y++;
+  lowestY = cur.y;
+}
+// Next piece from the queue, with DAS cut and initial hold / rotation
+function next() {
+  spawn();
+  if (state !== 'play') return;
+  const now = performance.now();
+  if (cfg.dcd > 0 && dirs.length && now >= repeatFrom) { repeatFrom = now + cfg.dcd; steps = 0; }
+  if (!cfg.irs) return;
+  if (isHeld('hold')) doHold();
+  if (state !== 'play') return;
+  if (isHeld('r180')) rotate(2);
+  else if (isHeld('cw')) rotate(1);
+  else if (isHeld('ccw')) rotate(-1);
+}
+function start(m) {
+  cfg.mode = mode = m; save();
+  board = Array.from({length: ROWS}, empty);
+  queue = []; bag = []; hold = null; canHold = true;
+  score = 0; lines = 0; level = 1; attack = 0; combo = -1; b2b = -1; playMs = 0; pieces = 0;
+  down.clear(); dirs.length = 0; showAction([]); fill(); state = 'play'; next(); ui();
+  document.activeElement?.blur();
+}
+function end() { state = 'over'; ui(); }
+function finish() {
+  state = 'done';
+  newBest = !cfg.best || playMs < cfg.best;
+  if (newBest) { cfg.best = playMs; save(); }
+  ui();
+}
+function togglePause() { if (state === 'play') state = 'pause'; else if (state === 'pause') state = 'play'; down.clear(); dirs.length = 0; ui(); }
+
+// A move or rotation resets the lock timer only while the piece is (or was) on the ground
+function moved(wasGrounded) {
+  cur.g = null;
+  if ((wasGrounded || grounded()) && lockResets < cfg.resets) { lockT = 0; lockResets++; }
+}
+function fall(y) { if (y === cur.y) return; cur.y = y; lastRot = false; if (y > lowestY) { lowestY = y; lockResets = 0; lockT = 0; } }
+function shift(dx) {
+  if (!fits(cur.m, cur.x + dx, cur.y)) return false;
+  const g = grounded(); cur.x += dx; lastRot = false; moved(g); return true;
+}
+function rotate(d) {
+  if (cur.t === 'O') return;
+  const to = (cur.r + d + 4) % 4;
+  const m = d === 2 ? rot(rot(cur.m, 1), 1) : rot(cur.m, d);
+  const kicks = (d === 2 ? K180 : cur.t === 'I' ? KI : KJ)['' + cur.r + to];
+  for (let k = 0; k < kicks.length; k++) {
+    const [kx, ky] = kicks[k];
+    if (!fits(m, cur.x + kx, cur.y + ky)) continue;
+    const g = grounded();
+    cur.m = m; cur.x += kx; cur.y += ky; cur.r = to;
+    lastRot = true; lastKick = d === 2 ? 0 : k; moved(g); return;
+  }
+}
+function ghostY() {
+  if (cur.g == null) { let y = cur.y; while (fits(cur.m, cur.x, y + 1)) y++; cur.g = y; }
+  return cur.g;
+}
+function hardDrop() { const y = ghostY(); score += 2 * (y - cur.y); fall(y); lock(); }
+function doHold() {
+  if (!canHold) return;
+  const prev = hold; hold = cur.t; canHold = false; spawn(prev);
+}
+
+// 3-corner rule: 0 = none, 1 = mini, 2 = full T-spin
+function tspin() {
+  if (cur.t !== 'T' || !lastRot) return 0;
+  const solid = ([dx, dy]) => {
+    const x = cur.x + dx, y = cur.y + dy;
+    return x < 0 || x >= COLS || y >= ROWS || (y >= 0 && !!board[y][x]);
+  };
+  const corners = [[0,0],[2,0],[2,2],[0,2]].map(solid); // TL TR BR BL
+  if (corners.filter(Boolean).length < 3) return 0;
+  const front = [[0,1],[1,2],[2,3],[3,0]][cur.r];
+  return front.every(i => corners[i]) || lastKick === 4 ? 2 : 1;
+}
+
+function lock() {
+  const ts = tspin();
+  let above = true;
+  cur.m.forEach((row, r) => row.forEach((v, c) => {
+    if (!v) return;
+    const y = cur.y + r;
+    if (y >= 0) board[y][cur.x + c] = cur.t;
+    if (y >= HIDDEN) above = false;
+  }));
+  pieces++;
+  let n = 0;
+  for (let y = ROWS - 1; y >= 0; y--) if (board[y].every(Boolean)) { board.splice(y, 1); board.unshift(empty()); n++; y++; }
+
+  const kind = ts === 2 ? 'full' : ts === 1 ? 'mini' : 'none';
+  let pts = (kind === 'full' ? [400,800,1200,1600] : kind === 'mini' ? [100,200,400] : [0,100,300,500,800])[n] ?? 0;
+  let atk = ATK[kind][n] ?? 0;
+  const msg = [];
+  if (ts) msg.push((ts === 1 ? 'T-Spin Mini ' : 'T-Spin ') + (['','Single','Double','Triple'][n] || ''));
+  else if (n) msg.push(['','Single','Double','Triple','Quad'][n]);
+
+  if (n) {
+    const hard = n === 4 || ts > 0;
+    if (hard) { b2b++; if (b2b > 0) { pts *= 1.5; atk += 1; msg.push('B2B ×' + b2b); } }
+    else b2b = -1;
+    combo++;
+    if (combo > 0) { atk += COMBO_ATK[Math.min(combo, COMBO_ATK.length - 1)]; pts += 50 * combo; msg.push(combo + ' Combo'); }
+    if (board.every(r => r.every(v => !v))) { atk += 10; pts += 3000; msg.push('Perfect Clear'); }
+    lines += n;
+    if (mode === 'marathon') level = Math.floor(lines / 10) + 1;
+  } else combo = -1;
+
+  score += Math.round(pts * level);
+  attack += atk;
+  if (atk) msg.push('+' + atk + ' attack');
+  if (msg.length) showAction(msg);
+
+  canHold = true;
+  if (above) return end();
+  if (mode === 'sprint' && lines >= SPRINT) return finish();
+  next();
+}
+function showAction(msg) {
+  const el = $('#action');
+  el.innerHTML = msg.map(m => `<div>${m}</div>`).join('');
+  el.classList.toggle('fade', !msg.length);
+  actionT = 1600;
+}
+const gravityMs = () => Math.pow(Math.max(0.8 - (level - 1) * 0.007, 0.01), level - 1) * 1000;
+
+// Auto-shift counts from key timestamps, so ARR stays exact even below one frame
+function autoShift(now) {
+  if (!dirs.length || now < repeatFrom) return;
+  const dir = dirOf(dirs[dirs.length - 1]);
+  if (cfg.arr === 0) { while (shift(dir)); return; }
+  const target = Math.floor((now - repeatFrom) / cfg.arr) + 1;
+  while (steps < target) { steps++; if (!shift(dir)) { steps = target; break; } }
+}
+function update(now, dt) {
+  playMs += dt;
+  if (actionT > 0 && (actionT -= dt) <= 0) $('#action').classList.add('fade');
+  autoShift(now);
+  if (state !== 'play') return;
+  const soft = isHeld('soft');
+  if (soft && cfg.sdf >= 41) { const y = ghostY(); score += y - cur.y; fall(y); gAcc = 0; }
+  else {
+    const iv = soft ? gravityMs() / cfg.sdf : gravityMs();
+    gAcc += dt;
+    while (gAcc >= iv) {
+      gAcc -= iv;
+      if (grounded()) { gAcc = 0; break; }
+      fall(cur.y + 1); if (soft) score++;
+    }
+  }
+  if (grounded()) { lockT += dt; if (lockT >= cfg.lock) lock(); }
+}
+
+// ---- input ----
+const stamp = e => Math.min(e.timeStamp || Infinity, performance.now());
+// Start a new DAS run; with "keep charge" a charged direction change repeats at once
+function charge(t, wasCharged) { repeatFrom = cfg.keepDas && wasCharged ? t : t + cfg.das; steps = 0; }
+
+addEventListener('keydown', e => {
+  if (listening) { e.preventDefault(); assign(listening, e.code); return; }
+  if (e.target.type === 'number') return;
+  const a = actionFor(e.code);
+  const idle = state === 'ready' || state === 'over' || state === 'done';
+  if (idle && (e.code === 'Enter' || a === 'restart')) { e.preventDefault(); start(cfg.mode); return; }
+  if (!a) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  if (a === 'restart') return start(cfg.mode);
+  if (a === 'pause') return togglePause();
+  if (state !== 'play') return;
+  const t = stamp(e);
+  down.add(e.code);
+  if (a === 'left' || a === 'right') {
+    const wasCharged = dirs.length > 0 && t >= repeatFrom;
+    dirs.push(a); shift(dirOf(a)); charge(t, wasCharged);
+  }
+  else if (a === 'cw') rotate(1);
+  else if (a === 'ccw') rotate(-1);
+  else if (a === 'r180') rotate(2);
+  else if (a === 'hard') hardDrop();
+  else if (a === 'hold') doHold();
+});
+addEventListener('keyup', e => {
+  const a = actionFor(e.code); if (!a) return;
+  e.preventDefault();
+  if (!down.delete(e.code)) return;
+  const i = dirs.lastIndexOf(a); if (i < 0) return;
+  const t = stamp(e), wasTop = i === dirs.length - 1, wasCharged = t >= repeatFrom;
+  dirs.splice(i, 1);
+  if (wasTop && dirs.length && dirs[dirs.length - 1] !== a) charge(t, wasCharged);
+});
+addEventListener('blur', () => { down.clear(); dirs.length = 0; });
+$('#mMarathon').onclick = () => start('marathon');
+$('#mSprint').onclick = () => start('sprint');
+
+// ---- drawing ----
+const dpr = Math.min(devicePixelRatio || 1, 2);
+function setup(cv, w, h) { cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext('2d'); c.scale(dpr, dpr); return c; }
+const bx = setup($('#board'), COLS * CS, VIS * CS);
+const hx = setup($('#hold'), 84, 56);
+const nx = setup($('#next'), 84, 5 * 52);
+let C = {};
+function readColors() {
+  const s = getComputedStyle(document.documentElement);
+  for (const k of ['well','grid','muted','I','O','T','S','Z','J','L']) C[k] = s.getPropertyValue('--' + k).trim();
+  dirty = true;
+}
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+
+function cell(ctx, x, y, s, color, alpha = 1, outline = cfg.outline) {
+  ctx.globalAlpha = alpha; ctx.fillStyle = color;
+  ctx.fillRect(x, y, s, s);
+  if (outline) { ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, s - 1, s - 1); }
+  ctx.globalAlpha = 1;
+}
+function mini(ctx, t, cx, cy, s, color) {
+  const m = SHAPES[t], pts = [];
+  m.forEach((row, r) => row.forEach((v, c) => v && pts.push([c, r])));
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const ox = cx - (Math.min(...xs) + Math.max(...xs) + 1) * s / 2, oy = cy - (Math.min(...ys) + Math.max(...ys) + 1) * s / 2;
+  for (const [c, r] of pts) cell(ctx, ox + c * s, oy + r * s, s, color);
+}
+function draw() {
+  bx.fillStyle = C.well; bx.fillRect(0, 0, COLS * CS, VIS * CS);
+  if (cfg.grid) {
+    bx.fillStyle = C.grid;
+    for (let x = 1; x < COLS; x++) bx.fillRect(x * CS, 0, 1, VIS * CS);
+    for (let y = 1; y < VIS; y++) bx.fillRect(0, y * CS, COLS * CS, 1);
+  }
+  if (board) {
+    for (let y = HIDDEN; y < ROWS; y++) for (let x = 0; x < COLS; x++)
+      if (board[y][x]) cell(bx, x * CS, (y - HIDDEN) * CS, CS, C[board[y][x]], state === 'over' ? .45 : 1);
+    if (cur && state !== 'over' && state !== 'done') {
+      const gy = ghostY();
+      cur.m.forEach((row, r) => row.forEach((v, c) => {
+        if (!v) return;
+        const x = (cur.x + c) * CS;
+        if (cfg.ghost && gy + r >= HIDDEN) cell(bx, x, (gy + r - HIDDEN) * CS, CS, C[cur.t], cfg.ghost / 100, false);
+        if (cur.y + r >= HIDDEN) cell(bx, x, (cur.y + r - HIDDEN) * CS, CS, C[cur.t]);
+      }));
+    }
+  }
+  hx.clearRect(0, 0, 84, 56);
+  if (hold) mini(hx, hold, 42, 28, 16, canHold ? C[hold] : C.muted);
+  nx.clearRect(0, 0, 84, 5 * 52);
+  (queue || []).slice(0, 5).forEach((t, i) => mini(nx, t, 42, 26 + i * 52, i ? 14 : 16, C[t]));
+}
+
+const fmt = ms => { const s = ms / 1000; return Math.floor(s / 60) + ':' + (s % 60).toFixed(2).padStart(5, '0'); };
+const shown = {};
+function put(id, v) { if (shown[id] !== v) { shown[id] = v; $('#' + id).textContent = v; } }
+function stats() {
+  const min = (playMs || 0) / 60000;
+  put('time', fmt(playMs || 0));
+  put('score', (score || 0).toLocaleString());
+  put('lines', mode === 'sprint' ? `${lines}/${SPRINT}` : String(lines || 0));
+  put('level', String(level || 1));
+  put('attack', String(attack || 0));
+  put('apm', min > 1 / 60 ? (attack / min).toFixed(1) : '0.0');
+  put('pps', min > 1 / 60 ? (pieces / (min * 60)).toFixed(2) : '0.00');
+}
+function ui() {
+  stats(); dirty = true;
+  $('#overlay').hidden = state === 'play';
+  $('#mMarathon').classList.toggle('current', cfg.mode === 'marathon');
+  $('#mSprint').classList.toggle('current', cfg.mode === 'sprint');
+  const best = cfg.best ? 'Sprint best ' + fmt(cfg.best) : '';
+  const [title, text] = {
+    ready: ['Blockfall', 'Choose a mode, or press Enter.'],
+    pause: ['Paused', `${keyName(cfg.keys.pause[0] || cfg.keys.pause[1])} to resume. A mode button restarts.`],
+    over: ['Game over', `${(score || 0).toLocaleString()} points, ${attack} attack, ${shown.pps} PPS`],
+    done: [`${SPRINT} lines in ${fmt(playMs)}`, newBest ? 'New best' : best],
+  }[state] || ['', ''];
+  $('#ovTitle').textContent = title;
+  $('#ovText').textContent = state === 'ready' && best ? text + ' ' + best + '.' : text;
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(now - last, 100); last = now;
+  if (state === 'play') { update(performance.now(), dt); stats(); }
+  if (state === 'play' || dirty) { draw(); dirty = false; }
+  requestAnimationFrame(frame);
+}
+
+// Keep the game across page updates; a running game comes back paused
+const hot = window.claude?.hot;
+if (typeof hot?.snapshot === 'function') hot.snapshot(() => ({board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state}));
+function boot(d) {
+  if (d && d.board) {
+    ({board, cur, hold, canHold, queue, bag, score, lines, level, attack, combo, b2b, playMs, pieces, mode, state} = d);
+    if (state === 'play') state = 'pause';
+  }
+  renderBinds(); syncInputs(); ui();
+  requestAnimationFrame(frame);
+}
+typeof hot?.ready === 'function' ? hot.ready(boot) : boot(hot?.data ?? {});
+</script>
+</body>
+</html>
