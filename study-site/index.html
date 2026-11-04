@@ -69,41 +69,7 @@ body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
   font:1rem/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
   --a1:#736f72;--a2:#c3baba;--a3:#9a8f97;
-  --at:color-mix(in srgb,var(--a1) var(--atm),var(--atc));
-  transition:--a1 .9s,--a2 .9s,--a3 .9s}
-body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="ns"]{--a1:#6a6468;--a2:#b2b2b2;--a3:#9a8f97}
-body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
-[data-mode="dark"] body{--a1:#736f72;--a2:#736f72;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#736f72}
-[data-mode="dark"] body[data-s="ns"]{--a1:#6a6468;--a2:#9a8f97;--a3:#b2b2b2}
-[data-mode="dark"] body[data-s="sn"]{--a1:#676366;--a2:#736f72;--a3:#c3baba}
-body[data-s="en"]{--a1:#6d686c;--a2:#9a8f97;--a3:#c3baba}
-[data-mode="dark"] body[data-s="en"]{--a1:#6d686c;--a2:#b2b2b2;--a3:#736f72}
-body[data-s="mb"]{--a1:#6b666a;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="mb"]{--a1:#736f72;--a2:#b2b2b2;--a3:#9a8f97}
-body[data-s="ff"]{--a1:#716b70;--a2:#b2b2b2;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="ff"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="lim"]{--a1:#6d676b;--a2:#c3baba;--a3:#b2b2b2}
-[data-mode="dark"] body[data-s="lim"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="test"]{--a1:#6a6468;--a2:#b2b2b2;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="test"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="ri1"]{--a1:#6b6569;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="ri1"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="pr"]{--a1:#6f6a6d;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="pr"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
-[data-mode="dark"] body[data-s="math"],[data-mode="dark"] body[data-s="home"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
-
-/* one gradient layer, moved with transform only. It drifts out and back once, then rests, so the glass
-   above it is not blurred again on every frame */
-.bg{position:fixed;inset:-16%;z-index:-1;pointer-events:none;will-change:transform;
-  background:
-    radial-gradient(38% 42% at 18% 22%,color-mix(in srgb,var(--a2) var(--b1),transparent),transparent 72%),
-    radial-gradient(34% 40% at 84% 30%,color-mix(in srgb,var(--a3) var(--b2),transparent),transparent 72%),
-    radial-gradient(46% 44% at 52% 88%,color-mix(in srgb,var(--a1) var(--b3),transparent),transparent 72%);
-  animation:drift 46s ease-in-out 2 alternate}
-@keyframes drift{to{transform:translate3d(3%,-4%,0) rotate(5deg) scale(1.07)}}
+  --at:color-mix(in srgb,var(--a1) var(--atm),var(--atc))}
 
 .glass{
   background:linear-gradient(var(--glass),var(--glass)) padding-box,
@@ -113,11 +79,7 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
   box-shadow:inset 0 1px 1px var(--hi),inset 0 -1px 1px rgba(50,42,48,.03),0 14px 38px var(--shadow),0 2px 6px rgba(80,70,77,.06);
 }
 
-/* header */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;padding:12px 12px 0;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
-.top>*{pointer-events:auto;transition:box-shadow .4s var(--ease),background .4s}
-.top.scrolled>.glass{box-shadow:inset 0 1px 1px var(--hi),0 18px 44px rgba(80,70,77,.22),0 2px 8px rgba(80,70,77,.1)}
-.bar{border-radius:999px;padding:5px;max-width:100%;display:flex;align-items:center;gap:4px}
+/* the old header (.top, .bar) and its gradient layer (.bg) are hidden by the sidebar skin: their rules are gone */
 /* when the bar does not fit, the tab strip shrinks and scrolls and the round buttons stay. em follows the browser font size */
 @media(max-width:75em){.bar>#tabs{min-width:0;flex:1 1 auto}.seg.main{max-width:100%;overflow-x:auto;scrollbar-width:none}.seg.main::-webkit-scrollbar{display:none}.seg.main button:focus-visible{outline-offset:-3px}}
 .modebtn{appearance:none;border:1px solid var(--hair);background:var(--glass2);color:var(--ink);width:36px;height:36px;border-radius:50%;padding:0;display:grid;place-items:center;cursor:pointer;flex:none;box-shadow:inset 0 1px 0 var(--hi);transition:transform .25s var(--spring)}
@@ -296,9 +258,6 @@ h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.05;letter-spacing:-.025em;fo
 .lede{font-size:1.12rem;color:var(--ink2);max-width:62ch;margin:0}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
 .card{grid-column:span 12;border-radius:28px;padding:22px;min-width:0;position:relative;isolation:isolate}
-.card::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;transition:opacity .5s;
-  background:radial-gradient(520px circle at var(--mx,50%) var(--my,0%),var(--sheen),transparent 62%)}
-.card:hover::before{opacity:1}
 @media(min-width:880px){.card.half{grid-column:span 6}.card.w7{grid-column:span 7}.card.w5{grid-column:span 5}}
 h3{font-size:1.18rem;letter-spacing:-.01em;margin:0 0 .6em;font-weight:650}
 h4{font-size:1rem;margin:.9em 0 .3em}
@@ -1431,7 +1390,6 @@ function boot(){
   showTab(t0,true);
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',$('#top').offsetHeight+'px')).observe($('#top'));
-  let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
   Store.on(()=>{Object.keys(QUIZ).forEach(k=>QUIZ[k]());chipProgress();refreshLive();homeDot();unitMarks();});
   migrateBadges();Store.on(()=>{if(!gv('achMig'))migrateBadges();});
   /* a page left open past midnight: redraw what depends on the date (Today, mastery cards, due counts, the Today dot) */
@@ -11415,7 +11373,6 @@ html{scroll-padding-top:62px}
 .lesson{max-width:var(--cap);margin-inline:auto}
 .glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .card{border-radius:10px;padding:18px 20px}
-.card::before{display:none}
 .lhead{padding:24px 0 16px}
 .lhead h1{font-size:2.2rem;letter-spacing:-.02em}
 .fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
