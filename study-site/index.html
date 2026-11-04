@@ -777,7 +777,7 @@ html .find input{flex:1;min-width:0;width:100%;border:0;background:none;box-shad
 /* the achievement celebration is a modal <dialog> that covers the window, as the old overlay did */
 dialog.cele,dialog.cele:modal{width:auto;height:auto;max-width:none;max-height:none;margin:0;border:0;color:inherit}
 dialog.cele::backdrop{background:transparent}
-/* the course units: a card on the Today page, a line at the end of the rail, the end of the breadcrumb's section menu */
+/* the course units: a card on the Today page, a line at the end of the rail (wide screens), the end of the breadcrumb's section menu */
 #main .grid .card.cov-card{--n:var(--cols)}
 .cov{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:12px 24px;margin-top:.6em}
 .cov-s b{display:flex;align-items:center;gap:.45em;font-weight:600}
@@ -785,7 +785,9 @@ dialog.cele::backdrop{background:transparent}
 .cov-k{font-weight:600}
 #rail>.ucov{max-width:none;margin:12px 8px 0;padding-top:10px;border-top:1px solid var(--hair);font-size:11.5px;line-height:1.45;color:var(--ink2)}
 #rail>.ucov span{font-weight:600}
-@media(max-width:600px){#rail>.ucov{display:none}}
+/* below 900 px the rail sits above the page: a line that changes with the subject would move the page under the student's place, thus there
+   the breadcrumb's section menu and the Today card say it */
+@media(max-width:900px){#rail>.ucov{display:none}}
 .cm-n{font-size:12.5px;color:var(--ink2);padding:3px 8px 3px 31px}
 /* the level pill under a lesson's title is a button: it goes to the lesson's questions */
 button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
@@ -806,8 +808,11 @@ let PAGE=null,TOP=0,RAILNAV=0,dwT=0;
 const shownPage=()=>document.querySelector('#main>.lesson:not([hidden])');
 /* showLesson, showHome and showTest call this first, while the page being left is still on screen: its scroll position is kept on its article
    (thus a rebuilt article, after Clear answers, starts at the top). On a narrow screen the rail is at the top of the page: a student who uses it,
-   or who is up there next to it, has scrolled up to it, thus the place kept is where they last stayed for 2.5 s */
-function keepPlace(){const a=shownPage(),r=document.getElementById('rail');if(!a)return;
+   or who is up there next to it, has scrolled up to it, thus the place kept is where they last stayed for 2.5 s. One navigation keeps the place
+   once: showTab calls this before it rebuilds the unit bar (on a narrow screen that bar is above the page and can change its height), and the
+   showLesson that follows does not record again */
+let kept=0;
+function keepPlace(){const a=shownPage(),r=document.getElementById('rail');if(!a||kept)return;kept=1;queueMicrotask(()=>{kept=0;});
   const up=r&&getComputedStyle(r).position!=='sticky'&&(RAILNAV||scrollY<r.offsetHeight);a._y=up&&a._read>scrollY?a._read:scrollY;}
 addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=shownPage();if(a)a._read=scrollY;},2500);},{passive:true});
 ['click','keydown'].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest('#rail')){RAILNAV=1;setTimeout(()=>{RAILNAV=0;});}},true));
@@ -1514,7 +1519,7 @@ function sectBar(k){const host=$('#units'),ug=ugOf(k);let row=$('.usec',host);
 /* open section k of a grouped unit (at lesson i, or where it was left) */
 function goSection(k,i){if(i!=null)curL[k]=i;const S=SUBJECTS.find(s=>s.units.includes(k));if(S)curU[S.k]=k;showUnit(k);}
 function showTab(i,first){
-  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';document.title=S.name+' · Study site';if(S.home){showHome();return;}if(S.test){showTest();return;}
+  keepPlace();const S=SUBJECTS[i],host=$('#units');host.innerHTML='';document.title=S.name+' · Study site';if(S.home){showHome();return;}if(S.test){showTest();return;}
   
   const D=dispUnits(S),pick=d=>typeof d==='string'?d:d.units.includes(curU[S.k])?curU[S.k]:d.units[0];
   host.append(el('span',{class:'ulabel'},S.name+(D.length>1?' units':' unit')));
