@@ -11174,9 +11174,33 @@ function dailyCard(g){const c=card(g,'','','w7'),st=()=>{const d=Store.x('g','da
         const nd=Object.assign({},dd,{res:dd.res.concat(res[res.length-1].ok)});Store.xs('g','daily',nd);if(dailyClaim(nd))afterChange();},
       done:()=>{HOME_BUSY=0;dailyClaim(rec());afterChange();view();}});}
   view();}
-function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily'),due=!(d&&d.day===today()&&d.fin);if(!b)return;b.classList.toggle('tdue',due);
-  /* the dot is only drawn, so its meaning goes in the name too */
-  if(due)b.setAttribute('aria-label',SUBJECTS[0].name+', daily challenge due');else b.removeAttribute('aria-label');}
+function homeDot(){if(!tabSeg)return;const b=$('[role=tab]',tabSeg.el),d=Store.x('g','daily'),due=!(d&&d.day===today()&&d.fin);if(!b)return;const n=dueAll().length;b.classList.toggle('tdue',due||n>0);
+  /* the dot is only drawn, so its meaning goes in the name too: the daily challenge and the review questions that are due */
+  const w=[due?'daily challenge due':'',n?n+' review '+(n===1?'question':'questions')+' due':''].filter(Boolean);if(w.length)b.setAttribute('aria-label',SUBJECTS[0].name+', '+w.join(', '));else b.removeAttribute('aria-label');}
+
+/* ----- the review queue on the Today page: the questions of every section that are due in spaced repetition (missed questions, lesson checks,
+   calculations with new numbers), mixed one section at a time, in rounds of up to RQN ----- */
+const RQN=15;
+/* a saved id that still names a question (a generator id is checked without making a question) */
+const qHas=id=>{const sk=id.split('_')[0];return /_g\d+$/.test(id)?!!(SUBJ[sk]&&genList(sk).some(g=>g.id===id)):!!qItem(id);};
+const dueAll=()=>{const now=Date.now();return Store.srAll().filter(([k,e])=>e.d<=now&&qHas(k)).map(([k])=>k);};
+/* n due ids: one from each section in turn, in a random order inside each section */
+function duePick(n){const by={};shuffle(dueAll()).forEach(id=>{const sk=id.split('_')[0];(by[sk]=by[sk]||[]).push(id);});const g=shuffle(Object.values(by)),out=[];let k=0;
+  while(out.length<n&&g.some(a=>a.length)){const a=g[k++%g.length];if(a.length)out.push(a.pop());}return out;}
+function reviewCard(g){const c=card(g,'','');let busy=0;
+  function view(msg){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const due=dueAll(),by={};due.forEach(id=>{const sk=id.split('_')[0];by[sk]=(by[sk]||0)+1;});const units=UORDER.filter(sk=>by[sk]),now=Date.now();
+    const h=`<h3>${icon('target',18)} Review</h3>`+(msg||'');
+    if(!due.length){const later=Store.srAll().filter(([k,e])=>e.d>now&&qHas(k)).map(([,e])=>e.d),nx=later.length?Math.min(...later):0,nd=nx?later.filter(d=>dayOf(d)===dayOf(nx)).length:0;
+      c.innerHTML=h+`<p>Nothing is due now.${nx?` Next: <b>${nd} ${nd===1?'question':'questions'}</b> on ${fmtDay(dayOf(nx))}.`:''}</p><p class="hint">${later.length?`${later.length} ${later.length===1?'question is':'questions are'} scheduled. `:''}A question that you miss comes back here after 1 day, then after 3, 7, 16 and 35 days. A mastered lesson sends ${LCN} of its questions here after 7, 28 and 88 days.</p>`;return;}
+    const n=Math.min(RQN,due.length);
+    c.innerHTML=h+`<p><b>${due.length} ${due.length===1?'question is':'questions are'} due</b> from ${units.length} ${units.length===1?'section':'sections'}. A round mixes the sections${due.length>RQN?` and has ${RQN} questions`:''}.</p>
+      <div class="stats">${units.map(sk=>`<div class="stat"><span>${icon(sk,14)} ${SUBJ[sk].name}</span><b>${by[sk]}</b></div>`).join('')}</div>
+      <div class="row"><button type="button" class="btn">${icon('play',15)}${due.length>n?`Review ${n} now`:`Review all due (${due.length})`}</button>${due.length>n?`<span class="hint">${due.length-n} more after this round</span>`:''}</div>`;
+    $('.row .btn',c).onclick=run;}
+  function run(){const items=duePick(RQN).map(qItem).filter(Boolean);if(!items.length){view();return;}busy=1;HOME_BUSY=1;c.innerHTML=`<h3>${icon('target',18)} Review</h3>`;const box=el('div');c.append(box);
+    runRound(box,{items,title:'Review question',done:res=>{afterChange();busy=0;HOME_BUSY=0;const k=res.filter(r=>r.ok).length,m=dueAll().length;
+      view(`<p class="fb ${k===res.length?'ok':'info'}">${k} of ${res.length} correct in this round.${res.length>k?' A missed question comes back tomorrow.':''}${m?` ${m} more ${m===1?'is':'are'} due.`:''}</p>`);focusTo(c,'h3');}});}
+  LIVE.add(view);view();}
 
 /* ----- the Today page ----- */
 function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
@@ -11189,7 +11213,9 @@ function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDo
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
-    <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');}
+    <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');
+  /* the review queue goes right after the daily challenge and the weekly goal (a full row) */
+  reviewCard(g);}
 function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const nrl=all.filter(x=>x.lv===3&&x.nr),next=nrl.concat(all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv)).slice(0,3);
   const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}${nrl.length?`<div class="stat"><span>Needs review</span><b>${nrl.length}</b></div>`:''}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two days at least 2 days apart.</p>`+
     (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${lvName(x)}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
