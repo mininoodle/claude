@@ -1144,7 +1144,7 @@ function reviewUI(g,sk,le){
   const S=SUBJ[sk],host=el('div',{style:'grid-column:1/-1;display:grid;grid-template-columns:repeat(12,1fr);gap:16px'});g.append(host);
   const LS=S.lessons.map((l,i)=>({l,i})).filter(x=>x.l.qz),gens=GEN[sk]||null,wrs=WRQ[sk]||[],nMC=gens?10:14,nNR=gens?4:0;let view='home',T=null,E=null,tick=0,len=10,mins=30;
   const stat=({l,i})=>{let a=0,c=0;l.qz.forEach((_,j)=>{const e=Store.get(sk+'_'+i+'_'+j);if(e){a++;if(e.ok)c++;}});return {a,c,n:l.qz.length};};
-  const item=id=>{const p=id.split('_'),l=S.lessons[+p[1]],r=p[2]&&p[2][0]==='r',arr=l&&(r?l.rq:l.qz),j=+(r?p[2].slice(1):p[2]);return arr&&arr[j]?{it:arr[j],L:+p[1],id}:null;};
+  const item=id=>{const p=id.split('_');if(p[2]&&p[2][0]==='g'){const x=qItem(id);return x&&{it:x.it,L:x.L,id,gen:1};}const l=S.lessons[+p[1]],r=p[2]&&p[2][0]==='r',arr=l&&(r?l.rq:l.qz),j=+(r?p[2].slice(1):p[2]);return arr&&arr[j]?{it:arr[j],L:+p[1],id}:null;};
   /* the review bank of a lesson, or its lesson questions when a unit has no bank yet */
   const bank=({l,i})=>l.rq?l.rq.map((it,j)=>({it,L:i,id:sk+'_'+i+'_r'+j})):l.qz.map((it,j)=>({it,L:i,id:sk+'_'+i+'_'+j}));
   const hist=id=>Store.x('h',id),gotRight=x=>{const h=hist(x.id),e=Store.get(x.id);return !!((h&&h.c)||(e&&e.ok));};
@@ -1184,7 +1184,7 @@ function reviewUI(g,sk,le){
   function start(mode,n,fixed){let list=fixed;
     if(!list){const gn=mode==='mix'&&gens?Math.round(n*.3):0,gl=[],seen=new Set();
       /* a generated question that is already in the test is drawn again; if it keeps repeating, the bank fills its place */
-      if(gn){const gs=shuffle(gens);for(let i=0;i<gn;i++)for(let k=0;k<20;k++){const it=gs[i%gs.length]();if(!seen.has(it.q)){seen.add(it.q);gl.push({it,L:it.L,gen:1});break;}}}
+      if(gn){const gs=shuffle(genList(sk));for(let i=0;i<gn;i++)for(let k=0;k<20;k++){const g=gs[i%gs.length],it=g.f();if(!seen.has(it.q)){seen.add(it.q);gl.push({it,L:it.L,gen:1,id:g.id});break;}}}
       list=shuffle(balanced(n-gl.length,x=>mode!=='weak'||!gotRight(x)).concat(gl));}
     if(!list.length){home();return;}T={list,i:0,res:[],m:mode};ask();toHost();}
   function ask(){view='test';host.innerHTML='';const x=T.list[T.i],tot=T.list.length,right=()=>T.res.filter(r=>r.ok).length;
@@ -1194,7 +1194,7 @@ function reviewUI(g,sk,le){
     nx.onclick=()=>{T.i++;if(T.i<tot){ask();toQ(host);}else results();};end.onclick=()=>results();nav.append(nx,end);c.append(nav);host.append(c);const h=$('h3',c);h.tabIndex=-1;h.focus({preventScroll:true});}
   /* ----- timed exam ----- */
   function exStart(mins){const wr=wrs.length?wrs[Math.floor(Math.random()*wrs.length)]:null,skip=new Set(wr&&wr.skip||[]),items=balanced(nMC,x=>!!x.it.o&&!skip.has(x.id)).map(x=>Object.assign(x,{kind:'mc',ord:optOrd(x.it)}));
-    if(nNR){const gs=shuffle(gens).map(f=>{const it=f();return {it,L:it.L,gen:1};}).filter(x=>nrSpec(x.it.n)).slice(0,2),ss=balanced(nNR-gs.length,x=>!x.it.o&&!!nrSpec(x.it.n)&&!x.it.ans&&!skip.has(x.id));
+    if(nNR){const gs=shuffle(genList(sk)).map(g=>{const it=g.f();return {it,L:it.L,gen:1,id:g.id};}).filter(x=>nrSpec(x.it.n)).slice(0,2),ss=balanced(nNR-gs.length,x=>!x.it.o&&!!nrSpec(x.it.n)&&!x.it.ans&&!skip.has(x.id));
       shuffle(gs.concat(ss)).forEach(x=>items.push(Object.assign(x,{kind:'nr',nr:nrSpec(x.it.n)})));}
     if(wr)items.push({it:wr,kind:'wr',L:-1});
     E={items,ans:items.map(()=>null),i:0,t0:Date.now(),end:Date.now()+mins*60000};exRun();
@@ -1251,9 +1251,9 @@ function reviewUI(g,sk,le){
     host.append(c1);setRing(c1,f,c+' of '+n);
     const c2=el('section',{class:'card glass'},`<h3>Results for each lesson</h3><p class="hint">The lessons with the lowest results are first.</p><div class="bars">${rows.map(r=>`<div class="barrow"><span>${icon(S.lessons[r.L].ic||LIC[S.lessons[r.L].t]||sk,15)}${S.lessons[r.L].t}</span><div class="bar2"><i class="b2" data-w="${100*r.c/r.n}"></i></div><b>${r.c} / ${r.n}</b><button type="button" class="btn sm ghost" data-go="${r.L}">Open</button></div>`).join('')}</div>`);
     host.append(c2);grow(c2);$$('[data-go]',c2).forEach(b=>b.onclick=()=>showLesson(+b.dataset.go));
-    /* questions with new numbers have no id, so they cannot come back in spaced repetition; a question without an answer (na, timed exam) is not added either */
+    /* a question with new numbers has the id of its generator: it comes back in spaced repetition with other numbers. A question without an answer (na, timed exam) is not added */
     const nA=miss.filter(r=>r.na).length,nG=miss.filter(r=>!r.na&&!r.x.id).length,nS=miss.length-nA-nG,not=nA&&nG?'Questions without an answer and questions with new numbers':nA?'Questions without an answer':'Questions with new numbers',why=nA?'':', because their numbers change each time',srH=!nA&&!nG?'These questions are now in your spaced repetition list.':nS?(nA?(nG?'The questions from the question bank that you answered incorrectly':'The questions that you answered incorrectly'):'The questions from the question bank')+' are now in your spaced repetition list. '+not+' are not'+why+'.':not+' are not added to your spaced repetition list'+why+'.';
-    const c3=el('section',{class:'card glass'},`<h3>${miss.length?'Questions to study again':'No incorrect answers'}</h3>`+(miss.length?`<p class="hint">${srH}</p>`:'')+miss.map(r=>{const it=r.x.it;return `<div class="miss"><p>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">Your answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;}).join(''));
+    const c3=el('section',{class:'card glass'},`<h3>${miss.length?'Questions to study again':'No incorrect answers'}</h3>`+(miss.length?`<p class="hint">${srH}${miss.some(r=>r.x.gen&&r.x.id&&!r.na)?' A question with new numbers comes back with other numbers.':''}</p>`:'')+miss.map(r=>{const it=r.x.it;return `<div class="miss"><p>${it.q}${r.x.gen?' <span class="hint">(new numbers)</span>':''}</p>${it.fig?`<div class="qfig">${it.fig}</div>`:''}<p class="hint">Your answer: ${r.va}</p><p><b>Correct answer: ${ansText(it)}</b></p>${optList(it)}<p class="hint">${it.w||''}</p></div>`;}).join(''));
     const br=el('div',{class:'row'}),msg=el('p',{class:'hint','aria-live':'polite'});
     const pdf=()=>{const P=[{t:(exam?'Exam results: ':'Review test results: ')+S.name,s:18,b:1},{t:new Date().toLocaleString(),s:10},{t:`Score: ${c} of ${n} (${Math.round(100*f)}%)`,s:13,b:1,g:8},{t:vd[0]+' '+vd[1]}];
       if(wr)P.push({t:`Written response: ${wr.got} of ${wr.max} marks`});if(exam)P.push({t:'Time used: '+fmt(o.used)+' (min:s)'});
@@ -10845,7 +10845,11 @@ const fmtT=ms=>{const t=Math.max(0,Math.ceil(ms/1000));return Math.floor(t/60)+'
 const fmtS=ms=>{const d=Math.round(Math.max(0,ms)/100);return Math.floor(d/600)+':'+(d%600/10).toFixed(1).padStart(4,'0');};
 const fmtDay=d=>{const [y,m,da]=d.split('-').map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});};
 const gN=k=>(Store.x('g',k)||{}).n||0,gv=k=>(Store.x('g',k)||{}).v,gset=(k,v)=>Store.xs('g',k,{v});
-const qItem=id=>{if(!id)return null;const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
+/* the question generators of a unit, each with a stable id unit_lesson_g<k>: k is its place among the generators of that lesson. A new generator goes at the end of GEN[unit], thus it never moves another */
+const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{let L=-1;try{L=f().L;}catch(e){}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
+/* a generator id gives a new question with other numbers each time */
+const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')[0],g=SUBJ[sk]&&genList(sk).find(x=>x.id===id);if(!g)return null;const it=g.f();return {it,id,sk,L:g.L,gen:1};}
+  const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
 const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
 const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
@@ -10899,7 +10903,7 @@ let lastClk=null;
 document.addEventListener('click',e=>{if(!e.isTrusted)return;const p=lastClk,t=performance.now(),tg=e.target;lastClk={t,x:e.clientX,y:e.clientY,el:tg};
   if(p&&!p.el.isConnected&&tg!==p.el&&tg.closest&&tg.closest('.op,.pager')&&t-p.t<(tg.closest('.speed')?200:400)&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<30){e.stopImmediatePropagation();e.preventDefault();}},true);
 /* a correct answer in a round also counts in the lesson quiz, so the quiz and the Review page agree with the mastery level */
-function quizKeep(x,e){if(!e.ok||!x.id||/_r\d+$/.test(x.id))return;const p=Store.get(x.id),h=Store.x('h',x.id);if(p&&p.ok&&!p.s)return;
+function quizKeep(x,e){if(!e.ok||!x.id||/_[rg]\d+$/.test(x.id))return;const p=Store.get(x.id),h=Store.x('h',x.id);if(p&&p.ok&&!p.s)return;
   /* not on a day the answer was shown: it adds no mastery day then either */
   if(h&&h.rv===today())return;Store.set(x.id,{v:e.v,ok:1});const r=QUIZ[x.sk+'_'+x.L];if(r)r();}
 /* an answer that waits for its confidence rating; Stop records it */
