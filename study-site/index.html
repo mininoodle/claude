@@ -854,7 +854,18 @@ const Store=(()=>{
 const SRI=[1,3,7,16,35],SRM=60,SRG=3,DAY=864e5;
 function srMark(id,ok){if(!id)return;const e=Store.sr(id),now=Date.now();
   if(!ok){Store.srSet(id,{b:0,d:now+SRI[0]*DAY});return;}
-  if(e&&now>=e.d){const b=(e.b||0)+1;Store.srSet(id,{b,d:now+(b<SRI.length?SRI[b]:SRM)*DAY});if(b===SRG){Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}}}
+  if(e&&now>=e.d){if(e.k){lcPass(id,e.k);return;}const b=(e.b||0)+1;Store.srSet(id,{b,d:now+(b<SRI.length?SRI[b]:SRM)*DAY});if(b===SRG){Store.xs('g','srOut',{n:gN('srOut')+1});checkAch();}}}
+/* lesson check: when a lesson is mastered, LCN of its questions come back in spaced repetition after 7 days (entry {k:1}). Each one answered correctly
+   hands its check on to another question of the lesson: after 21 more days (k:2), then after 60 more days (k:3), thus about 7, 28 and 88 days after mastery.
+   A wrong answer puts that question on the normal schedule, and the lesson shows 'Needs review' until it is answered correctly again.
+   The entry <unit>_<lesson>_lc marks a lesson whose check has started, so that it starts only once */
+const LCN=3,LCG=[7,21,60],lcKey=(sk,L)=>sk+'_'+L+'_lc';
+function lcPick(sk,L,n,not){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];return le&&le.qz?shuffle(le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>id!==not&&!Store.sr(id))).slice(0,n):[];}
+function lcSeed(sk,L,days=LCG[0]){if(Store.sr(lcKey(sk,L)))return;const now=Date.now();lcPick(sk,L,LCN).forEach(id=>Store.srSet(id,{k:1,d:now+days*DAY}));Store.srSet(lcKey(sk,L),{on:1});}
+function lcPass(id,k){const p=id.split('_'),now=Date.now();Store.srSet(id,{x:1});if(k<LCG.length)lcPick(p[0],+p[1],1,id).forEach(n=>Store.srSet(n,{k:k+1,d:now+LCG[k]*DAY}));}
+/* lessons that were mastered before the lesson check existed start theirs once, spread over the next 2 to 13 days */
+function lcSeedAll(){let i=0;UORDER.forEach(sk=>unitLessons(sk).forEach(x=>{if(x.lv===3&&!Store.sr(lcKey(sk,x.L)))lcSeed(sk,x.L,2+(i++%12));}));}
+setTimeout(lcSeedAll,4000);
 /* change counters for the saved progress. SV moves with every write through the Store's methods and with every change that the Store merges
    from another tab, device or backup (it calls its subscribers). SVQ moves only when the results of a question can change: answers (a), history (h), clears and merges.
    Values derived from the progress, such as lessonLevel, are kept until their counter moves */
@@ -1286,10 +1297,10 @@ const dispUnits=S=>S.units.reduce((D,u)=>{const g=ugOf(u);if(!g)D.push(u);else i
 const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
 function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()&&qItem(k)).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
-    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon('check',13):'';chipBtns[i].dataset.lv=v.lv;
-    chipBtns[i].title=LVN[v.lv]+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two days at least 2 days apart':'')+'.';
-    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=LVN[v.lv]+' · '+v.ok1+' / '+v.n;}
-    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+LVN[v.lv]+'</b> · '+lvHint(v)+'</span>';});}
+    r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon(v.nr?'reset':'check',13):'';chipBtns[i].dataset.lv=v.lv;
+    chipBtns[i].title=lvName(v)+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two days at least 2 days apart':'')+'.'+(v.lv===3&&v.nr?' Your last answer to '+v.nr+' of them was wrong.':'');
+    const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=lvName(v)+' · '+v.ok1+' / '+v.n;}
+    const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+lvName(v)+'</b> · '+lvHint(v)+'</span>';});}
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
 function centreChip(smooth){const cb=chipBtns[curL[curS]],nav=$('#chips');if(cb&&!nav.hidden)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:smooth&&!RM?'smooth':'instant'});}
 function showLesson(i,o={}){
@@ -10870,14 +10881,19 @@ function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.
 /* lessonLevel runs for every lesson after each answer (badges, chips, the Today page): it is computed once for each change of the progress, and each caller gets its own copy */
 const lvMemo=svMemo((sk,L)=>lessonLevel0(sk,L),{q:1});function lessonLevel(sk,L){const r=lvMemo(sk,L);return r&&Object.assign({},r);}
 function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
-  le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(okTwo(d))ok2++;});
-  const n=le.qz.length;return {n,ans,ok1,ok2,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id);if(Store.get(id)||(h&&(h.c||h.m)))ans++;if(d.size>=1)ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
+  /* nr: questions whose latest answer was wrong. A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
+  const n=le.qz.length;return {n,ans,ok1,ok2,nr,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
+/* the questions of a lesson whose latest answer was wrong, and the next lesson check date of a lesson (0: none) */
+const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h&&h.l===0;});
+const lcNext=(sk,L)=>SUBJ[sk].lessons[L].qz.reduce((m,_,j)=>{const e=Store.sr(sk+'_'+L+'_'+j);return e&&e.k&&(!m||e.d<m)?e.d:m;},0);
 /* questions that still need a correct answer today to move toward Mastered */
 function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id),h=Store.x('h',id);return mStep(d,td)&&!(h&&h.rv===td);});}
 const allLessons=()=>UORDER.flatMap(unitLessons);
 function unitLessons(sk){return SUBJ[sk].lessons.map((le,L)=>le.qz?Object.assign({sk,L},lessonLevel(sk,L)):null).filter(Boolean);}
 const lvSteps=(lv,big)=>`<span class="lvs${big?' big':''}" aria-hidden="true">${[1,2,3].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</span>`;
-const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,`the challenge problem is unlocked`][v.lv];
+const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?`your last answer to ${v.nr} of ${v.n} questions was wrong`:`the challenge problem is unlocked`][v.lv];
 
 /* ----- every answer goes through here. o.rv: a wrong answer shows the right one, and a correct answer on that day adds no mastery day ----- */
 function onAnswer(id,ok,o={}){
@@ -10890,7 +10906,7 @@ function onAnswer(id,ok,o={}){
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
   markStudy();if(!o.nocombo)comboStep(ok);
   if(before){const a=lessonLevel(o.sk,o.L),t=SUBJ[o.sk].lessons[o.L].t;
-    if(a.lv===3&&before.lv<3)toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');
+    if(a.lv===3&&before.lv<3){toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');lcSeed(o.sk,o.L);}
     else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again in 2 days or later to master it.');}
   afterChange();}
 function afterChange(){chipProgress();checkAch();refreshLive();homeDot();}
@@ -10950,14 +10966,17 @@ function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
     const msg=['Answer the questions above to start this lesson.',
       `Answer every question correctly once to reach <b>Practised</b>. ${v.ok1} of ${v.n} have been answered correctly.`,
       `Answer each question correctly again at least 2 days after the first time to reach <b>Mastered</b>. ${v.ok2} of ${v.n} have been answered correctly on two such days.`,
-      'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
-    c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${LVN[v.lv]}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
+      v.nr?`You mastered this lesson, but your last answer to ${v.nr} of its questions was wrong. Answer ${v.nr===1?'it':'them'} correctly again to keep the lesson fresh.`:'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
+    const miss=v.lv===3&&v.nr?lcMissed(sk,L):[],nc=v.lv===3&&!v.nr?lcNext(sk,L):0;
+    c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${lvName(v)}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
       (v.lv>=1&&v.lv<3?(need.length?`<div class="row"><button type="button" class="btn">${icon('target',15)}Practise for mastery (${need.length} ${need.length===1?'question':'questions'})</button></div><p class="hint">A question that you answer wrong goes into spaced repetition and comes back after 1 day.</p>`
-        :`<p class="hint">${icon('cal',14)} Come back ${comeBack()}. A question counts for mastery when you answer it correctly again at least 2 days after the first time.</p>`):'');
-    const b=$('.row .btn',c);if(b)b.onclick=run;}
+        :`<p class="hint">${icon('cal',14)} Come back ${comeBack()}. A question counts for mastery when you answer it correctly again at least 2 days after the first time.</p>`)
+      :miss.length?`<div class="row"><button type="button" class="btn">${icon('reset',15)}Practise the missed ${miss.length===1?'question':'questions'} (${miss.length})</button></div>`
+      :nc?`<p class="hint">${icon('cal',14)} To keep this lesson fresh, ${LCN} of its questions come back in your review after about 7, 28 and 88 days. Next check: ${fmtDay(dayOf(nc))}.</p>`:'');
+    const b=$('.row .btn',c);if(b)b.onclick=()=>run(miss.length?miss:null);}
   /* the first day on which a question of this lesson can move toward Mastered again */
   function comeBack(){const t=dayNum(today());let m=Infinity;SUBJ[sk].lessons[L].qz.forEach((_,j)=>{const d=okDays(sk+'_'+L+'_'+j);if(!okTwo(d))m=Math.min(m,d.size?mNext(d):t+1);});return m<=t+1||!isFinite(m)?'tomorrow':'on '+fmtDay(dayStr(m));}
-  function run(){busy=1;const items=shuffle(masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML='<h3>Practise for mastery</h3>';const box=el('div');c.append(box);
+  function run(ids){busy=1;const items=shuffle(ids||masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML=`<h3>${ids?'Practise the missed questions':'Practise for mastery'}</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,title:'Question',done:res=>{busy=0;const n=res.filter(r=>r.ok).length;view();c.append(el('p',{class:'fb '+(n===res.length?'ok':'info')},`${n} of ${res.length} correct in this round.`));}});}
   LIVE.add(view);view();}
 function challengeCard(g,sk,L){const it=CH[sk]&&CH[sk][L];if(!it)return;const key='ch_'+sk+'_'+L,c=card(g,'','');let shown=-1;
@@ -11154,15 +11173,15 @@ function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date())
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
     <p><b>${Math.min(n,4)} of 4 days</b> · ${n>=4?'The goal is met for this week.':(4-n)+' more '+(4-n===1?'day':'days')+' to go.'}</p><p class="hint">${wr?`Weeks in a row with the goal met: ${wr}.`:'A day counts when you answer at least one question.'}</p>`,'w5');}
-function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const next=all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv).slice(0,3);
-  const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two days at least 2 days apart.</p>`+
-    (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${LVN[x.lv]}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
+function overviewCard(g){const all=allLessons(),cnt=[0,0,0,0];all.forEach(x=>cnt[x.lv]++);const nrl=all.filter(x=>x.lv===3&&x.nr),next=nrl.concat(all.filter(x=>x.lv>=1&&x.lv<3&&masteryNeeds(x.sk,x.L).length).sort((a,b)=>b.lv-a.lv)).slice(0,3);
+  const c=card(g,'Lesson mastery',`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(98px,1fr))">${LVN.map((n,i)=>`<div class="stat"><span>${n}</span><b>${cnt[i]}</b></div>`).join('')}${nrl.length?`<div class="stat"><span>Needs review</span><b>${nrl.length}</b></div>`:''}</div><p class="hint">A lesson is Mastered when you answer all of its questions correctly on two days at least 2 days apart.</p>`+
+    (next.length?'<h4>Next steps</h4><div class="bars">'+next.map(x=>`<div class="barrow nx"><span>${icon(lessonIcon(x.sk,x.L),15)}${SUBJ[x.sk].lessons[x.L].t}</span><span class="hint">${lvName(x)}</span><button type="button" class="btn sm ghost" data-go="${x.sk}_${x.L}">Open</button></div>`).join('')+'</div>':''),'half');
   $$('[data-go]',c).forEach(b=>b.onclick=()=>{const [sk,L]=b.dataset.go.split('_');goLesson(sk,+L);});}
 function levelCard(g,xs,lv,lo,hi){const c=card(g,'Level '+lv,`<div class="bar2" style="height:12px"><i class="b2" data-w="${100*(xs.xp-lo)/(hi-lo)}"></i></div><p><b>${xs.xp} XP</b> · ${hi-xs.xp} XP to level ${lv+1}</p>
   <table class="xpt">${xs.rows.map(r=>`<tr><td>${r[0]}</td><td class="hint">${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('')}</table><p class="hint">Most XP comes from mastery and achievements, so your level shows what you know and how you study.</p>`,'half');grow(c);}
 function mapCard(g){const c=card(g,'Progress map','<p class="hint">Each circle is a lesson. It fills in as you go from Learning to Practised to Mastered. The crown at the end is the boss round. Select a circle to open it.</p><div class="pmap"></div>'),pm=$('.pmap',c);
   UORDER.forEach(sk=>{const ls=unitLessons(sk),rv=SUBJ[sk].lessons.findIndex(l=>l.rv),row=el('div',{class:'pm-u'},`<div class="pm-h">${icon(sk,16)}${SUBJ[sk].name}<span class="hint">${ls.filter(x=>x.lv===3).length} of ${ls.length} mastered</span></div><div class="pm-path"></div>`),p=$('.pm-path',row);
-    ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+LVN[x.lv];
+    ls.forEach((x,k)=>{if(k)p.append(el('i',{class:'pm-l'+(ls[k-1].lv>=2?' on':'')}));const t=SUBJ[sk].lessons[x.L].t+': '+lvName(x);
       const n=el('button',{type:'button',class:'pm-n','data-lv':x.lv,style:'--p:'+(x.ok1/x.n),'aria-label':t,title:t},icon(x.lv===3?'check':lessonIcon(sk,x.L),16));n.onclick=()=>goLesson(sk,x.L);p.append(n);});
     p.append(el('i',{class:'pm-l'+(ls.every(x=>x.lv>=2)?' on':'')}));const b=bossWon(sk),bn=el('button',{type:'button',class:'pm-n boss'+(b?' won':''),'aria-label':'Boss round: '+(b?'beaten':'not beaten yet'),title:'Boss round'},icon('crown',17));
     /* the crown opens the Review lesson at its boss round card */
