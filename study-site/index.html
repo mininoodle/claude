@@ -726,6 +726,8 @@ body{--on-a1:#fff}
 #rail .rail-brand{padding-top:2px;padding-bottom:6px}
 /* a wide screen: the reference sheet and Review are pinned at the top of the lesson list, with a line under them */
 @media(min-width:901px){
+  /* the search row takes 38 px: the headings and the top of the rail give back 28 px, thus Review stays in view at 1366x768 in every unit */
+  html #rail{padding-top:10px}html #rail .rail-h,html #rail .ulabel{padding-top:8px}
   #rail .chips button.pin{order:-1}
   #rail .chips button.pin-end{position:relative;margin-bottom:9px}
   #rail .chips button.pin-end::after{content:"";position:absolute;left:8px;right:8px;bottom:-5px;border-bottom:1px solid var(--hair)}
@@ -744,6 +746,9 @@ body{--on-a1:#fff}
 @media(max-width:600px){#rail>#units,#rail>#chips{display:none}}
 /* the progress ring and the due badge of a lesson in the breadcrumb's lesson menu */
 .cm-i .pr{margin:0;flex:none}.cm-i .due{margin:0;flex:none}
+/* the breadcrumb's subject and section: their short names on a phone */
+.crumb-b .cs{display:none}
+@media(max-width:600px){.crumb-b .cl{display:none}.crumb-b .cs{display:inline}}
 /* the breadcrumb's tools at its right end: 'On this page' (on a phone, its icon only) */
 .crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
 html .crumb-tools .crumb-b{margin-left:0;flex:none}
@@ -11669,7 +11674,9 @@ html{scroll-padding-top:62px}
   document.addEventListener('pointerdown',e=>{if(!menu.hidden&&!menu.contains(e.target)&&!(mBtn&&mBtn.contains(e.target)))closeMenu();},true);
   addEventListener('resize',()=>closeMenu());
   const upd=()=>{const c=crumbs(),key=c.map(x=>x.lv+':'+x.t).join('|')+'|'+(typeof curS!=='undefined'?curS:'');
-    if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':esc(x.t)}</span>${icon('down',12)}</button>`).join(sep);}
+    /* the subject and the section also have their short names, which a phone shows (the bar also holds two tool buttons there) */
+    const short=x=>{const n=x.lv==='s'?(SUBJECTS.find(S=>S.name===x.t)||{}).short:x.lv==='u'&&SUBJ[curS]?SUBJ[curS].short:'';return n&&n!==x.t?`<span class="cl">${esc(x.t)}</span><span class="cs">${esc(n)}</span>`:esc(x.t);};
+    if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':short(x)}</span>${icon('down',12)}</button>`).join(sep);}
     lh.hidden=$id('chips').hidden;
     const lv=document.querySelector('.lesson:not([hidden]) .emblem small'),t=lv?lv.textContent:'';if(right.textContent!==t)right.textContent=t;};
   new MutationObserver(upd).observe(document.querySelector('title'),{childList:true,characterData:true,subtree:true});
