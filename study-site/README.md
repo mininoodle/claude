@@ -82,7 +82,7 @@ node study-site/test/run.js
 | Check | What it checks |
 |---|---|
 | `syntax.test.js` | The syntax of every script block of the page |
-| `ids.test.js` | The id lock: saved answers are stored by position, so no question, option, lesson, challenge or try-it may move to another place (`test/ids.lock.json`) |
+| `ids.test.js` | The id lock: saved answers are stored by position, so no question, lesson, challenge or try-it may move to another place, and no answer index or option count may change (`test/ids.lock.json`) |
 | `lint.test.js` | The content: answer keys, explanations and their units, hints, duplicates, stems that depend on another question, the multiple-choice length cue of each section, and the numbers in this README |
 | `smoke.test.js` | Every page opened and scrolled through the way a student does: no page or console errors, every question shown, an answer in each quiz, a review test and a timed exam on each Review page, and the sync with a stand-in Claude account |
 | `layout.test.js` | The layout of every page at 390 and 1366 px: centred column and rows, nothing outside its card, no sideways scroll |

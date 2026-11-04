@@ -35,6 +35,7 @@ const CHECKS = {
   'wrq':       ['error', 'a written-response item has no question, marking points or model answer'],
   'readme':    ['error', 'README.md says something else than the page'],
   'w-none':    ['warning', 'the explanation states no value that the grader accepts (also with the opposite sign); answers in words are fine'],
+  'digits':    ['warning', 'the value the explanation ends with is not the answer n rounded to its own digits (more than half a unit of its last digit away), so it disagrees with the shown answer'],
   'hint':      ['warning', 'a numeric lesson question has no hint (no method m and no explanation sentence before the answer)'],
   'mc-long':   ['warning', 'the key is 1.5 times its longest distractor or more'],
   'mc-pos':    ['warning', 'an option refers to other options ("all of the above", "A and B") in a list that is shuffled'],
@@ -63,6 +64,11 @@ function analyse(o) {
   const POSO = /\b(all|none|both|neither) of (the )?(above|these|them)\b|^(both|neither) [A-D]\b|\b[A-D] and [A-D]\b|\b(options?|answers?) [A-D]\b/i;
   const F10 = [1e-9, 1e-6, 1e-3, 1e-2, 1e2, 1e3, 1e6, 1e9];
   const fin = x => typeof x === 'number' && isFinite(x);
+  /* the numbers of a text with their written form (the same reading as the site's numsIn) */
+  const toks = t => (String(t || '').replace(/10<sup>(.*?)<\/sup>/g, '10^$1').replace(/<(su[bp])>.*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[−–]/g, '-').replace(/10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+)/g, (m, e) => '10^' + [...e].map(c => SUP[c]).join(''))
+    .match(/-?(?:\d+\/\d+|\d{1,3}(?: \d{3})+(?:\.\d+)?|\d*\.?\d+)(?:\s*[×x]\s*10\^?-?\d+)?(?![\dA-Za-z])/g) || []).map(s => ({ s, v: parseNum(s) })).filter(x => isFinite(x.v));
+  /* significant figures of a written number; the trailing zeros of a whole number do not count */
+  const sf = s => { const m = String(s).replace(/^[-+]/, '').split(/\s*[×x]/)[0].replace(/ /g, ''); if (m.includes('/')) return 0; const d = m.replace('.', '').replace(/^0+/, ''); return m.includes('.') ? d.length : d.replace(/0+$/, '').length; };
   /* the checks of one item; returns the check ids with a message */
   function check(it, src) {
     const r = [];
@@ -94,6 +100,12 @@ function analyse(o) {
       const last = vals[vals.length - 1];
       if (it.u && fin(last) && F10.some(f => numOK(last * f, it))) r.push(['w-unit', 'asks for ' + it.u + ' (n = ' + it.n + '), the explanation ends in ' + last + ': "…' + w.slice(-60) + '"']);
       else r.push(['w-none', 'n = ' + it.n + (it.u ? ' ' + it.u : '') + ': "…' + w.slice(-70) + '"']);
+    }
+    /* the last value of the explanation that the grader accepts must be n rounded to its own digits (the shown answer is n
+       rounded to 3), else the two disagree: for example 2.27 shown and 2.28 in the explanation */
+    if (isFinite(dv) && !it.ans) {
+      const acc = toks(it.w).filter(t => numOK(t.v, it) || numOK(-t.v, it)), t = acc[acc.length - 1], p = t ? sf(t.s) : 0, x = t ? Math.abs(t.v) : 0, n = Math.abs(it.n);
+      if (p && x > 0 && Math.abs(x - n) > .5 * Math.pow(10, Math.floor(Math.log10(x)) - p + 1) * (1 + 1e-6) + 1e-12 * n) r.push(['digits', 'n = ' + it.n + ' (shown ' + shown + '), the explanation ends with ' + t.s.trim()]);
     }
     if (src === 'lesson') {
       const ws = sentences(it.w).slice(0, -1), cut = ws.findIndex(t => hintLeaks(t, it)), steps = (it.m ? [it.m] : []).concat(cut < 0 ? ws : ws.slice(0, cut));

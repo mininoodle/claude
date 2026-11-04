@@ -57,7 +57,10 @@ lib.run('layout', async ({ launch }) => {
     for (const pg of pages) {
       h.at(w + ' px ' + pg.name);
       try { await lib.openPageItem(h.page, pg); } catch (e) { bad.push({ page: pg.name, err: String(e.message || e).split('\n')[0] }); continue; }
+      /* as measure-all.js: 60 ms for the page to settle, then two frames, so that the table fitting and the resize
+         observers have run even when the machine is busy */
       await h.page.waitForTimeout(60);
+      await lib.frames(h.page);
       const r = await h.page.evaluate(check);
       if (r.err) { bad.push({ page: pg.name, err: r.err }); continue; }
       rows += r.rows;
