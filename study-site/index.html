@@ -1578,14 +1578,17 @@ document.addEventListener('visibilitychange',kick);
 /* the card watcher: a lesson card (.lesson>.grid>.card) gets the class cvr, which lets it skip rendering while off screen (CSS above), once it has
    been drawn at the current width; its real height is then remembered. An off-screen card whose width has changed (a resize, a rotation) loses cvr,
    thus it is drawn once more at the new width and its height is right again. Reads first, then writes, thus no forced style recalc.
-   cvr is added when the page is idle, after the lesson has been shown, thus the first view of a lesson costs nothing more */
+   cvr is added when the page is idle, after the lesson has been shown, thus the first view of a lesson costs nothing more.
+   cvr is taken off in the next frame, not in the observer: a size change made inside the observer ends its loop with undelivered notifications
+   (an error event on the window) */
 {const SEL='.lesson>.grid>.card',todo=new Set();let job=0;
   const flush=()=>{job=0;todo.forEach(c=>{if(c.isConnected&&c._cvw)c.classList.add('cvr');});todo.clear();};
+  const later=c=>{todo.add(c);if(!job)job=window.requestIdleCallback?requestIdleCallback(flush,{timeout:2000}):setTimeout(flush,400);};
   const ro=new ResizeObserver(es=>{const ch=es.map(e=>{const c=e.target,b=e.borderBoxSize&&e.borderBoxSize[0],f=c.firstElementChild;
       return [c,Math.round(b?b.inlineSize:c.offsetWidth),!!(f&&f.checkVisibility&&!f.checkVisibility({contentVisibilityAuto:true}))];});
     for(const [c,w,skip] of ch){if(!w)continue;
-      if(!skip){c._cvw=w;if(!c.classList.contains('cvr')){todo.add(c);if(!job)job=window.requestIdleCallback?requestIdleCallback(flush,{timeout:2000}):setTimeout(flush,400);}}
-      else if(c._cvw!==w){c._cvw=0;c.classList.remove('cvr');}}});
+      if(!skip){c._cvw=w;if(!c.classList.contains('cvr'))later(c);}
+      else if(c._cvw!==w){c._cvw=0;requestAnimationFrame(()=>{c.classList.remove('cvr');c._cvw=w;later(c);});}}});
   /* added cards are watched; removed ones (a page drawn again, a section cleared) are let go */
   const each=(n,fn,gone)=>{if(n.nodeType!==1)return;if(gone?n.classList.contains('card'):n.matches(SEL))fn(n);
     else if(n.matches(gone?'.lesson,.grid':'.lesson,.lesson>.grid'))n.querySelectorAll('.card').forEach(c=>{if(gone||c.matches(SEL))fn(c);});};
