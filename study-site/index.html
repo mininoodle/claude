@@ -124,6 +124,9 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
 .modebtn:active{transform:scale(.9) rotate(20deg)}
 .modebtn.acct.on{color:var(--a1);border-color:var(--a2);background:color-mix(in srgb,var(--a2) 28%,var(--glass2))}
 .modebtn.acct:active{transform:scale(.9)}
+/* saving or syncing is not ok: a dot on the account button, and a card at the top of the Today page */
+.modebtn.acct{position:relative}.modebtn.acct.warn::after{content:'';position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--bg,#fff)}
+.card.syncline{border-color:color-mix(in srgb,var(--bad) 45%,var(--hair))}.syncline p{margin:.2em 0}
 dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--glass2);border:1px solid var(--hair);border-radius:6px;padding:.1em .4em}
 .seg{position:relative;display:flex;border-radius:999px;isolation:isolate}
 .seg.main button{display:flex;align-items:center;gap:.5em}
@@ -942,11 +945,16 @@ const Store=(()=>{
       const id=await user.id();if(!id)return false;
       /* a viewer who may not write here: the platform says so up front (false), or only the first write tells (null) */
       let w=null;try{if(typeof user.can==='function')w=await user.can('data.write');}catch(e){}if(w===false){noW=true;say('viewer');emit();return false;}
-      const col=db.collection('data/users/'+id),sure=q=>!(q&&q.metadata&&q.metadata.fromCache);
+      /* one query and one listener for the whole collection. If the store refuses a query here, each known document is read and watched on its own (at most 2 + one per section, under the 64 listeners of a view) */
+      const col=db.collection('data/users/'+id),sure=q=>!(q&&q.metadata&&q.metadata.fromCache),pend=d=>!!(d.metadata&&d.metadata.hasPendingWrites);
+      const ids=()=>['progress','meta'].concat((secs()?[...secs()]:[]).map(k=>'p_'+k)),flat=e=>e instanceof TypeError||/^(invalid.argument|transform.error|capability.removed)$/.test(e&&e.code||'');let per=false;
       await attach({split:1,legacy:'progress',
-        async all(){const q=await col.get();return {sure:sure(q),docs:q.docs.map(d=>({id:d.id,data:d.exists===false?null:d.data()}))};},
+        async all(){if(!per)try{const q=await col.get();return {sure:sure(q),docs:q.docs.map(d=>({id:d.id,data:d.exists===false?null:d.data()}))};}catch(e){if(!flat(e))throw e;per=true;}
+          const n=ids(),ss=await Promise.all(n.map(x=>col.doc(x).get()));return {sure:true,docs:ss.map((d,i)=>({id:n[i],data:d.exists?d.data():null}))};},
         get:n=>col.doc(n).get(),set:(n,d)=>col.doc(n).set(d),patch:(n,d)=>col.doc(n).update(d),
-        watch:(next,bad)=>col.onSnapshot(q=>next({sure:sure(q),docs:q.docChanges().map(c=>({id:c.doc.id,data:c.type==='removed'?null:c.doc.data(),pending:!!(c.doc.metadata&&c.doc.metadata.hasPendingWrites)}))}),bad)},
+        watch(next,bad){let u=[];const each=()=>{u=ids().map(n=>col.doc(n).onSnapshot(d=>next({sure:sure(d),docs:[{id:n,data:d.exists?d.data():null,pending:pend(d)}]}),bad));};
+          if(per)each();else try{u=[col.onSnapshot(q=>next({sure:sure(q),docs:q.docChanges().map(c=>({id:c.doc.id,data:c.type==='removed'?null:c.doc.data(),pending:pend(c.doc)}))}),e=>{if(flat(e)&&!per){per=true;each();}else bad(e);})];}catch(e){if(!flat(e))throw e;per=true;each();}
+          return ()=>u.forEach(f=>f());}},
         {label:'Claude account',uid:'claude:'+id,src:'claude'});
       try{localStorage.removeItem(NOC);}catch(e){}return mode==='account';}catch(e){return false;}}
   document.addEventListener('visibilitychange',()=>{if(document.hidden){if((dirty||DQ.size)&&ref&&!stop){clearTimeout(timer);dirty=true;push();}}else if(ref&&!live&&Date.now()-lastPull>60000)pull();});
@@ -1483,12 +1491,13 @@ function askClear(sk){const S=SUBJ[sk];if(!S)return;const back=document.activeEl
   $('[data-ok]',d).onclick=()=>{close();clearUnit(sk);toast('Your answers in '+S.name+' are cleared.');};
   d.showModal();$('[data-x]',d).focus();}
 /* the account dialog: sign in, sign out, or an explanation when sync is not available */
-function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',S=window.SYNC||{},ready=!!S.ready,web=/^https?:$/.test(location.protocol);
+function accountDialog(){const back=document.activeElement,on=Store.mode()==='account',S=window.SYNC||{},ready=!!S.ready,web=/^https?:$/.test(location.protocol),st=Store.status();
   const when=t=>{if(!t)return 'not yet';const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';};
   const sy=()=>{const s=window.SYNC||{};return !!s.ready+'|'+(s.error||'');},k0=sy();
   let body,row,err='';const ns=Store.canSave()?'':'<p class="hint">This browser cannot save your progress, because its site storage is blocked or full. It is lost when you reload the page.</p>';
-  if(on){body=`<h3 id="ac-h">Signed in</h3><p>Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device. Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.${Store.error()?' The last upload did not work. Your progress is kept on this device.':''}</p>`;
+  if(on){body=`<h3 id="ac-h">Signed in</h3><p>${/^(ok|pending)$/.test(st.remote)?`Your progress is saved to <b>${Store.account()||'your account'}</b> and to this device.`:`You are signed in to <b>${Store.account()||'your account'}</b>. Your progress is saved on this device.`} Open the site on another device and sign in with the same account to see the same progress.</p><p class="hint">Last sync: ${when(Store.lastSync())}${Store.pending()?' (changes waiting to upload)':''}.${st.text?' '+st.text:''}</p>`;
     row=`<button type="button" class="btn ghost" data-out>Sign out</button><button type="button" class="btn" data-sync>${icon('reset',15)}Sync now</button>`;}
+  else if(st.remote==='viewer'){body=`<h3 id="ac-h">Saved in this browser only</h3><p>${st.text}</p>`;row=`<button type="button" class="btn" data-x>Close</button>`;}
   else if(window.claude&&typeof window.claude.use==='function'){body=`<h3 id="ac-h">Sync with your Claude account</h3><p>Your progress is saved on this device only. Sign in to save it to your Claude account and see it on your other devices. The progress already on this device is kept and merged.</p>${ns}`;
     row=`<button type="button" class="btn ghost" data-x>Not now</button><button type="button" class="btn" data-cl>${icon('user',15)}Sign in</button>`;}
   else if(FIREBASE_CONFIG&&!web){body=`<h3 id="ac-h">Sync needs the web address</h3><p>${Store.canSave()?'Your progress is saved in this browser only. ':''}Google sign-in works only when the site is opened from its web address (https://…), not as a file on this device.</p>${ns}`;
@@ -1533,8 +1542,8 @@ function boot(){
   /* print in light mode (dark ink on white paper), then go back; the saved choice does not change */
   let prm=null;addEventListener('beforeprint',()=>{prm=document.documentElement.dataset.mode;if(prm==='dark')setMode('light');});addEventListener('afterprint',()=>{if(prm==='dark')setMode('dark');prm=null;});
   const ab=el('button',{type:'button',class:'modebtn acct',id:'acct'});$('.bar').append(ab);
-  const acctState=()=>{const on=Store.mode()==='account';ab.classList.toggle('on',on);ab.innerHTML=icon(on?'cloud':'user',17);
-    const t=on?(Store.error()?'Not synced: changes are waiting to upload to ':'Synced with ')+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
+  const acctState=()=>{const on=Store.mode()==='account',h=syncHead(Store.status());ab.classList.toggle('on',on);ab.classList.toggle('warn',!!h);ab.innerHTML=icon(on?'cloud':'user',17);
+    const t=h?h+'. Select for details.':on?'Synced with '+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
   acctState();Store.on(acctState);ab.onclick=accountDialog;
   if(!Store.cleared(RB2))Store.clear(rb2Scope,RB2,RB2T);
   const p=Store.pos();if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
@@ -11246,7 +11255,16 @@ function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const
   homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+/* the state of saving and syncing, while it is not ok: first on the Today page, with what the student can do */
+const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':'';
+function syncCard(g){const st=Store.status(),h=syncHead(st);if(!h)return;
+  const tx=st.text.startsWith(h+'.')?st.text.slice(h.length+1).trim():st.text;
+  const c=card(g,'',`<h3>${icon(st.remote==='viewer'?'user':'cloud',18)} ${h}</h3><p role="status">${tx}</p><div class="row"></div>`,'syncline'),row=$('.row',c);g.prepend(c);
+  const b=(t,f,cl)=>{const x=el('button',{type:'button',class:'btn sm'+(cl?' '+cl:'')},t);x.onclick=f;row.append(x);};
+  if(st.remote==='outdated')b(icon('reset',15)+'Reload',()=>location.reload());
+  else if(st.remote==='retrying'||st.remote==='stopped')b(icon('reset',15)+'Sync now',async()=>{const ok=await Store.sync();toast(ok?'Synced.':'Could not sync yet. Your progress is kept on this device.');});
+  b('Account',accountDialog,'ghost');}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>

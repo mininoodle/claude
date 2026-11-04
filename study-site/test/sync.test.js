@@ -59,8 +59,8 @@ const CLAUDE_SHIM=cfg=>{const call=(op,a)=>window.__db(op,a);const L=new Map();
     set:d=>wrap(call('set',{path:p,data:d})).then(()=>undefined),update:d=>wrap(call('update',{path:p,data:d})).then(()=>undefined),
     onSnapshot:(n,e)=>sub('doc',p,n,e),collection:c=>colRef(p+'/'+c)});
   const colRef=p=>({path:p,doc:id=>docRef(p+'/'+id),
-    get:()=>call('query',{path:p}).then(ds=>{const docs=ds.map(d=>({id:d.id,exists:true,data:()=>JSON.parse(JSON.stringify(d.data)),metadata:{hasPendingWrites:false,fromCache:false}}));return {docs,size:docs.length,empty:!docs.length,docChanges:()=>docs.map(d=>({type:'added',doc:d})),metadata:{fromCache:false,hasPendingWrites:false}};}),
-    onSnapshot:(n,e)=>sub('col',p,n,e)});
+    get:()=>cfg.noQuery?Promise.reject({code:'invalid_argument',message:'no query here'}):call('query',{path:p}).then(ds=>{const docs=ds.map(d=>({id:d.id,exists:true,data:()=>JSON.parse(JSON.stringify(d.data)),metadata:{hasPendingWrites:false,fromCache:false}}));return {docs,size:docs.length,empty:!docs.length,docChanges:()=>docs.map(d=>({type:'added',doc:d})),metadata:{fromCache:false,hasPendingWrites:false}};}),
+    onSnapshot:(n,e)=>{if(cfg.noQuery){setTimeout(()=>e&&e({code:'invalid_argument',message:'no query here'}),5);return ()=>{};}return sub('col',p,n,e);}});
   const db={doc:docRef,collection:colRef};
   const user={id:async()=>cfg.id,isOwner:async()=>!!cfg.owner,canEdit:async()=>!!cfg.owner,can:async()=>cfg.can===undefined?null:cfg.can,me:async()=>({id:cfg.id,name:'',email:null,isOwner:!!cfg.owner,canEdit:!!cfg.owner})};
   window.claude={use:async n=>n==='db'?db:n==='user'?user:null};
@@ -89,7 +89,7 @@ async function device(name,o={}){const ctx=await browser.newContext({viewport:{w
   if(o.seed)await ctx.addInitScript(s=>{try{if(!sessionStorage.getItem('seeded')){localStorage.setItem('unit-study-site.v2',s);sessionStorage.setItem('seeded','1');}}catch(e){}},o.seed);
   if(o.fb){await ctx.addInitScript(()=>{window.__snap=(id,pl)=>window.__fbsnap&&window.__fbsnap(id,pl);window.__toasts=[];new MutationObserver(ms=>{for(const m of ms)for(const x of m.addedNodes)if(x.classList&&x.classList.contains('toast'))window.__toasts.push(x.textContent);}).observe(document,{childList:true,subtree:true});});
     await ctx.route(/gstatic\.com\/firebasejs\/.*\/firebase-(app|auth|firestore)\.js/,r=>{const n=r.request().url().match(/firebase-(\w+)\.js/)[1];r.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:n==='app'?FB_APP:n==='auth'?FB_AUTH:FB_STORE});});}
-  else await ctx.addInitScript(CLAUDE_SHIM,{id:o.id||'u1',owner:o.owner!==false,can:o.can});
+  else await ctx.addInitScript(CLAUDE_SHIM,{id:o.id||'u1',owner:o.owner!==false,can:o.can,noQuery:!!o.noQuery});
   await ctx.route(/^https?:\/\/(?!www\.gstatic\.com\/firebasejs)/,r=>r.abort());
   await ctx.exposeBinding('__db',(src,op,a)=>server.op(dev,op,a));
   const page=await ctx.newPage();dev.page=page;dev.errors=[];page.on('pageerror',e=>dev.errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!/net::|ERR_|Failed to load/.test(m.text()))dev.errors.push(m.text());});
@@ -152,6 +152,17 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
     const fsm=flat(small),fr=flat(acc);let lost=0;for(const k in fsm)if(!(k in fr))lost++;
     ok('a migration on two devices at once loses nothing',r1===4&&r2===4&&all.every(i=>acc.a[i])&&lost===0,{R1:r1,R2:r2,inAccount:all.filter(i=>acc.a[i]).length,oldEntriesMissing:lost});
     await close(R1);await close(R2);}
+
+  /* 2c. a store that refuses a query on the collection: each document is read and watched on its own */
+  {const small=clone(legacy);for(const m of ['a','h','s'])for(const k of Object.keys(small[m]))if(!/^(ns|lim)_/.test(k))delete small[m][k];server.docs.set('data/users/u4/progress',small);
+    const Q=await device('Q',{id:'u4',noQuery:true});const okQ=await until(Q,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+    const fq=flat(await state(Q)),fsm=flat(small);let lost=0;for(const k in fsm)if(!(k in fq))lost++;const acc=flat(unshard('data/users/u4/'));let notUp=0;for(const k in fq)if(acc[k]!==fq[k])notUp++;
+    const Q2=await device('Q2',{id:'u4'});await until(Q2,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+    await answer(Q,'th',1,1);const iq=await ev(Q,()=>Store.xk('a').filter(k=>k.startsWith('th_1_')).sort((x,y)=>Store.get(y).t-Store.get(x).t)[0]);
+    await answer(Q2,'eq',2,1);const iq2=await ev(Q2,()=>Store.xk('a').filter(k=>k.startsWith('eq_2_')).sort((x,y)=>Store.get(y).t-Store.get(x).t)[0]);
+    const live1=await until(Q2,id=>!!Store.get(id),iq),live2=await until(Q,id=>!!Store.get(id),iq2);
+    ok('a store without collection queries: the old document moves, and the devices sync live',okQ&&lost===0&&notUp===0&&live1&&live2,{connected:okQ,oldEntriesMissing:lost,notInAccount:notUp,QtoQ2:live1,Q2toQ:live2,errors:Q.errors.concat(Q2.errors).slice(0,2)});
+    await close(Q);await close(Q2);}
 
   /* 3. a second device signs in, and the two see each other's answers live */
   let B=await device('B');ok('device B gets all of the progress',await until(B,()=>Store.mode()==='account'&&!Store.pending()&&Store.xk('a').length>1500),await ev(B,()=>Store.xk('a').length));
