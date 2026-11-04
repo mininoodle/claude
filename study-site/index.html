@@ -147,7 +147,7 @@ dialog.confirm code{font:500 .9em ui-monospace,SFMono-Regular,Menlo,monospace;ba
 .chips button{appearance:none;flex:none;border:0;background:none;color:var(--ink);font:inherit;font-size:.86rem;font-weight:550;padding:.42em .95em;border-radius:999px;cursor:pointer;transition:background .3s var(--ease),color .3s,transform .2s var(--spring),box-shadow .3s}
 .chips button:hover{background:var(--hov)}
 .chips button:active{transform:scale(.95)}
-.chips button[aria-selected="true"]{background:var(--a1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 14px color-mix(in srgb,var(--a1) 38%,transparent)}
+.chips button[aria-selected="true"]{background:var(--a1);color:var(--on-a1,#fff);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 14px color-mix(in srgb,var(--a1) 38%,transparent)}
 /* with a mouse or on a wide screen the lesson row wraps, so every chip (and the Review due count) is visible */
 /* wrap the lesson chips only when the screen is tall enough: on a short landscape window three rows of chips would fill half the screen */
 @media(min-width:601px) and (min-height:521px) and (hover:hover) and (pointer:fine),(min-width:900px) and (min-height:521px){.chips{flex-wrap:wrap;justify-content:center;border-radius:24px}}
@@ -181,7 +181,7 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:.7em 0;max-width:22rem}
 .wd{display:grid;justify-items:center;gap:4px;font-size:.74rem;color:var(--ink2)}
 .wd i{width:100%;max-width:30px;aspect-ratio:1;height:auto;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;background:var(--glass2)}
-.wd.on i{background:var(--a1);border-color:var(--a1);color:#fff}
+.wd.on i{background:var(--a1);border-color:var(--a1);color:var(--on-a1,#fff)}
 .wd.now i{box-shadow:0 0 0 3px color-mix(in srgb,var(--a1) 30%,transparent)}
 /* experience table, next steps */
 .xpt td{padding:.32em .5em;font-size:.88rem}.xpt td:last-child{text-align:right}.card>.xpt td{min-width:0}.xpt td+td{white-space:nowrap}
@@ -194,8 +194,8 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .pm-n:hover{transform:scale(1.08)}.pm-n:active{transform:scale(.94)}
 .pm-n[data-lv="1"]{border-color:color-mix(in srgb,var(--a1) 50%,transparent);color:var(--ink);background:conic-gradient(color-mix(in srgb,var(--at) 70%,transparent) calc(var(--p,0)*1turn),var(--glass2) 0)}
 .pm-n[data-lv="2"]{border-color:var(--at);color:var(--at);background:color-mix(in srgb,var(--a1) 22%,var(--glass2))}
-.pm-n[data-lv="3"]{border-color:var(--a1);background:var(--a1);color:#fff}
-.pm-n.boss{border-style:dashed}.pm-n.boss.won{border-style:solid;border-color:var(--a1);background:var(--a1);color:#fff}
+.pm-n[data-lv="3"]{border-color:var(--a1);background:var(--a1);color:var(--on-a1,#fff)}
+.pm-n.boss{border-style:dashed}.pm-n.boss.won{border-style:solid;border-color:var(--a1);background:var(--a1);color:var(--on-a1,#fff)}
 .pm-l{flex:1 0 10px;max-width:30px;height:3px;border-radius:2px;background:var(--hair)}.pm-l.on{background:var(--a1)}
 /* badges */
 /* ---------- achievements ---------- */
@@ -236,7 +236,7 @@ main{max-width:1080px;margin:0 auto;padding-block:22px 80px;padding-inline:16px;
 .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:8px}
 .badge{display:flex;gap:11px;align-items:flex-start;padding:.65em .8em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);box-shadow:inset 0 1px 0 var(--hi)}
 .badge b{display:block;font-size:.9rem}.badge div>span{display:block;font-size:.78rem;color:var(--ink2)}.badge .bic{display:grid}
-.badge.got .bic{background:var(--a1);border-color:var(--a1);color:#fff}
+.badge.got .bic{background:var(--a1);border-color:var(--a1);color:var(--on-a1,#fff)}
 .badge:not(.got) .bic{opacity:.7}.badge .bdate{color:var(--at);font-weight:600;margin-top:.2em}
 /* speed rounds */
 .speed{margin-top:.8em;padding-top:.7em;border-top:1px solid var(--hair)}
@@ -333,10 +333,10 @@ details.ex>div{padding-bottom:.8em}
 details.ex[open]>div{animation:rise .4s var(--ease)}
 .wk-how ol{margin:.4em 0 0;padding-left:1.3em}.wk-how li{margin:.15em 0}
 .wk-q{font-weight:600;margin:1em 0 .4em}
-.wk-tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--a1);border-radius:999px;padding:.15em .7em;margin-right:.6em;vertical-align:.12em}
+.wk-tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--on-a1,#fff);background:var(--a1);border-radius:999px;padding:.15em .7em;margin-right:.6em;vertical-align:.12em}
 ol.wk-s{list-style:none;counter-reset:wk;padding:0;margin:.5em 0}
 ol.wk-s>li{counter-increment:wk;position:relative;padding:.55em .9em .6em 3em;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);margin:.5em 0;box-shadow:inset 0 1px 0 var(--hi);animation:rise .4s var(--ease)}
-ol.wk-s>li::before{content:counter(wk);position:absolute;left:.85em;top:.7em;width:1.55em;height:1.55em;border-radius:50%;background:var(--a1);color:#fff;font:700 .78rem/1.55em system-ui,sans-serif;text-align:center}
+ol.wk-s>li::before{content:counter(wk);position:absolute;left:.85em;top:.7em;width:1.55em;height:1.55em;border-radius:50%;background:var(--a1);color:var(--on-a1,#fff);font:700 .78rem/1.55em system-ui,sans-serif;text-align:center}
 .wk-m{font:500 1.06rem/1.8 ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;overflow-x:auto}
 .wk-m table{margin:.2em 0}
 .wk-w{color:var(--ink2);font-size:.9rem;margin:.2em 0 0}
@@ -347,12 +347,12 @@ ol.wk-s>li::before{content:counter(wk);position:absolute;left:.85em;top:.7em;wid
 .ht{columns:3 290px;column-gap:10px;margin-top:.7em}
 .ht-i{break-inside:avoid;margin-bottom:10px;border-radius:16px;background:var(--glass2);border:1px solid var(--hair);padding:.75em .95em .7em;box-shadow:inset 0 1px 0 var(--hi)}
 .ht-i h4{margin:0 0 .4em;font-size:.98rem;display:flex;gap:.55em;align-items:center}
-.ht-n{flex:none;width:1.55em;height:1.55em;border-radius:50%;background:var(--a1);color:#fff;font:700 .76rem/1.55em system-ui,sans-serif;text-align:center}
+.ht-n{flex:none;width:1.55em;height:1.55em;border-radius:50%;background:var(--a1);color:var(--on-a1,#fff);font:700 .76rem/1.55em system-ui,sans-serif;text-align:center}
 .ht-i ol{margin:0;padding-left:1.3em}.ht-i li{margin:.2em 0}
 .ht-c{color:var(--ink2);font-size:.9rem;margin:.5em 0 0}
 
 /* controls */
-.btn{appearance:none;border:0;border-radius:999px;padding:.6em 1.15em;font:inherit;font-weight:600;color:#fff;background:var(--a1);cursor:pointer;
+.btn{appearance:none;border:0;border-radius:999px;padding:.6em 1.15em;font:inherit;font-weight:600;color:var(--on-a1,#fff);background:var(--a1);cursor:pointer;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 4px 14px color-mix(in srgb,var(--a1) 34%,transparent);transition:transform .25s var(--spring),filter .2s,box-shadow .25s}
 .btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
 .btn:active{transform:scale(.95)}
@@ -448,7 +448,7 @@ select{padding-right:1.6em;max-width:100%}
 .chipsrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.6em}
 .chip{appearance:none;font:inherit;font-size:.84rem;color:var(--ink);background:var(--glass2);border:1px solid var(--hair);border-radius:999px;padding:.3em .8em;cursor:pointer;box-shadow:inset 0 1px 0 var(--hi);transition:background .25s,color .25s,transform .2s var(--spring)}
 .chip:active{transform:scale(.94)}
-.chip.on{background:var(--a1);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.chip.on{background:var(--a1);color:var(--on-a1,#fff);border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 
 /* ordering */
 .ordl{list-style:none;padding:0;display:grid;gap:6px;max-width:none;grid-template-columns:minmax(0,1fr)}
@@ -499,7 +499,7 @@ textarea{font:inherit;color:var(--ink);background:var(--well);border:1px solid v
 .chip.on.placed{background:var(--a1)}
 .chip:disabled{cursor:default;opacity:.75}
 .chip.drag{touch-action:none;cursor:grab}
-.chip.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-130%) scale(1.08);background:var(--a1);color:#fff;border-color:transparent;box-shadow:0 10px 24px rgba(80,70,77,.35)}
+.chip.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-130%) scale(1.08);background:var(--a1);color:var(--on-a1,#fff);border-color:transparent;box-shadow:0 10px 24px rgba(80,70,77,.35)}
 .hs-fig [data-p].got{filter:drop-shadow(0 0 5px var(--ok))}
 .due{display:inline-grid;place-items:center;min-width:1.35em;height:1.35em;padding:0 .3em;margin-left:.45em;border-radius:999px;background:var(--bad);color:#fff;font:700 .72rem/1 ui-rounded,system-ui,sans-serif;font-style:normal;vertical-align:1px}
 [data-mode="dark"] .due{color:#1c1a1b}
@@ -716,6 +716,231 @@ p.legend>span{white-space:normal;min-width:0}
 </header>
 <div id="sen" style="position:absolute;top:0;height:60px;width:1px"></div>
 <main id="main"><div class="units" id="units" hidden></div></main>
+<!-- ===== Navigation and usability: the rules for the rail, the breadcrumb bar, its menus and the search. They follow the sidebar skin and win over it by their selectors, so their place in the file does not matter ===== -->
+<style id="ux-skin">
+/* text and icons on the accent fill var(--a1). In dark mode the fill is a light blue: white on it is 2.8:1, #191919 is 6.2:1 */
+body{--on-a1:#fff}
+[data-mode="dark"] body{--on-a1:#191919}
+/* the rail: the mode and account buttons in the 'Study' row */
+#rail .rail-brand .rail-tools{margin:0 0 0 auto;padding:0;gap:4px}
+#rail .rail-brand{padding-top:2px;padding-bottom:6px}
+/* a wide screen: the reference sheet and Review are pinned at the top of the lesson list, with a line under them */
+@media(min-width:901px){
+  /* the 'Study' row with the mode and account buttons stays at the top of the rail when the rail scrolls to show the open lesson */
+  html #rail>.rail-brand{position:sticky;top:-10px;z-index:2;background:var(--rail);margin-top:-10px;padding-top:10px}
+  #rail.scrolled>.rail-brand{box-shadow:0 1px 0 var(--hair)}
+  /* those buttons are always on screen there: focus on them (Tab, or back from the account dialog) must not scroll the page (see the bar's buttons) */
+  #rail>.rail-brand button{scroll-margin-top:-100px}
+  /* the search row takes 38 px: the headings and the top of the rail give back 28 px, thus Review stays in view at 1366x768 in every unit */
+  html #rail{padding-top:10px}html #rail .rail-h,html #rail .ulabel{padding-top:8px}
+  #rail .chips button.pin{order:-1}
+  #rail .chips button.pin-end{position:relative;margin-bottom:9px}
+  #rail .chips button.pin-end::after{content:"";position:absolute;left:8px;right:8px;bottom:-5px;border-bottom:1px solid var(--hair)}
+}
+/* a narrow screen: the rail's first row holds the subjects (scrolling sideways) and, at its end, the mode and account buttons */
+@media(max-width:900px){
+  html #rail{flex-direction:row;flex-wrap:wrap;align-items:center}
+  #rail>*{flex:1 1 100%;min-width:0;order:3}
+  #rail>#tabs{flex:1 1 0;order:1}
+  #rail>.rail-brand{display:flex;flex:none;order:2;padding:0}
+  #rail>.rail-brand>:not(.rail-tools){display:none}
+  /* the breadcrumb stays at the top of the window at every width (on a wide screen the skin already makes it sticky) */
+  html .crumb{position:sticky;height:44px}
+}
+/* a phone: the breadcrumb menus are the navigation (subjects, sections, lessons with their progress rings), thus the rail keeps only its first row */
+@media(max-width:600px){#rail>#units,#rail>#chips{display:none}}
+/* the progress ring and the due badge of a lesson in the breadcrumb's lesson menu */
+.cm-i .pr{margin:0;flex:none}.cm-i .due{margin:0;flex:none}
+/* the breadcrumb's subject and section: their short names on a phone */
+.crumb-b .cs{display:none}
+@media(max-width:720px){.crumb-b .cl{display:none}.crumb-b .cs{display:inline}}
+/* the bar's own buttons are always on screen: focus that reaches them (Tab, or back from a menu) must not scroll the page. The page's scroll-padding-top
+   (62 px) made the browser scroll up about 400 px to show a button that is in that strip; a negative scroll margin tells it the button is in view.
+   The menu's items keep their margin, thus the arrow keys still scroll a long menu */
+.crumb-path .crumb-b,.crumb-tools button{scroll-margin-top:-100px}
+/* the breadcrumb's tools at its right end: 'On this page' (on a phone, its icon only) */
+.crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
+html .crumb-tools .crumb-b{margin-left:0;flex:none}
+/* the bar is short of room below 720 px, and from 901 to 1000 px (the rail takes 250 px): 'On this page' is its icon there */
+@media(max-width:720px),(min-width:901px) and (max-width:1000px){.crumb-o>span,.crumb-o>.ic:last-child,.crumb-f>span{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
+/* 'Formulas' in the breadcrumb: the section's reference sheet in a dialog over the page */
+.crumb-f[hidden]{display:none}
+/* a small phone: three icon buttons at the end of the bar, thus a narrower gap and 32 px buttons leave room for the lesson's name */
+@media(max-width:420px){html .crumb{gap:8px}html .crumb-tools .crumb-b{min-width:32px;padding-inline:0}html .crumb-s{width:32px}}
+dialog.refdlg{width:min(46rem,calc(100vw - 24px));max-width:none;max-height:min(88vh,calc(100vh - 24px));padding:0;border:1px solid var(--hair);border-radius:14px;background:var(--bg);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden}
+dialog.refdlg[open]{display:flex;flex-direction:column}
+dialog.refdlg::backdrop{background:rgba(28,26,27,.38)}
+.refdlg-top{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 18px;border-bottom:1px solid var(--hair);flex:none}
+.refdlg-top h2{flex:1;min-width:0;margin:0;font-size:1rem;font-weight:600}
+.refdlg-top h2 span{font-weight:400;color:var(--ink2)}
+.refdlg-x{appearance:none;border:0;background:none;color:var(--ink2);display:inline-grid;place-items:center;width:36px;height:36px;border-radius:6px;cursor:pointer;flex:none}
+.refdlg-x:hover{background:var(--hov);color:var(--ink)}
+.refdlg-body{overflow-y:auto;overscroll-behavior:contain;padding:12px;display:grid;gap:12px;min-height:0}
+/* the site search: a box at the top of the rail (wide screens), a button and a panel under the breadcrumb (narrow screens) */
+.rail-find{padding:0 2px 6px}
+.find{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border-radius:6px;background:var(--glass);border:1px solid var(--hair);color:var(--ink2)}
+.find:focus-within{outline:2px solid var(--at);outline-offset:1px}
+html .find input{flex:1;min-width:0;width:100%;border:0;background:none;box-shadow:none;outline:none;font:inherit;font-size:13.5px;color:var(--ink);padding:0;margin:0;height:auto}
+.find input::placeholder{color:var(--ink2);opacity:1}
+.find kbd{font:600 11px/1 inherit;color:var(--ink2);border:1px solid var(--hair);border-radius:4px;padding:2px 5px}
+.find:focus-within kbd{display:none}
+.find-list{display:grid;gap:1px;margin-top:4px}
+.find-o{display:grid;gap:1px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink);line-height:1.3}
+.find-o b{font-weight:500}
+.find-o span{font-size:11.5px;color:var(--ink2)}
+.find-o.on,.find-o:hover{background:var(--hov)}
+.find-n{margin:0;font-size:12px;color:var(--ink2);padding:0 8px}
+.find-n:empty{display:none}
+.find-list:not([hidden])+.find-n{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.crumb-s{appearance:none;border:0;background:none;color:inherit;display:inline-grid;place-items:center;width:36px;height:36px;border-radius:6px;cursor:pointer}
+.crumb-s:hover,.crumb-s[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
+.find-pop{position:absolute;z-index:6;left:8px;right:8px;padding:8px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);max-height:min(70vh,30rem);overflow-y:auto}
+@media(max-width:900px){.rail-find{display:none}}
+@media(min-width:901px){.crumb-s,.find-pop{display:none!important}}
+/* the achievement celebration is a modal <dialog> that covers the window, as the old overlay did */
+dialog.cele,dialog.cele:modal{width:auto;height:auto;max-width:none;max-height:none;margin:0;border:0;color:inherit}
+dialog.cele::backdrop{background:transparent}
+/* the course units: a card on the Today page, a line at the end of the rail (wide screens), the end of the breadcrumb's section menu */
+#main .grid .card.cov-card{--n:var(--cols)}
+.cov{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:12px 24px;margin-top:.6em}
+.cov-s b{display:flex;align-items:center;gap:.45em;font-weight:600}
+.cov-s p{margin:.3em 0 0;font-size:.9rem}
+.cov-k{font-weight:600}
+#rail>.ucov{max-width:none;margin:12px 8px 0;padding-top:10px;border-top:1px solid var(--hair);font-size:11.5px;line-height:1.45;color:var(--ink2)}
+#rail>.ucov span{font-weight:600}
+/* below 900 px the rail sits above the page: a line that changes with the subject would move the page under the student's place, thus there
+   the breadcrumb's section menu and the Today card say it */
+@media(max-width:900px){#rail>.ucov{display:none}}
+.cm-n{font-size:12.5px;color:var(--ink2);padding:3px 8px 3px 31px}
+/* the level pill under a lesson's title is a button: it goes to the lesson's questions */
+button.lvl{font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}
+button.lvl:hover{background:var(--hov);color:var(--ink)}
+</style>
+<script>
+'use strict';
+/* ===== ux-nav: navigation helpers. This script runs before the main script; its functions are called by the main script and by the sidebar skin ===== */
+/* the bottom of the bar that stays at the top of the window (the breadcrumb, sticky at every width): a scroll target lands below it, not under it */
+function topBar(){const c=document.querySelector('.crumb');if(c&&getComputedStyle(c).position==='sticky')return c.offsetHeight;const t=document.getElementById('top');return t?Math.max(0,t.getBoundingClientRect().bottom):0;}
+/* scroll element e to just below that bar (smoothly when it is near, at once when it is more than 3 screens away), and give it focus (sel: the part to focus, as focusTo) */
+function goTo(e,sel){if(!e)return;const y=Math.max(0,e.getBoundingClientRect().top+scrollY-topBar()-12);window.scrollTo({top:y,behavior:RM||Math.abs(y-scrollY)>3*innerHeight?'auto':'smooth'});if(sel)focusTo(e,sel);}
+/* the level pill under a lesson's title goes to the lesson's questions */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button.lvl[data-lvl]'),L=b&&b.closest('.lesson');if(L)goTo($('.card.quiz',L),'h3');});
+
+/* ----- the student's place: a page that is shown again opens where the student left it ----- */
+let PAGE=null,TOP=0,RAILNAV=0,dwT=0;
+const shownPage=()=>document.querySelector('#main>.lesson:not([hidden])');
+/* showLesson, showHome and showTest call this first, while the page being left is still on screen: its scroll position is kept on its article
+   (thus a rebuilt article, after Clear answers, starts at the top). On a narrow screen the rail is at the top of the page: a student who uses it,
+   or who is up there next to it, has scrolled up to it, thus the place kept is where they last stayed for 2.5 s. One navigation keeps the place
+   once: showTab calls this before it rebuilds the unit bar (on a narrow screen that bar is above the page and can change its height), and the
+   showLesson that follows does not record again */
+let kept=0;
+function keepPlace(){const a=shownPage(),r=document.getElementById('rail');if(!a||kept)return;kept=1;queueMicrotask(()=>{kept=0;});
+  const up=r&&getComputedStyle(r).position!=='sticky'&&(RAILNAV||scrollY<r.offsetHeight);a._y=up&&a._read>scrollY?a._read:scrollY;}
+addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=shownPage();if(a)a._read=scrollY;},2500);},{passive:true});
+['click','keydown'].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest('#rail')){RAILNAV=1;setTimeout(()=>{RAILNAV=0;});}},true));
+/* the Previous/Next pager opens the next lesson at its top */
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
+/* showLesson, showHome and showTest call this when page L is on screen. It goes back to where the student left L, or to the top when L is new,
+   rebuilt, chosen again (the current lesson's chip is a 'back to top') or opened with the pager. At load the browser keeps the place of a reload */
+/* ----- keyboard focus: a quiz card that renders again (after 'Clear my answers') replaces the button that had focus. Focus then goes to the card's
+   heading, instead of falling to the start of the page ----- */
+let fQuiz=null,fCard=null;
+document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('.card.quiz');fQuiz=c?e.target:null;fCard=c;});
+new MutationObserver(()=>{if(!fQuiz||fQuiz.isConnected)return;const c=fCard;fQuiz=fCard=null;const a=document.activeElement;
+  if((!a||a===document.body)&&c&&c.isConnected&&!c.closest('[hidden]'))focusTo(c,'h3');}).observe(document.getElementById('main'),{childList:true,subtree:true});
+/* ----- the achievement dialogs wait while the student is answering a lesson's questions: the last quiz card used is on screen and has a question
+   with no saved answer. They show when the card is done or the page changes (pageShown) ----- */
+let LASTQ=null;
+['click','keydown'].forEach(t=>document.addEventListener(t,e=>{const c=e.target.closest&&e.target.closest('.card.quiz');if(c)LASTQ=c;},true));
+function quizBusy(){const c=LASTQ,A=c&&c.isConnected&&!c.closest('[hidden]')&&c.closest('article.lesson'),m=A&&/^(.+)-(\d+)$/.exec(A.id),le=m&&SUBJ[m[1]]&&SUBJ[m[1]].lessons[+m[2]];
+  return !!(le&&le.qz&&le.qz.some((_,j)=>!Store.get(m[1]+'_'+m[2]+'_'+j)));}
+function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;if(!first&&typeof ACH_Q!=='undefined'&&ACH_Q.length)setTimeout(()=>celebrateNext(),400);
+  if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;
+  /* the page's address: a new history entry for a page the student opens, the same entry at load, for a page shown again,
+     for the arrow keys (one press, one lesson) and for a page opened by Back or Forward. The same entry is this document's own address with the new
+     fragment: a bare '#/...' would be read against the base address, which in a srcdoc frame or under a <base href> is another page, and the site would unload */
+  const h=pageHash(L);if(h&&location.hash!==h)try{if(first||same||NAVREP||HASHNAV)location.replace(location.href.split('#')[0]+h);else location.hash=h;}catch(e){}}
+
+/* ----- the address of each page: #/eq/3 (section key, lesson number from 0), #/today, #/test, or #/chem (a subject). The '#/' form matches no
+   element id, thus the browser does not jump. A fragment also works inside the sandboxed artifact frame. Back and Forward step through the pages,
+   and a lesson can be bookmarked or shared. Every history call is guarded: without history the site works as before ----- */
+let NAVREP=0,HASHNAV=0;
+const pageHash=L=>{const m=L&&/^(.+)-(\d+)$/.exec(L.id);if(!m)return '';if(typeof SUBJ!=='undefined'&&SUBJ[m[1]])return '#/'+m[1]+'/'+m[2];
+  const S=SUBJECTS.find(s=>!s.units.length&&s.k===m[1]);return S?'#/'+S.name.toLowerCase():'';};
+/* the page that an address names: {s:'home'} or {s:'test'}, {s:section key, i:lesson or null}, {subj:subject}; null if it names none */
+function hashTarget(h){const m=/^#\/([\w-]+)(?:\/(\d+))?\/?$/.exec(h||'');if(!m)return null;const k=m[1].toLowerCase();
+  const P=SUBJECTS.find(s=>!s.units.length&&(s.k===k||s.name.toLowerCase()===k));if(P)return {s:P.k};
+  if(SUBJ[k]&&SUBJECTS.some(s=>s.units.includes(k)))return {s:k,i:m[2]==null?null:Math.min(+m[2],SUBJ[k].lessons.length-1)};
+  const S=SUBJECTS.find(s=>s.units.length&&(s.k===k||s.name.toLowerCase()===k));return S?{subj:S}:null;}
+/* boot: the address wins over the place saved in the Store */
+function hashPos(p){let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)return p;const q=Object.assign({},p);q.u=Object.assign({},q.u);q.l=Object.assign({},q.l);
+  if(t.subj){q.s=t.subj.units.includes(q.u[t.subj.k])?q.u[t.subj.k]:t.subj.units[0];return q;}
+  q.s=t.s;const S=SUBJECTS.find(s=>s.units.includes(t.s));if(S)q.u[S.k]=t.s;if(t.i!=null)q.l[t.s]=t.i;return q;}
+/* Back, Forward, a typed or followed address: open the page it names (unless it is on screen) */
+addEventListener('hashchange',()=>{let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)return;
+  const on=document.querySelector('#main>.lesson:not([hidden])'),id=t.subj?null:SUBJ[t.s]?t.s+'-'+(t.i==null?curL[t.s]:t.i):t.s+'-0';if(on&&on.id===id)return;
+  HASHNAV=1;try{if(t.subj||!SUBJ[t.s]){const i=SUBJECTS.indexOf(t.subj||SUBJECTS.find(s=>s.k===t.s));tabSeg.set(i);showTab(i);}else goLesson(t.s,t.i==null?curL[t.s]:t.i);}finally{HASHNAV=0;}});
+/* ----- site search: the lessons' titles, headings and descriptions and the reference sheets' terms, formulas and hormones (indexed at the
+   first search, from SUBJECTS, SUBJ and REF), and the card headings of the lessons already open ----- */
+const txt=h=>{const t=document.createElement('template');t.innerHTML=String(h==null?'':h);return t.content.textContent.replace(/\s+/g,' ').trim();};
+/* one plain form for the text and the query: no accents, no case; H₃O⁺ = H3O+, curly quotes and dashes as plain ones. fold also drops the tags of the
+   lesson and reference texts; text that is already plain (a heading's text, the query) goes through plain only, thus a '<' in it stays text */
+const fplain=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'");
+const fold=s=>fplain(txt(s));
+let FIND=null;
+function findIndex(){if(FIND)return FIND;FIND=[];
+  SUBJECTS.forEach(S=>S.units.forEach(k=>{const U=SUBJ[k];if(!U)return;const path=S.name+' › '+U.name;
+    U.lessons.forEach((le,i)=>FIND.push({kind:0,t:txt(le.t),body:(le.h||'')+' '+(le.d||''),k,i,path:path+' › '+txt(le.t)}));
+    const R=typeof REF!=='undefined'&&REF[k],ri=U.lessons.findIndex(l=>l.rv)-1;
+    if(R&&ri>=0)[].concat(R.t||[],R.f||[],R.h||[]).forEach(r=>FIND.push({kind:1,t:txt(r[0]),body:r.slice(1).join(' '),k,i:ri,path:path+' › '+txt(U.lessons[ri].t)}));}));
+  FIND.forEach(x=>{x.ft=fold(x.t);x.fb=fold(x.body);});return FIND;}
+/* the card headings of the lessons that are built (they exist only once a lesson has been opened). A lesson keeps its list until its number of cards
+   changes, thus a key typed in the search does not read every heading of every open lesson again (the Review page, whose cards change, is read each time) */
+function findCards(){const out=[];document.querySelectorAll('#main>article.lesson').forEach(A=>{const m=/^(.+)-(\d+)$/.exec(A.id),U=m&&SUBJ[m[1]];if(!U)return;const k=m[1],i=+m[2],le=U.lessons[i];if(!le)return;
+  const n=A.getElementsByClassName('card').length;if(A._find&&A._findN===n&&!le.rv){out.push(...A._find);return;}
+  const S=SUBJECTS.find(s=>s.units.includes(k)),seen=new Set([fold(le.t),fold(le.h||'')]),path=(S?S.name+' › ':'')+U.name+' › '+txt(le.t),list=[];
+  A.querySelectorAll('.card h2,.card h3').forEach(h=>{const t=h.textContent.replace(/\s+/g,' ').trim(),ft=fplain(t);if(!ft||seen.has(ft))return;seen.add(ft);
+    list.push({kind:2,t,ft,fb:'',k,i,path});});A._find=list;A._findN=n;out.push(...list);});return out;}
+/* up to max matches: every word of the query is in the entry. Titles first, then card headings, terms, and matches in the text */
+function findTopics(q,max=8){const w=fplain(q).split(' ').filter(Boolean);if(!w.length)return [];const hits=[];
+  for(const x of findIndex().concat(findCards())){const inT=w.every(v=>x.ft.includes(v));if(!inT&&!w.every(v=>x.ft.includes(v)||x.fb.includes(v)))continue;
+    let sc=inT?[100,60,80][x.kind]:[40,20,0][x.kind];if(x.ft.startsWith(w[0]))sc+=30;else if((' '+x.ft).includes(' '+w[0]))sc+=15;hits.push([sc-Math.min(10,x.ft.length/20),x]);}
+  hits.sort((a,b)=>b[0]-a[0]);const seen=new Set(),res=[];
+  for(const [,x] of hits){const key=x.k+'|'+x.i+'|'+x.ft;if(seen.has(key))continue;seen.add(key);res.push(x);if(res.length>=max)break;}return res;}
+/* open a match: a lesson at its top; a card heading: its card; a reference entry: the reference sheet with its search box filled in */
+function findGo(x){TOP=x.kind===0?1:0;goLesson(x.k,x.i);const A=document.getElementById(x.k+'-'+x.i);if(!A)return;
+  if(x.kind===1){const inp=A.querySelector('input[aria-label="Search the formulas and terms"]');if(inp){inp.value=x.t;inp.dispatchEvent(new Event('input'));const c=inp.closest('.card');goTo(c);
+      if(matchMedia('(pointer:fine)').matches)inp.focus({preventScroll:true});else focusTo(c,'h3');return;}}
+  if(x.kind===2){const c=[...A.querySelectorAll('.card')].find(c=>{const h=c.querySelector('h2,h3');return h&&fplain(h.textContent)===x.ft;});if(c){goTo(c,'h2,h3');return;}}
+  focusTo(A,'h1');}
+
+/* ----- the course units of each subject (Alberta programs), and which of them are on the site. The units on the site come from SUBJECTS and
+   UGROUPS; COURSE lists the ones that are not yet, each with the section key that will hold it when that is known (then it leaves this list by
+   itself when the section is added). Update COURSE when a unit without a key is added ----- */
+const COURSE={phy:{c:'Physics 30',todo:[['Electromagnetic radiation'],['Atomic physics']]},
+  bio:{c:'Biology 30',todo:[['Cell division and genetics (the rest of Unit 2)'],['Reproduction and development'],['Population and community dynamics']]},
+  chem:{c:'Chemistry 30',todo:[['Electrochemical changes','ec'],['Organic chemistry']]},
+  math:{c:'Math 31',todo:[['Derivatives'],['Applications of derivatives'],['Integrals']]},
+  la:{c:'English 30-1',todo:[['Poetry (Part B reading)'],['Shakespearean drama (Part B reading)'],['Part A writing: the personal response and the critical/analytical response']]},
+  ss:{c:'Social Studies 30-1',todo:[['Related issue 2: resistance to liberalism','ri2'],['Related issue 3: the viability of liberalism','ri3'],['Related issue 4: citizenship and ideology','ri4']]}};
+/* {c: course name, on: units on the site (a grouped unit with its sections), todo: units not on the site yet} */
+function courseUnits(S){const C=COURSE[S.k],on=dispUnits(S).map(d=>typeof d==='string'?SUBJ[d].name:d.name.split(':')[0]+': '+d.units.map(k=>SUBJ[k].name).join(', '));
+  return {c:C?C.c:S.name,on,todo:C?C.todo.filter(([,k])=>!k||!S.units.includes(k)).map(([n])=>n):[]};}
+/* the Today card: every subject's course units, on the site and not yet */
+function courseCard(g){const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  card(g,'Course units',`<p class="hint">The site follows the class: a unit is added when the class reaches it.</p><div class="cov">${SUBJECTS.filter(S=>S.units.length).map(S=>{const u=courseUnits(S);
+    return `<div class="cov-s"><b>${icon(S.k,16)}${esc(u.c)}</b><p><span class="cov-k">On the site:</span> ${u.on.map(esc).join(' · ')}</p>${u.todo.length?`<p class="hint"><span class="cov-k">Not on the site yet:</span> ${u.todo.map(esc).join(' · ')}</p>`:''}</div>`;}).join('')}</div>`,'cov-card');}
+
+/* the browser's own scroll restoration would move the page during Back and Forward before the page changes, thus the site keeps the places itself.
+   For a reload, or a return to the site, the place of the page on screen is kept for this tab when the page is hidden */
+try{history.scrollRestoration='manual';}catch(e){}
+const PLK='unit-study-site.place',savePlace=()=>{try{sessionStorage.setItem(PLK,JSON.stringify({h:location.hash,y:Math.round(scrollY)}));}catch(e){}};
+addEventListener('pagehide',savePlace);document.addEventListener('visibilitychange',()=>{if(document.hidden)savePlace();});
+addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY)window.scrollTo(0,v.y);});
+/* the arrow keys in a tab list change the lesson on each press: those changes replace the history entry */
+document.addEventListener('keydown',e=>{if(/^Arrow/.test(e.key)&&e.target.closest&&e.target.closest('[role=tablist]')){NAVREP=1;setTimeout(()=>{NAVREP=0;});}},true);
+</script>
 <script>
 'use strict';
 /* Cross-device sync (optional). Paste the web app config from your Firebase project here to turn on Google sign-in,
@@ -887,7 +1112,8 @@ function ctl(host,defs,on){
   host.append(box);
   return {v,box,set(o){for(const k in o)sets[k]&&sets[k](o[k]);on&&on(v);}};
 }
-function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
+/* Left and Right move to the previous or next tab; in a list shown as a column (aria-orientation="vertical", the rail on a wide screen) Up and Down do too */
+function arrowKeys(box,btns,cur){box.addEventListener('keydown',e=>{const v=box.getAttribute('aria-orientation')==='vertical',d=e.key==='ArrowRight'||v&&e.key==='ArrowDown'?1:e.key==='ArrowLeft'||v&&e.key==='ArrowUp'?-1:0;if(!d)return;e.preventDefault();const b=btns(),n=(cur()+d+b.length)%b.length;b[n].focus();b[n].click();});}
 /* segmented control: the glass thumb stretches while it moves */
 function seg(host,labels,on,cls='in'){
   const s=el('div',{class:'seg '+cls,role:'tablist'}),th=el('i',{class:'thumb'});s.append(th);let cur=0,px=null,py=0;
@@ -1204,7 +1430,7 @@ function reviewUI(g,sk,le){
     while(list.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)list.push(a.pop());}return list;};
   const fmt=ms=>{const t=Math.max(0,Math.round(ms/1000));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};
   /* show the new card below the sticky header, only when the Review page is on screen */
-  const toHost=()=>{if(host.offsetParent)window.scrollTo({top:Math.max(0,host.getBoundingClientRect().top+scrollY-$('#top').getBoundingClientRect().bottom-12),behavior:RM?'auto':'smooth'});};
+  const toHost=()=>{if(host.offsetParent)window.scrollTo({top:Math.max(0,host.getBoundingClientRect().top+scrollY-topBar()-12),behavior:RM?'auto':'smooth'});};
   let exS='';const exSave=()=>{try{if(!E){exS='';sessionStorage.removeItem(EXK(sk));return;}const s=JSON.stringify(E);if(s!==exS){exS=s;sessionStorage.setItem(EXK(sk),s);}}catch(e){}};
   /* a boss round runs inside the home view: do not redraw it then */
   const busy=()=>!!$('.q',host);
@@ -1342,11 +1568,11 @@ function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
 function centreChip(smooth){const cb=chipBtns[curL[curS]],nav=$('#chips');if(cb&&!nav.hidden)nav.scrollTo({left:cb.offsetLeft-nav.clientWidth/2+cb.offsetWidth/2,behavior:smooth&&!RM?'smooth':'instant'});}
 function showLesson(i,o={}){
-  const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i],back=!!$('.lesson:focus-within');
+  keepPlace();const S=SUBJ[curS];i=clamp(i,0,S.lessons.length-1);curL[curS]=i;const le=S.lessons[i],back=!!$('.lesson:focus-within');
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});
   const id=curS+'-'+i;let L=document.getElementById(id);
   if(!L){L=el('article',{class:'lesson',id,role:'tabpanel','aria-labelledby':'tab-'+id});
-    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<p class="lvl" data-lvl></p>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
+    L.innerHTML=`<header class="lhead"><div><h1>${le.h||le.t}</h1><p class="lede">${le.d||''}</p>${le.qz?'<button type="button" class="lvl" data-lvl title="Go to the questions"></button>':''}</div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon(le.ic||LIC[le.t]||curS,36)}</div></div><small></small></div></header><div class="grid"></div><nav class="pager" aria-label="Lesson navigation"></nav>`;
     $('#main').append(L);const g=$('.grid',L);le.build(g,le);howtoCard(g,curS,i);$$('figure.cf',g).forEach(figFit);if(le.qz){quiz(g,le.qz,le.qt,curS+'_'+i);masteryCard(g,curS,i);challengeCard(g,curS,i);}
     $$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));
     /* at the end of a section in a grouped unit, the pager goes on to the next (or previous) section */
@@ -1360,7 +1586,7 @@ function showLesson(i,o={}){
   const sub=SUBJECTS.find(s=>s.units.includes(curS));document.title=le.t+' · '+(sub?sub.name:S.name)+' · Study site';
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   centreChip(!o.first);
-  if(!o.first)window.scrollTo({top:0});savePos();if(chipBtns.length===S.lessons.length)chipProgress();
+  pageShown(L,o);savePos();if(chipBtns.length===S.lessons.length)chipProgress();
   if(back)focusTo(L,'h1');
 }
 function showUnit(k,first){
@@ -1370,22 +1596,20 @@ function showUnit(k,first){
   sectBar(k);showLesson(curL[k],{first});chipProgress();
   setTimeout(()=>{_col=null;redrawAll();},960);
 }
-/* section bar: a grouped unit gets a row of its own for its sections, under the unit bar.
-   Clear answers moves into this row, because it clears the open section only. */
-function sectBar(k){const host=$('#units'),ug=ugOf(k),cb=$('.uclear',host);let row=$('.usec',host);
-  if(row&&(!ug||!secSeg||secSeg.g!==ug)){if(cb)host.append(cb);row.remove();row=null;}
+/* section bar: a grouped unit gets a row of its own for its sections, under the unit bar. (Clearing a section's answers is on its Review page.) */
+function sectBar(k){const host=$('#units'),ug=ugOf(k);let row=$('.usec',host);
+  if(row&&(!ug||!secSeg||secSeg.g!==ug)){row.remove();row=null;}
   if(!ug){secSeg=null;return;}
   if(!row){row=el('div',{class:'usec'},'<span class="ulabel">Sections</span>');secSeg={g:ug,s:seg(row,ug.units.map(unitLabel),i=>goSection(ug.units[i]))};host.append(row);}
-  if(cb)row.append(cb);secSeg.s.set(ug.units.indexOf(k));}
+  secSeg.s.set(ug.units.indexOf(k));}
 /* open section k of a grouped unit (at lesson i, or where it was left) */
 function goSection(k,i){if(i!=null)curL[k]=i;const S=SUBJECTS.find(s=>s.units.includes(k));if(S)curU[S.k]=k;showUnit(k);}
 function showTab(i,first){
-  const S=SUBJECTS[i],host=$('#units');host.innerHTML='';document.title=S.name+' · Study site';if(S.home){showHome();return;}if(S.test){showTest();return;}
+  keepPlace();const S=SUBJECTS[i],host=$('#units');host.innerHTML='';document.title=S.name+' · Study site';if(S.home){showHome();return;}if(S.test){showTest();return;}
   
   const D=dispUnits(S),pick=d=>typeof d==='string'?d:d.units.includes(curU[S.k])?curU[S.k]:d.units[0];
   host.append(el('span',{class:'ulabel'},S.name+(D.length>1?' units':' unit')));
   const us=seg(host,D.map(d=>typeof d==='string'?unitLabel(d):groupLabel(d)),j=>{const u=pick(D[j]);curU[S.k]=u;showUnit(u);});
-  const cb=el('button',{type:'button',class:'btn sm ghost uclear'},icon('reset',14)+'Clear answers');cb.onclick=()=>askClear(curS);host.append(cb);
   const j=Math.max(0,D.findIndex(d=>d===curU[S.k]||(typeof d!=='string'&&d.units.includes(curU[S.k]))));curU[S.k]=pick(D[j]);
   showUnit(curU[S.k],first);if(j)us.set(j);
 }
@@ -1470,7 +1694,7 @@ function boot(){
     const t=on?(Store.error()?'Not synced: changes are waiting to upload to ':'Synced with ')+(Store.account()||'your account'):'Sign in to sync across devices';ab.title=t;ab.setAttribute('aria-label',t);};
   acctState();Store.on(acctState);ab.onclick=accountDialog;
   if(!Store.cleared(RB2))Store.clear(rb2Scope,RB2,RB2T);
-  const p=Store.pos();if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
+  const p=hashPos(Store.pos());if(p&&p.l)ORDER.forEach(k=>{if(Number.isInteger(p.l[k]))curL[k]=clamp(p.l[k],0,SUBJ[k].lessons.length-1);});
   if(p&&p.u)SUBJECTS.forEach(s=>{if(s.units.includes(p.u[s.k]))curU[s.k]=p.u[s.k];});
   const t0=Math.max(0,SUBJECTS.findIndex(s=>p&&(s.k===p.s||s.units.includes(p.s))));
   if(p&&SUBJ[p.s])curU[SUBJECTS[t0].k]=p.s;
@@ -11708,7 +11932,7 @@ function runRound(box,o){let i=0,over=false,tm=0,tEnd=0;const res=[],t0=Date.now
     const row=el('div',{class:'row'});row.append(nx);box.append(row);nx.onclick=()=>{if(over)return;i++;if(i<n){ask();toQ(box);}else fin(false);};focusTo(box,'.qh b');}
   ask();}
 /* after Next: scroll the new question's top to just below the sticky header, when it is out of view */
-function toQ(n){const h=$('#top').getBoundingClientRect().bottom+8,y=n.getBoundingClientRect().top;if(y<h||y>innerHeight-40)window.scrollTo({top:y+scrollY-h,behavior:RM?'auto':'smooth'});}
+function toQ(n){const h=topBar()+8,y=n.getBoundingClientRect().top;if(y<h||y>innerHeight-40)window.scrollTo({top:y+scrollY-h,behavior:RM?'auto':'smooth'});}
 
 /* ----- lesson page: mastery card and challenge problem ----- */
 function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
@@ -11837,17 +12061,21 @@ function migrateBadges(){if(gv('achMig'))return;const old=gv('badges')||{};
   gset('ach',st);gset('achMig',today());if(n)toast(icon('trophy',15)+` Achievements updated: ${n} ${n===1?'tier':'tiers'} earned from your history so far.`);}
 /* a timed exam or round is running: the celebration waits until it ends */
 const timedRun=()=>$$('[data-t]').some(e=>e.isConnected&&e.closest('article.lesson:not([hidden])'));
-/* the celebration: one card for each new tier, queued */
-function celebrateNext(){if(ACH_BUSY||!ACH_Q.length||timedRun())return;ACH_BUSY=1;const x=ACH_Q.shift(),pts=achPoints(),tt=achTitle(pts),more=ACH_Q.length?`Next (${ACH_Q.length} more)`:'Continue';
+/* the celebration: one card for each new tier, queued. A Bronze or Silver tier that is not a secret is a toast; a dialog (Gold and above, a secret
+   achievement, a new title) waits while the student is answering a lesson's questions (quizBusy, in ux-nav) and shows when the card is done or the page changes */
+function celebrateNext(){if(ACH_BUSY||!ACH_Q.length||timedRun())return;
+  ACH_Q=ACH_Q.filter(x=>{if(x.title||x.a.secret||x.k>1)return true;toast(icon(x.a.ic,15)+` ${x.a.n}: ${TIERS[x.k][0]} tier, +${TIER_XP[x.k]} XP`);return false;});
+  if(!ACH_Q.length||quizBusy())return;ACH_BUSY=1;const x=ACH_Q.shift(),pts=achPoints(),tt=achTitle(pts),more=ACH_Q.length?`Next (${ACH_Q.length} more)`:'Continue';
   const conf=RM?'':Array.from({length:40},(_,i)=>`<i style="--x:${(Math.random()*100).toFixed(0)}%;--d:${(Math.random()*.9).toFixed(2)}s;--r:${(Math.random()*720-360).toFixed(0)}deg;--c:${i%4}"></i>`).join('');
   let body;
   if(x.title)body=`<div class="cele-card t3"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">New title</p><div class="cele-medal">${icon('trophy',32)}</div><h3>${x.title}</h3><p>You have ${pts} achievement points.${tt.next?` The next title, ${tt.next[1]}, needs ${tt.next[0]}.`:' This is the highest title.'}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;
   else{const {a,k}=x,T=TIERS[k],xp=TIER_XP[k],last=k+1>=a.tiers.length;
     body=`<div class="cele-card ${a.secret?'t3':T[1]}"><div class="confetti" aria-hidden="true">${conf}</div><p class="cele-k">${a.tiers.length>1?T[0]+' tier':a.secret?'Secret achievement':'Achievement'} unlocked</p><div class="cele-medal">${icon(a.ic,32)}</div><h3>${a.n}</h3><p>${a.d(a.tiers[k])}</p>
       <p class="cele-xp">+${xp} XP</p><p class="hint">${last?'Every tier of this achievement is complete.':'Next tier: '+a.d(a.tiers[k+1])}</p><p class="hint">${pts} points · ${tt.name}${tt.next?` · ${tt.next[0]-pts} to ${tt.next[1]}`:''}</p><div class="row"><button type="button" class="btn">${more}</button></div></div>`;}
-  const d=el('div',{class:'cele',role:'dialog','aria-modal':'true','aria-label':'Achievement unlocked'},body),back=document.activeElement;document.body.append(d);
-  const close=()=>{if(!d.isConnected)return;d.classList.add('out');setTimeout(()=>{d.remove();ACH_BUSY=0;if(ACH_Q.length)celebrateNext();else if(back&&back.isConnected)back.focus();},RM?0:240);};
-  $('.btn',d).onclick=close;d.addEventListener('click',e=>{if(e.target===d)close();});d.addEventListener('keydown',e=>{if(e.key==='Escape')close();});$('.btn',d).focus();}
+  /* a modal <dialog>: the page behind is inert, and Escape closes it */
+  const d=el('dialog',{class:'cele','aria-label':x.title?'New title':'Achievement unlocked'},body),back=document.activeElement;document.body.append(d);
+  const close=()=>{if(!d.isConnected||d.classList.contains('out'))return;d.classList.add('out');setTimeout(()=>{if(d.open)d.close();d.remove();ACH_BUSY=0;if(ACH_Q.length)celebrateNext();else if(back&&back.isConnected)back.focus();},RM?0:240);};
+  $('.btn',d).onclick=close;d.addEventListener('click',e=>{if(e.target===d)close();});d.addEventListener('cancel',e=>{e.preventDefault();close();});d.showModal();$('.btn',d).focus();}
 /* the achievements card on the Today page */
 function achCard(g){const st=achState(),pts=achPoints(st),tt=achTitle(pts),earned=ACH.reduce((s,a)=>s+(st[a.id]||[]).length,0);
   const rows=ACH.map(a=>{const k=(st[a.id]||[]).length,v=achVal(a),done=k>=a.tiers.length,t=done?a.tiers[k-1]:a.tiers[k],lo=k?a.tiers[k-1]:0,f=done?1:Math.min(1,Math.max(0,(v-lo)/(t-lo)));return {a,k,v,done,t,f,vis:!a.secret||k>0};});
@@ -11938,13 +12166,13 @@ function reviewCard(g){const c=card(g,'','');let busy=0;
   const live=()=>{if(!c.isConnected){LIVE.delete(live);return;}if(!c.closest('[hidden]'))view();};LIVE.add(live);view();}
 
 /* ----- the Today page ----- */
-function showHome(){curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showHome(){keepPlace();curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY){L.classList.remove('enter');homeRender(L);}});}
-  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
-  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
+  const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);courseCard(g);achCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
   for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const k=dayOf(d.getTime()),on=days.has(k);if(on)n++;cells.push(`<div class="wd${on?' on':''}${k===td?' now':''}"><i>${on?icon('check',14):''}</i>${'MTWTFSS'[i]}</div>`);}
   const wr=weeksInRow();card(g,'Weekly goal',`<p>Study on <b>4 days</b> this week. A missed day does not reset anything.</p><div class="week" role="img" aria-label="You studied on ${n} of 7 days this week">${cells.join('')}</div>
@@ -12064,11 +12292,11 @@ function testPool(units){const pool=[];units.forEach(sk=>{SUBJ[sk].lessons.forEa
 function testPick(units,n){const groups=shuffle(units.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>{const a=lessonItems(sk,le,L);return a?shuffle(a):null;}).filter(Boolean))),out=[];let k=0;
   while(out.length<n&&groups.some(a=>a.length)){const a=groups[k++%groups.length];if(a.length)out.push(a.pop());}return shuffle(out);}
 
-function showTest(){curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
+function showTest(){keepPlace();curS='test';document.body.dataset.s='test';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#test-0');
   if(!L){L=el('article',{class:'lesson',id:'test-0',role:'tabpanel'});$('#main').append(L);testSetupPage(L);}
   else if(!TBUSY)testSetupPage(L);
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}window.scrollTo({top:0});savePos();}
+  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
 function testHead(L,title,lede){const back=L.contains(document.activeElement);L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;if(back)focusTo(L,'h1');return $('.grid',L);}
 
 function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
@@ -12397,10 +12625,12 @@ html{scroll-padding-top:62px}
   const main=$id('main');if(!main||$id('rail'))return;
   const shell=document.createElement('div');shell.id='shell';main.parentNode.insertBefore(shell,main);
   const rail=document.createElement('aside');rail.id='rail';rail.setAttribute('aria-label','Navigation');
-  rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span>Study</div><div class="rail-h">Subjects</div>';
+  rail.innerHTML='<div class="rail-brand"><span class="rail-logo" aria-hidden="true">S</span><span class="rail-name">Study</span></div><div class="rail-h">Subjects</div>';
   rail.append($id('tabs'),$id('units'));
   const lh=document.createElement('div');lh.className='rail-h';lh.textContent='Lessons';rail.append(lh,$id('chips'));
-  const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.append(tools);
+  const cov=document.createElement('p');cov.className='ucov';cov.hidden=true;rail.append(cov);
+  /* the mode and account buttons sit in the 'Study' row at the top, thus they stay in view however long the lists are */
+  const tools=document.createElement('div');tools.className='rail-tools';tools.append($id('mode'),$id('acct'));rail.firstChild.append(tools);
   shell.append(rail,main);
   const crumb=document.createElement('div');crumb.className='crumb';crumb.innerHTML='<nav class="crumb-path" aria-label="Breadcrumb"></nav><span class="crumb-right"></span>';main.prepend(crumb);
   const path=crumb.firstChild,right=crumb.lastChild,sep='<span class="crumb-sep" aria-hidden="true">/</span>';
@@ -12411,38 +12641,114 @@ html{scroll-padding-top:62px}
     const c=[{lv:'s',t:parts[1],sub:parts[1]}];if(typeof SUBJ!=='undefined'&&SUBJ[curS]&&SUBJ[curS].name!==parts[1])c.push({lv:'u',t:SUBJ[curS].name,sub:parts[1]});
     c.push({lv:'l',t:parts[0],sub:parts[1],cur:1});return c;};
   const menu=document.createElement('div');menu.className='crumb-menu';menu.setAttribute('role','menu');menu.hidden=true;crumb.append(menu);let mBtn=null,ckey='';
+  /* the site search: 'Find a topic' at the top of the rail on a wide screen, a button and a panel under the bar on a narrow one; '/' goes to it */
+  ICON.search=ICON.search||'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>';let fseq=0;
+  const findBox=host=>{const id='find'+(++fseq),box=document.createElement('div');box.className='find';box.setAttribute('role','search');
+    box.innerHTML=icon('search',15)+`<input type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-l" aria-label="Find a topic" placeholder="Find a topic" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd>`;
+    const inp=box.querySelector('input'),list=document.createElement('div'),n=document.createElement('p');list.className='find-list';list.id=id+'-l';list.setAttribute('role','listbox');list.setAttribute('aria-label','Topics');list.hidden=true;
+    n.className='find-n';n.setAttribute('aria-live','polite');host.append(box,list,n);let res=[],act=-1;
+    const mark=j=>{act=j;[...list.children].forEach((o,k)=>{o.classList.toggle('on',k===j);o.setAttribute('aria-selected',String(k===j));});if(j>=0)inp.setAttribute('aria-activedescendant',id+'-'+j);else inp.removeAttribute('aria-activedescendant');};
+    const show=()=>{const q=inp.value.trim();res=q?findTopics(q):[];list.innerHTML=res.map((x,j)=>`<div role="option" id="${id}-${j}" class="find-o" aria-selected="false"><b>${esc(x.t)}</b><span>${esc(x.path)}</span></div>`).join('');
+      list.hidden=!res.length;inp.setAttribute('aria-expanded',String(res.length>0));mark(res.length?0:-1);n.textContent=!q?'':res.length?res.length+(res.length===1?' topic':' topics')+' found':'No topic has this text.';};
+    const choose=j=>{const x=res[j];if(!x)return;inp.value='';show();box.dispatchEvent(new Event('found'));findGo(x);};
+    inp.addEventListener('input',show);inp.addEventListener('focus',()=>{if(inp.value)show();});inp.addEventListener('blur',()=>{list.hidden=true;inp.setAttribute('aria-expanded','false');});
+    inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(res.length)mark((act+(e.key==='ArrowDown'?1:-1)+res.length)%res.length);}
+      else if(e.key==='Enter'){if(res.length){e.preventDefault();choose(Math.max(0,act));}}
+      else if(e.key==='Escape'){e.preventDefault();if(inp.value){inp.value='';show();}else box.dispatchEvent(new Event('done'));}});
+    /* an option takes the click without taking focus from the input */
+    list.addEventListener('mousedown',e=>e.preventDefault());list.addEventListener('click',e=>{const o=e.target.closest('.find-o');if(o)choose([...list.children].indexOf(o));});
+    return {box,inp};};
+  const rf=document.createElement('div');rf.className='rail-find';rail.firstChild.after(rf);const railFind=findBox(rf);
+  const sb=document.createElement('button');sb.type='button';sb.className='crumb-s';sb.setAttribute('aria-label','Find a topic');sb.setAttribute('aria-expanded','false');sb.title='Find a topic';sb.innerHTML=icon('search',16);
+  const pop=document.createElement('div');pop.className='find-pop';pop.hidden=true;const popFind=findBox(pop);
+  const popClose=focus=>{if(pop.hidden)return;pop.hidden=true;sb.setAttribute('aria-expanded','false');if(focus)sb.focus();};
+  const popOpen=()=>{closeMenu();pop.hidden=false;sb.setAttribute('aria-expanded','true');pop.style.top=Math.round(crumb.offsetHeight+4)+'px';popFind.inp.focus();};
+  sb.onclick=()=>{if(pop.hidden)popOpen();else popClose(true);};popFind.box.addEventListener('done',()=>popClose(true));popFind.box.addEventListener('found',()=>popClose());
+  document.addEventListener('pointerdown',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!sb.contains(e.target))popClose();},true);
+  pop.addEventListener('keydown',e=>{if(e.key==='Tab'){popClose(true);}});
+  document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;const t=e.target;if(t.closest&&t.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"],dialog'))return;
+    e.preventDefault();if(rf.offsetParent)railFind.inp.focus();else popOpen();});
+  /* the bar's tools at its right end: 'On this page', a menu of the headed cards of the page on screen */
+  ICON.list=ICON.list||'<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>';ICON.dash=ICON.dash||'<path d="M8 12h8"/>';
+  const ctools=document.createElement('div');ctools.className='crumb-tools';crumb.insertBefore(ctools,menu);
+  const ob=document.createElement('button');ob.type='button';ob.className='crumb-b crumb-o';ob.dataset.lv='o';ob.setAttribute('aria-haspopup','menu');ob.setAttribute('aria-expanded','false');
+  ob.setAttribute('aria-label','On this page');ob.title='Go to a part of this page';ob.innerHTML=icon('list',15)+'<span>On this page</span>'+icon('down',12);ctools.append(ob,sb);crumb.insertBefore(pop,menu);
   const closeMenu=focus=>{if(menu.hidden)return;menu.hidden=true;menu.innerHTML='';if(mBtn){mBtn.setAttribute('aria-expanded','false');if(focus)mBtn.focus();}mBtn=null;};
   const items=(lv,sub)=>{if(lv==='s')return SUBJECTS.map((S,i)=>({t:S.name,ic:S.k,cur:S.name===sub,go:()=>{tabSeg.set(i);showTab(i);}}));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
-    if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});return out;}
-    return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],go:()=>showLesson(i)}));};
-  const openMenu=b=>{const x=crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';
-    items(x.lv,x.sub).forEach(it=>{if(it.h){const h=document.createElement('div');h.className='cm-h';h.textContent=it.h;menu.append(h);return;}
-      const m=document.createElement('button');m.type='button';m.className='cm-i'+(it.cur?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',it.cur?'true':'false');
-      m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');m.onclick=()=>{closeMenu();if(!it.cur)it.go();};menu.append(m);});
+    if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});
+      const todo=courseUnits(S).todo;if(todo.length)out.push({h:'Not on the site yet'},...todo.map(t=>({note:t})));return out;}
+    return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i)}));};
+  /* 'On this page': the top of the page, then each card that has a heading. The card on screen is marked; choosing one scrolls it to just below the bar and focuses its heading */
+  const outline=()=>{const L=document.querySelector('#main>.lesson:not([hidden])');if(!L)return [];const y0=topBar()+innerHeight/4,h1=L.querySelector('h1');let on=-1;
+    const cs=[...L.querySelectorAll('.card')].filter(c=>!c.parentElement.closest('.card')&&c.getClientRects().length).map(c=>({c,h:c.querySelector('h2,h3')})).filter(x=>x.h&&x.h.textContent.trim());
+    cs.forEach((x,i)=>{if(x.c.getBoundingClientRect().top<=y0)on=i;});
+    return [{h:'On this page'},{t:h1?h1.textContent:'Top of the page',ic:'up',here:on<0,go:()=>{window.scrollTo({top:0,behavior:RM?'auto':'smooth'});focusTo(L,'h1');return 1;}}]
+      .concat(cs.map((x,i)=>({t:x.h.textContent.replace(/\s+/g,' ').trim(),ic:'dash',here:i===on,go:()=>{goTo(x.c,'h2,h3');return 1;}})));};
+  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';if(typeof popClose==='function')popClose();
+    (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h||it.note){const h=document.createElement('div');h.className=it.h?'cm-h':'cm-n';h.textContent=it.h||it.note;menu.append(h);return;}
+      const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
+      m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
+      /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;const L=document.querySelector('#main>.lesson:not([hidden])');if(L)focusTo(L,'h1');};menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
-    const its=[...menu.querySelectorAll('.cm-i')],t=its.find(e=>e.classList.contains('on'))||its[0];if(t){t.focus({preventScroll:true});t.scrollIntoView({block:'nearest'});}};
-  path.addEventListener('click',e=>{const b=e.target.closest('.crumb-b');if(!b)return;const was=mBtn===b;closeMenu();if(!was)openMenu(b);});
-  path.addEventListener('keydown',e=>{const b=e.target.closest('.crumb-b');if(b&&e.key==='ArrowDown'){e.preventDefault();if(mBtn!==b){closeMenu();openMenu(b);}}});
+    /* the current item gets focus, and the menu (not the page: that would move the student's place) scrolls to show it */
+    const its=[...menu.querySelectorAll('.cm-i')],t=its.find(e=>e.classList.contains('on'))||its[0];if(t){t.focus({preventScroll:true});
+      if(t.offsetTop<menu.scrollTop)menu.scrollTop=t.offsetTop;else if(t.offsetTop+t.offsetHeight>menu.scrollTop+menu.clientHeight)menu.scrollTop=t.offsetTop+t.offsetHeight-menu.clientHeight;}};
+  [path,ctools].forEach(x=>{x.addEventListener('click',e=>{const b=e.target.closest('.crumb-b');if(!b)return;const was=mBtn===b;closeMenu();if(!was)openMenu(b);});
+    x.addEventListener('keydown',e=>{const b=e.target.closest('.crumb-b');if(b&&e.key==='ArrowDown'){e.preventDefault();if(mBtn!==b){closeMenu();openMenu(b);}}});});
   menu.addEventListener('keydown',e=>{const its=[...menu.querySelectorAll('.cm-i')],n=its.length,i=its.indexOf(document.activeElement);
     if(e.key==='Escape'){e.preventDefault();closeMenu(true);}
     else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;its[i<0?(d>0?0:n-1):(i+d+n)%n].focus();}
     else if(e.key==='Home'||e.key==='End'){e.preventDefault();its[e.key==='Home'?0:n-1].focus();}
-    else if(e.key==='Tab')closeMenu();});
+    else if(e.key==='Tab')closeMenu(true);});
   document.addEventListener('pointerdown',e=>{if(!menu.hidden&&!menu.contains(e.target)&&!(mBtn&&mBtn.contains(e.target)))closeMenu();},true);
   addEventListener('resize',()=>closeMenu());
+  /* 'Formulas': the section's reference sheet in a dialog over the page, thus a look-up does not leave the lesson. It shows on the pages of a section
+     that has a sheet (not on the sheet itself). Escape, the close button or a click beside it closes it, and focus comes back to the button */
+  ICON.x=ICON.x||'<path d="M6 6l12 12M18 6 6 18"/>';
+  const refName=R=>R.rt||(R.f&&R.f.length?'Formulas and terms':'Key terms');
+  const fb=document.createElement('button');fb.type='button';fb.className='crumb-b crumb-f';fb.setAttribute('aria-haspopup','dialog');fb.hidden=true;ctools.prepend(fb);let fbKey='',rdlg=null;
+  const refClose=()=>{const d=rdlg;if(!d)return;rdlg=null;if(d.open)d.close();d.remove();if(!fb.hidden)fb.focus({preventScroll:true});};
+  fb.addEventListener('click',()=>{const k=typeof curS!=='undefined'?curS:'',R=typeof REF!=='undefined'&&REF[k];if(!R||rdlg||!SUBJ[k])return;closeMenu();popClose();
+    const d=document.createElement('dialog'),t0=performance.now();d.className='refdlg';d.setAttribute('aria-labelledby','refdlg-h');
+    d.innerHTML=`<div class="refdlg-top"><h2 id="refdlg-h" tabindex="-1">${esc(refName(R))} <span>· ${esc(SUBJ[k].name)}</span></h2><button type="button" class="refdlg-x" aria-label="Close">${icon('x',16)}</button></div><div class="refdlg-body"></div>`;
+    document.body.append(d);rdlg=d;refUI(d.lastChild,R);d.querySelector('.refdlg-x').onclick=refClose;
+    /* the second click of a double-click lands beside the dialog: it does not close it */
+    d.addEventListener('cancel',e=>{e.preventDefault();refClose();});d.addEventListener('click',e=>{if(e.target===d&&performance.now()-t0>500)refClose();});
+    d.showModal();const inp=d.querySelector('.refdlg-body input');if(inp&&matchMedia('(pointer:fine)').matches)inp.focus();else d.querySelector('h2').focus();});
+  addEventListener('hashchange',refClose);
   const upd=()=>{const c=crumbs(),key=c.map(x=>x.lv+':'+x.t).join('|')+'|'+(typeof curS!=='undefined'?curS:'');
-    if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':esc(x.t)}</span>${icon('down',12)}</button>`).join(sep);}
+    {const k=typeof curS!=='undefined'?curS:'',S=typeof SUBJ!=='undefined'&&SUBJ[k],R=S&&typeof REF!=='undefined'&&REF[k],rv=S?S.lessons.findIndex(l=>l.rv):-1,hide=!R||curL[k]===rv-1;
+      if(fb.hidden!==hide)fb.hidden=hide;if(R&&fbKey!==k){fbKey=k;const n=R.f&&R.f.length?'Formulas':'Terms';fb.innerHTML=icon('book',15)+'<span>'+n+'</span>';fb.setAttribute('aria-label',refName(R));fb.title='Look up '+(n==='Formulas'?'a formula or a term':'a term')+' without leaving this page';}}
+    /* the subject and the section also have their short names, which a phone shows (the bar also holds two tool buttons there) */
+    const short=x=>{const n=x.lv==='s'?(SUBJECTS.find(S=>S.name===x.t)||{}).short:x.lv==='u'&&SUBJ[curS]?SUBJ[curS].short:'';return n&&n!==x.t?`<span class="cl">${esc(x.t)}</span><span class="cs">${esc(n)}</span>`:esc(x.t);};
+    if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':short(x)}</span>${icon('down',12)}</button>`).join(sep);}
     lh.hidden=$id('chips').hidden;
+    /* the end of the rail: the open subject's course units that are not on the site yet */
+    const CS=SUBJECTS.find(s=>s.units.includes(curS)),todo=CS?courseUnits(CS).todo:[],ct=todo.length?'<span>Not on the site yet:</span> '+todo.map(esc).join(', '):'';if(cov.innerHTML!==ct){cov.innerHTML=ct;cov.hidden=!ct;}
     const lv=document.querySelector('.lesson:not([hidden]) .emblem small'),t=lv?lv.textContent:'';if(right.textContent!==t)right.textContent=t;};
   new MutationObserver(upd).observe(document.querySelector('title'),{childList:true,characterData:true,subtree:true});
   new MutationObserver(ms=>{if(ms.some(m=>!crumb.contains(m.target)))upd();}).observe(main,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
+  /* --toph: the height of the bar at the top of the window. The skin hides the old top bar (boot measures 0 px), thus it is the breadcrumb: the labelling figures that stay in view on short landscape screens stick below it */
+  new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',crumb.offsetHeight+'px')).observe(crumb);
   upd();
   /* keep the open lesson visible in the rail */
-  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'});};
+  const seen=()=>{const b=document.querySelector('#rail .chips button[aria-selected="true"]');if(!b)return;const r=b.getBoundingClientRect(),q=rail.getBoundingClientRect(),
+      top=q.top+(getComputedStyle(rail.firstChild).position==='sticky'?rail.firstChild.getBoundingClientRect().bottom-q.top:0);
+    if(!r.height)return;if(r.top<top)rail.scrollTop-=top-r.top+8;else if(r.bottom>q.bottom)rail.scrollTop+=r.bottom-q.bottom+8;};
   new MutationObserver(seen).observe($id('chips'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
+  /* the section's reference sheet and its Review (with the badge of due questions) are pinned at the top of the lesson list in the rail (CSS order),
+     thus they stay in view however long the list is. The arrow keys go round the same circle: the pinned two are the last two lessons */
+  const pins=()=>{const S=typeof SUBJ!=='undefined'&&SUBJ[curS],bs=[...$id('chips').children];if(!S)return;const rv=S.lessons.findIndex(l=>l.rv);
+    bs.forEach((b,i)=>{b.classList.toggle('pin',i===rv||(i===rv-1&&!!(REF[curS])));b.classList.toggle('pin-end',i===rv);});seen();};
+  new MutationObserver(pins).observe($id('chips'),{childList:true});pins();
+  rail.addEventListener('scroll',()=>rail.classList.toggle('scrolled',rail.scrollTop>0),{passive:true});
+  /* the rail's tab lists are columns on a wide screen and rows on a narrow one */
+  const wide=matchMedia('(min-width:901px)'),orient=()=>rail.querySelectorAll('[role=tablist]').forEach(t=>{if(wide.matches)t.setAttribute('aria-orientation','vertical');else t.removeAttribute('aria-orientation');});
+  new MutationObserver(orient).observe(rail,{childList:true,subtree:true});wide.addEventListener('change',orient);orient();
 })();
 </script>
 
