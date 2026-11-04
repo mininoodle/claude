@@ -751,11 +751,12 @@ body{--on-a1:#fff}
 .cm-i .pr{margin:0;flex:none}.cm-i .due{margin:0;flex:none}
 /* the breadcrumb's subject and section: their short names on a phone */
 .crumb-b .cs{display:none}
-@media(max-width:600px){.crumb-b .cl{display:none}.crumb-b .cs{display:inline}}
+@media(max-width:720px){.crumb-b .cl{display:none}.crumb-b .cs{display:inline}}
 /* the breadcrumb's tools at its right end: 'On this page' (on a phone, its icon only) */
 .crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
 html .crumb-tools .crumb-b{margin-left:0;flex:none}
-@media(max-width:600px){.crumb-o>span,.crumb-o>.ic:last-child{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
+/* the bar is short of room below 720 px, and from 901 to 1000 px (the rail takes 250 px): 'On this page' is its icon there */
+@media(max-width:720px),(min-width:901px) and (max-width:1000px){.crumb-o>span,.crumb-o>.ic:last-child{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
 /* the site search: a box at the top of the rail (wide screens), a button and a panel under the breadcrumb (narrow screens) */
 .rail-find{padding:0 2px 6px}
 .find{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border-radius:6px;background:var(--glass);border:1px solid var(--hair);color:var(--ink2)}
