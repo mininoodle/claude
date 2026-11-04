@@ -4329,7 +4329,7 @@ ECL[6]={t:EC_T[6],h:'Disproportionation and voltaic cells',
   d:'In a disproportionation, one entity is both oxidized and reduced. A voltaic cell keeps the oxidizing agent and the reducing agent apart, thus the electrons must flow through a wire: an electric current.',
   build(g){
   /* ---------- p. 33: disproportionation ---------- */
-  card(g,'Disproportionation',`<p class="hint">Outcome: 30–B1.2k (define oxidizing agent, reducing agent, oxidation number, half-reaction, disproportionation)</p>
+  card(g,'Disproportionation',`<p class="hint">Outcome: 30–B1.2k</p>
     <ul><li><span class="key">Disproportionation</span> occurs when a single entity is <b>both oxidized and reduced</b>.</li>
     <li>Some atoms of one element in a molecule or polyatomic ion increase in oxidation number: they are the reducing part of the entity. Other atoms of the <b>same element</b> decrease in oxidation number: they are the oxidizing part.</li>
     <li>A simple disproportionation can always be balanced by inspection: the electrons lost must equal the electrons gained.</li></ul>
@@ -4349,7 +4349,7 @@ ECL[6]={t:EC_T[6],h:'Disproportionation and voltaic cells',
       `<p>One ${C6('Cl2')} gives one ${C6('OCl^-')} and one ${C6('Cl^-')}. The right side has 2 O atoms (in ${C6('OCl^-')} and ${C6('H2O')}) and 2 H atoms, thus 2 ${C6('OH^-')} are needed. Check the charge: −2 on each side.</p><p><b>${C6(E6P[3].b)}</b></p>`));
 
   /* ---------- p. 34: electrochemical cells and their terms ---------- */
-  card(g,'Electrochemical cells',`<p class="hint">Outcomes: 30–B2.1k (define anode, cathode, anion, cation, salt bridge/porous cup, electrolyte, external circuit, power supply, voltaic cell and electrolytic cell), 30–B2.2k (compare a voltaic cell and an electrolytic cell)</p>
+  card(g,'Electrochemical cells',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.2k</p>
     <p>Changing chemical energy into electrical energy, and electrical energy into chemical energy, are <b>electrochemical processes</b>. They are redox reactions.</p>
     <p><b>Example.</b> Dip a zinc strip into a copper(II) sulfate solution: the zinc becomes copper plated. You see the zinc dissolve and copper solid appear.</p>`+
     CF(ec6Dip(),'Zinc in a copper(II) sulfate solution. The electrons pass straight from the zinc to the copper(II) ions.')+
@@ -4548,7 +4548,7 @@ EC_RQ[6]=[
    w:'Cl is +5 in KClO₃, +7 in KClO₄ and −1 in KCl. Three Cl atoms rise from +5 to +7, and each loses 2 e⁻. One Cl atom falls from +5 to −1 and gains 6 e⁻. The electrons lost equal the electrons gained: 6 electrons are transferred.'},
   {q:'Manganate ions disproportionate in an acidic solution: '+C6('MnO4^2-(aq) + H^+(aq) -> MnO4^-(aq) + MnO2(s) + H2O(l)')+'. When the equation is balanced with the lowest whole-number coefficients, the coefficient of '+C6('H^+(aq)')+' is',n:4,u:'',tol:0,
    w:'Mn is +6 in MnO₄²⁻, +7 in MnO₄⁻ and +4 in MnO₂. Each Mn that is oxidized loses 1 e⁻, and each Mn that is reduced gains 2 e⁻. Thus 2 MnO₄⁻ form for each MnO₂, from 3 MnO₄²⁻. Oxygen: 12 O atoms on the left and 10 in 2 MnO₄⁻ and MnO₂, thus 2 H₂O form. Their 4 H atoms come from 4 H⁺. The balanced equation is 3MnO₄²⁻(aq) + 4H⁺(aq) → 2MnO₄⁻(aq) + MnO₂(s) + 2H₂O(l).'},
-  {q:'A student builds a zinc-copper cell, but uses a copper wire in place of the salt bridge. The voltmeter reading drops to almost zero. The best explanation is that',o:['ions cannot move between the solutions through a wire','electrons cannot travel through a copper wire at all','the copper wire reacts with all of the Zn²⁺(aq) ions','the wire lets the two solutions mix with each other'],a:0,
+  {q:'A student builds a zinc-copper cell, but uses a copper wire in place of the salt bridge. The voltmeter reading drops to almost zero. The best explanation is that',o:['ions cannot move between the solutions through a wire','electrons cannot travel through a copper wire at all','the copper wire reacts with the Zn²⁺(aq) ions in the solution','the wire lets the two solutions mix with each other'],a:0,
    w:'Inside the cell, ions carry the charge: they move through the salt bridge and keep each solution neutral. A metal wire carries electrons, not ions, thus charge builds up in each half-cell and the reaction stops. Copper does not react with Zn²⁺(aq), and a wire does not let the solutions mix.'},
   {q:'In the cell '+C6('Cu(s) | Cu^2+(aq) || Ag^+(aq) | Ag(s)')+', the copper electrode loses 0.635 g. Calculate the mass of silver that is deposited on the silver electrode.',n:2.16,u:'g',tol:.01,
    w:'The half-reactions are Cu(s) → Cu²⁺(aq) + 2e⁻ and Ag⁺(aq) + e⁻ → Ag(s). Each Cu atom gives 2 e⁻, enough for 2 Ag⁺ ions. n(Cu) = 0.635 g ÷ 63.55 g/mol = 0.009992 mol. n(Ag) = 2 × 0.009992 mol = 0.01998 mol. m(Ag) = 0.01998 mol × 107.87 g/mol = 2.16 g.'},
