@@ -12,6 +12,9 @@ Navigation and usability of the page shell (rail, breadcrumb, address, search, p
   - a phone: the breadcrumb is sticky and the rail is one row
   - dark mode: the text on the accent fill is dark (contrast 4.5:1 or more)
   - achievements: a Bronze tier is a toast, a Gold tier a modal <dialog> that Escape closes
+  - 'Formulas' opens the section's reference sheet in a modal dialog; Escape closes it and the page has not moved
+  - the search stays quick with many lessons built; the bar keeps room for the lesson's name at 360, 640 and 905 px
+  - with a <base href> (as in a srcdoc frame) the page does not unload itself when it writes its address, and Back still works
 Everything is read from SUBJECTS and SUBJ, thus new sections are covered without a change here. */
 const path = require('path');
 let chromium;
@@ -153,6 +156,56 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       check(await p.evaluate(() => Math.round(document.querySelector('.crumb').getBoundingClientRect().top) === 0), 'the breadcrumb stays at the top of the window');
       check(!errs.length, 'no page errors at 390 px' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
       await ctx.close();
+    }
+    /* ---------- 'Formulas': the section's reference sheet in a dialog over the page ---------- */
+    {
+      const { ctx, p, errs } = await openPage(b);
+      const k = await p.evaluate(() => SUBJECTS.flatMap(S => S.units).find(u => SUBJ[u] && typeof REF !== 'undefined' && REF[u]));
+      await p.evaluate(k => goLesson(k, 1), k); await frames(p); await p.evaluate(() => scrollTo(0, 2000)); await frames(p);
+      const y0 = await p.evaluate(() => Math.round(scrollY));
+      const f = await p.evaluate(() => { const fb = document.querySelector('.crumb-f'); if (!fb || fb.hidden) return null; fb.click(); const d = document.querySelector('dialog.refdlg');
+        return { modal: !!(d && d.matches(':modal')), box: !!(d && d.querySelector('input[aria-label="Search the formulas and terms"]')) }; });
+      check(f && f.modal && f.box, `${k}-1: 'Formulas' opens the section's reference sheet in a modal dialog`);
+      await p.keyboard.press('Escape'); await frames(p);
+      const z = await p.evaluate(() => ({ open: !!document.querySelector('dialog.refdlg'), focus: document.activeElement && document.activeElement.classList.contains('crumb-f'), y: Math.round(scrollY) }));
+      check(!z.open && z.focus && z.y === y0, `Escape closes it, focus is back on the button, the page did not move (${y0} -> ${z.y})`);
+      await p.evaluate(k => { const rv = SUBJ[k].lessons.findIndex(l => l.rv); goLesson(k, rv - 1); }, k); await frames(p);
+      const hid = await p.evaluate(() => { const fb = document.querySelector('.crumb-f'); return !!fb && fb.hidden; });
+      check(hid, "'Formulas' is not shown on the reference sheet itself");
+      /* the search stays quick when many lessons are built: each lesson's card headings are read once */
+      const ms = await p.evaluate(() => { let n = 0; for (const S of SUBJECTS) for (const u of S.units) for (let i = 0; i < SUBJ[u].lessons.length && n < 60; i++, n++) goLesson(u, i);
+        findTopics('cell'); const t = performance.now(); ['a', 'ma', 'mag', 'magnet', 'the cell', 'force', 'acid', 'nerve', 'law', 'zzz'].forEach(q => findTopics(q)); return performance.now() - t; });
+      check(ms < 150, `10 searches with 60 lessons built take ${Math.round(ms)} ms (under 150)`);
+      check(!errs.length, "no page errors with 'Formulas'" + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
+      await ctx.close();
+    }
+    /* ---------- the bar keeps room for the lesson's name (the longest lesson title, at 360, 640 and 905 px) ---------- */
+    for (const w of [360, 640, 905]) {
+      const { ctx, p } = await openPage(b, { width: w, height: 700 });
+      const id = await p.evaluate(() => { let best = null; for (const S of SUBJECTS) for (const u of S.units) SUBJ[u].lessons.forEach((l, i) => { if (!best || l.t.length > best[2]) best = [u, i, l.t.length]; });
+        goLesson(best[0], best[1]); return best[0] + '-' + best[1]; });
+      await frames(p);
+      const r = await p.evaluate(id => { const c = document.querySelector('.crumb-b.cur'); return { id, t: c.textContent.trim(), w: Math.round(c.getBoundingClientRect().width) }; }, id);
+      check(r.w >= 40 && r.t === await p.evaluate(id => { const m = /^(.+)-(\d+)$/.exec(id); return SUBJ[m[1]].lessons[+m[2]].t; }, r.id), `${w} px: the bar shows the lesson's name of ${r.id} in ${r.w} px (40 or more)`);
+      await ctx.close();
+    }
+    /* ---------- the page stays itself when its base address is another one (a srcdoc frame, a <base href>) ---------- */
+    {
+      const fs = require('fs'), os = require('os');
+      const tmp = path.join(os.tmpdir(), 'nav-base-' + process.pid + '.html');
+      fs.writeFileSync(tmp, fs.readFileSync(path.resolve(file), 'utf8').replace('<head>', '<head><base href="nowhere/">'));
+      const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } }); await ctx.route(/^https?:\/\//, r => r.abort());
+      const p = await ctx.newPage(); await p.goto('file://' + tmp); await p.waitForTimeout(1500);
+      const st = async () => { try { return await p.evaluate(() => ({ site: typeof SUBJ !== 'undefined', file: location.pathname, pg: (document.querySelector('#main > article:not([hidden])') || {}).id })); } catch (e) { return { site: false, err: e.message }; } };
+      const a = await st();
+      check(a.site && a.file === tmp, `with a <base href>, the page is still the site after it starts (${a.site ? a.file : a.err || 'the site is gone'})`);
+      if (a.site) {
+        const k = await p.evaluate(() => { const u = SUBJECTS.flatMap(S => S.units).find(x => SUBJ[x]); goLesson(u, 0); goLesson(u, 1); return u; });
+        await p.waitForTimeout(200); await p.evaluate(() => history.back()); await p.waitForTimeout(600);
+        const z = await st();
+        check(z.site && z.pg === k + '-0', `with a <base href>, Back opens the previous lesson (${z.pg || z.err})`);
+      }
+      await ctx.close(); try { fs.unlinkSync(tmp); } catch (e) {}
     }
   } catch (e) { fails.push('the test stopped: ' + (e && e.message || e)); console.log('FAIL the test stopped: ' + (e && e.stack || e)); }
   await b.close();

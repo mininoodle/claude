@@ -756,7 +756,20 @@ body{--on-a1:#fff}
 .crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
 html .crumb-tools .crumb-b{margin-left:0;flex:none}
 /* the bar is short of room below 720 px, and from 901 to 1000 px (the rail takes 250 px): 'On this page' is its icon there */
-@media(max-width:720px),(min-width:901px) and (max-width:1000px){.crumb-o>span,.crumb-o>.ic:last-child{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
+@media(max-width:720px),(min-width:901px) and (max-width:1000px){.crumb-o>span,.crumb-o>.ic:last-child,.crumb-f>span{display:none}html .crumb-tools .crumb-b{min-width:36px;min-height:36px;justify-content:center}}
+/* 'Formulas' in the breadcrumb: the section's reference sheet in a dialog over the page */
+.crumb-f[hidden]{display:none}
+/* a small phone: three icon buttons at the end of the bar, thus a narrower gap and 32 px buttons leave room for the lesson's name */
+@media(max-width:420px){html .crumb{gap:8px}html .crumb-tools .crumb-b{min-width:32px;padding-inline:0}html .crumb-s{width:32px}}
+dialog.refdlg{width:min(46rem,calc(100vw - 24px));max-width:none;max-height:min(88vh,calc(100vh - 24px));padding:0;border:1px solid var(--hair);border-radius:14px;background:var(--bg);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden}
+dialog.refdlg[open]{display:flex;flex-direction:column}
+dialog.refdlg::backdrop{background:rgba(28,26,27,.38)}
+.refdlg-top{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 18px;border-bottom:1px solid var(--hair);flex:none}
+.refdlg-top h2{flex:1;min-width:0;margin:0;font-size:1rem;font-weight:600}
+.refdlg-top h2 span{font-weight:400;color:var(--ink2)}
+.refdlg-x{appearance:none;border:0;background:none;color:var(--ink2);display:inline-grid;place-items:center;width:36px;height:36px;border-radius:6px;cursor:pointer;flex:none}
+.refdlg-x:hover{background:var(--hov);color:var(--ink)}
+.refdlg-body{overflow-y:auto;overscroll-behavior:contain;padding:12px;display:grid;gap:12px;min-height:0}
 /* the site search: a box at the top of the rail (wide screens), a button and a panel under the breadcrumb (narrow screens) */
 .rail-find{padding:0 2px 6px}
 .find{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border-radius:6px;background:var(--glass);border:1px solid var(--hair);color:var(--ink2)}
@@ -11729,7 +11742,23 @@ html{scroll-padding-top:62px}
     else if(e.key==='Tab')closeMenu(true);});
   document.addEventListener('pointerdown',e=>{if(!menu.hidden&&!menu.contains(e.target)&&!(mBtn&&mBtn.contains(e.target)))closeMenu();},true);
   addEventListener('resize',()=>closeMenu());
+  /* 'Formulas': the section's reference sheet in a dialog over the page, thus a look-up does not leave the lesson. It shows on the pages of a section
+     that has a sheet (not on the sheet itself). Escape, the close button or a click beside it closes it, and focus comes back to the button */
+  ICON.x=ICON.x||'<path d="M6 6l12 12M18 6 6 18"/>';
+  const refName=R=>R.rt||(R.f&&R.f.length?'Formulas and terms':'Key terms');
+  const fb=document.createElement('button');fb.type='button';fb.className='crumb-b crumb-f';fb.setAttribute('aria-haspopup','dialog');fb.hidden=true;ctools.prepend(fb);let fbKey='',rdlg=null;
+  const refClose=()=>{const d=rdlg;if(!d)return;rdlg=null;if(d.open)d.close();d.remove();if(!fb.hidden)fb.focus({preventScroll:true});};
+  fb.addEventListener('click',()=>{const k=typeof curS!=='undefined'?curS:'',R=typeof REF!=='undefined'&&REF[k];if(!R||rdlg||!SUBJ[k])return;closeMenu();popClose();
+    const d=document.createElement('dialog'),t0=performance.now();d.className='refdlg';d.setAttribute('aria-labelledby','refdlg-h');
+    d.innerHTML=`<div class="refdlg-top"><h2 id="refdlg-h" tabindex="-1">${esc(refName(R))} <span>· ${esc(SUBJ[k].name)}</span></h2><button type="button" class="refdlg-x" aria-label="Close">${icon('x',16)}</button></div><div class="refdlg-body"></div>`;
+    document.body.append(d);rdlg=d;refUI(d.lastChild,R);d.querySelector('.refdlg-x').onclick=refClose;
+    /* the second click of a double-click lands beside the dialog: it does not close it */
+    d.addEventListener('cancel',e=>{e.preventDefault();refClose();});d.addEventListener('click',e=>{if(e.target===d&&performance.now()-t0>500)refClose();});
+    d.showModal();const inp=d.querySelector('.refdlg-body input');if(inp&&matchMedia('(pointer:fine)').matches)inp.focus();else d.querySelector('h2').focus();});
+  addEventListener('hashchange',refClose);
   const upd=()=>{const c=crumbs(),key=c.map(x=>x.lv+':'+x.t).join('|')+'|'+(typeof curS!=='undefined'?curS:'');
+    {const k=typeof curS!=='undefined'?curS:'',S=typeof SUBJ!=='undefined'&&SUBJ[k],R=S&&typeof REF!=='undefined'&&REF[k],rv=S?S.lessons.findIndex(l=>l.rv):-1,hide=!R||curL[k]===rv-1;
+      if(fb.hidden!==hide)fb.hidden=hide;if(R&&fbKey!==k){fbKey=k;const n=R.f&&R.f.length?'Formulas':'Terms';fb.innerHTML=icon('book',15)+'<span>'+n+'</span>';fb.setAttribute('aria-label',refName(R));fb.title='Look up '+(n==='Formulas'?'a formula or a term':'a term')+' without leaving this page';}}
     /* the subject and the section also have their short names, which a phone shows (the bar also holds two tool buttons there) */
     const short=x=>{const n=x.lv==='s'?(SUBJECTS.find(S=>S.name===x.t)||{}).short:x.lv==='u'&&SUBJ[curS]?SUBJ[curS].short:'';return n&&n!==x.t?`<span class="cl">${esc(x.t)}</span><span class="cs">${esc(n)}</span>`:esc(x.t);};
     if(key!==ckey){ckey=key;closeMenu();path.innerHTML=c.map(x=>`<button type="button" class="crumb-b${x.cur?' cur':''}" data-lv="${x.lv}" aria-haspopup="menu" aria-expanded="false"${x.cur?' aria-current="page"':''} title="${x.lv==='s'?'Go to another subject':x.lv==='u'?'Go to another section':'Go to another lesson'}"><span>${x.cur?'<b>'+esc(x.t)+'</b>':short(x)}</span>${icon('down',12)}</button>`).join(sep);}
