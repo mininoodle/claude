@@ -791,7 +791,7 @@ const Store=(()=>{
   /* the same entry: equal times and equal fields. fold() skips such entries before mix() and J(), so merging a copy that is mostly equal is cheap */
   /* values compare as their JSON text does (an undefined field is absent, NaN is null), thus an entry equals its own copy from the account */
   const same=(a,b)=>{if(a===b)return true;if((a.t||0)!==(b.t||0))return false;let n=0;for(const k in a){const x=a[k],y=b[k];if(x!==undefined)n++;if(x===y)continue;if(!x||!y||typeof x!=='object'||typeof y!=='object'){if(J(x)===J(y))continue;return false;}
-    if(Array.isArray(x)){if(!Array.isArray(y)||x.length!==y.length||x.some((v,i)=>v!==y[i]&&J(v)!==J(y[i])))return false;}else if(J(x)!==J(y))return false;}for(const k in b)if(b[k]!==undefined)n--;return !n;};
+    if(Array.isArray(x)){if(!Array.isArray(y)||x.length!==y.length||x.some((v,i)=>v!==y[i]&&J([v])!==J([y[i]])))return false;}else if(J(x)!==J(y))return false;}for(const k in b)if(b[k]!==undefined)n--;return !n;};
   const uni=(a,b,n)=>[...new Set([...(a||[]),...(b||[])])].sort().slice(-n),bt=(a,b)=>!a?b:!b?a:a.c/a.n>b.c/b.n||(a.c/a.n===b.c/b.n&&a.n>=b.n)?a:b;
   /* history, best results, study days, achievements and counters are combined, so neither copy loses progress. null: the newer entry wins */
   function mix(m,k,l,r){if(l.x||r.x)return null;const t=Math.max(l.t||0,r.t||0),o=x=>Object.assign({},nw(r,l)?r:l,x,{t});
@@ -868,8 +868,9 @@ const Store=(()=>{
   /* the entries that the account copy lacks or has older, in each document whose content is known. They wait in DQ for the next upload */
   function ahead(){if(!SPL||!ref)return 0;let n=0;const chk=(m,lm)=>{for(const k in lm){const M=mget(docOf(m,k));if(M===undefined)continue;const r=M&&M[m]&&M[m][k];if(!r||!same(lm[k],r)){if(!DQ.has(m+'\t'+k)){DQ.add(m+'\t'+k);n++;}}}};
     MAPS.forEach(m=>chk(m,D[m]));chk('c',D.c);if(n&&!busy)later(800);return n;}
-  /* a listing of the split account copy: {docs:[{id,data}], sure} */
-  function take(L){let ch=false;for(const d of L.docs||[])if(!d.pending)ch=intake(d.id,d.data,L.sure!==false)||ch;if(L.sure!==false)listed=true;if(ch){local();emit();}ahead();}
+  /* a listing of the split account copy: {docs:[{id,data,pending}], sure}. A pending document (it holds this page's own write, not confirmed yet) is folded in too,
+     because a change from another device can arrive in it and a store need not send a confirmed copy later. Only a confirmed document updates the mirror */
+  function take(L){let ch=false;for(const d of L.docs||[])ch=intake(d.id,d.data,!d.pending&&L.sure!==false)||ch;if(L.sure!==false)listed=true;if(ch){local();emit();}ahead();}
   /* write the waiting entries of the split account copy, one document at a time: a merge write of the entries that changed, or the whole document when it is new */
   async function pushSplit(r,keys){const by=new Map();for(const q of keys){const i=q.indexOf('\t'),m=q.slice(0,i),k=q.slice(i+1),id=docOf(m,k);if(!by.has(id))by.set(id,[]);by.get(id).push([m,k]);}
     for(const [id,list] of by){if(ref!==r)throw 0;let M=Mir.get(id);
@@ -896,6 +897,7 @@ const Store=(()=>{
     off:'Syncing with your account stopped for this visit. Your progress is kept on this device.',
     hard:'Your latest progress could not be uploaded to your account, and trying again cannot fix this. It is kept on this device.'+BK,
     soft:'Your latest changes are not uploaded yet. They are kept on this device, and the site tries again.',
+    reach:'Your account cannot be reached right now. Your progress is kept on this device, and the site tries again.',
     outdated:'This page is out of date. Reload it to keep syncing. Your progress is kept on this device.',
     local:'This browser cannot save your progress, because its site storage is blocked or full. It is lost when you reload the page.'};
   const kind=c=>c==='viewer'||c==='outdated'?c:/^(too.large|quota.exceeded)$/.test(c)?'full':/^(permission.denied|unauthenticated)$/.test(c)?'denied':/^(revoked|not.granted|capability.(disabled|removed))$/.test(c)?'off':HARD.test(c)?'hard':'soft';
@@ -919,13 +921,15 @@ const Store=(()=>{
   /* one save per task: the writes of one answer (answer, history, counters, study days, spaced repetition) are saved together, in a microtask that still runs before the task ends */
   const save=()=>{if(!lq){lq=1;Promise.resolve().then(()=>{if(lq)local();});}};
   const touch=()=>{la=1;save();if(ref)later(1500);};
+  /* perr: the account copy has not answered since it was attached (offline, or the store does not answer within 10 s). status() then says so, instead of 'synced' */
+  let perr='';const unreached=c=>{if(!pulled&&!perr){perr=c||'unreached';emit();}},reached=()=>{if(perr){perr='';emit();}};
   async function pull(){if(!ref)return false;const r=ref;lastPull=Date.now();clearTimeout(rt);
     try{if(SPL)take(await r.all());else{const s=await r.get();if(ref!==r)return false;merge(s&&s.exists?s.data():null);}
-      if(ref!==r)return false;pulled=true;if(!dirty&&!busy)lastSync=Date.now();return true;}
-    catch(e){if(ref===r){const c=String(e&&e.code||'');if(HARD.test(c)&&c!=='invalid_argument')fail(e);else if(!pulled)rt=setTimeout(pull,wait());}return false;}}
+      if(ref!==r)return false;pulled=true;reached();if(!dirty&&!busy)lastSync=Date.now();return true;}
+    catch(e){if(ref===r){const c=String(e&&e.code||'');if(HARD.test(c)&&c!=='invalid_argument')fail(e);else if(!pulled){unreached(c);rt=setTimeout(pull,wait());}}return false;}}
   /* the listener of the split account copy: one for the whole collection, opened again after a transient error */
   function watch(){const r=ref;if(!r||!r.watch||unsub)return;clearTimeout(wt);
-    const next=L=>{if(ref!==r)return;live=true;take(L);if(L.sure!==false){pulled=true;if(!dirty&&!busy)lastSync=Date.now();if(wres){wres(true);wres=null;}}};
+    const next=L=>{if(ref!==r)return;live=true;take(L);if(L.sure!==false){pulled=true;reached();if(!dirty&&!busy)lastSync=Date.now();if(wres){wres(true);wres=null;}}};
     const bad=e=>{if(ref!==r)return;unsub=null;live=false;const c=String(e&&e.code||'');if(c==='revoked'||c==='permission-denied'||c==='unauthenticated'){fail(e);return;}if(!HARD.test(c))wt=setTimeout(watch,wait());};
     try{unsub=r.watch(next,bad)||null;}catch(e){unsub=null;}}
   const unwatch=()=>{clearTimeout(wt);if(unsub){try{unsub();}catch(e){}unsub=null;}live=false;};
@@ -935,13 +939,13 @@ const Store=(()=>{
     const other=!!(o.uid&&D.u&&D.u!==o.uid);if(other){local();stash();MAPS.forEach(m=>{D[m]={};});D.c={};dirty=false;}
     let back=false;if(o.uid&&D.u!==o.uid){D.u=o.uid;back=unstash(o.uid);if(other)retire();local();}
     ref=r;SPL=!!(r&&r.split);LEG=SPL&&r.legacy||'';Mir=new Map();Mx=new Map();Msz=new Map();DQ=new Set();listed=false;stop='';tries=0;V1=3;X1={};
-    uid=o.uid||null;src=o.src||'';label=o.label||'';mode='account';pulled=false;err='';lastSync=0;emit();
+    uid=o.uid||null;src=o.src||'';label=o.label||'';mode='account';pulled=false;err='';perr='';lastSync=0;emit();
     if(other)toast('The progress on this device belonged to another account, so it was not added to '+(label||'this account')+'. It is kept on this device for that account.'+(back?' The progress kept here for '+(label||'this account')+' is back.':''));
     /* split: the listener's first full view is the pull; without it (or after 10 s) the documents are listed once */
-    if(SPL&&r.watch){const w=new Promise(res=>{wres=res;});watch();await within(w,1e4);wres=null;if(ref===r&&!pulled)await pull();}else await pull();
+    if(SPL&&r.watch){const w=new Promise(res=>{wres=res;});watch();await within(w,1e4);wres=null;if(ref===r&&!pulled){unreached();await pull();}}else await pull();
     if(ref===r){ahead();if(dirty)await push();}}
   /* s: only detach when that source is attached */
-  function detach(s){if(s&&s!==src)return;unwatch();const was=!!ref||mode!=='device';ref=null;uid=null;src='';label='';mode='device';lastSync=0;err='';SPL=false;DQ=new Set();Mir=new Map();clearTimeout(timer);clearTimeout(rt);if(was)emit();}
+  function detach(s){if(s&&s!==src)return;unwatch();const was=!!ref||mode!=='device';ref=null;uid=null;src='';label='';mode='device';lastSync=0;err='';perr='';SPL=false;DQ=new Set();Mir=new Map();clearTimeout(timer);clearTimeout(rt);if(was)emit();}
   /* a live update of a single-document account copy (another device wrote) */
   const remote=data=>{if(!ref||SPL)return;pulled=true;lastSync=Date.now();merge(data);};
   /* Sync now: also tries again after a permanent error */
@@ -995,10 +999,11 @@ const Store=(()=>{
     importCopy(R){if(!R||typeof R!=='object'||Array.isArray(R)||R.kind&&R.kind!=='unit-study-site-progress'||!MAPS.some(m=>R[m]&&typeof R[m]==='object'))return {err:'format'};
       if(typeof R.v==='number'&&R.v>SCHEMA)return {err:'newer'};const o=upgrade(JSON.parse(JSON.stringify(R)));MAPS.concat('c').forEach(m=>{if(!o[m]||typeof o[m]!=='object'||Array.isArray(o[m]))o[m]={};});
       const [ch,,n]=fold(o,1);if(ch){save();emit();if(ref){ahead();if(DQ.size||!SPL)later(800);}}return {n};},
-    /* the lasting state. local: ok|blocked. remote: off|ok|pending|retrying|stopped|outdated|viewer. text: what to tell the student, empty when all is well */
-    status(){const r=viewer?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':dirty||busy||DQ.size?'pending':'ok';
-      const t=r==='viewer'||r==='outdated'?MSG[r]:r==='stopped'?MSG[kind(stop)]:r==='retrying'?MSG.soft:'';
-      return {local:canSave?'ok':'blocked',remote:r,code:stop||err||off,text:[canSave?'':MSG.local+(mode==='account'&&r==='ok'?' It is still saved to your account.':BK.replace('a copy','it')),t].filter(Boolean).join(' ')};},optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
+    /* the lasting state. local: ok|blocked. remote: off|ok|pending|retrying|unreached|stopped|outdated|viewer. text: what to tell the student, empty when all is well.
+       pending covers the time before the account copy first answers; unreached: it has not answered (offline, or no answer within 10 s) */
+    status(){const r=viewer?'viewer':newer>SCHEMA?'outdated':mode!=='account'?'off':stop?'stopped':err?'retrying':perr&&!pulled?'unreached':dirty||busy||DQ.size||!pulled?'pending':'ok';
+      const t=r==='viewer'||r==='outdated'?MSG[r]:r==='stopped'?MSG[kind(stop)]:r==='retrying'?MSG.soft:r==='unreached'?MSG.reach:'';
+      return {local:canSave?'ok':'blocked',remote:r,code:stop||err||perr||off,text:[canSave?'':MSG.local+(mode==='account'&&r==='ok'?' It is still saved to your account.':BK.replace('a copy','it')),t].filter(Boolean).join(' ')};},optOut(){try{localStorage.setItem(NOC,'1');}catch(e){}},setScope:f=>{scope=f;}};
 })();
 /* spaced repetition: a missed question comes back after 1, 3 and 7 days */
 const SRI=[1,3,7],DAY=864e5;
@@ -11279,9 +11284,10 @@ function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDo
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
   const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);achCard(g);backupCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
 /* the state of saving and syncing, while it is not ok: first on the Today page, with what the student can do */
-const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':'';
+const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':st.remote==='unreached'?'Your account cannot be reached right now':'';
 /* a backup of all progress: one JSON file. Restoring one adds it to the progress here, in another browser or in the other copy of the site, and never deletes */
-const BKK='unit-study-site.backup',BKP=`<div class="bkp"><p class="hint">A backup is a file with all of your progress. Restoring it adds to the progress here and never deletes anything.</p><div class="bkb"><button type="button" class="btn sm ghost" data-bk>${icon('save',15)}Download a backup</button><button type="button" class="btn sm ghost" data-rs>${icon('up',15)}Restore from a backup</button></div></div>`;
+ICON.upload=ICON.upload||'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 19.5h14"/>';
+const BKK='unit-study-site.backup',BKP=`<div class="bkp"><p class="hint">A backup is a file with all of your progress. Restoring it adds to the progress here and never deletes anything.</p><div class="bkb"><button type="button" class="btn sm ghost" data-bk>${icon('save',15)}Download a backup</button><button type="button" class="btn sm ghost" data-rs>${icon('upload',15)}Restore from a backup</button></div></div>`;
 async function backupSave(){const msg=await saveFile('study-progress-'+today()+'.json',new Blob([JSON.stringify(Store.exportCopy())],{type:'application/json'}),'The backup');
   if(/ was s/.test(msg))try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}toast(msg);refreshLive();}
 function backupLoad(){const i=el('input',{type:'file',accept:'.json,application/json',style:'display:none'});document.body.append(i);
@@ -11299,7 +11305,7 @@ function syncCard(g){const st=Store.status(),h=syncHead(st);if(!h)return;
   const c=card(g,'',`<h3>${icon(st.remote==='viewer'?'user':'cloud',18)} ${h}</h3><p role="status">${tx}</p><div class="row"></div>`,'syncline'),row=$('.row',c);g.prepend(c);
   const b=(t,f,cl)=>{const x=el('button',{type:'button',class:'btn sm'+(cl?' '+cl:'')},t);x.onclick=f;row.append(x);};
   if(st.remote==='outdated')b(icon('reset',15)+'Reload',()=>location.reload());
-  else if(st.remote==='retrying'||st.remote==='stopped')b(icon('reset',15)+'Sync now',async()=>{const ok=await Store.sync();toast(ok?'Synced.':'Could not sync yet. Your progress is kept on this device.');});
+  else if(/^(retrying|stopped|unreached)$/.test(st.remote))b(icon('reset',15)+'Sync now',async()=>{const ok=await Store.sync();toast(ok?'Synced.':'Could not sync yet. Your progress is kept on this device.');});
   if(st.local!=='ok'||/^(stopped|viewer)$/.test(st.remote))b(icon('save',15)+'Download a backup',backupSave,st.remote==='outdated'?'ghost':'');
   b('Account',accountDialog,'ghost');}
 function weekCard(g){const days=new Set(gv('days')||[]),ws=weekStart(new Date()),td=today(),cells=[];let n=0;
