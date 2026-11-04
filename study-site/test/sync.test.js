@@ -4,10 +4,15 @@
    its write first with hasPendingWrites, a viewer who may not write reads nothing and every write is rejected. The Firestore path runs against a mock of the
    Firebase modules that the page imports (the same server, with setDoc merge semantics).
    Cases: migration of an old single document of about 300 KB without loss, two devices live, offline answers, a viewer who cannot write, the version gate,
-   cost per answer, an old page that is still open (the second argument, or else the page of commit 92e381a from git: the last one before the change), Firestore.
+   cost per answer, an old page that is still open (the second argument, or else the page of commit 92e381a from git: the last one before the change), Firestore,
+   a reload while offline (the state says the account cannot be reached; the answers upload by themselves later), a store that sends no confirmed copy after
+   the page's own write (Firestore without metadata changes does not), slow writes (one write at a time per document), and RETIRE through the documents.
    Exit code 0 = all pass. */
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');const os=require('os');const {execFileSync}=require('child_process');
 const FILE=path.resolve(process.argv[2]||'study-site/index.html');
+/* a copy of the page whose RETIRE list also holds mom_0_0, retired one hour ago (for the RETIRE case) */
+const RTT=Math.floor((Date.now()-3600e3)/1000)*1000,RTP=(()=>{try{const s=fs.readFileSync(FILE,'utf8'),T=new Date(RTT).toISOString().replace(/\.\d+Z$/,'Z');if((s.match(/^const RETIRE=\{/gm)||[]).length!==1)return null;
+  const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'retire-')),'index.html');fs.writeFileSync(t,s.replace(/^const RETIRE=\{/m,"const RETIRE={'mom_0_0':'"+T+"',"));return t;}catch(e){return null;}})();
 const OLD=process.argv[3]?path.resolve(process.argv[3]):(()=>{try{const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'oldpage-')),'index.html');
   fs.writeFileSync(t,execFileSync('git',['-C',path.dirname(FILE),'show','92e381a:study-site/index.html'],{maxBuffer:64<<20}));return t;}catch(e){console.log('(no old page: the old-page case is skipped)');return null;}})();
 const LIM=256*1024,sleep=ms=>new Promise(r=>setTimeout(r,ms)),res=[];
@@ -19,7 +24,7 @@ const nested=x=>Array.isArray(x)?x.some(v=>Array.isArray(v)||nested(v)):x&&typeo
 
 /* ---------- the mock server ---------- */
 class Server{
-  constructor(){this.docs=new Map();this.subs=new Map();this.sid=0;}
+  constructor(){this.docs=new Map();this.subs=new Map();this.sid=0;this.busy=new Set();this.overlap=0;}
   col(p){return p.split('/').slice(0,-1).join('/');}
   vis(dev,p){return !dev.viewer;}
   async op(dev,op,a){
@@ -30,6 +35,10 @@ class Server{
     if(op==='query'){const out=[];for(const [p,d] of this.docs)if(this.col(p)===n&&this.vis(dev,p))out.push({id:p.split('/').pop(),data:clone(d)});out.sort((x,y)=>x.id<y.id?-1:1);dev.readB=(dev.readB||0)+out.reduce((s,d)=>s+size(d.data),0);return out;}
     if(op==='set'||op==='update'||op==='merge'){
       if(dev.viewer)throw {code:dev.fb?'permission-denied':'invalid_argument',message:'this viewer may not write'};
+      /* dev.lat: each write takes that long (overlap counts a second write to one document that starts before the first ended).
+         dev.noConfirm: like Firestore without metadata changes, a change to a document this device wrote in the last 1.5 s reaches its listener as pending, and no confirmed copy follows */
+      if(dev.lat){const k=dev.name+'|'+n;if(this.busy.has(k))this.overlap++;this.busy.add(k);try{await sleep(dev.lat);}finally{this.busy.delete(k);}if(dev.offline)throw {code:'unavailable',message:'offline'};}
+      if(dev.noConfirm)(dev.pendUntil=dev.pendUntil||new Map()).set(n,Date.now()+1500);
       const cur=this.docs.get(n);if(op==='update'&&!cur)throw {code:'invalid_argument',message:'update() needs an existing document'};
       const next=op==='set'?clone(a.data):deep(clone(cur||{}),a.data);
       if(size(next)>dev.lim)throw {code:dev.fb?'invalid-argument':'invalid_argument',message:'document over the size limit'};
@@ -43,7 +52,7 @@ class Server{
   /* the changes this subscription has not seen. pend: the writer's own unconfirmed write */
   async deliver(id,pend,pending){const s=this.subs.get(id);if(!s||s.dev.offline||s.dev.closed)return;
     const now=new Map();for(const [p,d] of this.docs)if((s.kind==='col'?this.col(p)===s.path:p===s.path)&&this.vis(s.dev,p))now.set(p,JSON.stringify(d));
-    const ch=[];for(const [p,t] of now){if(pending&&p!==pend)continue;const o=s.seen.get(p);if(o!==t)ch.push({type:o===undefined?'added':'modified',id:p.split('/').pop(),data:JSON.parse(t),pending:!!pending});}
+    const ch=[];for(const [p,t] of now){if(pending&&p!==pend)continue;const o=s.seen.get(p);if(o!==t)ch.push({type:o===undefined?'added':'modified',id:p.split('/').pop(),data:JSON.parse(t),pending:!!pending||!!(s.dev.noConfirm&&(s.dev.pendUntil&&s.dev.pendUntil.get(p)||0)>Date.now())});}
     if(!pending)for(const [p] of s.seen)if(!now.has(p))ch.push({type:'removed',id:p.split('/').pop(),data:null});
     if(!pending){s.seen=now;}if(!ch.length&&!s.first)return;s.first=false;
     s.dev.readB=(s.dev.readB||0)+ch.reduce((n,c)=>n+(c.data?size(c.data):0),0);
@@ -241,5 +250,44 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   ok('another account on this browser: answers that did not upload are kept for their account, and upload when it is back',gi.length===2&&onB===0&&inB===0&&back===2&&up===2,{answered:gi.length,onDeviceForB:onB,inBsAccount:inB,backForA:back,uploaded:up});
   ok('no page errors (G)',G.errors.length===0,G.errors.slice(0,3));
   await close(G);
+
+  /* 10. the network is lost and the page is reloaded: the state says that the account cannot be reached (not 'synced'), and the answers upload by themselves when the network is back */
+  {const O=await device('O',{id:'o1'});await until(O,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+    O.offline=true;await O.ctx.setOffline(true);await answer(O,'th',1,2);const ids=await ev(O,()=>Store.xk('a').filter(k=>k.startsWith('th_1_')));
+    await sleep(1500);await O.page.reload();await O.page.waitForFunction(()=>typeof Store!=='undefined'&&document.querySelector('.lesson:not([hidden])'));
+    let mid=null;for(let i=0;i<150;i++){mid=await ev(O,()=>Store.status());if(mid.remote!=='pending')break;await sleep(100);}
+    O.offline=false;await O.ctx.setOffline(false);server.online(O);
+    let up=false;for(let i=0;i<100&&!up;i++){const acc=unshard('data/users/o1/');up=ids.length===2&&ids.every(k=>acc.a&&acc.a[k]);if(!up)await sleep(200);}
+    ok('offline over a reload: the account is said to be unreachable, and the answers upload by themselves when the network is back',mid.remote==='unreached'&&up,{whileOffline:mid,uploaded:up});
+    ok('no page errors (O)',O.errors.length===0,O.errors.slice(0,3));await close(O);}
+
+  /* 11. a store that sends no confirmed copy after this page's write: a change from another device that arrives in the pending copy still shows */
+  {const A2=await device('A2',{id:'n1'});A2.noConfirm=true;const B2=await device('B2',{id:'n1'});
+    await until(A2,()=>Store.mode()==='account'&&!Store.pending(),null,15000);await until(B2,()=>Store.mode()==='account'&&!Store.pending(),null,15000);await sleep(500);
+    const w0=A2.writes||0;await ev(A2,()=>{Store.set('th_2_0',{v:1,ok:1});Store.flush(3000);});for(let i=0;i<50&&(A2.writes||0)===w0;i++)await sleep(20);
+    await ev(B2,()=>{Store.set('th_3_1',{v:2,ok:1});return Store.flush(3000);});const tB=await ev(B2,()=>Store.get('th_3_1').t);
+    ok('no confirmed copy after a write: an answer from another device that arrives with the pending copy still shows',await until(A2,t=>{const e=Store.get('th_3_1');return !!e&&e.t===t;},tB,8000));
+    await close(A2);await close(B2);}
+
+  /* 12. slow writes (700 ms each) while the student answers quickly: every answer reaches the account, one write at a time per document */
+  {const S=await device('S',{id:'s1'});await until(S,()=>Store.mode()==='account'&&!Store.pending(),null,15000);S.lat=700;server.overlap=0;
+    await answer(S,'eq',2,4);await answer(S,'mom',1,4);const ids=await ev(S,()=>Store.xk('a').filter(k=>/^(eq_2_|mom_1_)/.test(k)));
+    await until(S,()=>!Store.pending(),null,20000);await sleep(500);const acc=unshard('data/users/s1/'),miss=ids.filter(k=>!(acc.a&&acc.a[k]));
+    ok('slow writes: every answer reaches the account, one write at a time per document',ids.length>=4&&miss.length===0&&server.overlap===0,{answers:ids.length,missing:miss.length,overlapping:server.overlap});
+    await close(S);}
+
+  /* 13. RETIRE through the documents: a device whose list retires mom_0_0 signs in; the old answer of a device with an older list becomes a tombstone there
+     and in the account, and a new answer is kept everywhere */
+  if(RTP){const old=RTT-50e3;
+    const D2=await device('D2',{id:'r1',seed:JSON.stringify({a:{mom_0_0:{v:1,ok:1,t:old},mom_0_1:{v:2,ok:1,t:old}},r:{},s:{},w:{},h:{mom_0_0:{d:['2026-11-01'],c:1,m:0,t:old}},g:{},c:{}})});
+    await until(D2,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+    const D1=await device('D1',{id:'r1',file:RTP});await until(D1,()=>Store.mode()==='account'&&!Store.pending(),null,15000);
+    const gone=await until(D2,()=>!Store.get('mom_0_0')&&!Store.x('h','mom_0_0')&&!!Store.get('mom_0_1'),null,8000),acc=unshard('data/users/r1/');
+    await ev(D2,()=>Store.set('mom_0_0',{v:3,ok:1}));const tNew=await ev(D2,()=>Store.get('mom_0_0').t);
+    const back=await until(D1,t=>{const e=Store.get('mom_0_0');return !!e&&e.t===t;},tNew,8000);
+    ok('RETIRE through the documents: the old answer is dropped on every device and in the account, a new answer is kept',gone&&!!acc.a.mom_0_0&&acc.a.mom_0_0.x===1&&!!(acc.c&&acc.c['rt:mom_0_0'])&&back,
+      {droppedOnOtherDevice:gone,accountEntry:acc.a.mom_0_0,newAnswerKept:back});
+    ok('no page errors (D1, D2)',D1.errors.length+D2.errors.length===0,D1.errors.concat(D2.errors).slice(0,3));await close(D1);await close(D2);}
+  else console.log('(no RETIRE copy of the page: the RETIRE case is skipped)');
   }catch(e){ok('the test ran to the end',false,String(e&&e.stack||e).slice(0,600));}
   await browser.close();const f=res.filter(r=>r[0]==='FAIL').length;console.log(`${res.length-f} of ${res.length} passed in ${((Date.now()-T0)/1000).toFixed(1)} s`);process.exit(f?1:0);})();

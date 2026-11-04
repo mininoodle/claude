@@ -914,7 +914,7 @@ const Store=(()=>{
     return cur=(async()=>{let ok=false;const keys=SPL?[...DQ]:null;if(keys)DQ.clear();
       try{if(SPL)await pushSplit(r,keys);
         else{lastPull=Date.now();const s=await r.get();if(ref!==r)throw 0;pulled=true;merge(s&&s.exists?s.data():null,1);if(newer)throw {code:'outdated'};await r.set(PAY());}
-        ok=true;tries=0;if(!DQ.size)lastSync=Date.now();if(err){err='';emit();}}
+        ok=true;tries=0;reached();if(!DQ.size)lastSync=Date.now();if(err){err='';emit();}}
       catch(e){if(ref===r){if(keys)keys.forEach(q=>DQ.add(q));dirty=true;fail(e);}}
       busy=false;if(ref===r&&(dirty||DQ.size)&&!stop&&!newer){dirty=true;clearTimeout(timer);timer=setTimeout(push,ok?1500:wait());}return ok;})();}
   const later=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(push,ms);};
@@ -958,7 +958,9 @@ const Store=(()=>{
     try{if(!window.claude||typeof window.claude.use!=='function')return false;
       const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return false;
       const id=await user.id();if(!id)return false;
-      /* a viewer who may not write here: the platform says so up front (false), or only the first write tells (null) */
+      /* a viewer who may not write here: the platform says so up front (false), or only the first write tells (null).
+         can('data.write') speaks for the shared documents; it also holds for data/users/<id>/ only under the default access rules (no db rules declared),
+         which this site uses. If rules are ever declared, drop this check and let the first write decide */
       let w=null;try{if(typeof user.can==='function')w=await user.can('data.write');}catch(e){}if(w===false){noW=viewer=true;say('viewer');emit();return false;}
       /* one query and one listener for the whole collection. If the store refuses a query here, each known document is read and watched on its own (at most 2 + one per section, under the 64 listeners of a view) */
       const col=db.collection('data/users/'+id),sure=q=>!(q&&q.metadata&&q.metadata.fromCache),pend=d=>!!(d.metadata&&d.metadata.hasPendingWrites);
