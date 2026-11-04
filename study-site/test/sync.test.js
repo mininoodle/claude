@@ -4,9 +4,12 @@
    its write first with hasPendingWrites, a viewer who may not write reads nothing and every write is rejected. The Firestore path runs against a mock of the
    Firebase modules that the page imports (the same server, with setDoc merge semantics).
    Cases: migration of an old single document of about 300 KB without loss, two devices live, offline answers, a viewer who cannot write, the version gate,
-   cost per answer, an old page that is still open (with the second argument: a copy of the page from before the change), Firestore. Exit code 0 = all pass. */
-const {chromium}=require('playwright');const path=require('path');
-const FILE=path.resolve(process.argv[2]||'study-site/index.html'),OLD=process.argv[3]?path.resolve(process.argv[3]):null;
+   cost per answer, an old page that is still open (the second argument, or else the page of commit 92e381a from git: the last one before the change), Firestore.
+   Exit code 0 = all pass. */
+const {chromium}=require('playwright');const path=require('path');const fs=require('fs');const os=require('os');const {execFileSync}=require('child_process');
+const FILE=path.resolve(process.argv[2]||'study-site/index.html');
+const OLD=process.argv[3]?path.resolve(process.argv[3]):(()=>{try{const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'oldpage-')),'index.html');
+  fs.writeFileSync(t,execFileSync('git',['-C',path.dirname(FILE),'show','92e381a:study-site/index.html'],{maxBuffer:64<<20}));return t;}catch(e){console.log('(no old page: the old-page case is skipped)');return null;}})();
 const LIM=256*1024,sleep=ms=>new Promise(r=>setTimeout(r,ms)),res=[];
 const ok=(t,c,info)=>{res.push([c?'PASS':'FAIL',t]);console.log((c?'PASS  ':'FAIL  ')+t+(info!==undefined?'  '+(typeof info==='string'?info:JSON.stringify(info)):''));};
 const clone=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x));
