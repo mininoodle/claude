@@ -17,6 +17,8 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 | Social Studies | Ideologies and identity (Related Issue 1): ideology, democratic primer, the American political system, translating the will of the people, classical liberalism, thinkers and liberal democracy |
 | Test | Build a test from any subjects and units, with optional confidence ratings and a revision section |
 
+In numbers: 11 sections with 81 lessons, 1,192 lesson questions (836 multiple choice, 356 numeric), a review bank of 755 questions, 71 challenge problems, 33 question generators and 38 written-response items. `node study-site/test/lint.test.js study-site/index.html` prints these counts for each section, and fails `--strict` when this README no longer matches the page.
+
 ## Features
 
 - Sidebar layout: subjects, units, sections and lessons in a rail on the left, a breadcrumb bar at the top, and a lesson column that centres in the window. On wide screens the cards sit two or three across. On a phone the rail becomes a bar at the top
@@ -24,7 +26,7 @@ Open `index.html` in a browser. Everything is in that one file: styles, scripts 
 - Math: step-by-step worked examples in every lesson (17 question types). Each one gives the method, an example to go through one step at a time with the reason for each step, a common mistake, and a "Your turn" question with new numbers that you can check, with hints that show the solution one step at a time
 - Physics, Chemistry and Math: a "How to do the questions" guide in every lesson, placed before the questions. It lists the kinds of question in that lesson, with the steps for each kind and a check that catches the usual mistake. The Momentum unit practice lesson has a guide for the practice exam formats (numerical response, multiple choice, written response)
 - Mastery levels for each lesson (Not started, Learning, Practised, Mastered)
-- Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 621 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
+- Spaced repetition, review tests and a timed unit exam, drawn from a separate review bank of 755 diploma and IB level questions that are not in the lessons (multi-step calculations, data and graph reading, error analysis, source and passage analysis)
 - Boss round, challenge problems, speed rounds and an answer combo
 - Achievements: 29 achievements in six categories (Mastery, Practice, Consistency, Challenge, Explorer, Secret), most with Bronze to Diamond tiers (99 tiers), each with a progress bar, XP for every tier, titles from Newcomer to Grandmaster, a closest-to-unlock list, and a celebration card for each new tier. Badges earned before the achievements update are carried over once (their dates are kept) and the tiers already earned from your history appear without a celebration for each one.
 - Light and dark mode
@@ -58,13 +60,33 @@ By default all progress stays in the browser of one device. To sync progress acr
 
    Each signed-in user can read and write only their own documents.
 6. Open **Project settings** (the gear icon) **> General > Your apps**, select the web icon (`</>`), register the app (hosting is not needed) and copy the `firebaseConfig` object.
-7. In `index.html`, near the top of the script, replace `const FIREBASE_CONFIG=null;` with that object, for example:
+7. In `index.html`, near the top of the main script, `const FIREBASE_CONFIG=` holds the config of this site's own Firebase project. To use your project instead, replace that object with yours, for example:
 
    ```js
    const FIREBASE_CONFIG={apiKey:'AIza...',authDomain:'my-project.firebaseapp.com',projectId:'my-project',appId:'1:1234:web:abcd'};
    ```
 
-   The config values are not secrets. The rules above are what protect the data.
-8. Commit and push. Open the site, select the account button at the right end of the top bar, and sign in with Google. Do the same on each other device.
+   Set it to `null` to turn Google sign-in off and keep all progress on each device. The config values are not secrets. The rules above are what protect the data.
+8. Commit and push. Open the site, select the account button (the person icon next to the light and dark mode button, at the bottom of the left rail; on a phone it is in the bar at the top of the page), and sign in with Google. Do the same on each other device.
 
 How it works: progress is kept on the device as before and also written to `users/{uid}/progress/main` in Firestore. On sign-in the two are merged: the newest entry for each answer wins, while study days, the days each question was answered correctly, best test results, achievements and counters are combined, so neither copy loses progress. Each upload first reads and merges the copy in Firestore, so two devices never erase each other's work. Changes from another device arrive live, and tabs of the site in one browser share their progress. Clearing a section also clears older answers that arrive later from another device. Signing out first uploads any changes that are waiting, and keeps the progress that is already on the device. If a different Google account then signs in on the same browser, the progress of the previous account is not merged into it. If the browser cannot save progress (site storage is blocked or full), the site says so. The site must be opened over `https://` (or `localhost`) for the sign-in popup to work. If the popup is blocked, the site falls back to a redirect sign-in.
+
+## Tests
+
+The checks are in `test/` (see [test/README.md](test/README.md)). Run them before every commit that changes `index.html`:
+
+```bash
+node study-site/test/run.js
+```
+
+| Check | What it checks |
+|---|---|
+| `syntax.test.js` | The syntax of every script block of the page |
+| `ids.test.js` | The id lock: saved answers are stored by position, so no question, option, lesson, challenge or try-it may move to another place (`test/ids.lock.json`) |
+| `lint.test.js` | The content: answer keys, explanations and their units, hints, duplicates, stems that depend on another question, the multiple-choice length cue of each section, and the numbers in this README |
+| `smoke.test.js` | Every page opened and scrolled through the way a student does: no page or console errors, every question shown, an answer in each quiz, a review test and a timed exam on each Review page, and the sync with a stand-in Claude account |
+| `layout.test.js` | The layout of every page at 390 and 1366 px: centred column and rows, nothing outside its card, no sideways scroll |
+
+The quick run takes about 1.5 minutes. `node study-site/test/run.js --full` also measures the layout at 24 widths and runs the smoke test at phone width. The checks need Node and Playwright with Chromium (`npm install --no-save playwright` and `npx playwright install chromium`).
+
+When a change gives a saved-answer id a new meaning on purpose (a retired question, a changed answer), clear the old answers with a scoped clear (like `RB2` in `index.html`) and refresh the lock in the same commit: `node study-site/test/ids.test.js study-site/index.html --write`. A question that is only reworded goes in an allow file instead (`--allow <file>`).
