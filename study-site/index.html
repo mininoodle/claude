@@ -1419,6 +1419,8 @@ const numOK=(x,it,ulp=0)=>isFinite(x)&&Math.abs(x-it.n)<=Math.max((it.tol??(it.a
 /* an exact value (ex, or a whole number graded with an absolute or a tight tolerance: a count, an exact limit) is shown as it is, not to 3 significant figures */
 /* the element for a question text: a <div> when it has block content (paragraphs, lists, tables), which a <p> cannot hold */
 const qTag=q=>/<(p|ol|ul|table|div)[\s>]/i.test(q||'')?'div':'p';
+/* a key graded to ±0.005 (tol 0 and abs .005: a potential from the data booklet) has 2 decimals: it fills the exam's boxes as .23 */
+const dp2=it=>it.tol===0&&it.abs===.005;
 const ansText=it=>it.o?optLbl(it,it.a):(it.code?it.code+(it.any?', in any order':''):it.ans||(it.ex||Number.isInteger(it.n)&&(it.abs!=null||it.tol<.02)?String(it.n).replace('-','−'):sig(it.n)))+(it.u?' '+it.u:'');
 const sentences=w=>{const p=String(w||'').split('. ');return p.map((x,i)=>i<p.length-1?x+'.':x).filter(Boolean);};
 /* the numbers in a text: 4.19, −1.54, 12 500, 3/11, 1.6 × 10⁵ (not coefficients such as 2a, sub- or superscripts) */
@@ -1648,10 +1650,18 @@ async function saveFile(name,blob,what='The file'){
   try{const u=URL.createObjectURL(blob),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return what+' was saved to your downloads.';}catch(e){}
   return 'A download is not available in this view.';}
 const savePDF=(name,lines)=>saveFile(name,new Blob([makePDF(lines)],{type:'application/pdf'}),'The PDF');
-/* numeric-response format: 4 boxes, direct value or a.bc × 10^d */
-function nrSpec(n){if(!(n>0))return null;for(const p of [3,2]){const t=n.toPrecision(p);/* a value below 1 leaves out the 0 before the decimal point, as the exam says: .456 fills the four boxes */if(!t.includes('e')&&(p===3?t.replace(/^0\./,'.'):t).length<=4)return {m:'d',p};}const e=Math.floor(Math.log10(n));return Math.abs(e)<=9?{m:'s',e}:null;}
-/* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong */
-const nrHalf=(sp,n)=>sp.m==='d'?.5*10**(Math.floor(Math.log10(n))-sp.p+1):.5*.01*10**sp.e;
+/* numeric-response format: 4 boxes, direct value or a.bc × 10^d. With the item it (nrOf passes it):
+   - a key with 2 decimals (dp2: tol 0 and abs .005, a potential) fills the boxes with its 2 decimals: 1.62, and .09 (not 9.00 × 10⁻²) (dp: 2)
+   - an exact whole number (a coefficient, a count: tol 0, ex or abs up to 0.5) is marked i: the exam does not ask for 3 significant digits */
+const nrInt=(n,it)=>Number.isInteger(n)&&!dp2(it)&&(!!it.ex||it.tol===0||it.abs!=null&&it.tol==null)&&(it.abs||0)<=.5;
+function nrSpec(n,it){if(!(n>0))return null;
+  if(it&&dp2(it)&&Math.abs(n*100-Math.round(n*100))<1e-6){const t=n.toFixed(2).replace(/^0\./,'.');if(t.length<=4)return {m:'d',p:t.replace('.','').replace(/^0+/,'').length,dp:2};}
+  for(const p of [3,2]){const t=n.toPrecision(p);/* a value below 1 leaves out the 0 before the decimal point, as the exam says: .456 fills the four boxes */if(!t.includes('e')&&(p===3?t.replace(/^0\./,'.'):t).length<=4)return it&&nrInt(n,it)?{m:'d',p,i:1}:{m:'d',p};}
+  /* the exponent of the rounded value: 9.996 × 10⁻³ is recorded as 1.00 × 10⁻² */
+  let e=Math.floor(Math.log10(n));if(+(n/10**e).toFixed(2)>=10)e++;return Math.abs(e)<=9?{m:'s',e}:null;}
+/* half a unit of the last digit that the four boxes can hold, so that a correct answer rounded to the boxes is never marked wrong.
+   The last digit is that of the rounded key: 0.0998 fills the boxes as 0.10 and 9.997 as 10.0, thus their last box is the hundredths and the tenths */
+const nrHalf=(sp,n)=>sp.m==='d'?.5*10**(Math.floor(Math.log10(Math.abs(+n.toPrecision(sp.p))))-sp.p+1):.5*.01*10**sp.e;
 /* the timed exam grades the four boxes like a numerical-response key: the key rounded to the boxes, give or take 1 in the last box.
    An exact value (tol 0, ex) must be exact, and a wider window that an item sets on purpose (tol above 2 %, or abs: a graph reading, an estimate) is kept */
 const nrKey=(sp,n)=>sp.m==='d'?+n.toPrecision(sp.p):+(n/10**sp.e).toFixed(2)*10**sp.e;
@@ -1660,8 +1670,14 @@ function nrOK(sp,v,it){if(sp.m==='c')return codeOK(v,it);if(!isFinite(v))return 
 /* a code answer (diploma style): it.code is the string of digits, in that order, or in any order with it.any. Its spec is {m:'c',n:number of digits} */
 const codeOK=(v,it)=>{const t=String(v||'').replace(/\s/g,''),s=x=>[...x].sort().join('');return it.any?s(t)===s(it.code):t===it.code;};
 /* the four-box format of an item, or null when it has none */
-const nrOf=it=>it.o||it.ans?null:it.code?{m:'c',n:it.code.length}:nrSpec(it.n);
+const nrOf=it=>it.o||it.ans?null:it.code?{m:'c',n:it.code.length}:nrSpec(it.n,it);
 const nrVal=(sp,t)=>{t=(t||'').replace(/\s/g,'');if(sp.m==='c')return t;if(!t)return NaN;if(sp.m==='d')return /^(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;if(!/^\d{4}$/.test(t))return NaN;return (+t[0]+ +t[1]/10+ +t[2]/100)*10**((sp.e<0?-1:1)*+t[3]);};
+/* what an exam says about the four boxes of one question (dip: the diploma practice exam's shorter text) */
+const nrHint=(sp,it,dip)=>(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${it.any?', in any order':''}.`
+  :sp.m==='d'?(sp.i?(dip?'Record your answer in the four boxes, from the left.':'Record your answer in the four boxes. Start at the left.')
+    :sp.dp?(dip?`Record your answer in the four boxes, from the left, to ${sp.dp} decimal places. A decimal point uses one box. Leave out a 0 before the decimal point.`:`Record your answer in the four boxes, to ${sp.dp} decimal places. A decimal point uses one box. Leave out a 0 before the decimal point. Start at the left.`)
+    :dip?'Record your answer in the four boxes, from the left. A decimal point uses one box. Record 0.456 as .456.':`Record your answer in the four boxes. Use ${sp.p===2?2:3} significant digits. A decimal point uses one box. Leave out a 0 before the decimal point: record 0.456 as .456. Start at the left.`)
+  :`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(it.u?` The unit is ${it.u}.`:'');
 const nrShow=(sp,t)=>!t?'no answer':sp.m!=='s'?t:/^\d{4}$/.test(t)?`${t[0]}.${t[1]}${t[2]} × 10<sup>${sp.e<0?'−':''}${t[3]}</sup>`:t;
 /* a timed exam in progress is kept in this tab (sessionStorage), so that a reload does not lose it */
 const EXK=sk=>'exam:'+sk;
@@ -1741,7 +1757,7 @@ function reviewUI(g,sk,le){
     const mk=()=>{nav.children[E.i].classList.toggle('placed',has(E.i));exSave();};
     const body=el('div',{class:'q'},`<p class="hint">${x.kind==='mc'?'Multiple choice':x.kind==='nr'?'Numeric response':'Written response'}</p><div class="qt">${x.it.q}</div>${x.it.fig?`<div class="qfig">${x.it.fig}</div>`:''}`);
     if(x.kind==='mc'){const ops=el('div',{class:'ops'});x.ord.forEach(j=>{const b=el('button',{type:'button',class:'op'+(E.ans[E.i]===j?' sel':''),'aria-pressed':E.ans[E.i]===j},optLbl(x.it,j));b.onclick=()=>{E.ans[E.i]=j;$$('.op',ops).forEach(o=>{o.classList.remove('sel');o.setAttribute('aria-pressed','false');});b.classList.add('sel');b.setAttribute('aria-pressed','true');mk();};ops.append(b);});body.append(ops);}
-    else if(x.kind==='nr'){const sp=x.nr;body.append(el('p',{class:'hint'},(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${x.it.any?', in any order':''}.`:sp.m==='d'?'Record your answer in the four boxes. Use 3 significant digits. A decimal point uses one box. Leave out a 0 before the decimal point: record 0.456 as .456. Start at the left.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
+    else if(x.kind==='nr'){const sp=x.nr;body.append(el('p',{class:'hint'},nrHint(sp,x.it)));
       const bx=el('div',{class:'nr'}),cur=(E.ans[E.i]||'').padEnd(4,' ');
       for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'decimal',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
         b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');E.ans[E.i]=[...bx.children].map(z=>z.value||' ').join('').replace(/\s+$/,'');mk();if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
@@ -17868,7 +17884,7 @@ function dipRun(L,d,items,mins,E0){TBUSY=1;const E=E0||{items,ans:items.map(()=>
     const nav=$('[data-nav]',box);E.items.forEach((y,j)=>{const b=el('button',{type:'button',class:'chip'+(j===E.i?' on':'')+(has(j)?' placed':''),'aria-label':'Question '+(j+1)+(has(j)?', answered':'')},String(j+1));if(j===E.i)b.setAttribute('aria-current','step');else b.tabIndex=-1;b.onclick=()=>{E.i=j;show(1);};nav.append(b);});arrowKeys(nav,()=>[...nav.children],()=>E.i);
     const mk=()=>{nav.children[E.i].classList.toggle('placed',has(E.i));dipSave(d,E);};dipSave(d,E);
     if(x.kind==='mc'){const ops=el('div',{class:'ops'});x.ord.forEach(j=>{const b=el('button',{type:'button',class:'op'+(E.ans[E.i]===j?' sel':''),'aria-pressed':String(E.ans[E.i]===j)},optLbl(x.it,j));b.onclick=()=>{E.ans[E.i]=j;$$('.op',ops).forEach(o=>{o.classList.remove('sel');o.setAttribute('aria-pressed','false');});b.classList.add('sel');b.setAttribute('aria-pressed','true');mk();};ops.append(b);});box.append(ops);}
-    else{const sp=x.nr;box.append(el('p',{class:'hint'},(sp.m==='c'?`Record the ${['','one','two','three','four'][sp.n]} digits of your answer, one in each box from the left${x.it.any?', in any order':''}.`:sp.m==='d'?'Record your answer in the four boxes, from the left. A decimal point uses one box. Record 0.456 as .456.':`Write your answer as a.bc × 10<sup>${sp.e<0?'−':''}d</sup>. Record the digits a, b, c and d.`)+(x.it.u?` The unit is ${x.it.u}.`:'')));
+    else{const sp=x.nr;box.append(el('p',{class:'hint'},nrHint(sp,x.it,1)));
       const bx=el('div',{class:'nr'}),cur=(E.ans[E.i]||'').padEnd(4,' ');
       for(let k=0;k<4;k++){const b=el('input',{type:'text',inputmode:'decimal',maxlength:'1',autocomplete:'off','aria-label':'Box '+(k+1)+' of 4'});b.value=cur[k].trim();
         b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');E.ans[E.i]=[...bx.children].map(z=>z.value||' ').join('').replace(/\s+$/,'');mk();if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
