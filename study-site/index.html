@@ -4237,7 +4237,7 @@ function ec9Drop(o={}){const N=!!o.nums,T=ec9T,H=N?256:300;
     ec9Arc(156,162,230,214,300,146,'var(--s1)',2.2,1)+ec9H(T('e⁻',229,197,{f:'s1',w:700}))+
     `<path d="M148,148L92,226M306,130L372,226" stroke="var(--ink2)" stroke-width="1.2"/>`+T('anode',84,242,{w:700})+T('cathode',378,242,{w:700})+
     T('Anode: Fe(s) → Fe²⁺(aq) + 2e⁻',220,274,{s:12})+T('Cathode: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq)',220,292,{s:12});
-  else s+=`<path d="M148,148L98,220M306,130L366,220" stroke="var(--ink2)" stroke-width="1.2"/>`+ecBadge(1,100,110)+ecBadge(2,90,232)+ecBadge(3,372,232)+ecBadge(4,220,222);
+  else s+=`<path d="M148,148L98,220M306,130L366,220" stroke="var(--ink2)" stroke-width="1.2"/>`+ecBadge(1,100,110)+ecBadge(2,90,232)+ecBadge(3,372,232)+ecBadge(4,226,176);
   const alt=N?'A drop of water on an iron surface, the head of a nail. Part 1 is the water drop. Part 2 is the iron surface under the middle of the drop, where the iron is pitted. Part 3 is the iron surface at the edge of the drop, next to the air, where rust forms. Part 4 is the iron metal between them.'
     :'A drop of water on an iron surface, the head of a nail. Under the middle of the drop the iron is pitted: this is the anode, where Fe(s) is oxidized to Fe²⁺(aq). The Fe²⁺ ions move through the water toward the edge of the drop. Electrons flow through the iron from the anode to the edge of the drop: the cathode, where oxygen from the air is reduced, O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Rust forms on the iron at the edge of the drop.';
   return `<svg viewBox="0 0 440 ${H}" role="img" aria-label="${alt}">${s}</svg>`;}
@@ -4286,17 +4286,20 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
     /* on a phone: the reduction tables fit without the two strength arrows, and each row of the fill-in table becomes a block */
     '@media(max-width:600px){#ec-9 .ec-tb td.arw,#ec-9 .ec-tb thead th:first-child:empty,#ec-9 .ec-tb thead th:last-child:empty{display:none}#ec-9 .ec-tb{font-size:.78rem}#ec-9 .ec-tb td{padding-left:.2em;padding-right:.2em}#ec-9 .ec-tb td.eqm{padding:0 .08em}#ec-9 .ec-tb td.e0{padding-left:.35em}#ec-9 .ec-tb button.ecpk{padding-left:.18em;padding-right:.18em}'+
     '#ec-9 table.ec9eq,#ec-9 table.ec9eq tbody,#ec-9 table.ec9eq tr,#ec-9 table.ec9eq th,#ec-9 table.ec9eq td{display:block;width:auto;text-align:left}#ec-9 table.ec9eq tr:first-child{display:none}#ec-9 table.ec9eq tr{padding:.45em 0;border-top:1px solid var(--hair)}'+
-    '#ec-9 table.ec9eq th.rn{border:0;padding:.1em 0;font-weight:650}#ec-9 table.ec9eq td{border:0;padding:.25em 0}#ec-9 table.ec9eq td::before{content:attr(data-l);display:block;font-size:.8rem;color:var(--ink2);margin-bottom:.15em}#ec-9 table.ec9eq td select{width:100%;max-width:24rem}}');
+    '#ec-9 table.ec9eq th.rn{border:0;padding:.1em 0;font-weight:650}#ec-9 table.ec9eq td{border:0;padding:.25em 0}#ec-9 table.ec9eq td::before{content:attr(data-l);display:block;font-size:.8rem;color:var(--ink2);margin-bottom:.15em}#ec-9 table.ec9eq td select{width:100%;max-width:24rem}}'+
+    /* narrow phones: the heads of the reduction tables wrap, thus the tables fit at 360 px. From 701 px: fixed column widths give the examples of the prevention table room */
+    '@media(max-width:380px){#ec-9 .ec-tb th{white-space:normal}#ec-9 .ec-tb{font-size:.72rem}#ec-9 .ec-tb td{padding-left:.12em;padding-right:.12em}#ec-9 .ec-tb td.e0{padding-left:.3em}}'+
+    '@media(min-width:701px){#ec-9 .ec9m{table-layout:fixed;width:100%}#ec-9 .ec9m thead th:nth-child(1){width:17%}#ec-9 .ec9m thead th:nth-child(2){width:25%}#ec-9 .ec9m thead th:nth-child(3){width:18%}}');
   const E=ec9Eq,P=t=>'<p>'+ec9N(t)+'</p>',I=(t,x)=>'<p>'+t+': '+E(x)+'</p>';
   /* 1. the notes of p. 65 */
   card(g,'Corrosion: the oxidation of metals','<p class="hint">Outcome 30–B1.4k: identify electron transfer, oxidizing agents and reducing agents in redox reactions of everyday life, for example corrosion.</p>'+
     `<ul><li><span class="key">Corrosion</span> is the deterioration (oxidation) of a metal by electrochemical reactions. Examples: iron rusting, silver tarnishing and the green patina on copper.</li>
     <li>Corrosion is a spontaneous redox reaction, but an unwanted one. It costs about 3 % of GDP each year in lost productivity.</li>
     <li>In rusting, oxygen and water act as the oxidizing agents. They oxidize the metal.</li></ul>
-    <p>The reduction in moist air (a neutral solution):</p><div class="fx">${E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')} &nbsp; ${ecEs('r')} = +0.40&nbsp;V</div>
-    <p>Under acidic conditions, the reduction shifts to:</p><div class="fx">${E('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')} &nbsp; ${ecEs('r')} = +1.23&nbsp;V</div>
+    <p>The reduction in moist air (a neutral solution):</p><div class="fx">${E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')} &nbsp; <span style="white-space:nowrap">${ecEs('r')} = +0.40&nbsp;V</span></div>
+    <p>Under acidic conditions, the reduction shifts to:</p><div class="fx">${E('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')} &nbsp; <span style="white-space:nowrap">${ecEs('r')} = +1.23&nbsp;V</span></div>
     <p>Iron is the reducing agent: ${E('Fe(s) -> Fe^2+(aq) + 2e^-')}. Its half-reaction, ${E('Fe^2+(aq) + 2e^- <=> Fe(s)')}, is −0.45&nbsp;V. In moist air, two iron atoms give the four electrons that one oxygen molecule gains:</p>
-    <div class="fx">${E('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')}<br>${ecEs('net')} = +0.40&nbsp;V − (−0.45&nbsp;V) = +0.85&nbsp;V</div>
+    <div class="fx">${E('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')}<br>${ecEs('net')} = +0.40&nbsp;V − (−0.45&nbsp;V) <span style="white-space:nowrap">= +0.85&nbsp;V</span></div>
     <p class="note">The ${ec9C('Fe^2+(aq)')} and ${ec9C('OH^-(aq)')} ions form ${ec9C('Fe(OH)2(s)')}. Oxygen oxidizes it further to rust: hydrated iron(III) oxide, ${ec9C('Fe2O3·xH2O(s)')}.</p>`,'half');
   /* 2. the drop of water on iron (p. 65) */
   card(g,'Rusting: a small voltaic cell',CF(ec9Drop(),'A drop of water on iron (the head of a nail). The same cells form on slabs and sheets of iron.')+
@@ -4368,7 +4371,7 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
       P('The electrons flow through the wire to the tank.')+I('Cathode (the steel tank)','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Net','2Mg(s) + O2(g) + 2H2O(l) -> 2Mg^2+(aq) + 4OH^-(aq)')+
       P(ecEs('net')+' = +0.40 V − (−2.37 V) = <b>+2.77 V</b>. The iron only conducts the electrons to the oxygen: it is not oxidized while magnesium is left.'))+
     ex('Example 7: sodium is an even stronger reducing agent than magnesium. Why can sodium not be used as a sacrificial anode?',
-      P('Sodium reacts vigorously with water itself. The SOA is water, '+E('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+' (−0.83 V), and the SRA is Na(s) (−2.71 V).')+I('Net','2Na(s) + 2H2O(l) -> 2Na^+(aq) + H2(g) + 2OH^-(aq)')+
+      P('Sodium reacts vigorously with water itself, even without oxygen. Water is the oxidizing agent, '+E('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+' (−0.83 V), and Na(s) (−2.71 V) is the reducing agent.')+I('Net','2Na(s) + 2H2O(l) -> 2Na^+(aq) + H2(g) + 2OH^-(aq)')+
       P(ecEs('net')+' = −0.83 V − (−2.71 V) = <b>+1.88 V</b>. The sodium would be used up at once, and the reaction is dangerous. The same is true of Li, K, Ca and Ba. Magnesium is protected by a layer of oxide and reacts only slowly with water.')),'half');
   /* 9. the low-voltage current (p. 66) */
   card(g,'Cathodic protection: a low-voltage current',CF(ec9Imp(),'Impressed current cathodic protection. Electrons flow through the wires. In the moist ground, ions carry the current.')+
@@ -4425,9 +4428,9 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
     w:'Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V) is below Sn²⁺(aq) + 2e⁻ ⇌ Sn(s) (−0.14 V), thus Fe(s) is the stronger reducing agent. At the scratch, the iron is oxidized (the anode), and oxygen is reduced on the tin (the cathode): E°net = +0.40 V − (−0.45 V) = +0.85 V. A zinc coat would be oxidized instead of the iron.'},
   {q:'Galvanized steel is coated with zinc. Calculate '+ecEs('net')+' for the oxidation of zinc by oxygen and water in moist air.',n:1.16,u:'V',abs:.005,tol:0,
     w:'The oxidizing agent is O₂(g) with H₂O(l), E°r = +0.40 V. The reducing agent is Zn(s): Zn²⁺(aq) + 2e⁻ ⇌ Zn(s), E°r = −0.76 V. E°net = +0.40 V − (−0.76 V) = +1.16 V.'},
-  {q:'Balance the net equation for the rusting of iron in moist air, '+ec9Eq('Fe(s) + O2(g) + H2O(l) -> Fe^2+(aq) + OH^-(aq)')+', with the lowest whole-number coefficients. What is the coefficient of '+ec9C('OH^-(aq)')+'?',n:4,u:'',tol:0,
+  {q:'Balance the net equation for the rusting of iron in moist air, '+ec9Eq('Fe(s) + O2(g) + H2O(l) -> Fe^2+(aq) + OH^-(aq)')+', with the lowest whole-number coefficients. What is the coefficient of '+ec9C('Fe^2+(aq)')+'?',n:2,u:'',tol:0,
     m:'Balance the electrons: multiply each half-reaction so that the electrons lost equal the electrons gained, then add them.',
-    w:'Reduction: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Oxidation: Fe(s) → Fe²⁺(aq) + 2e⁻. Multiply the oxidation so that the electrons lost equal the electrons gained. Add the half-reactions: 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq), thus the coefficient of OH⁻(aq) is 4.'},
+    w:'Reduction: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Oxidation: Fe(s) → Fe²⁺(aq) + 2e⁻. Multiply the oxidation so that the electrons lost equal the electrons gained. Add the half-reactions: 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq), thus the coefficient of Fe²⁺(aq) is 2.'},
   {q:'Calculate the mass of oxygen gas that is needed to oxidize 5.00 g of iron to '+ec9C('Fe^2+(aq)')+' in moist air.',n:5/EC_M.Fe/2*(2*EC_M.O),u:'g',tol:.01,
     m:'Write the balanced net equation, find n = m/M of the iron, use the mole ratio, then m = nM of the oxygen.',
     w:'The net equation is 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq). n(Fe) = 5.00 g ÷ 55.85 g/mol = 0.08953 mol. n(O₂) = 0.08953 mol × 1/2 = 0.04476 mol. m(O₂) = 0.04476 mol × 32.00 g/mol = 1.43 g.'},
