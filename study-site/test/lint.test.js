@@ -7,6 +7,9 @@ site's own grader (numOK, parseNum, ansText, numsIn, hintLeaks). It prints:
   - the counts of each section (lessons, questions, review items, ...) and of the whole site, for the README
   - the multiple-choice length cue of each section: how often the key is the unique longest option, and the score of a
     student who always picks the longest option (ties split), against chance
+  - the length rank of the key in each section (1 = longest, ties split) and the score of each simple length strategy
+    (always the option of rank 1, 2, 3 or 4; the middle two; not the longest and not the shortest; the two longest; the
+    two shortest), against chance: the target is every strategy at most chance + 5 points
   - the findings, by check. ERRORS are defects: --strict fails (exit 1) when there is one. WARNINGS are heuristic.
 By default it only reports (exit 0). An allow file (default: lint-allow.txt next to this script) lists accepted
 findings, one per line: "<id> <check>" or "<id>" for every check of that id; # starts a comment.
@@ -43,7 +46,11 @@ const CHECKS = {
   'dup-same':  ['warning', 'two items have the same stem (the message says if the answer is the same too)'],
   'dup-near':  ['warning', 'a review item repeats a lesson question of its section: word 3-gram Jaccard 0.7 or more, or a numeric item with the same data and the same answer'],
   'cue':       ['warning', 'the multiple-choice length cue of a section is over the target (key unique longest above 25 %, or pick-longest above max(30 %, chance + 5))'],
+  'cue-rank':  ['warning', 'a simple length strategy scores more than chance + ' + 5 + ' points in a section: always the option of length rank 1, 2, 3 or 4 (1 = longest), a guess between ranks 2 and 3, not the longest and not the shortest, a guess between the two longest or the two shortest (ties split)'],
 };
+/* the length-rank strategies of the cue-rank check (the measure of SP/w2/fix-content/rank.py), with their names */
+const RANKS = [['R1', 'always the longest (rank 1)'], ['R2', 'always the second-longest (rank 2)'], ['R3', 'always rank 3'], ['R4', 'always the shortest (rank 4)'],
+  ['mid2', 'a guess between ranks 2 and 3'], ['notext', 'not the longest and not the shortest'], ['top2', 'a guess between the two longest'], ['bot2', 'a guess between the two shortest']], RANK_MAX = 5;
 
 /* in the page: everything the lint needs. o: {samples, seed} */
 function analyse(o) {
@@ -203,14 +210,24 @@ function analyse(o) {
   for (const k of units) {
     const mc = items.filter(x => x.k === k && x.it && Array.isArray(x.it.o) && Number.isInteger(x.it.a));
     let lon = 0, exp = 0, ch = 0, sho = 0;
+    const rk = { R1: 0, R2: 0, R3: 0, R4: 0, mid2: 0, notext: 0, top2: 0, bot2: 0 };
     for (const x of mc) {
       const Ls = x.it.o.map(len), m = Math.max(...Ls), top = Ls.map((v, j) => v === m ? j : -1).filter(j => j >= 0), mn = Math.min(...Ls), bot = Ls.map((v, j) => v === mn ? j : -1).filter(j => j >= 0);
       ch += 1 / Ls.length;
       if (top.includes(x.it.a)) exp += 1 / top.length;
       if (top.length === 1 && top[0] === x.it.a) lon++;
       if (bot.length === 1 && bot[0] === x.it.a) sho++;
+      /* the length rank of the key: the options sorted longest first; a tie group shares the ranks it spans (ties split) */
+      const K = Ls.length, a = x.it.a, ord = Ls.map((v, j) => j).sort((i, j) => Ls[j] - Ls[i]), pos = ord.map((j, p) => Ls[j] === Ls[a] ? p : -1).filter(p => p >= 0), sh = Ls.map(() => 0);
+      pos.forEach(p => { sh[p] += 1 / pos.length; });
+      for (let r = 0; r < 4; r++) rk['R' + (r + 1)] += r < K ? sh[r] : 0;
+      rk.mid2 += K === 4 ? (sh[1] + sh[2]) / 2 : 1 / K;
+      const rest = Ls.map((v, j) => v !== m && v !== mn ? j : -1).filter(j => j >= 0);
+      rk.notext += rest.length ? (rest.includes(a) ? 1 / rest.length : 0) : 1 / K;
+      rk.top2 += K >= 2 ? (sh[0] + sh[1]) / 2 : 1;
+      rk.bot2 += K >= 2 ? (sh[K - 1] + sh[K - 2]) / 2 : 1;
     }
-    out.cue.push({ k, mc: mc.length, lon, exp, ch, sho });
+    out.cue.push({ k, mc: mc.length, lon, exp, ch, sho, rk });
   }
   out.subjects = SUBJECTS.filter(s => !s.home && !s.test).map(s => ({ name: s.name, units: s.units.map(k => SUBJ[k] ? SUBJ[k].name : k) }));
   out.globals = { ach: typeof ACH !== 'undefined' ? ACH.length : null, cats: typeof ACH_CATS !== 'undefined' ? ACH_CATS.length : null, tiers: typeof ACH_TOTAL !== 'undefined' ? ACH_TOTAL : null,
@@ -284,6 +301,16 @@ lib.run('lint', async ({ launch }) => {
     if (over) cueF.push({ id: 'cue_' + c.k, k: c.k, check: 'cue', msg: 'key unique longest ' + L.toFixed(1) + ' %, pick-longest ' + E.toFixed(1) + ' % (chance ' + X.toFixed(1) + ' %)' });
   }
   r.f.push(...cueF);
+
+  /* length rank of the key */
+  console.log('\nLENGTH RANK OF THE KEY (the same items; 1 = longest option, ties split; target: every simple length strategy at most chance + ' + RANK_MAX + ' points)');
+  console.log(pad('section', 8) + lpad('MC', 6) + ['rank 1', 'rank 2', 'rank 3', 'rank 4', 'middle 2', 'not ext.', 'top 2', 'bottom 2', 'chance'].map(h => lpad(h, 10)).join('') + '   best strategy');
+  for (const c of r.cue.filter(c => !UNITS || UNITS.has(c.k))) {
+    if (!c.mc) continue;
+    const P = v => 100 * v / c.mc, X = P(c.ch), best = RANKS.reduce((b, [s]) => P(c.rk[s]) > P(c.rk[b[0]]) ? [s] : b, ['R1'])[0], over = P(c.rk[best]) - X;
+    console.log(pad(c.k, 8) + lpad(c.mc, 6) + RANKS.map(([s]) => lpad(P(c.rk[s]).toFixed(1), 10)).join('') + lpad(X.toFixed(1), 10) + '   ' + (over >= 0 ? '+' : '') + over.toFixed(1) + ' ' + RANKS.find(x => x[0] === best)[1] + (over > RANK_MAX ? '   over' : ''));
+    if (over > RANK_MAX) r.f.push({ id: 'cue_' + c.k, k: c.k, check: 'cue-rank', msg: RANKS.find(x => x[0] === best)[1] + ' scores ' + P(c.rk[best]).toFixed(1) + ' % (chance ' + X.toFixed(1) + ' %); key length ranks 1-4: ' + ['R1', 'R2', 'R3', 'R4'].map(s => P(c.rk[s]).toFixed(1)).join(' / ') + ' %' });
+  }
 
   /* findings */
   const allowFile = a.opt('--allow', path.join(__dirname, 'lint-allow.txt')), allow = [];
