@@ -4239,9 +4239,11 @@ ECL[1]={t:EC_T[1],h:'Oxidation numbers',
     '#ec-1 .ec1c input.ok{border-color:var(--ok);background:var(--okb)}#ec-1 .ec1c input.bad{border:2px dashed var(--bad);background:var(--badb)}'+
     '#ec-1 .ec1w{font-size:.8rem;color:var(--ink2);margin-top:.35em;line-height:1.45}#ec-1 .ec1nr{margin-top:1.1em;padding-top:.7em;border-top:1px solid var(--hair)}'+
     /* each row of the page-6 tables puts its name on top and its three choices under it: the table fits a half card and a phone without scrolling sideways */
-    '#ec-1 .ec1tb{container-type:inline-size}#ec-1 .ec1tb .eq-tb,#ec-1 .ec1tb .eq-tb tbody{display:block}#ec-1 .ec1tb .eq-tb tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr);gap:.35em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--hair)}'+
+    '#ec-1 .ec1tb{container-type:inline-size}#ec-1 .ec1tb .eq-tb,#ec-1 .ec1tb .eq-tb tbody{display:block}#ec-1 .ec1tb .eq-tb tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.7fr);gap:.35em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--hair)}'+
     '#ec-1 .ec1tb .eq-tb th,#ec-1 .ec1tb .eq-tb td{border:0;padding:0}#ec-1 .ec1tb .eq-tb tr:first-child th:first-child{display:none}#ec-1 .ec1tb .eq-tb th.rn{grid-column:1/-1}#ec-1 .ec1tb .eq-tb select{width:100%}'+
-    /* a narrow table (a phone): Before and After side by side, and the result on its own line, so that "Select…" and "unchanged" are never cut off */
+    /* a wide table: one row of three selects. A narrow table (a phone): Before and After side by side, and the result on its own line, so that "Select…" and "unchanged"
+       are never cut off. A browser without container queries keeps the row above */
+    '@container (min-width:405px){#ec-1 .ec1tb .eq-tb tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)}}'+
     '@container (max-width:405px){#ec-1 .ec1tb .eq-tb tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#ec-1 .ec1tb .eq-tb tr>:last-child{grid-column:1/-1}}');
   /* 1. what an oxidation number is (page 5) */
   card(g,'What an oxidation number is',`<p class="hint">Outcomes: 30–B1.2k, 30–B1.3k</p>
