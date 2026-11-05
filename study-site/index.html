@@ -6581,16 +6581,507 @@ EC_REF.f.push(['Electrons in a balanced redox equation','total e⁻ lost in the 
 }catch(e){console.error('[ec] slot 5 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 6 ----- */
 {try{
-/* placeholder of lesson 6 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[6]={t:EC_T[6],h:'Disproportionation and voltaic cells',d:'A voltaic cell uses a spontaneous redox reaction to produce an electric current. Oxidation occurs at the anode and reduction at the cathode.',build(g){
-  card(g,'Voltaic cells',`<p class="hint">Outcomes: 30–B1.2k, 30–B2.1k, 30–B2.2k</p><ul><li><span class="key">Disproportionation</span>: one entity is both oxidized and reduced.</li><li>A <span class="key">voltaic cell</span> changes chemical energy into electrical energy.</li>
-    <li>The <span class="key">anode</span> is where oxidation occurs (negative). The <span class="key">cathode</span> is where reduction occurs (positive).</li>
-    <li>Electrons flow through the wire from the anode to the cathode. In the salt bridge, cations move toward the cathode and anions toward the anode.</li></ul>`+
-    CF(ecCell({L:{el:'Zn(s)',sol:['Zn^2+(aq)','SO4^2-(aq)']},R:{el:'Cu(s)',sol:['Cu^2+(aq)','SO4^2-(aq)']},bridge:'KNO3(aq)',E:'+1.10 V'}),'Cell notation: '+C('Zn(s) | Zn^2+(aq) || Cu^2+(aq) | Cu(s)')));
-},qz:[
-  {q:'In a voltaic cell, oxidation occurs at the',o:['anode','cathode','salt bridge','voltmeter'],a:0,w:'LEO A: oxidation at the anode. GER C: reduction at the cathode.'},
-  {q:'In a voltaic cell, the cations of the salt bridge move toward the',o:['cathode','anode','voltmeter','wire'],a:0,w:'Reduction at the cathode uses up cations, thus cations move toward the cathode and anions toward the anode.'}]};
-EC_REF.t.push(['Anode','The electrode where oxidation occurs.'],['Cathode','The electrode where reduction occurs.'],['Disproportionation','A reaction in which one entity is both oxidized and reduced.']);
+/* lesson 6: Disproportionation and voltaic cells. Notes pp. 33-38: disproportionation (p. 33: practice 1 to 4; diploma question 38 is in EC_DIP[6]), electrochemical cells and
+   their terms (p. 34), voltaic cells, the salt-bridge and porous-cup cells and the choice of a salt bridge (p. 35), standard half-cells and inert electrodes (p. 36), gas electrodes,
+   the zinc-copper cell and cell notation (p. 37), practice 1 and 2 (p. 38).
+   Lesson-local helpers: ec6Half (one half-cell, SVG), ec6ON (an oxidation-number ladder, SVG), ec6Dip (zinc in copper(II) sulfate, SVG), ec6Grid (rows of selects, each row with
+   its own options, saved as mt_<lesson id>_g<slot>), ec6Coef (coefficients typed into equations, saved as mt_<lesson id>_bc<slot>), ec6c (the colour of a solution), and the
+   text helpers ec6T and ec6Ld. An option of a select cannot hold HTML, thus the formulas in the selects are unicode text (ecU) */
+ecCSS(6,'#ec-6 .ec6hc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:.6em 0}#ec-6 .ec6hc figure.cf{margin:0}'+
+  '#ec-6 .ec6bc .ec6eq{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .3em;line-height:1.6}#ec-6 .ec6bc .ec6t{white-space:nowrap;display:inline-flex;align-items:center;gap:.25em}'+
+  '#ec-6 .ec6bc input{width:2.6em;text-align:center;padding:.3em .15em}#ec-6 .ec6bc input.ok,#ec-6 .ec6bc select.ok{border-color:var(--ok);background:var(--okb)}'+
+  '#ec-6 .ec6bc input.bad,#ec-6 .ec6bc select.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
+  '#ec-6 .ec6bc .ec6el{display:flex;align-items:center;gap:.5em;flex-wrap:wrap;margin:0 0 .45em}#ec-6 .ec6bc .ec6r{grid-column:2;font-size:.88rem;color:var(--ink2)}#ec-6 .ec6bc .ec6r:empty{display:none}'+
+  '#ec-6 .ec6g select{max-width:100%}#ec-6 .ec6g li>span:nth-child(2){min-width:0}#ec-6 .cf.ec6sm svg{max-width:300px}#ec-6 .ec6c{max-width:500px;margin-left:auto;margin-right:auto}'+
+  /* container queries: in a wide box, the select of a matching row sits beside its text (.ec6m), a long list of selects has two columns (.ec6g2),
+     and two blocks sit side by side (.ec6tw > .ec6two). In a narrow box (a phone, a narrow card) they stack */
+  '#ec-6 .ec6m,#ec-6 .ec6g2,#ec-6 .ec6tw,#ec-6 .ec6hw{container-type:inline-size}#ec-6 .ec6two>div{min-width:0}'+
+  '@container (min-width:440px){#ec-6 .ec6m .mtl li{grid-template-columns:auto minmax(0,1fr) auto}#ec-6 .ec6m .mtl li select{grid-column:3;max-width:13em}}'+
+  '@container (min-width:260px){#ec-6 .ec6m.ec6ms .mtl li{grid-template-columns:auto auto minmax(0,1fr)}#ec-6 .ec6m.ec6ms .mtl li select{grid-column:3;justify-self:end;width:100%;max-width:15em}}'+
+  '@container (max-width:439px){#ec-6 .ec6hw .ec6hc{grid-template-columns:minmax(0,1fr)}}'+
+  '@container (min-width:760px){#ec-6 .ec6g2 .mtl{grid-template-columns:repeat(2,minmax(0,1fr))}}'+
+  '@container (min-width:820px){#ec-6 .ec6two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}#ec-6 .ec6two figure.cf{margin-top:.3em}}');
+/* C() with a word joiner between a charge and its state: Zn²⁺|(aq) does not break at the end of a line */
+const C6=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060('),
+  ec6T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12.5,w:600,f:'ink'},o)),
+  /* a leader line from a label to a part, with a dot on the part */
+  ec6Ld=(x1,y1,x2,y2)=>`<path d="M${x1},${y1}L${x2},${y2}" fill="none" stroke="var(--ink2)" stroke-width="1.2"/><circle cx="${x2}" cy="${y2}" r="2.2" fill="var(--ink2)"/>`,
+  /* the colour of a solution, from the colours of the framework (EC_SOLC): ec6c('Cu^2+(aq)') */
+  ec6c=k=>{const m=EC_SOLC.find(x=>x[0]===k);return m?`color-mix(in srgb,${m[1]} ${m[2]}%,var(--liq))`:'var(--liq)';},
+  /* two blocks side by side in a wide card (stacked in a narrow one): returns the two boxes */
+  ec6Two=host=>{const t=el('div',{class:'ec6tw'}),w=el('div',{class:'ec6two'}),l=el('div'),r=el('div');w.append(l,r);t.append(w);host.append(t);return [l,r];},
+  ec6Svg=(w,h,alt,body)=>`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${alt.replace(/"/g,'&quot;')}">${body}</svg>`;
+
+/* one half-cell in a beaker. o.el: the electrode ('Ag(s)', 'C(s)', 'Pt(s)'). o.ions: the entities of the solution (keys), listed as labels. o.c: the colour of the solution
+   (default: from the ions). o.gas: a gas fed over a platinum electrode in a glass tube (a gas electrode). o.dep: copper forms on the electrode. o.alt: the description */
+function ec6Half(o){const sym=(String(o.el).match(/^[A-Z][a-z]?/)||['C'])[0],ec=EC_ELC[sym]||'var(--steel)',ions=o.ions||[],x0=30,x1=150,yt=74,yb=200,yl=104,ex=90;
+  const col=o.c||(ions.map(k=>ec6c(ecK(k))).find(c=>c!=='var(--liq)')||'var(--liq)');
+  let s=`<rect x="${x0+1.5}" y="${yl}" width="${x1-x0-3}" height="${yb-yl-1.5}" rx="7" fill="${col}" fill-opacity=".62"/>`,lab='';
+  if(o.gas){s+=`<path d="M${ex},12V${yb-50}" stroke="var(--steel2)" stroke-width="2"/><rect x="${ex-7}" y="${yb-52}" width="14" height="24" rx="1.5" fill="${ec}" stroke="var(--ink2)" stroke-width="1.1"/>`+
+      `<path d="M${ex-16},${yb-22}V30H${ex+16}V${yb-22}" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round"/><path d="M${ex+16},44H${ex+54}M${ex+16},56H${ex+54}" stroke="var(--gl)" stroke-width="2.2"/>`+
+      sArrow(ex+92,50,ex+60,50,'var(--mute)',1.6)+
+      [[-11,yb-14,3],[10,yb-11,2.6],[-22,yb-34,2.4],[22,yb-42,3],[-23,yb-60,2.6],[23,yb-70,2.2],[-21,yb-84,2.4]].map(([dx,y,r])=>`<circle cx="${ex+dx}" cy="${y}" r="${r}" fill="var(--fig)" fill-opacity=".7" stroke="var(--ink2)" stroke-width="1"/>`).join('');
+    lab+=ec6T(o.gas,ex+96,54,{a:'start',c:'l'})+ec6T(o.el,162,yb-30,{a:'start',c:'l'})+ec6Ld(158,yb-34,ex+8,yb-40);}
+  else{s+=`<rect x="${ex-8}" y="28" width="16" height="${yb-50}" rx="2" fill="${ec}" stroke="var(--ink2)" stroke-width="1.1"/>`;lab+=ec6T(o.el,162,40,{a:'start',c:'l'})+ec6Ld(158,36,ex+9,44);}
+  if(o.dep)s+=[[-9,118,3],[9,126,3.4],[-9,140,2.8],[9,150,3.2],[-9,164,3.2],[9,172,2.6],[-8,184,2.8],[7,188,2.4],[-26,194,2.2],[22,195,2]].map(([dx,y,r])=>`<circle cx="${ex+dx}" cy="${y}" r="${r}" fill="${EC_ELC.Cu}" stroke="var(--ink2)" stroke-width=".8"/>`).join('');
+  s+=`<path d="M${x0-4},${yt}L${x0},${yt+4}V${yb-8}a8 8 0 0 0 8,8H${x1-8}a8 8 0 0 0 8,-8V${yt+4}L${x1+4},${yt}" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const y0=o.gas?122:130;ions.forEach((k,i)=>{lab+=ec6T(k,162,y0+19*i,{a:'start',c:'l',s:12,w:500});});if(ions.length)lab+=ec6Ld(158,y0-4,x1-12,y0-4);
+  const alt=o.alt||(o.gas?`A gas electrode: ${ecU(o.gas)} is fed through a glass tube over a ${ecU(o.el)} electrode in a solution of ${ions.map(ecU).join(', ')}. Bubbles rise from the bottom of the tube.`:
+    `A half-cell: a ${ecU(o.el)} electrode in a beaker of a solution of ${ions.map(ecU).join(', ')}.`);
+  return ec6Svg(250,214,alt,s+lab);}
+
+/* an oxidation-number ladder for one element: the levels lo to hi (top = highest), the reactant entities at the left and the products at the right. o.P: [[side 'L' or 'R', value,
+   entity (key), note, 'ox' or 'red']]. o.A: [[from, to, 'ox' or 'red']]: an arrow from a level at the left to a level at the right. Oxidation is orange, reduction blue */
+function ec6ON(o){const W=360,st=32,top=40,H=top+(o.hi-o.lo)*st+30,y=v=>top+(o.hi-v)*st,xa=40,xL=146,xR=236,col={ox:'var(--s2)',red:'var(--s1)'};
+  let s=svgText('Oxidation number of '+o.el,10,18,{a:'start',s:12,w:700,f:'ink2',c:'l'});
+  for(let v=o.lo;v<=o.hi;v++)s+=`<path d="M${xa},${y(v)}H${W-8}" stroke="var(--gridc)" stroke-width="1.2"/>`+svgText(v>0?'+'+v:v<0?'−'+(-v):'0',xa-10,y(v)+4.5,{a:'end',s:12,w:600,f:'ink2'});
+  o.A.forEach(([a,b,k])=>{s+=sArrow(xL+7,y(a),xR-8,y(b),col[k],2.4);});
+  o.P.forEach(([sd,v,t,note,k])=>{const L=sd==='L',x=L?xL:xR,tx=L?x-11:x+11,an={a:L?'end':'start',c:L?'r':'l'};
+    s+=`<circle cx="${x}" cy="${y(v)}" r="5" fill="${k?col[k]:'var(--ink)'}" stroke="var(--fig)" stroke-width="1.5"/>`+ec6T(t,tx,y(v)+4.5,Object.assign({s:13},an))+
+      (note?svgText(note,tx,y(v)+22,Object.assign({s:11.5,w:650,f:k==='ox'?'s2':'s1'},an)):'');});
+  return ec6Svg(W,H,o.alt,s);}
+
+/* a zinc strip dipped in a copper(II) sulfate solution: copper forms on the zinc, and the electrons pass directly from the zinc atoms to the copper(II) ions */
+function ec6Dip(){const x0=40,x1=200,yt=72,yb=206,yl=104,ex=112;
+  let s=`<rect x="${x0+1.5}" y="${yl}" width="${x1-x0-3}" height="${yb-yl-1.5}" rx="7" fill="color-mix(in srgb,var(--s1) 24%,var(--liq))" fill-opacity=".62"/>`+
+    `<rect x="${ex-8}" y="26" width="16" height="${yb-48}" rx="2" fill="${EC_ELC.Zn}" stroke="var(--ink2)" stroke-width="1.1"/>`+
+    [[-9,116,3],[9,124,3.4],[-9,136,2.8],[9,146,3.2],[-9,160,3.2],[9,168,2.6],[-8,178,2.8],[7,182,2.4],[-24,198,2.2],[20,199,2]].map(([dx,y,r])=>`<circle cx="${ex+dx}" cy="${y}" r="${r}" fill="${EC_ELC.Cu}" stroke="var(--ink2)" stroke-width=".8"/>`).join('')+
+    `<path d="M${x0-4},${yt}L${x0},${yt+4}V${yb-8}a8 8 0 0 0 8,8H${x1-8}a8 8 0 0 0 8,-8V${yt+4}L${x1+4},${yt}" fill="none" stroke="var(--gl)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`+
+    `<circle cx="166" cy="146" r="9" fill="color-mix(in srgb,var(--s1) 55%,var(--fig))" stroke="var(--ink2)" stroke-width="1"/>`+sArrow(ex+12,146,154,146,'var(--s2)',2)+svgText('2e⁻',138,138,{s:11.5,w:700,f:'s2'});
+  s+=ec6T('Zn(s) strip',216,40,{a:'start',c:'l'})+ec6Ld(212,36,ex+9,44)+ec6T('Cu(s) forms on the zinc',216,104,{a:'start',c:'l'})+ec6Ld(212,100,ex+12,124)+
+    ec6T('Cu^2+(aq) gains 2e^- from Zn',216,150,{a:'start',c:'l'})+ec6Ld(212,146,176,146)+ec6T('CuSO4(aq): the blue fades',216,190,{a:'start',c:'l'})+ec6Ld(212,186,186,186);
+  return ec6Svg(440,220,'A zinc strip stands in a blue copper(II) sulfate solution. Reddish-brown copper forms on the part of the zinc that is in the solution, and some falls to the bottom. An arrow shows two electrons that pass from the zinc straight to a copper(II) ion. The blue colour of the solution fades.',s);}
+
+/* rows of selects, each row with its own options (plain text). o.rows: [{l: the row label (HTML), o: [options], a: the index of the answer}]. o.intro: a hint above the rows.
+   o.after: the explanation (HTML) shown when every row is correct, or with Show the answers. The choices are saved as mt_<lesson id>_g<slot>, thus Clear answers for the section removes them */
+function ec6Grid(host,o,slot){
+  const key='mt_'+((host.closest('.lesson')||{}).id||'x')+'_g'+(slot||0),uid='ec6g'+(ec6Grid.n=(ec6Grid.n||0)+1),R=o.rows,box=el('div');host.append(box);
+  const blank=()=>R.map(()=>-1),valid=v=>Array.isArray(v)&&v.length===R.length&&v.every((x,i)=>Number.isInteger(x)&&x>=-1&&x<R[i].o.length);
+  let sel=valid(Store.w(key))?Store.w(key).slice():blank(),seen=JSON.stringify(sel);const save=()=>{Store.wSet(key,sel.slice());seen=JSON.stringify(sel);};
+  box.innerHTML=(o.intro?`<p class="hint">${o.intro}</p>`:'')+`<ol class="mtl ec6g">${R.map((r,i)=>`<li><span class="ordn">${i+1}</span><span id="${uid}-${i}">${r.l}</span><select data-i="${i}" aria-labelledby="${uid}-${i}"><option value="-1">Select…</option>${r.o.map((t,j)=>`<option value="${j}">${t}</option>`).join('')}</select></li>`).join('')}</ol>`+
+    `<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
+  const ss=$$('select',box),lis=$$('li',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=i=>sel[i]===R[i].a;
+  const paint=res=>{ss.forEach((s,i)=>{s.value=String(sel[i]);});lis.forEach((li,i)=>{li.className=res?(ok(i)?'ok':'bad'):'';});};
+  const after=()=>{wv.innerHTML=o.after?`<div class="fb info">${o.after}</div>`:'';$$('figure.cf',wv).forEach(figFit);};
+  ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i]=+s.value;save();s.closest('li').className='';lv.textContent='';});
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){lv.textContent='Choose an answer in each row first.';return;}const n=R.filter((r,i)=>ok(i)).length;paint(true);markStudy();
+    lv.textContent=n===R.length?'All '+n+' are correct.':n+' of '+R.length+' are correct.'+(sel.some(x=>x<0)?' Some rows have no answer.':'');if(n===R.length)after();else wv.innerHTML='';};
+  $('[data-a=show]',box).onclick=()=>{sel=R.map(r=>r.a);save();paint(true);lv.textContent='These are the answers.';after();};
+  $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';wv.innerHTML='';};
+  /* newer synced answers (another device, a remote clear) replace the ones on screen */
+  const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=JSON.stringify(valid(v)?v:blank());if(j===seen)return;seen=j;sel=JSON.parse(j);paint(false);lv.textContent='';wv.innerHTML='';};LIVE.add(view);
+  paint(false);if(sel.some(x=>x>=0))lv.textContent='Your last answers are restored.';}
+
+/* coefficients typed into equations, and a select for the element that disproportionates. eqs: [{n: the label, s: the unbalanced equation (C notation),
+   a: [the lowest whole-number coefficients], el: [[element options], the index of the answer]}]. Check reports each equation: balanced with the lowest whole numbers,
+   balanced but not the lowest, or what does not balance (from ecBal). o.after: the explanation shown when every equation is correct, or with Show the answers.
+   Saved as mt_<lesson id>_bc<slot>: for each equation an array of strings, the coefficients and then the element (an option index, '' when none) */
+function ec6Coef(host,eqs,o,slot){
+  const key='mt_'+((host.closest('.lesson')||{}).id||'x')+'_bc'+(slot||0),box=el('div');host.append(box);
+  const P=eqs.map(e=>ecParse(e.s)),K=P.map(p=>p.L.concat(p.R).map(x=>x[1])),nL=P.map(p=>p.L.length),W=K.map((k,i)=>k.length+(eqs[i].el?1:0));
+  const blank=()=>W.map(w=>Array(w).fill('')),valid=v=>Array.isArray(v)&&v.length===eqs.length&&v.every((a,i)=>Array.isArray(a)&&a.length===W[i]&&a.every(x=>typeof x==='string'&&x.length<4));
+  let val=valid(Store.w(key))?Store.w(key).map(a=>a.slice()):blank(),seen=JSON.stringify(val);const save=()=>{Store.wSet(key,val.map(a=>a.slice()));seen=JSON.stringify(val);};
+  box.innerHTML=(o.intro?`<p class="hint">${o.intro}</p>`:'')+`<ol class="mtl ec6bc">${eqs.map((e,i)=>`<li><span class="ordn">${e.n}</span><span>`+
+    (e.el?`<span class="ec6el"><span>Element:</span><select data-i="${i}" data-j="${K[i].length}" aria-label="The element that disproportionates in equation ${e.n}"><option value="-1">Select…</option>${e.el[0].map((t,j)=>`<option value="${j}">${t}</option>`).join('')}</select></span>`:'')+
+    `<span class="ec6eq">${K[i].map((k,j)=>(j===nL[i]?'<span aria-hidden="true">→</span>':j?'<span aria-hidden="true">+</span>':'')+
+      `<span class="ec6t"><input type="text" inputmode="numeric" maxlength="2" autocomplete="off" data-i="${i}" data-j="${j}" aria-label="Equation ${e.n}: the coefficient of ${ecU(k)}${j<nL[i]?', a reactant':', a product'}"><span>${C6(k)}</span></span>`).join('')}</span></span><span class="ec6r"></span></li>`).join('')}</ol>`+
+    `<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
+  const lis=$$('li',box),ins=$$('input',box),sels=$$('select',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),gcd=(a,b)=>b?gcd(b,a%b):a;
+  const paint=()=>{ins.forEach(x=>{x.value=val[+x.dataset.i][+x.dataset.j];});sels.forEach(s=>{const v=val[+s.dataset.i][+s.dataset.j];s.value=v===''?'-1':v;});};
+  const reset=i=>{lis[i].className='';$('.ec6r',lis[i]).textContent='';$$('input,select',lis[i]).forEach(x=>x.classList.remove('ok','bad'));};
+  /* [correct, message, the coefficients are correct] for equation i */
+  const grade=i=>{const e=eqs[i],a=val[i],nk=K[i].length,c=a.slice(0,nk);
+    if(c.some(x=>x.trim()===''))return [0,'Type every coefficient, including 1.'];
+    const n=c.map(x=>+x);if(n.some(x=>!Number.isInteger(x)||x<1))return [0,'Use whole numbers of 1 or more.'];
+    const sd=(f,t)=>K[i].slice(f,t).map((k,j)=>n[f+j]+k).join(' + '),b=ecBal(sd(0,nL[i])+' -> '+sd(nL[i],nk));
+    if(b)return [0,'Not balanced. '+b.replace(/-/g,'−').replace(/^./,m=>m.toUpperCase())+'.'];
+    if(n.reduce(gcd)!==1)return [0,'This balances, but use the lowest whole-number coefficients.'];
+    if(!n.every((x,j)=>x===e.a[j]))return [0,'Not the expected coefficients.'];
+    if(e.el){const s=a[nk];if(s===''||s==='-1')return [0,'The coefficients are correct. Now choose the element.',1];if(+s!==e.el[1])return [0,'The coefficients are correct, but check the element.',1];}
+    return [1,'Balanced, with the lowest whole numbers.',1];};
+  ins.forEach(x=>x.oninput=()=>{const i=+x.dataset.i;x.value=x.value.replace(/[^0-9]/g,'').slice(0,2);val[i][+x.dataset.j]=x.value;save();reset(i);lv.textContent='';});
+  sels.forEach(s=>s.onchange=()=>{const i=+s.dataset.i;val[i][+s.dataset.j]=s.value==='-1'?'':s.value;save();reset(i);lv.textContent='';});
+  const after=()=>{wv.innerHTML=o.after?`<div class="fb info">${o.after}</div>`:'';$$('figure.cf',wv).forEach(figFit);};
+  const mark=(i,r)=>{lis[i].className=r[0]?'ok':'bad';$('.ec6r',lis[i]).textContent=r[1];$$('input',lis[i]).forEach(x=>{x.classList.toggle('ok',!!r[2]);x.classList.toggle('bad',!r[2]);});
+    const s=$('select',lis[i]);if(s){const g=s.value===String(eqs[i].el[1]);s.classList.toggle('ok',g);s.classList.toggle('bad',!g);}};
+  $('[data-a=check]',box).onclick=()=>{if(val.every(a=>a.every(x=>x===''))){lv.textContent='Type the coefficients first.';return;}
+    let n=0;eqs.forEach((e,i)=>{const r=grade(i);if(r[0])n++;mark(i,r);});markStudy();
+    lv.textContent=n===eqs.length?'All '+n+' equations are correct.':n+' of '+eqs.length+' equations are correct.';if(n===eqs.length)after();else wv.innerHTML='';};
+  $('[data-a=show]',box).onclick=()=>{val=eqs.map(e=>e.a.map(String).concat(e.el?[String(e.el[1])]:[]));save();paint();eqs.forEach((e,i)=>mark(i,grade(i)));lv.textContent='These are the answers.';after();};
+  $('[data-a=clear]',box).onclick=()=>{val=blank();save();paint();eqs.forEach((e,i)=>reset(i));lv.textContent='';wv.innerHTML='';};
+  /* newer synced answers (another device, a remote clear) replace the ones on screen, except the box being edited */
+  const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=JSON.stringify(valid(v)?v:blank());if(j===seen)return;seen=j;val=JSON.parse(j);
+    ins.forEach(x=>{if(x!==document.activeElement)x.value=val[+x.dataset.i][+x.dataset.j];});sels.forEach(s=>{const w=val[+s.dataset.i][+s.dataset.j];s.value=w===''?'-1':w;});eqs.forEach((e,i)=>reset(i));lv.textContent='';wv.innerHTML='';};LIVE.add(view);
+  paint();if(val.some(a=>a.some(x=>x!=='')))lv.textContent='Your last answers are restored.';}
+/* the four practice reactions of p. 33, and the ladders of their answers */
+const E6P=[{n:'1',s:'NH4NO3(s) -> H2O(g) + N2O(g)',a:[1,2,1],el:[['H','N','O'],1],b:'NH4NO3(s) -> 2H2O(g) + N2O(g)'},
+  {n:'2',s:'H2O2(l) -> H2O(g) + O2(g)',a:[2,2,1],el:[['H','N','O'],2],b:'2H2O2(l) -> 2H2O(g) + O2(g)'},
+  {n:'3',s:'Cl2(g) + H2O(l) -> HOCl(aq) + H^+(aq) + Cl^-(aq)',a:[1,1,1,1,1],el:[['Cl','H','O'],0],b:'Cl2(g) + H2O(l) -> HOCl(aq) + H^+(aq) + Cl^-(aq)'},
+  {n:'4',s:'Cl2(g) + OH^-(aq) -> OCl^-(aq) + H2O(l) + Cl^-(aq)',a:[1,2,1,1,1],el:[['Cl','H','O'],0],b:'Cl2(g) + 2OH^-(aq) -> OCl^-(aq) + H2O(l) + Cl^-(aq)'}];
+const E6ON={
+  cu:{el:'Cu',lo:-1,hi:3,P:[['L',1,'Cu^+(aq)'],['R',2,'Cu^2+(aq)','loses 1 e⁻','ox'],['R',0,'Cu(s)','gains 1 e⁻','red']],A:[[1,2,'ox'],[1,0,'red']],
+    alt:'An oxidation-number ladder for copper, from −1 to +3. Cu⁺ is at +1 on the left. An orange arrow goes up to Cu²⁺ at +2: it loses 1 electron, oxidation. A blue arrow goes down to Cu at 0: it gains 1 electron, reduction.'},
+  p1:{el:'N',lo:-3,hi:5,P:[['L',-3,'NH4^+','loses 4 e⁻','ox'],['L',5,'NO3^-','gains 4 e⁻','red'],['R',1,'N2O(g)']],A:[[-3,1,'ox'],[5,1,'red']],
+    alt:'An oxidation-number ladder for nitrogen, from −3 to +5. The N of NH₄⁺ is at −3 and the N of NO₃⁻ is at +5, both on the left. An orange arrow goes up from −3 to N₂O at +1: the N of NH₄⁺ loses 4 electrons. A blue arrow goes down from +5 to N₂O at +1: the N of NO₃⁻ gains 4 electrons.'},
+  p2:{el:'O',lo:-3,hi:1,P:[['L',-1,'H2O2(l)'],['R',0,'O2(g)','loses 1 e⁻ per O','ox'],['R',-2,'H2O(g)','gains 1 e⁻ per O','red']],A:[[-1,0,'ox'],[-1,-2,'red']],
+    alt:'An oxidation-number ladder for oxygen, from −3 to +1. H₂O₂ is at −1 on the left. An orange arrow goes up to O₂ at 0: each O atom loses 1 electron. A blue arrow goes down to H₂O at −2: each O atom gains 1 electron.'},
+  p3:{el:'Cl',lo:-2,hi:2,P:[['L',0,'Cl2(g)'],['R',1,'HOCl(aq)','loses 1 e⁻','ox'],['R',-1,'Cl^-(aq)','gains 1 e⁻','red']],A:[[0,1,'ox'],[0,-1,'red']],
+    alt:'An oxidation-number ladder for chlorine, from −2 to +2. Cl₂ is at 0 on the left. An orange arrow goes up to HOCl at +1: one Cl atom loses 1 electron. A blue arrow goes down to Cl⁻ at −1: the other Cl atom gains 1 electron.'},
+  p4:{el:'Cl',lo:-2,hi:2,P:[['L',0,'Cl2(g)'],['R',1,'OCl^-(aq)','loses 1 e⁻','ox'],['R',-1,'Cl^-(aq)','gains 1 e⁻','red']],A:[[0,1,'ox'],[0,-1,'red']],
+    alt:'An oxidation-number ladder for chlorine, from −2 to +2. Cl₂ is at 0 on the left. An orange arrow goes up to OCl⁻ at +1: one Cl atom loses 1 electron. A blue arrow goes down to Cl⁻ at −1: the other Cl atom gains 1 electron.'}};
+const E6LEG='The orange arrow is the oxidation, and the blue arrow is the reduction.';
+/* the cells of this lesson */
+const E6C={
+  zc:{L:{el:'Cu(s)',sol:'1.0 mol/L CuSO4(aq)',c:ec6c('Cu^2+(aq)')},R:{el:'Zn(s)',sol:'1.0 mol/L ZnSO4(aq)'},anode:'R',bridge:'1.0 mol/L NaNO3(aq)'},
+  cup:{sep:'cup',L:{el:'C(s)',sol:'acidified KMnO4(aq), Mn^2+(aq)',c:ec6c('MnO4^-(aq)')},R:{el:'Cu(s)',sol:'CuSO4(aq)',c:ec6c('Cu^2+(aq)')},anode:'R'},
+  pf:{L:{el:'Pb(s)',sol:'PbCl2(aq)'},R:{el:'Pt(s)',sol:'FeCl3(aq), FeCl2(aq)',c:ec6c('Fe^3+(aq)')},bridge:'KCl(aq)',cat:'K⁺',an:'Cl⁻'},
+  cz:{L:{el:'Cd(s)',sol:'Cd(NO3)2(aq)'},R:{el:'Zn(s)',sol:'Zn(NO3)2(aq)'},anode:'R',bridge:'KNO3(aq)',cat:'K⁺',an:'NO₃⁻'},
+  ah:{L:{el:'Ag(s)',sol:'AgNO3(aq)'},R:{el:'Pt(s)',gas:'H2(g)',sol:'HCl(aq)'},anode:'R',bridge:'KNO3(aq)',cat:'K⁺',an:'NO₃⁻'}};
+const e6cell=(k,o)=>ecCell(Object.assign({},E6C[k],o||{}));
+/* equations of the cells, checked with ecBal in the lesson's test */
+const E6Q={zcN:'Zn(s) + Cu^2+(aq) -> Zn^2+(aq) + Cu(s)',zcO:'Zn(s) -> Zn^2+(aq) + 2e^-',zcR:'Cu^2+(aq) + 2e^- -> Cu(s)',
+  cupR:'MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)',cupO:'Cu(s) -> Cu^2+(aq) + 2e^-',cupN:'2MnO4^-(aq) + 16H^+(aq) + 5Cu(s) -> 2Mn^2+(aq) + 8H2O(l) + 5Cu^2+(aq)',
+  pfO:'Pb(s) -> Pb^2+(aq) + 2e^-',pfR:'Fe^3+(aq) + e^- -> Fe^2+(aq)',pfN:'Pb(s) + 2Fe^3+(aq) -> Pb^2+(aq) + 2Fe^2+(aq)',
+  czO:'Zn(s) -> Zn^2+(aq) + 2e^-',czR:'Cd^2+(aq) + 2e^- -> Cd(s)',czN:'Cd^2+(aq) + Zn(s) -> Cd(s) + Zn^2+(aq)',
+  ahO:'H2(g) -> 2H^+(aq) + 2e^-',ahR:'Ag^+(aq) + e^- -> Ag(s)',ahN:'2Ag^+(aq) + H2(g) -> 2Ag(s) + 2H^+(aq)',cuD:'2Cu^+(aq) -> Cu(s) + Cu^2+(aq)'};
+
+ECL[6]={t:EC_T[6],h:'Disproportionation and voltaic cells',
+  d:'In a disproportionation, one entity is both oxidized and reduced. A voltaic cell keeps the oxidizing agent and the reducing agent apart, thus the electrons must flow through a wire: an electric current.',
+  build(g){
+  /* ---------- p. 33: disproportionation ---------- */
+  card(g,'Disproportionation',`<p class="hint">Outcome: 30–B1.2k</p>
+    <ul><li><span class="key">Disproportionation</span> occurs when a single entity is <b>both oxidized and reduced</b>.</li>
+    <li>Some atoms of one element in a molecule or polyatomic ion increase in oxidation number: they are the reducing part of the entity. Other atoms of the <b>same element</b> decrease in oxidation number: they are the oxidizing part.</li>
+    <li>A simple disproportionation can always be balanced by inspection: the electrons lost must equal the electrons gained.</li></ul>
+    <p><b>How to find it.</b> Assign an oxidation number to every atom. Look for one element whose oxidation number goes up for some of its atoms and down for others. Those atoms must start in the same reactant.</p>`+
+    CF(ec6ON(E6ON.cu),'In '+C6(E6Q.cuD)+', one Cu⁺ ion loses an electron and becomes Cu²⁺, and another Cu⁺ ion gains it and becomes Cu. Cu⁺ is both the reducing agent and the oxidizing agent. '+E6LEG),'w7');
+  const cb=card(g,'Try it: balance the practice reactions','<p>Practice (notes p. 33). Find the element that disproportionates. Then balance the equation: type every coefficient, including 1.</p>','w5');
+  ec6Coef(cb,E6P,{after:'All four are balanced. In each one, the electrons lost by the atoms that are oxidized equal the electrons gained by the atoms that are reduced. The answers below show the oxidation numbers.'},0);
+  card(g,'Practice answers: disproportionation',
+    ex('1. '+C6(E6P[0].s),`<p><b>Nitrogen</b> disproportionates. ${C6('NH4NO3')} is made of ${C6('NH4^+')} and ${C6('NO3^-')} ions. In ${C6('NH4^+')}, the 4 H atoms are +4 and the ion is +1, thus N is −3. In ${C6('NO3^-')}, the 3 O atoms are −6 and the ion is −1, thus N is +5. In ${C6('N2O')}, O is −2, thus each N is +1.</p>`+
+      CF(ec6ON(E6ON.p1),E6LEG)+`<p>The N of ${C6('NH4^+')} loses 4 e⁻ (−3 to +1). The N of ${C6('NO3^-')} gains 4 e⁻ (+5 to +1). One of each makes the two N atoms of one ${C6('N2O')}, and 4 e⁻ lost = 4 e⁻ gained. The 4 H atoms make 2 ${C6('H2O')}. Check O: 3 on the left, 2 + 1 = 3 on the right.</p>
+      <p><b>${C6(E6P[0].b)}</b></p><p class="hint">Here the two N atoms start in different ions of one compound and end in the same oxidation number. Some books call this case comproportionation. The notes count it as a disproportionation: one compound, ${C6('NH4NO3')}, is both oxidized and reduced.</p>`)+
+    ex('2. '+C6(E6P[1].s),`<p><b>Oxygen</b> disproportionates. In ${C6('H2O2')} each H is +1, thus each O is −1 (a peroxide). O is 0 in ${C6('O2')} and −2 in ${C6('H2O')}.</p>`+CF(ec6ON(E6ON.p2),E6LEG)+
+      `<p>The two O atoms of one ${C6('O2')} lose 2 e⁻ in all. Two O atoms that become ${C6('H2O')} gain 1 e⁻ each, 2 e⁻ in all. Thus 2 ${C6('H2O2')} give 2 ${C6('H2O')} and 1 ${C6('O2')}. Check: 4 H and 4 O on each side.</p><p><b>${C6(E6P[1].b)}</b></p>`)+
+    ex('3. '+C6(E6P[2].s),`<p><b>Chlorine</b> disproportionates. Cl is 0 in ${C6('Cl2')}. In HOCl, H is +1 and O is −2, thus Cl is +1. In ${C6('Cl^-')}, Cl is −1.</p>`+CF(ec6ON(E6ON.p3),E6LEG)+
+      `<p>One Cl atom of ${C6('Cl2')} loses 1 e⁻ and the other gains 1 e⁻. The equation is already balanced: 2 Cl, 2 H, 1 O and a charge of 0 on each side.</p><p><b>${C6(E6P[2].b)}</b></p>`)+
+    ex('4. '+C6(E6P[3].s),`<p><b>Chlorine</b> disproportionates, as in question 3, but in a basic solution. Cl is 0 in ${C6('Cl2')}, +1 in ${C6('OCl^-')} and −1 in ${C6('Cl^-')}.</p>`+CF(ec6ON(E6ON.p4),E6LEG)+
+      `<p>One ${C6('Cl2')} gives one ${C6('OCl^-')} and one ${C6('Cl^-')}. The right side has 2 O atoms (in ${C6('OCl^-')} and ${C6('H2O')}) and 2 H atoms, thus 2 ${C6('OH^-')} are needed. Check the charge: −2 on each side.</p><p><b>${C6(E6P[3].b)}</b></p>`));
+
+  /* ---------- p. 34: electrochemical cells and their terms ---------- */
+  card(g,'Electrochemical cells',`<p class="hint">Outcomes: 30–B2.1k, 30–B2.2k</p>
+    <p>Changing chemical energy into electrical energy, and electrical energy into chemical energy, are <b>electrochemical processes</b>. They are redox reactions.</p>
+    <p><b>Example.</b> Dip a zinc strip into a copper(II) sulfate solution: the zinc becomes copper plated. You see the zinc dissolve and copper solid appear.</p>`+
+    CF(ec6Dip(),'Zinc in a copper(II) sulfate solution. The electrons pass straight from the zinc to the copper(II) ions.')+
+    `<div class="fx">${C6(E6Q.zcN)}</div><ul><li>Oxidation: ${C6(E6Q.zcO)}</li><li>Reduction: ${C6(E6Q.zcR)}</li></ul>
+    <p>When a zinc rod is dipped into the solution, electrons move directly from the zinc metal to the copper(II) ions, and the energy only warms the solution. With minor changes, the same reaction can produce an <b>electric current</b>, a flow of electrons: put the zinc and the copper(II) ions in separate half-cells, then join them with a wire and a salt bridge. That is a voltaic cell.</p>`,'w7');
+  card(g,'Voltaic cells',`<ul><li>A <span class="key">voltaic cell</span> changes chemical energy into electrical energy.</li>
+    <li>Its driving force is a <b>spontaneous redox reaction</b>, for example between a metal and the ions of another metal in solution.</li>
+    <li>The anode is the <b>negative</b> electrode and the cathode is the <b>positive</b> electrode. Neither electrode is really charged: all parts of the cell stay electrically balanced at all times.</li>
+    <li>Most measurements in this course use <span class="key">standard cells</span>: 25 °C, electrolytes at 1.0 mol/L, and every gas at standard pressure.</li></ul>
+    <h4>Voltaic and electrolytic cells</h4>
+    <table class="t3"><tr><th></th><th>Voltaic cell</th><th>Electrolytic cell</th></tr>
+    <tr><td>Energy</td><td>chemical → electrical</td><td>electrical → chemical</td></tr>
+    <tr><td>Reaction</td><td>spontaneous</td><td>non-spontaneous: a power supply drives it</td></tr>
+    <tr><td>${ecEs('net')}</td><td>positive</td><td>negative</td></tr>
+    <tr><td>Anode</td><td>oxidation, negative (−)</td><td>oxidation, positive (+)</td></tr>
+    <tr><td>Cathode</td><td>reduction, positive (+)</td><td>reduction, negative (−)</td></tr></table>
+    <p><b>The same in both:</b> oxidation occurs at the anode and reduction at the cathode. Electrons flow through the external circuit from the anode to the cathode. Cations move toward the cathode and anions toward the anode.</p><p class="hint">Lesson 10 is about electrolytic cells.</p>`,'w5');
+  const ct=card(g,'Terms for electrochemical cells'),[ctl,ctr]=ec6Two(ct);ctl.innerHTML=`<table><tr><th>Term</th><th>Definition</th></tr>
+    <tr><td><span class="key">Half-cell</span></td><td>One part of an electrochemical cell, where oxidation or reduction occurs. It is usually a metal rod in a solution of its ions.</td></tr>
+    <tr><td><span class="key">Electrode</span></td><td>The solid conductor, usually a metal, that forms part of a half-cell.</td></tr>
+    <tr><td><span class="key">Electrolyte</span></td><td>An aqueous solution of ions that conducts a current.</td></tr>
+    <tr><td><span class="key">Salt bridge</span> (or <span class="key">porous cup</span>)</td><td>Keeps the solutions from mixing, but lets ions pass between the two half-cells.</td></tr>
+    <tr><td>Wire (<span class="key">external circuit</span>)</td><td>Lets electrons flow between the two half-cells, from the anode to the cathode.</td></tr>
+    <tr><td><span class="key">Anode</span></td><td>The electrode where <b>oxidation</b> occurs (LEO A). Electrons are produced here.</td></tr>
+    <tr><td><span class="key">Cathode</span></td><td>The electrode where <b>reduction</b> occurs (GER C). Electrons are consumed here.</td></tr>
+    <tr><td><span class="key">Cations</span></td><td>Positive ions. They move toward the cathode.</td></tr>
+    <tr><td><span class="key">Anions</span></td><td>Negative ions. They move toward the anode.</td></tr></table>
+    <p class="note">LEO A: Loss of Electrons is Oxidation, at the Anode. GER C: Gain of Electrons is Reduction, at the Cathode.</p>`;fitTables(ctl);
+  ctr.innerHTML='<h4>Try it: match the terms</h4>';const cmb=el('div',{class:'ec6m'});ctr.append(cmb);
+  matching(cmb,[['One part of a cell, where oxidation or reduction occurs','half-cell'],['The solid conductor that forms part of a half-cell','electrode'],['A solution of ions that conducts a current','electrolyte'],
+    ['Keeps the solutions apart, but lets ions pass','salt bridge or porous cup'],['Carries the electrons from one half-cell to the other','wire (external circuit)'],['Oxidation occurs here, and electrons are produced','anode'],
+    ['Reduction occurs here, and electrons are consumed','cathode'],['Positive ions that move toward the cathode','cations'],['Negative ions that move toward the anode','anions']],'Choose the term for each description.',0);
+
+  /* ---------- p. 37: how the zinc-copper cell works; p. 35: the two practice cells ---------- */
+  const ch=card(g,'How a voltaic cell works','<p>The zinc-copper cell of the notes (p. 37). The zinc rod is on the right, as in the notes.</p>'),[chl,chr]=ec6Two(ch);
+  chl.innerHTML=CF(e6cell('zc',{E:'+1.10 V',cat:'Na⁺',an:'NO₃⁻'}),'The zinc-copper cell: '+C6('Zn(s) | ZnSO4(aq) || CuSO4(aq) | Cu(s)')+'.');
+  chr.innerHTML=`<ol><li>Electrons are produced at the zinc rod in an oxidation half-reaction: ${C6(E6Q.zcO)}. Because it is oxidized, the zinc rod is the <b>anode (−)</b>.</li>
+    <li>The electrons move through the external wire and the meter to the copper rod.</li>
+    <li>Electrons are consumed at the copper rod in a reduction half-reaction: ${C6(E6Q.zcR)}. Because reduction occurs there, the copper rod is the <b>cathode (+)</b>.</li>
+    <li>To complete the circuit, ions move through the solutions and the salt bridge: cations (here ${C6('Na^+')}) move toward the cathode, and anions (${C6('NO3^-')}) toward the anode.</li></ol>
+    <p class="hint">As the cell runs, the zinc rod loses mass, copper plates onto the copper rod, and the blue colour of the copper(II) solution slowly fades. The meter reads 1.10 V: lesson 7 shows how to calculate it.</p>`;
+  const cl=card(g,'Try it: label the salt-bridge cell','<p>Practice (notes p. 35). Use the terms of p. 34 to label the numbered parts. Then write the half-reactions and the net reaction.</p>'),[cll,clr]=ec6Two(cl),clb=el('div',{class:'ec6m ec6ms'});cll.innerHTML=CF(e6cell('zc',{lab:false,sign:false,nums:{cathode:1,anode:2,bridge:3,wire:4,meter:5,solL:6,eflow:7,cat:8,an:9},
+    alt:'An electrochemical cell with a salt bridge, as in the notes. Left: a Cu(s) electrode in 1.0 mol/L CuSO₄(aq). Right: a Zn(s) electrode in 1.0 mol/L ZnSO₄(aq). A salt bridge of 1.0 mol/L NaNO₃(aq) joins the two beakers, and a wire with a voltmeter joins the two electrodes. '+
+      'The numbers mark these places: 1 the copper electrode, 2 the zinc electrode, 3 the salt bridge, 4 the wire at the right, 5 the voltmeter, 6 the solution in the left beaker, 7 an arrow along the wire that points to the left, 8 an arrow above the salt bridge that points to the left, and 9 an arrow under it that points to the right.'}),'An electrochemical cell with a salt bridge (notes p. 35).');clr.append(clb);
+  matching(clb,[['Part 1','cathode'],['Part 2','anode'],['Part 3','salt bridge'],['Part 4','wire (external circuit)'],['Part 5','voltmeter'],['Part 6','electrolyte'],['Part 7','electron flow'],['Part 8','cations moving'],['Part 9','anions moving']],'Choose the term for each numbered part.',1);
+  cl.insertAdjacentHTML('beforeend',ex('Answer: the half-reactions and the net reaction',`<p>${C6('Cu^2+(aq)')} is the strongest oxidizing agent and ${C6('Zn(s)')} is the strongest reducing agent, thus zinc is oxidized.</p>`+
+    ecTableH(ecRows(['Cu^2+(aq)','Zn^2+(aq)']),{arrows:false,mark:{soa:0,sra:1},rows:[0,1]})+
+    `<ul><li>Anode (−), part 2, oxidation: ${C6(E6Q.zcO)}</li><li>Cathode (+), part 1, reduction: ${C6(E6Q.zcR)}</li><li>Net: ${C6(E6Q.zcN)}</li></ul>
+    <p>The electrons (7) flow through the wire (4) from the zinc to the copper. In the salt bridge (3), the cations (8) move toward the copper cathode and the anions (9) toward the zinc anode.</p>`));
+  const cp=card(g,'Try it: the porous-cup cell','<p>Practice (notes p. 35). A carbon rod stands in acidified 1.00 mol/L KMnO₄(aq) with Mn²⁺(aq). A copper strip is in 1.00 mol/L CuSO₄(aq) inside the porous cup. A voltmeter joins the two electrodes. Label the cell and write its reactions.</p>'+
+    '<div class="ec6c">'+CF(e6cell('cup',{lab:false,flow:false}),'An electrochemical cell with a porous cup (notes p. 35).')+'</div>'),cpg=el('div',{class:'ec6g2'});cp.append(cpg);
+  ec6Grid(cpg,{rows:[
+    {l:'The anode',o:['the carbon rod','the copper strip','the porous cup','the voltmeter'],a:1},
+    {l:'The cathode',o:['the carbon rod','the copper strip','the porous cup','the voltmeter'],a:0},
+    {l:'The strongest oxidizing agent',o:['MnO₄⁻(aq) with H⁺(aq)','H⁺(aq) alone','Cu²⁺(aq)','Mn²⁺(aq)'],a:0},
+    {l:'The strongest reducing agent',o:['C(s)','Mn²⁺(aq)','Cu(s)','H₂O(l)'],a:2},
+    {l:'The reduction half-reaction',o:[ecU(E6Q.cupO),ecU(E6Q.cupR),ecU('Cu^2+(aq) + 2e^- -> Cu(s)'),ecU('Mn^2+(aq) + 4H2O(l) -> MnO4^-(aq) + 8H^+(aq) + 5e^-')],a:1},
+    {l:'The oxidation half-reaction',o:[ecU(E6Q.cupO),ecU(E6Q.cupR),ecU('Cu^2+(aq) + 2e^- -> Cu(s)'),ecU('Mn^2+(aq) + 4H2O(l) -> MnO4^-(aq) + 8H^+(aq) + 5e^-')],a:0},
+    {l:'The net equation',o:[ecU('MnO4^-(aq) + 8H^+(aq) + Cu(s) -> Mn^2+(aq) + 4H2O(l) + Cu^2+(aq)'),ecU(E6Q.cupN),ecU('2Mn^2+(aq) + 8H2O(l) + 5Cu^2+(aq) -> 2MnO4^-(aq) + 16H^+(aq) + 5Cu(s)')],a:1},
+    {l:'Electrons flow through the wire',o:['from the carbon to the copper','from the copper to the carbon'],a:1},
+    {l:'Anions in the solutions move',o:['out of the cup, toward the carbon','into the cup, toward the copper'],a:1},
+    {l:'Over time, the purple colour of the outer solution',o:['becomes darker','fades'],a:1}],
+    after:`<p>${C6('MnO4^-(aq)')} with ${C6('H^+(aq)')} (+1.51 V) is the strongest oxidizing agent, and ${C6('Cu(s)')} (+0.34 V) is the strongest reducing agent. The copper strip in the cup is the anode (−), and the carbon rod is an inert cathode (+).</p>
+      <ul><li>Reduction (cathode): ${C6(E6Q.cupR)}</li><li>Oxidation (anode): ${C6(E6Q.cupO)}</li><li>Net, with 10 e⁻ on each side: ${C6(E6Q.cupN)}</li></ul>`+
+      CF(e6cell('cup'),'The porous-cup cell, labelled. Electrons flow from the copper to the carbon. The purple '+C6('MnO4^-')+' is reduced to almost colourless '+C6('Mn^2+')+'.')},0);
+
+  /* ---------- p. 35: the salt bridge ---------- */
+  const cs=card(g,'Choosing the salt bridge',`<p>These are good salt-bridge solutions, as long as you watch for <b>exceptions</b>:</p><ul><li>${C6('NaCl(aq)')} or ${C6('KCl(aq)')}</li><li>${C6('NaNO3(aq)')} or ${C6('KNO3(aq)')}</li></ul>
+    <p>The ions of the salt bridge must not form a precipitate with an ion of either half-cell. In the solubility table, ${C6('Cl^-(aq)')} has a low solubility with ${C6('Ag^+(aq)')} and ${C6('Pb^2+(aq)')}, thus a chloride bridge would form ${C6('AgCl(s)')} or ${C6('PbCl2(s)')}. Nitrates and the compounds of sodium and potassium are always soluble, thus ${C6('KNO3(aq)')} or ${C6('NaNO3(aq)')} works in almost any cell.</p>
+    <p class="hint">Try it: is ${C6('KCl(aq)')} a good salt bridge for each cell?</p>`,'half');
+  ec6Grid(cs,{rows:[
+    {l:C6('Zn(s) | Zn^2+(aq) || Cu^2+(aq) | Cu(s)'),o:['KCl(aq) works','KCl(aq) forms AgCl(s)','KCl(aq) forms PbCl₂(s)'],a:0},
+    {l:C6('Cu(s) | Cu^2+(aq) || Ag^+(aq) | Ag(s)'),o:['KCl(aq) works','KCl(aq) forms AgCl(s)','KCl(aq) forms PbCl₂(s)'],a:1},
+    {l:C6('Pb(s) | Pb^2+(aq) || Cu^2+(aq) | Cu(s)'),o:['KCl(aq) works','KCl(aq) forms AgCl(s)','KCl(aq) forms PbCl₂(s)'],a:2},
+    {l:C6('Ni(s) | Ni^2+(aq) || Cu^2+(aq) | Cu(s)'),o:['KCl(aq) works','KCl(aq) forms AgCl(s)','KCl(aq) forms PbCl₂(s)'],a:0},
+    {l:C6('Pt(s) | H2(g), H^+(aq) || Ag^+(aq) | Ag(s)'),o:['KCl(aq) works','KCl(aq) forms AgCl(s)','KCl(aq) forms PbCl₂(s)'],a:1}],
+    after:`<p>A chloride bridge fails only with ${C6('Ag^+(aq)')} or ${C6('Pb^2+(aq)')} in a half-cell. ${C6('KNO3(aq)')} or ${C6('NaNO3(aq)')} works in all five cells.</p>`},3);
+
+  /* ---------- p. 36: half-cells and inert electrodes ---------- */
+  card(g,'Standard half-cells',`<p>A standard half-cell is usually a metal electrode in a 1.0 mol/L solution of its own ions. In notation, a single line separates the solid from the solution. The notes write some half-cells with the electrode first and some with the solution first: the order depends on the side of the cell notation (see cell notation below).</p>
+    <div class="ec6hc">${[['Ag(s)','Ag^+(aq)','Ag(s) | Ag^+(aq)','silver'],['Pb(s)','Pb^2+(aq)','Pb^2+(aq) | Pb(s)','lead'],['Cu(s)','Cu^2+(aq)','Cu(s) | Cu^2+(aq)','copper'],['Zn(s)','Zn^2+(aq)','Zn^2+(aq) | Zn(s)','zinc']]
+      .map(([e,i,n,nm])=>CF(ec6Half({el:e,ions:[i],alt:`A standard ${nm} half-cell: a ${nm} electrode in a solution of ${ecU(i)}.`}),'A standard '+nm+' half-cell: '+C6(n))).join('')}</div>
+    <p class="hint">Solutions of ${C6('Ag^+')}, ${C6('Pb^2+')} and ${C6('Zn^2+')} are colourless. ${C6('Cu^2+')} is blue.</p>`,'half');
+  card(g,'Inert electrodes',`<p>A half-cell may have no solid, usually a metal, that can act as an electrode. An electrode is still needed, but it must not take part in the reaction: it must be an <span class="key">inert electrode</span> (unreactive). The choices are</p>
+    <ul><li><b>carbon</b> (graphite): cheap, but no good where oxygen is a product, because oxygen slowly reacts with the carbon;</li><li><b>platinum</b>: expensive, but inert to everything.</li></ul>
+    <div class="ec6hw"><div class="ec6hc">${CF(ec6Half({el:'C(s)',ions:['MnO4^-(aq)','H^+(aq)','Mn^2+(aq)'],alt:'A standard permanganate half-cell: a carbon rod in a purple solution of MnO₄⁻, H⁺ and Mn²⁺ ions.'}),'A standard permanganate half-cell: '+C6('C(s) | H^+(aq), MnO4^-(aq), Mn^2+(aq)'))}${
+      CF(ec6Half({el:'Pt(s)',ions:['Cr2O7^2-(aq)','H^+(aq)','Cr^3+(aq)'],alt:'A standard dichromate half-cell: a platinum electrode in an orange solution of Cr₂O₇²⁻, H⁺ and Cr³⁺ ions.'}),'A standard dichromate half-cell: '+C6('Pt(s) | H^+(aq), Cr2O7^2-(aq), Cr^3+(aq)'))}</div></div>
+    <p>Commas separate the entities of the same solution.</p>`,'half');
+  card(g,'A cell with an inert electrode',CF(e6cell('pf'),C6('Pb(s) | Pb^2+(aq) || Fe^3+(aq), Fe^2+(aq) | Pt(s)')+'. The salt bridge is KCl(aq), as in the notes.')+
+    `<ul><li>The ${C6('Fe^3+')} | ${C6('Fe^2+')} half-cell has no solid conductor for either the oxidized or the reduced form, thus ${C6('Pt(s)')} is used.</li><li>The ${C6('Pb^2+')} | Pb half-cell has lead metal to conduct the electrons, thus it does not need an inert electrode.</li></ul>`+
+    ex('The reactions of this cell',`<p>${C6('Fe^3+(aq)')} (+0.77 V) is the strongest oxidizing agent and ${C6('Pb(s)')} (−0.13 V) is the strongest reducing agent.</p>`+ecTableH(ecRows(['Fe^3+(aq)','Pb^2+(aq)']),{mark:{soa:0,sra:1},rows:[0,1]})+
+      `<ul><li>Anode (−), oxidation: ${C6(E6Q.pfO)}</li><li>Cathode (+), reduction on the platinum: ${C6(E6Q.pfR)} (× 2)</li><li>Net: ${C6(E6Q.pfN)}</li></ul>
+      <p>Electrons flow through the wire from the lead to the platinum. The ${C6('K^+')} ions of the bridge move toward the cathode and the ${C6('Cl^-')} ions toward the anode.</p>
+      <p class="hint">Check the salt bridge: ${C6('Cl^-')} forms low-solubility ${C6('PbCl2(s)')} with ${C6('Pb^2+')}. ${C6('KNO3(aq)')} would be a safer choice for this cell.</p>`),'half');
+  card(g,'Gas electrodes',`<p>When one member of the redox pair is a gas, a <span class="key">gas electrode</span> is needed. A platinum electrode dips into the electrolyte, and the gas flows over it at standard pressure.</p>`+
+    CF(ec6Half({el:'Pt(s)',gas:'H2(g)',ions:['HCl(aq)'],alt:'A standard hydrogen electrode: hydrogen gas at standard pressure is fed through a glass tube over a platinum electrode in hydrochloric acid. Bubbles rise from the bottom of the tube.'}),
+      'A standard hydrogen electrode: '+C6('Pt(s) | H2(g), H^+(aq)')+'. The notes show the gas at 1 atm.','ec6sm')+
+    `<p>${C6('2H^+(aq) + 2e^- <=> H2(g)')} occurs on the surface of the platinum, which conducts the electrons but does not react. Lesson 7 uses this half-cell as the reference: 0.00 V.</p>`,'w5');
+
+  /* ---------- p. 37: cell notation ---------- */
+  const cn=card(g,'Cell notation',`<p><span class="key">Cell notation</span> is a short way to write a voltaic cell:</p>
+    <div class="fx">${C6('Zn(s) | ZnSO4(aq) || CuSO4(aq) | Cu(s)')}</div><p class="hint">anode half-cell, then the salt bridge, then the cathode half-cell</p>
+    <ul><li>The anode is often, but not always, written first, then the cathode.</li><li>A single line | is a boundary between phases in contact, such as an electrode and its solution.</li>
+    <li>A double line || is the salt bridge or the porous cup.</li><li>Commas separate the entities of one solution or one half-cell: ${C6('Pt(s) | H2(g), H^+(aq)')}.</li>
+    <li>Some books write / for | and // or ll for ||, as the practice questions of p. 38 do.</li></ul>`,'w7');
+  nrCode(cn,{q:'<p>A voltaic cell has a zinc electrode in '+C6('Zn(NO3)2(aq)')+' and a silver electrode in '+C6('AgNO3(aq)')+'.</p><p>1&nbsp;&nbsp;'+C6('Ag(s)')+'&emsp;2&nbsp;&nbsp;'+C6('Ag^+(aq)')+'&emsp;3&nbsp;&nbsp;'+C6('Zn(s)')+'&emsp;4&nbsp;&nbsp;'+C6('Zn^2+(aq)')+'</p><p>Write the cell notation with the anode first. Record the numbers of the four entities in the order that they appear.</p>',
+    a:'3421',w:'Ag⁺(aq) (+0.80 V) is the strongest oxidizing agent and Zn(s) (−0.76 V) the strongest reducing agent, thus zinc is the anode. Anode first: Zn(s) | Zn²⁺(aq) || Ag⁺(aq) | Ag(s). Record 3421.'},0);
+
+  /* ---------- p. 38: practice 1 and 2 ---------- */
+  const p1=card(g,'Practice 1: analyze the cell',`<p>Practice (notes p. 38). Draw and completely analyze the cell <b>${C6('Cd(s) / Cd(NO3)2(aq) || Zn(NO3)2(aq) / Zn(s)')}</b>. Find the anode and cathode, both half-reactions, the oxidizing and reducing agents, the salt bridge, the spectator ions, and the direction of electron flow in the wire.</p>`,'half');
+  ec6Grid(p1,{rows:[
+    {l:'The anode',o:['Zn(s), negative','Zn(s), positive','Cd(s), negative','Cd(s), positive'],a:0},
+    {l:'The cathode',o:['Zn(s), negative','Zn(s), positive','Cd(s), negative','Cd(s), positive'],a:3},
+    {l:'The oxidizing agent',o:['Zn²⁺(aq)','Cd²⁺(aq)','NO₃⁻(aq)','H₂O(l)'],a:1},
+    {l:'The reducing agent',o:['Cd(s)','NO₃⁻(aq)','Zn(s)','H₂O(l)'],a:2},
+    {l:'The oxidation half-reaction',o:[ecU('Cd(s) -> Cd^2+(aq) + 2e^-'),ecU(E6Q.czO),ecU('Zn^2+(aq) + 2e^- -> Zn(s)'),ecU(E6Q.czR)],a:1},
+    {l:'The reduction half-reaction',o:[ecU('Cd(s) -> Cd^2+(aq) + 2e^-'),ecU(E6Q.czO),ecU('Zn^2+(aq) + 2e^- -> Zn(s)'),ecU(E6Q.czR)],a:3},
+    {l:'The net equation',o:[ecU('Zn^2+(aq) + Cd(s) -> Zn(s) + Cd^2+(aq)'),ecU('Cd^2+(aq) + Zn^2+(aq) -> Cd(s) + Zn(s)'),ecU(E6Q.czN)],a:2},
+    {l:'Electrons flow through the wire',o:['from the Cd(s) to the Zn(s)','from the Zn(s) to the Cd(s)'],a:1},
+    {l:'In a KNO₃(aq) salt bridge, the K⁺ ions move toward',o:['the zinc electrode','the cadmium electrode'],a:1},
+    {l:'The spectator ions',o:['Cd²⁺(aq)','Zn²⁺(aq)','NO₃⁻(aq)','there are none'],a:2},
+    {l:'This notation writes first',o:['the anode half-cell','the cathode half-cell'],a:1}],
+    after:'<p>All correct. The drawing and the full analysis are in the answer below.</p>'},1);
+  p1.insertAdjacentHTML('beforeend',ex('Answer: the drawing and the analysis',CF(e6cell('cz'),C6('Zn(s) | Zn^2+(aq) || Cd^2+(aq) | Cd(s)')+', drawn with the cadmium half-cell on the left, as in the question.')+
+    `<p>Entities: ${['Cd(s)','Cd^2+(aq)','NO3^-(aq)','Zn^2+(aq)','Zn(s)','H2O(l)'].map(C).join(', ')}. ${C6('Cd^2+(aq)')} (−0.40 V) is a stronger oxidizing agent than ${C6('Zn^2+(aq)')} (−0.76 V) and water, and ${C6('Zn(s)')} is the strongest reducing agent.</p>`+
+    ecTableH(ecRows(['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Cd^2+(aq)','Zn^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)']),{hl:['Cd(s)','Cd^2+(aq)','Zn^2+(aq)','Zn(s)','H2O(l)'],mark:{soa:1,sra:2},rows:[1,2]})+
+    `<ul><li>Anode (−): zinc. Oxidation: ${C6(E6Q.czO)}. ${C6('Zn(s)')} is the reducing agent.</li><li>Cathode (+): cadmium. Reduction: ${C6(E6Q.czR)}. ${C6('Cd^2+(aq)')} is the oxidizing agent.</li><li>Net: ${C6(E6Q.czN)}</li>
+    <li>Wire: electrons flow from the zinc to the cadmium.</li><li>Salt bridge, for example ${C6('KNO3(aq)')}: ${C6('K^+')} moves toward the cadmium cathode and ${C6('NO3^-')} toward the zinc anode.</li>
+    <li>Spectator ions: ${C6('NO3^-(aq)')}, and the ions of the salt bridge.</li></ul>
+    <p class="hint">This notation writes the cathode first: the anode is often, but not always, written first. The zinc electrode loses mass and the cadmium electrode gains mass. Lesson 7: ${ecEs('net')} = −0.40 V − (−0.76 V) = +0.36 V.</p>`));
+  const p2=card(g,'Practice 2: analyze the cell',`<p>Practice (notes p. 38). Draw and completely analyze the cell <b>${C6('Ag(s) / AgNO3(aq) || H2(g), HCl(aq) / Pt(s)')}</b>. Find the anode and cathode, both half-reactions, the oxidizing and reducing agents, the salt bridge, the spectator ions, and the direction of electron flow in the wire.</p>`,'half');
+  ec6Grid(p2,{rows:[
+    {l:'The anode',o:['Pt(s), negative','Pt(s), positive','Ag(s), negative','Ag(s), positive'],a:0},
+    {l:'The cathode',o:['Pt(s), negative','Pt(s), positive','Ag(s), negative','Ag(s), positive'],a:3},
+    {l:'The oxidizing agent',o:['H⁺(aq)','Ag⁺(aq)','NO₃⁻(aq)','Cl⁻(aq)'],a:1},
+    {l:'The reducing agent',o:['Ag(s)','Cl⁻(aq)','Pt(s)','H₂(g)'],a:3},
+    {l:'The oxidation half-reaction',o:[ecU('Ag(s) -> Ag^+(aq) + e^-'),ecU(E6Q.ahO),ecU('2Cl^-(aq) -> Cl2(g) + 2e^-'),ecU('2H^+(aq) + 2e^- -> H2(g)')],a:1},
+    {l:'The reduction half-reaction',o:[ecU('2H^+(aq) + 2e^- -> H2(g)'),ecU('Cl2(g) + 2e^- -> 2Cl^-(aq)'),ecU(E6Q.ahR),ecU(E6Q.ahO)],a:2},
+    {l:'The net equation',o:[ecU('Ag^+(aq) + H2(g) -> Ag(s) + 2H^+(aq)'),ecU(E6Q.ahN),ecU('2Ag(s) + 2H^+(aq) -> 2Ag^+(aq) + H2(g)')],a:1},
+    {l:'Electrons flow through the wire',o:['from the Ag(s) to the Pt(s)','from the Pt(s) to the Ag(s)'],a:1},
+    {l:'The hydrogen half-cell uses platinum because',o:['Pt(s) is the strongest reducing agent','H₂(g) cannot be an electrode, and Pt(s) does not react','Pt(s) is oxidized to Pt²⁺(aq)'],a:1},
+    {l:'A suitable salt bridge',o:['KCl(aq), because it has the Cl⁻ ion of HCl(aq)','KNO₃(aq), because KCl(aq) would form AgCl(s)'],a:1},
+    {l:'The spectator ions',o:['Ag⁺(aq) and H⁺(aq)','only Cl⁻(aq)','NO₃⁻(aq) and Cl⁻(aq)','there are none'],a:2},
+    {l:'This notation writes first',o:['the anode half-cell','the cathode half-cell'],a:1}],
+    after:'<p>All correct. The drawing and the full analysis are in the answer below.</p>'},2);
+  p2.insertAdjacentHTML('beforeend',ex('Answer: the drawing and the analysis',CF(e6cell('ah'),C6('Pt(s) | H2(g), H^+(aq) || Ag^+(aq) | Ag(s)')+', drawn with the silver half-cell on the left, as in the question.')+
+    `<p>Entities: ${['Ag(s)','Ag^+(aq)','NO3^-(aq)','H2(g)','H^+(aq)','Cl^-(aq)','H2O(l)'].map(C).join(', ')}. ${C6('Ag^+(aq)')} (+0.80 V) is the strongest oxidizing agent and ${C6('H2(g)')} (0.00 V) is the strongest reducing agent.</p>`+
+    ecTableH(ecRows(['Ag^+(aq)','H^+(aq)']),{mark:{soa:0,sra:1},rows:[0,1]})+
+    `<ul><li>Anode (−): the platinum gas electrode. Oxidation: ${C6(E6Q.ahO)}. ${C6('H2(g)')} is the reducing agent.</li><li>Cathode (+): silver. Reduction: ${C6(E6Q.ahR)} (× 2). ${C6('Ag^+(aq)')} is the oxidizing agent.</li><li>Net: ${C6(E6Q.ahN)}</li>
+    <li>Wire: electrons flow from the platinum to the silver.</li><li>Salt bridge: ${C6('KNO3(aq)')} or ${C6('NaNO3(aq)')}, not a chloride, because ${C6('Cl^-')} and ${C6('Ag^+')} would form ${C6('AgCl(s)')}.</li>
+    <li>Spectator ions: ${C6('NO3^-(aq)')} and ${C6('Cl^-(aq)')}, and the ions of the salt bridge.</li></ul>
+    <p class="hint">Hydrogen gas cannot be an electrode, thus the hydrogen half-cell is a gas electrode on platinum. The silver electrode gains mass. Lesson 7: ${ecEs('net')} = +0.80 V − 0.00 V = +0.80 V.</p>`));
+},
+qz:[]};
+/* the lesson's own questions (ec_6_0 to ec_6_13); the diploma question 38 follows them (EC_DIP[6]) */
+ECL[6].qz=[
+  {q:'Which reaction is an example of disproportionation?',o:[C6('3NO2(g) + H2O(l) -> 2HNO3(aq) + NO(g)'),C6('2Al(s) + 3Cu^2+(aq) -> 2Al^3+(aq) + 3Cu(s)'),C6('Cl2(g) + 2Br^-(aq) -> 2Cl^-(aq) + Br2(l)'),C6('2H2(g) + O2(g) -> 2H2O(l)')],a:0,
+   w:'Look for one element whose oxidation number goes both up and down. In NO₂, N is +4. Two N atoms rise to +5 in HNO₃ (oxidized), and one N atom falls to +2 in NO (reduced), thus NO₂ is both oxidized and reduced. In each of the other reactions, one entity is oxidized and a different entity is reduced.'},
+  {q:'Balance '+C6('Cl2(g) + OH^-(aq) -> ClO3^-(aq) + Cl^-(aq) + H2O(l)')+' with the lowest whole-number coefficients. What is the coefficient of '+C6('OH^-(aq)')+'?',n:6,u:'',tol:0,
+   w:'Cl is 0 in Cl₂, +5 in ClO₃⁻ and −1 in Cl⁻. Each Cl atom that is oxidized loses 5 e⁻, and each Cl atom that is reduced gains 1 e⁻. Thus 5 Cl⁻ form for each ClO₃⁻, and 3 Cl₂ supply these Cl atoms. The O atoms of one ClO₃⁻ and of 3 H₂O come from 6 OH⁻, which also give the 6 H atoms of the water. The balanced equation is 3Cl₂(g) + 6OH⁻(aq) → ClO₃⁻(aq) + 5Cl⁻(aq) + 3H₂O(l), thus the coefficient of OH⁻(aq) is 6.'},
+  {q:'In the disproportionation '+C6('3HNO2(aq) -> HNO3(aq) + 2NO(g) + H2O(l)')+', how many moles of electrons are transferred when 6.0 mol of '+C6('HNO2(aq)')+' react?',n:4,u:'mol',tol:0,
+   w:'N is +3 in HNO₂, +5 in HNO₃ and +2 in NO. One N atom rises from +3 to +5: it loses 2 e⁻. Two N atoms fall from +3 to +2, and each gains 1 e⁻. Thus the equation as written, with 3 mol of HNO₂, transfers 2 mol of electrons. 6.0 mol of HNO₂ is twice as much, thus 4.0 mol of electrons are transferred.'},
+  {q:'In the decomposition of hydrogen peroxide, '+C6('2H2O2(l) -> 2H2O(l) + O2(g)')+', the oxygen atoms that are oxidized change in oxidation number from',o:['−1 to 0','−1 to −2','−2 to 0','0 to −1'],a:0,
+   w:'In H₂O₂, each H is +1, thus each O is −1. O is 0 in O₂ and −2 in H₂O. The O atoms that end in O₂ go from −1 to 0: an increase, which is oxidation. The O atoms that end in H₂O go from −1 to −2: they are reduced.'},
+  {q:'Which statement describes the anode of a voltaic cell?',o:['Oxidation occurs there, and it is the negative electrode','Reduction occurs there, and it is the negative electrode','Oxidation occurs there, and it is the positive electrode','Reduction occurs there, and it is the positive electrode'],a:0,
+   w:'LEO A: the loss of electrons, oxidation, occurs at the anode. The anode produces the electrons that flow out into the wire, thus it is the negative electrode of a voltaic cell.'},
+  {q:'The main purpose of the salt bridge in a voltaic cell is to',o:['allow ions to move between the half-cells','allow electrons to move between the half-cells','allow the two solutions to mix completely','provide the energy that drives the reaction'],a:0,
+   w:'Electrons flow through the wire. Inside the cell, ions move through the salt bridge and keep each solution electrically neutral, while the bridge keeps the solutions from mixing. Without it the circuit is open and no current flows.'},
+  {q:'As the cell '+C6('Ni(s) | Ni^2+(aq) || Ag^+(aq) | Ag(s)')+' operates, the mass of the silver electrode ________ and the mass of the nickel electrode ________.',
+   fig:ecCell({L:{el:'Ni(s)',sol:'Ni(NO3)2(aq)',c:ec6c('Ni^2+(aq)')},R:{el:'Ag(s)',sol:'AgNO3(aq)'},bridge:'KNO3(aq)',lab:false,flow:false}),o:['increases, decreases','decreases, increases','increases, increases','decreases, decreases'],a:0,
+   w:'Ag⁺(aq) (+0.80 V) is a stronger oxidizing agent than Ni²⁺(aq) (−0.26 V), and Ni(s) is the strongest reducing agent. Silver ions are reduced at the cathode, Ag⁺(aq) + e⁻ → Ag(s), thus silver plates onto it and its mass increases. Nickel is oxidized at the anode, Ni(s) → Ni²⁺(aq) + 2e⁻, thus the nickel electrode loses mass.'},
+  {q:'In the external circuit of a voltaic cell, electrons flow',o:['from the anode to the cathode through the wire','from the cathode to the anode through the wire','from the anode to the cathode through the salt bridge','from the cathode to the anode through the salt bridge'],a:0,
+   w:'The anode produces electrons (oxidation), and the cathode consumes them (reduction). Electrons flow only through the wire, from the anode to the cathode. Ions, not electrons, carry the charge through the salt bridge.'},
+  {q:'A half-cell contains '+C6('Fe^3+(aq)')+' and '+C6('Fe^2+(aq)')+' ions. Which electrode should be used?',o:['platinum, because it conducts and does not react','iron, because the ions in the solution contain iron','zinc, because it is a strong reducing agent','none, because the ions carry the current in solution'],a:0,
+   w:'Neither Fe³⁺ nor Fe²⁺ is a solid conductor, thus the half-cell needs an inert electrode. Platinum (or carbon) conducts the electrons but does not react. Iron and zinc would react with Fe³⁺(aq) directly, and the wire must connect to a solid electrode.'},
+  {q:'In the cell notation '+C6('Pb(s) | Pb(NO3)2(aq) || AgNO3(aq) | Ag(s)')+', the double line (||) represents',o:['the salt bridge or the porous cup','a boundary between a solid and a solution','the wire of the external circuit','the voltmeter between the electrodes'],a:0,
+   w:'A single line is a boundary between phases in contact, such as Pb(s) and its solution. The double line is the salt bridge or porous cup that joins the two half-cells. The wire and the meter are not shown in cell notation.'},
+  {q:'A student builds the cell '+C6('Cu(s) | Cu(NO3)2(aq) || AgNO3(aq) | Ag(s)')+'. Which salt-bridge solution is <b>not</b> suitable?',o:[C6('NaCl(aq)'),C6('KNO3(aq)'),C6('NaNO3(aq)'),C6('Ca(NO3)2(aq)')],a:0,
+   w:'Cl⁻(aq) from the salt bridge would meet Ag⁺(aq) and form AgCl(s), which has a low solubility. The precipitate blocks the bridge and removes Ag⁺(aq). Nitrates are always soluble, thus the other three solutions are suitable.'},
+  {q:'In a standard zinc-copper cell, the zinc electrode loses 1.31 g. Calculate the mass of copper that is deposited on the copper electrode.',n:1.27,u:'g',tol:.01,
+   w:'The half-reactions are Zn(s) → Zn²⁺(aq) + 2e⁻ and Cu²⁺(aq) + 2e⁻ → Cu(s). Both have 2e⁻, thus 1 mol of Cu forms for each mole of Zn that reacts. n(Zn) = 1.31 g ÷ 65.38 g/mol = 0.02004 mol. n(Cu) = n(Zn) = 0.02004 mol. m(Cu) = 0.02004 mol × 63.55 g/mol = 1.27 g.'},
+  {q:'In the porous-cup cell of acidified permanganate and copper (notes p. 35), how many electrons are transferred in the net equation with the lowest whole-number coefficients?',n:10,u:'',tol:0,
+   w:'Reduction: MnO₄⁻(aq) + 8H⁺(aq) + 5e⁻ → Mn²⁺(aq) + 4H₂O(l). Oxidation: Cu(s) → Cu²⁺(aq) + 2e⁻. The lowest common multiple of 5 and 2 is 10: multiply the reduction by 2 and the oxidation by 5. The net equation is 2MnO₄⁻(aq) + 16H⁺(aq) + 5Cu(s) → 2Mn²⁺(aq) + 8H₂O(l) + 5Cu²⁺(aq), with 10 electrons transferred.'},
+  {q:'<b>Numerical response.</b> Use the cell shown. Identify the numbered parts: the anode, the cathode, the salt bridge and the external circuit, in that order. (Record all four digits of your answer.)',
+   fig:ecCell({L:{el:'Sn(s)',sol:'Sn(NO3)2(aq)'},R:{el:'Ag(s)',sol:'AgNO3(aq)'},lab:false,flow:false,nums:{elL:3,elR:1,bridge:4,wire:2}}),n:3142,ans:'3142',tol:0,abs:0,m:'Find the strongest oxidizing agent and the strongest reducing agent. The strongest reducing agent is oxidized at the anode.',
+   w:'Ag⁺(aq) (+0.80 V) is the strongest oxidizing agent and Sn(s) (−0.14 V) is the strongest reducing agent. Tin is oxidized, thus the tin electrode is the anode, and silver ions are reduced on the silver electrode, the cathode. The tin anode is 3, the silver cathode 1, the salt bridge 4 and the wire of the external circuit 2: record 3142.'}];
+
+/* the diploma question of this lesson: question 38 (notes p. 33; key B, p. 85) */
+EC_DIP[6]=[
+  {q:'The chemical reaction in which a single species is both oxidized and reduced is known as disproportionation. An example of this type of reaction is',
+   o:[C6('2NH3(aq) + NaOCl(aq) -> N2H4(aq) + NaCl(aq) + H2O(l)'),C6('Cl2(aq) + H2O(l) -> HOCl(aq) + H^+(aq) + Cl^-(aq)'),C6('2F2(g) + O2(g) -> 2OF2(g)'),C6('2Na(s) + I2(s) -> 2NaI(s)')],a:1,
+   w:'Assign oxidation numbers. In the chlorine reaction, Cl goes from 0 in Cl₂ to +1 in HOCl (oxidized) and to −1 in Cl⁻ (reduced): Cl₂ is both oxidized and reduced. In the ammonia reaction, N in NH₃ is oxidized (−3 to −2) and Cl in NaOCl is reduced (+1 to −1): two different reactants. In the fluorine reaction, O is oxidized (0 to +2) and F is reduced (0 to −1). In the sodium reaction, Na is oxidized and I is reduced.'}];
+/* ---------- review bank: new diploma-level items (ec_6_r0 to ec_6_r9) ---------- */
+EC_RQ[6]=[
+  {q:'Mercury(I) ions disproportionate: '+C6('Hg2^2+(aq) -> Hg(l) + Hg^2+(aq)')+'. In this reaction, '+C6('Hg2^2+(aq)')+' acts as',o:['the oxidizing agent only','the reducing agent only','both the oxidizing and the reducing agent','neither an oxidizing agent nor a reducing agent'],a:2,
+   w:'In Hg₂²⁺, each Hg atom is +1. One Hg atom gains an electron and becomes Hg(l) at 0: that part is reduced, thus it acts as the oxidizing agent. The other Hg atom loses an electron and becomes Hg²⁺ at +2: it is oxidized, thus it acts as the reducing agent. One species plays both roles: a disproportionation.'},
+  {q:'When potassium chlorate is heated gently, it disproportionates: '+C6('4KClO3(s) -> 3KClO4(s) + KCl(s)')+'. How many electrons are transferred, as the equation is written?',n:6,u:'',tol:0,
+   w:'Cl is +5 in KClO₃, +7 in KClO₄ and −1 in KCl. Three Cl atoms rise from +5 to +7, and each loses 2 e⁻. One Cl atom falls from +5 to −1 and gains 6 e⁻. The electrons lost equal the electrons gained: 6 electrons are transferred.'},
+  {q:'Manganate ions disproportionate in an acidic solution: '+C6('MnO4^2-(aq) + H^+(aq) -> MnO4^-(aq) + MnO2(s) + H2O(l)')+'. When the equation is balanced with the lowest whole-number coefficients, the coefficient of '+C6('H^+(aq)')+' is',n:4,u:'',tol:0,
+   w:'Mn is +6 in MnO₄²⁻. It rises by 1 in MnO₄⁻ (oxidized) and falls by 2 in MnO₂ (reduced). Each Mn that is oxidized loses 1 e⁻, and each Mn that is reduced gains 2 e⁻. Thus 2 MnO₄⁻ form for each MnO₂, from 3 MnO₄²⁻. Oxygen: 12 O atoms on the left and 10 in 2 MnO₄⁻ and MnO₂, thus 2 H₂O form. Their 4 H atoms come from 4 H⁺. The balanced equation is 3MnO₄²⁻(aq) + 4H⁺(aq) → 2MnO₄⁻(aq) + MnO₂(s) + 2H₂O(l).'},
+  {q:'A student builds a zinc-copper cell, but uses a copper wire in place of the salt bridge. The voltmeter reading drops to almost zero. The best explanation is that',o:['ions cannot move between the solutions through a wire','electrons cannot travel through a copper wire at all','the copper wire reacts with the Zn²⁺(aq) ions in the solution','the wire lets the two solutions mix with each other'],a:0,
+   w:'Inside the cell, ions carry the charge: they move through the salt bridge and keep each solution neutral. A metal wire carries electrons, not ions, thus charge builds up in each half-cell and the reaction stops. Copper does not react with Zn²⁺(aq), and a wire does not let the solutions mix.'},
+  {q:'In the cell '+C6('Cu(s) | Cu^2+(aq) || Ag^+(aq) | Ag(s)')+', the copper electrode loses 0.635 g. Calculate the mass of silver that is deposited on the silver electrode.',n:2.16,u:'g',tol:.01,
+   w:'The half-reactions are Cu(s) → Cu²⁺(aq) + 2e⁻ and Ag⁺(aq) + e⁻ → Ag(s). Each Cu atom gives 2 e⁻, enough for 2 Ag⁺ ions. n(Cu) = 0.635 g ÷ 63.55 g/mol = 0.009992 mol. n(Ag) = 2 × 0.009992 mol = 0.01998 mol. m(Ag) = 0.01998 mol × 107.87 g/mol = 2.16 g.'},
+  {q:'The cathode half-cell of '+C6('Zn(s) | Zn^2+(aq) || Cu^2+(aq) | Cu(s)')+' holds 250.0 mL of 1.00 mol/L '+C6('Cu(NO3)2(aq)')+'. The cell runs until the zinc electrode has lost 3.27 g. Calculate the concentration of '+C6('Cu^2+(aq)')+' that remains. Assume that the volume does not change.',n:.800,u:'mol/L',tol:.01,
+   w:'Zn(s) → Zn²⁺(aq) + 2e⁻ and Cu²⁺(aq) + 2e⁻ → Cu(s): 1 mol of Cu²⁺ is used for each mole of Zn. n(Zn) = 3.27 g ÷ 65.38 g/mol = 0.05002 mol, thus 0.05002 mol of Cu²⁺ is used. At the start, n(Cu²⁺) = 1.00 mol/L × 0.2500 L = 0.2500 mol. Left: 0.2500 mol − 0.05002 mol = 0.2000 mol. c = 0.2000 mol ÷ 0.2500 L = 0.800 mol/L.'},
+  {q:'Which half-cell must have an inert electrode, such as platinum?',o:[C6('Br2(l)')+' and '+C6('Br^-(aq)'),C6('Cu^2+(aq)')+' and '+C6('Cu(s)'),C6('Zn^2+(aq)')+' and '+C6('Zn(s)'),C6('Ag^+(aq)')+' and '+C6('Ag(s)')],a:0,
+   w:'Each metal half-cell uses its own metal as the electrode. Bromine is a liquid and the bromide ions are dissolved: neither is a solid conductor. Thus the bromine half-cell needs an inert electrode that conducts but does not react, such as platinum or carbon.'},
+  {q:'The half-cell shown is the cathode of a voltaic cell. The half-reaction at this electrode is',fig:ec6Half({el:'Pt(s)',gas:'Cl2(g)',ions:['Cl^-(aq)'],alt:'A gas electrode: chlorine gas is fed through a glass tube over a platinum electrode in a chloride solution.'}),
+   o:[C6('Cl2(g) + 2e^- -> 2Cl^-(aq)'),C6('2Cl^-(aq) -> Cl2(g) + 2e^-'),C6('Pt^2+(aq) + 2e^- -> Pt(s)'),C6('Pt(s) -> Pt^2+(aq) + 2e^-')],a:0,
+   w:'Chlorine gas flows over an inert platinum electrode in a chloride solution: a gas electrode. Reduction occurs at the cathode (GER C), thus Cl₂(g) gains electrons on the platinum surface and becomes Cl⁻(aq). Platinum conducts but does not react.'},
+  {q:'Which statement is true for both voltaic cells and electrolytic cells?',o:['Reduction occurs at the cathode','The anode is the negative electrode','A power supply drives the reaction','The reaction is spontaneous'],a:0,
+   w:'In every electrochemical cell, oxidation occurs at the anode and reduction at the cathode, and electrons flow through the external circuit from the anode to the cathode. The signs of the electrodes, the need for a power supply and the spontaneity are different.'},
+  {q:'In the cell shown, the beaker holds '+C6('Fe^3+(aq)')+' and '+C6('Fe^2+(aq)')+' around the platinum electrode, and the porous cup holds '+C6('Ni^2+(aq)')+' around the nickel electrode. The anode and the direction of the electrons in the wire are',
+   fig:ecCell({sep:'cup',L:{el:'Pt(s)',sol:'Fe^3+(aq), Fe^2+(aq)',c:ec6c('Fe^3+(aq)')},R:{el:'Ni(s)',sol:'Ni^2+(aq)',c:ec6c('Ni^2+(aq)')},anode:'R',lab:false,flow:false,nums:{elL:1,elR:2}}).replace('viewBox="0 0 440 ','viewBox="0 0 456 '),
+   o:['electrode 2; from 2 to 1','electrode 1; from 1 to 2','electrode 2; from 1 to 2','electrode 1; from 2 to 1'],a:0,
+   w:'Fe³⁺(aq) (+0.77 V) is the strongest oxidizing agent and Ni(s) (−0.26 V) is the strongest reducing agent. Nickel is oxidized, thus the nickel electrode (2) in the porous cup is the anode. The platinum (1) is an inert cathode, where Fe³⁺(aq) is reduced to Fe²⁺(aq). Electrons flow through the wire from the anode to the cathode: from 2 to 1.'}];
+
+/* ---------- challenge ---------- */
+EC_CH[6]={q:'A voltaic cell has a lead electrode in 250.0 mL of 1.00 mol/L '+C6('Pb(NO3)2(aq)')+', and a platinum electrode in 250.0 mL of a solution that is 1.00 mol/L '+C6('Fe(NO3)3(aq)')+' and 1.00 mol/L '+C6('Fe(NO3)2(aq)')+'. The cell runs until the lead electrode has lost 0.829 g. Calculate the concentration of '+C6('Fe^3+(aq)')+' that remains. Assume that the volumes do not change.',
+  n:.968,u:'mol/L',tol:.01,
+  w:'Fe³⁺(aq) (+0.77 V) is the strongest oxidizing agent and Pb(s) (−0.13 V) is the strongest reducing agent, thus lead is the anode and Fe³⁺(aq) is reduced at the platinum cathode. Half-reactions: Pb(s) → Pb²⁺(aq) + 2e⁻ and Fe³⁺(aq) + e⁻ → Fe²⁺(aq). n(Pb) = 0.829 g ÷ 207.20 g/mol = 0.004001 mol. Each Pb gives 2 e⁻ and each Fe³⁺ gains 1 e⁻: n(Fe³⁺) used = 2 × 0.004001 mol = 0.008002 mol. At the start, n(Fe³⁺) = 1.00 mol/L × 0.2500 L = 0.2500 mol, thus 0.2500 mol − 0.008002 mol = 0.2420 mol is left. c = 0.2420 mol ÷ 0.2500 L = 0.968 mol/L.'};
+
+/* ---------- written response ---------- */
+EC_WRQ.push({q:'A student builds a voltaic cell from a nickel electrode in 1.0 mol/L '+C6('Ni(NO3)2(aq)')+' and a silver electrode in 1.0 mol/L '+C6('AgNO3(aq)')+', joined by a salt bridge and a wire with a voltmeter.<br>(a) Identify the anode and the cathode. Write the two half-reactions and the net equation.<br>(b) Describe the flow of the electrons in the external circuit and the movement of the ions in the salt bridge.<br>(c) The student first fills the salt bridge with '+C6('KCl(aq)')+'. Explain why this is a poor choice, and suggest a better electrolyte.<br>(d) Write the cell notation, and predict how the mass of each electrode changes as the cell runs.',
+  marks:['(a) '+C6('Ag^+(aq)')+' is the strongest oxidizing agent and '+C6('Ni(s)')+' the strongest reducing agent: nickel is the anode (−), silver the cathode (+)','(a) Anode: '+C6('Ni(s) -> Ni^2+(aq) + 2e^-')+'. Cathode: '+C6('Ag^+(aq) + e^- -> Ag(s)')+'. Net: '+C6('2Ag^+(aq) + Ni(s) -> 2Ag(s) + Ni^2+(aq)'),
+    '(b) Electrons flow through the wire from the nickel to the silver. In the salt bridge, cations move toward the silver cathode and anions toward the nickel anode',
+    '(c) '+C6('Cl^-(aq)')+' would precipitate the '+C6('Ag^+(aq)')+' as '+C6('AgCl(s)')+'; use '+C6('KNO3(aq)')+' or '+C6('NaNO3(aq)')+' (nitrates are always soluble)',
+    '(d) '+C6('Ni(s) | Ni^2+(aq) || Ag^+(aq) | Ag(s)')+'. The silver cathode gains mass and the nickel anode loses mass'],
+  model:'<p>(a) '+C6('Ag^+(aq)')+' (+0.80 V) is the strongest oxidizing agent and '+C6('Ni(s)')+' (−0.26 V) is the strongest reducing agent. Nickel is oxidized, thus the nickel electrode is the anode (−): '+C6('Ni(s) -> Ni^2+(aq) + 2e^-')+'. Silver ions are reduced on the silver electrode, the cathode (+): '+C6('Ag^+(aq) + e^- -> Ag(s)')+'. Net: '+C6('2Ag^+(aq) + Ni(s) -> 2Ag(s) + Ni^2+(aq)')+'.</p>'+
+    '<p>(b) Electrons flow through the external circuit from the nickel anode to the silver cathode. In the salt bridge, cations move toward the silver cathode and anions move toward the nickel anode. This keeps each solution electrically neutral.</p>'+
+    '<p>(c) '+C6('Cl^-(aq)')+' from a '+C6('KCl(aq)')+' bridge would meet '+C6('Ag^+(aq)')+' and precipitate '+C6('AgCl(s)')+'. The precipitate blocks the bridge and removes the oxidizing agent. '+C6('KNO3(aq)')+' or '+C6('NaNO3(aq)')+' is better, because nitrates are always soluble.</p>'+
+    '<p>(d) '+C6('Ni(s) | Ni^2+(aq) || Ag^+(aq) | Ag(s)')+'. The silver cathode gains mass as silver plates onto it, and the nickel anode loses mass as it dissolves.</p>'});
+
+/* ---------- generators: one for each numeric question type of the lesson ---------- */
+/* metals and their ions (EC_E0 rows where the ion is the oxidizing agent), for the cells of the generators */
+const G6M=[['Au','gold',3],['Ag','silver',1],['Cu','copper',2],['Pb','lead',2],['Sn','tin',2],['Ni','nickel',2],['Co','cobalt',2],['Cd','cadmium',2],['Fe','iron',2],['Zn','zinc',2],['Al','aluminum',3]]
+  .map(([s,nm,z])=>{const k=s+'^'+(z>1?z:'')+'+(aq)',r=ecRow(k);return {s,nm,z,k,r,E:r.E,M:EC_M[s]};});
+/* a cathode metal ion and an anode metal: a spontaneous cell (at least 0.10 V) */
+const g6Cell=()=>{let c,a;do{c=G6M[RN(0,G6M.length-1)];a=G6M[RN(0,G6M.length-1)];}while(c.E-a.E<.1);return [c,a];};
+const g6Ox=m=>ecU(m.s+'(s) -> '+m.k+' + '+(m.z>1?m.z:'')+'e^-'),g6Red=m=>ecU(m.k+' + '+(m.z>1?m.z:'')+'e^- -> '+m.s+'(s)'),g6Not=(a,c)=>ecU(a.s+'(s) | '+a.k+' || '+c.k+' | '+c.s+'(s)');
+/* disproportionations: [the sentence, the equation balanced with the lowest whole numbers, the electrons transferred, the explanation] */
+const G6D=[['Chlorine disproportionates in a cold basic solution','Cl2(g) + 2OH^-(aq) -> OCl^-(aq) + Cl^-(aq) + H2O(l)',1,'Cl is 0 in Cl₂, +1 in OCl⁻ and −1 in Cl⁻. One Cl atom loses 1 e⁻ and the other gains 1 e⁻, thus one Cl₂ gives one OCl⁻ and one Cl⁻. The O and H atoms of OCl⁻ and H₂O come from 2 OH⁻.'],
+  ['Chlorine disproportionates in a hot basic solution','3Cl2(g) + 6OH^-(aq) -> ClO3^-(aq) + 5Cl^-(aq) + 3H2O(l)',5,'Cl is 0 in Cl₂, +5 in ClO₃⁻ and −1 in Cl⁻. Each Cl atom that is oxidized loses 5 e⁻ and each Cl atom that is reduced gains 1 e⁻, thus 5 Cl⁻ form for each ClO₃⁻, from 3 Cl₂. The O atoms of ClO₃⁻ and 3 H₂O come from 6 OH⁻.'],
+  ['Bromine disproportionates in a basic solution','Br2(l) + 2OH^-(aq) -> BrO^-(aq) + Br^-(aq) + H2O(l)',1,'Br is 0 in Br₂, +1 in BrO⁻ and −1 in Br⁻. One Br atom loses 1 e⁻ and the other gains 1 e⁻, thus one Br₂ gives one BrO⁻ and one Br⁻. The O and H atoms of BrO⁻ and H₂O come from 2 OH⁻.'],
+  ['Iodine disproportionates in a hot basic solution','3I2(s) + 6OH^-(aq) -> IO3^-(aq) + 5I^-(aq) + 3H2O(l)',5,'I is 0 in I₂, +5 in IO₃⁻ and −1 in I⁻. Each I atom that is oxidized loses 5 e⁻ and each I atom that is reduced gains 1 e⁻, thus 5 I⁻ form for each IO₃⁻, from 3 I₂. The O atoms of IO₃⁻ and 3 H₂O come from 6 OH⁻.'],
+  ['Nitrogen dioxide disproportionates in water','3NO2(g) + H2O(l) -> 2HNO3(aq) + NO(g)',2,'N is +4 in NO₂, +5 in HNO₃ and +2 in NO. Each N atom that is oxidized loses 1 e⁻ and each N atom that is reduced gains 2 e⁻, thus 2 HNO₃ form for each NO, from 3 NO₂. One H₂O gives the H atoms of 2 HNO₃.'],
+  ['Nitrogen dioxide disproportionates in a basic solution','2NO2(g) + 2OH^-(aq) -> NO2^-(aq) + NO3^-(aq) + H2O(l)',1,'N is +4 in NO₂, +3 in NO₂⁻ and +5 in NO₃⁻. One N atom gains 1 e⁻ and another loses 1 e⁻, thus 2 NO₂ give one NO₂⁻ and one NO₃⁻. Then 2 OH⁻ give the extra O atom and one H₂O.'],
+  ['Nitrous acid disproportionates','3HNO2(aq) -> HNO3(aq) + 2NO(g) + H2O(l)',2,'N is +3 in HNO₂, +5 in HNO₃ and +2 in NO. Each N atom that is oxidized loses 2 e⁻ and each N atom that is reduced gains 1 e⁻, thus 2 NO form for each HNO₃, from 3 HNO₂. The 3 H atoms make one HNO₃ and one H₂O.'],
+  ['Hydrogen peroxide disproportionates','2H2O2(l) -> 2H2O(l) + O2(g)',2,'O is −1 in H₂O₂, 0 in O₂ and −2 in H₂O. The 2 O atoms of one O₂ lose 2 e⁻, and the 2 O atoms that become H₂O gain 2 e⁻, thus 2 H₂O₂ give 2 H₂O and one O₂.'],
+  ['Hypochlorite ions disproportionate when they are heated','3ClO^-(aq) -> ClO3^-(aq) + 2Cl^-(aq)',4,'Cl is +1 in ClO⁻, +5 in ClO₃⁻ and −1 in Cl⁻. Each Cl atom that is oxidized loses 4 e⁻ and each Cl atom that is reduced gains 2 e⁻, thus 2 Cl⁻ form for each ClO₃⁻, from 3 ClO⁻.'],
+  ['Potassium chlorate disproportionates when it is heated gently','4KClO3(s) -> 3KClO4(s) + KCl(s)',6,'Cl is +5 in KClO₃, +7 in KClO₄ and −1 in KCl. Each Cl atom that is oxidized loses 2 e⁻ and each Cl atom that is reduced gains 6 e⁻, thus 3 KClO₄ form for each KCl, from 4 KClO₃.'],
+  ['Manganate ions disproportionate in an acidic solution','3MnO4^2-(aq) + 4H^+(aq) -> 2MnO4^-(aq) + MnO2(s) + 2H2O(l)',2,'Mn is +6 in MnO₄²⁻, +7 in MnO₄⁻ and +4 in MnO₂. Each Mn that is oxidized loses 1 e⁻ and each Mn that is reduced gains 2 e⁻, thus 2 MnO₄⁻ form for each MnO₂, from 3 MnO₄²⁻. The 2 extra O atoms become 2 H₂O with 4 H⁺.'],
+  ['Copper(I) ions disproportionate','2Cu^+(aq) -> Cu(s) + Cu^2+(aq)',1,'Cu is +1 in Cu⁺, 0 in Cu and +2 in Cu²⁺. One Cu⁺ ion gains 1 e⁻ and another loses 1 e⁻, thus 2 Cu⁺ give one Cu and one Cu²⁺.'],
+  ['Ammonium nitrate disproportionates when it is heated','NH4NO3(s) -> N2O(g) + 2H2O(g)',4,'N is −3 in NH₄⁺, +5 in NO₃⁻ and +1 in N₂O. The N of NH₄⁺ loses 4 e⁻ and the N of NO₃⁻ gains 4 e⁻, thus one NH₄NO₃ gives one N₂O. Its 4 H atoms make 2 H₂O.']]
+  .map(([nm,eq,e,w])=>{const p=ecParse(eq),sk=s=>s.map(x=>x[1]).join(' + ');return {nm,eq,e,w,sp:p.L.concat(p.R),sk:sk(p.L)+' -> '+sk(p.R)};});
+/* the half-reactions of the cells for an electron count: oxidizing agents (rows) and reducing agents (rows), from EC_E0 */
+const G6O=['MnO4^-(aq)','Cr2O7^2-(aq)','Cl2(g)','Br2(l)','Au^3+(aq)','Ag^+(aq)','Fe^3+(aq)','I2(s)','Cu^2+(aq)'].map(k=>ecRow(k)),
+  G6R=[['Fe^2+(aq)','ra'],['I^-(aq)','ra'],['Ag(s)'],['Cu(s)'],['H2(g)'],['Pb(s)'],['Sn(s)'],['Ni(s)'],['Fe(s)'],['Zn(s)'],['Al(s)'],['Mg(s)']].map(([k,s])=>ecRow(k,s));
+EC_GEN[6]=[
+  /* the mass at one electrode from the mass at the other electrode of a voltaic cell */
+  ()=>{const [c,a]=g6Cell(),fw=RN(0,1),m=RN(1,5,.01),mi=fw?a:c,mo=fw?c:a,n1=m/mi.M,ne=n1*mi.z,n2=ne/mo.z,x=n2*mo.M;
+    return {q:`In the voltaic cell ${g6Not(a,c)}, ${fw?`the ${a.nm} anode loses ${m.toFixed(2)} g. Calculate the mass of ${c.nm} that is deposited on the cathode.`:`${m.toFixed(2)} g of ${c.nm} is deposited on the cathode. Calculate the mass of ${a.nm} that is used up at the anode.`}`,n:x,u:'g',tol:.01,
+      w:`Anode: ${g6Ox(a)}. Cathode: ${g6Red(c)}. n(${mi.s}) = ${m.toFixed(2)} g ÷ ${mi.M.toFixed(2)} g/mol = ${sig(n1,4)} mol. n(e⁻) = ${mi.z} × ${sig(n1,4)} mol = ${sig(ne,4)} mol. n(${mo.s}) = ${sig(ne,4)} mol ÷ ${mo.z} = ${sig(n2,4)} mol. m(${mo.s}) = ${sig(n2,4)} mol × ${mo.M.toFixed(2)} g/mol = ${sig(x)} g.`};},
+  /* a coefficient of a disproportionation, balanced with the lowest whole numbers */
+  ()=>{const d=G6D[RN(0,G6D.length-1)],big=d.sp.filter(x=>x[0]>1),[c,k]=big.length&&RN(0,4)?big[RN(0,big.length-1)]:d.sp[RN(0,d.sp.length-1)];
+    return {q:`${d.nm}: ${ecU(d.sk)}. When the equation is balanced with the lowest whole-number coefficients, what is the coefficient of ${ecU(k)}?`,n:c,u:'',tol:0,
+      w:`${d.w} The balanced equation is ${ecU(d.eq)}, thus the coefficient of ${ecU(k)} is ${c}.`};},
+  /* the electrons transferred in a balanced equation: a disproportionation or a voltaic cell */
+  ()=>{if(RN(0,1)){const d=G6D[RN(0,G6D.length-1)];return {q:`${d.nm}: ${ecU(d.eq)}. How many electrons are transferred, as the equation is written?`,n:d.e,u:'',tol:0,
+        w:`${d.w} The electrons lost equal the electrons gained, thus ${d.e} electron${d.e>1?'s are':' is'} transferred.`};}
+    let rr,or;do{rr=G6O[RN(0,G6O.length-1)];or=G6R[RN(0,G6R.length-1)];}while(rr.E-or.E<.1||rr===or);const p=ecPair(rr,or),[x,y]=RN(0,1)?[rr,or]:[or,rr];
+    return {q:`A voltaic cell uses the half-reactions ${x.u} (E° = ${x.Es} V) and ${y.u} (E° = ${y.Es} V). How many electrons are transferred in its net equation, with the lowest whole-number coefficients?`,n:p.n,u:'',tol:0,
+      w:`The half-reaction with the higher E° is the reduction at the cathode: ${p.redU}. The other one is the oxidation at the anode: ${p.oxU}. To balance the electrons, use the lowest common multiple of ${rr.n} and ${or.n}: ${p.n}. Net: ${p.netU}. ${p.n} electron${p.n>1?'s are':' is'} transferred.`};},
+  /* the concentration of the cathode ion after the cell has run */
+  ()=>{let c,a;do{c=RN(0,3)?G6M[RN(0,G6M.length-1)]:{s:'Fe',nm:'iron(III)',z:1,k:'Fe^3+(aq)',E:.77,M:EC_M.Fe,fe:1};a=G6M[RN(0,G6M.length-1)];}while(c.E-a.E<.1||c.s===a.s);
+    const V=[100,150,200,250,500][RN(0,4)],c0=[.5,.75,1][RN(0,2)],cs=c0<1?c0.toFixed(3):c0.toFixed(2),ion=ecU(c.k.replace(/\(aq\)$/,'')),n0=c0*V/1000,f=RN(.05,.5,.01),ms=(f*n0*c.z/a.z*a.M).toPrecision(3),m=+ms,na=m/a.M,ne=na*a.z,nu=ne/c.z,x=(n0-nu)/(V/1000);
+    const red=c.fe?ecU('Fe^3+(aq) + e^- -> Fe^2+(aq)'):g6Red(c),cat=c.fe?'the platinum cathode, in a solution of Fe³⁺(aq) and Fe²⁺(aq)':'the '+c.nm+' cathode';
+    return {q:`In a voltaic cell, ${/^[aeiou]/.test(a.nm)?'an':'a'} ${a.nm} anode loses ${ms} g, and ${ecU(c.k)} is reduced at ${cat}. The cathode solution was ${V.toFixed(1)} mL of ${cs} mol/L ${ecU(c.k)} at the start. Calculate the concentration of ${ecU(c.k)} that remains. Assume that the volume does not change.`,n:x,u:'mol/L',tol:.01,
+      w:`Anode: ${g6Ox(a)}. Cathode: ${red}. n(${a.s}) = ${ms} g ÷ ${a.M.toFixed(2)} g/mol = ${sig(na,4)} mol. n(e⁻) = ${a.z} × ${sig(na,4)} mol = ${sig(ne,4)} mol. n(${ion}) used = ${sig(ne,4)} mol ÷ ${c.z} = ${sig(nu,4)} mol. At the start, n(${ion}) = ${cs} mol/L × ${(V/1000).toFixed(4)} L = ${sig(n0,4)} mol. Left: ${sig(n0-nu,4)} mol. c = ${sig(n0-nu,4)} mol ÷ ${(V/1000).toFixed(4)} L = ${sig(x)} mol/L.`};}];
+EC_METHOD[6]='For a coefficient or an electron count, find the change in oxidation number of the atoms that are oxidized and of the atoms that are reduced, and make the electrons lost equal the electrons gained. For a mass or a concentration, go from grams to moles, then through the electrons of the two half-reactions to the other substance.';
+
+/* ---------- How-to card ---------- */
+EC_HT[6]={title:'How to answer disproportionation and voltaic cell questions',pre:'Assign oxidation numbers for a disproportionation. For a cell, find the strongest oxidizing agent and the strongest reducing agent first: everything else follows from them.',items:[
+  {q:'Decide if a reaction is a disproportionation',s:['Assign an oxidation number to every atom on both sides.','Find the element whose oxidation number goes up for some of its atoms and down for others.','Check that those atoms come from one reactant. Then that reactant is both oxidized and reduced.'],chk:'If the element that is oxidized and the element that is reduced come from two different reactants, it is an ordinary redox reaction.'},
+  {q:'Balance a simple disproportionation',s:['Find the change in oxidation number of an atom that is oxidized and of an atom that is reduced.','Choose the numbers of the two products so that the electrons lost equal the electrons gained.','Balance that element, then O with H₂O (or OH⁻ in a basic solution) and H with H⁺ or H₂O.','Check the atoms and the charge on both sides.'],chk:'For Cl₂ + 2OH⁻ → OCl⁻ + Cl⁻ + H₂O, one Cl atom loses 1 e⁻ and the other gains 1 e⁻.'},
+  {q:'Analyze a voltaic cell',s:['List the entities of each half-cell, with H₂O(l).','Find the SOA and the SRA in the table of reduction potentials.','The electrode where the SRA is oxidized is the anode (−). The electrode where the SOA is reduced is the cathode (+).','Write both half-reactions, balance the electrons and add them for the net equation.','Electrons flow through the wire from the anode to the cathode. Cations move toward the cathode, and anions toward the anode.','The ions that do not react are spectator ions.'],chk:'A metal anode loses mass. A cathode where a metal ion is reduced gains mass.'},
+  {q:'Choose the electrodes and the salt bridge',s:['A metal half-cell uses the metal itself as the electrode.','When no solid conductor is part of the half-reaction (Fe³⁺/Fe²⁺, MnO₄⁻/Mn²⁺, Br₂/Br⁻, a gas), use an inert electrode: platinum, or carbon when no oxygen is produced.','Choose a salt bridge such as KNO₃(aq) or NaNO₃(aq). Avoid Cl⁻ when Ag⁺ or Pb²⁺ is present: AgCl(s) or PbCl₂(s) would precipitate.'],chk:'Nitrates and the compounds of sodium and potassium are always soluble.'},
+  {q:'Write or read cell notation',s:['Write the anode half-cell: electrode | solution.','Write || for the salt bridge or the porous cup.','Write the cathode half-cell: solution | electrode.','Use | for a boundary between phases, and commas between the entities of one solution.'],chk:'Zn(s) | Zn²⁺(aq) || Cu²⁺(aq) | Cu(s). The anode is often, but not always, written first: check with the table.'},
+  {q:'Find a mass or a concentration in a cell',s:['Write both half-reactions with their electrons.','Find the moles of the substance you know: n = m/M.','Convert through the electrons: n(e⁻) = n × (electrons per atom or ion).','Find the moles of the other substance: n = n(e⁻) ÷ (its electrons). Then m = nM, or the moles that are left ÷ the volume.'],chk:'In a copper-silver cell, 1 mol of Cu gives the electrons for 2 mol of Ag.'}]};
+
+/* ---------- reference sheet ---------- */
+EC_REF.f.push(['Voltaic cell notation','anode | anode electrolyte || cathode electrolyte | cathode'],
+  ['Electron and ion flow in a cell','electrons: anode → cathode, through the wire; cations → cathode; anions → anode'],
+  ['Electrodes of a voltaic cell','anode (−): oxidation, LEO A; cathode (+): reduction, GER C']);
+EC_REF.t.push(['Disproportionation','A redox reaction in which one entity is both oxidized and reduced. Some atoms of one element increase in oxidation number, while other atoms of the same element decrease.'],
+  ['Voltaic cell','An electrochemical cell that changes chemical energy into electrical energy with a spontaneous redox reaction.'],
+  ['Half-cell','One part of an electrochemical cell, where oxidation or reduction occurs. It is usually a metal electrode in a solution of its ions.'],
+  ['Electrode','The solid conductor in a half-cell, usually a metal. Electrons enter or leave the cell there.'],
+  ['Electrolyte','An aqueous solution of ions that conducts a current.'],
+  ['Salt bridge','A tube of an electrolyte that joins the two half-cells. It keeps the solutions from mixing, but ions move through it and keep each solution neutral.'],
+  ['Porous cup','An unglazed cup that holds one half-cell inside the other. Like a salt bridge, it lets ions pass but keeps the solutions from mixing.'],
+  ['Anode','The electrode where oxidation occurs (LEO A). In a voltaic cell it is the negative electrode: electrons are produced there.'],
+  ['Cathode','The electrode where reduction occurs (GER C). In a voltaic cell it is the positive electrode: electrons are consumed there.'],
+  ['Cation','A positive ion. In a cell, cations move toward the cathode.'],
+  ['Anion','A negative ion. In a cell, anions move toward the anode.'],
+  ['Inert electrode','An electrode that conducts but does not react: platinum, or carbon where no oxygen is produced. It is used when no solid of the half-reaction can act as the electrode.'],
+  ['Gas electrode','A platinum electrode in an electrolyte, with a gas bubbled over it at standard pressure, for example Pt(s) | H₂(g), H⁺(aq).'],
+  ['Cell notation','A short way to write a cell: anode | anode electrolyte || cathode electrolyte | cathode. A single line is a phase boundary and a double line is the salt bridge or porous cup.'],
+  ['External circuit','The wire, with a voltmeter or a load, that joins the electrodes. Electrons flow through it from the anode to the cathode.'],
+  ['Spectator ion','An ion that is present in a cell but does not react, for example NO₃⁻(aq) in most metal half-cells.'],
+  ['Standard cell','A cell at 25 °C, with electrolytes at 1.0 mol/L and every gas at standard pressure.']);
 }catch(e){console.error('[ec] slot 6 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 7 ----- */
 {try{
