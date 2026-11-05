@@ -1724,8 +1724,8 @@ function reviewUI(g,sk,le){
     nx.onclick=()=>{T.i++;if(T.i<tot){ask();toQ(host);}else results();};end.onclick=()=>results();nav.append(nx,end);c.append(nav);host.append(c);const h=$('h3',c);h.tabIndex=-1;h.focus({preventScroll:true});}
   /* ----- timed exam ----- */
   function exStart(mins){const wr=wrs.length?wrs[Math.floor(Math.random()*wrs.length)]:null,skip=new Set(wr&&wr.skip||[]),items=balanced(nMC,x=>!!x.it.o&&!skip.has(x.id)).map(x=>Object.assign(x,{kind:'mc',ord:optOrd(x.it)}));
-    if(nNR){const gs=shuffle(genList(sk)).map(g=>{const it=g.f();return {it,L:it.L,gen:1,id:g.id};}).filter(x=>nrSpec(x.it.n)).slice(0,2),ss=balanced(nNR-gs.length,x=>!!nrOf(x.it)&&!skip.has(x.id));
-      shuffle(gs.concat(ss)).forEach(x=>items.push(Object.assign(x,{kind:'nr',nr:x.it.code?nrOf(x.it):nrSpec(x.it.n)})));}
+    if(nNR){const gs=shuffle(genList(sk)).map(g=>{const it=g.f();return {it,L:it.L,gen:1,id:g.id};}).filter(x=>nrOf(x.it)).slice(0,2),ss=balanced(nNR-gs.length,x=>!!nrOf(x.it)&&!skip.has(x.id));
+      shuffle(gs.concat(ss)).forEach(x=>items.push(Object.assign(x,{kind:'nr',nr:nrOf(x.it)})));}
     if(wr)items.push({it:wr,kind:'wr',L:-1});
     E={items,ans:items.map(()=>null),i:0,t0:Date.now(),end:Date.now()+mins*60000};exRun();
     exShow();toHost();}
@@ -17848,8 +17848,8 @@ const dipUnits=d=>(SUBJECTS.find(s=>s.k===d.k)||{units:[]}).units.filter(u=>SUBJ
 /* n questions, about d.nr of them numerical response (questions that fit the four boxes, and calculations with new numbers), one lesson at a time */
 function dipPick(d,n){const us=dipUnits(d),ls=us.flatMap(sk=>SUBJ[sk].lessons.map((le,L)=>({sk,L,a:lessonItems(sk,le,L)})).filter(x=>x.a)),gen=us.flatMap(sk=>genList(sk).map(g=>{const it=g.f();return {it,sk,L:g.L,id:g.id,gen:1};}));
   const take=(groups,k)=>{groups=shuffle(groups.filter(a=>a.length));const out=[];let j=0;while(out.length<k&&groups.some(a=>a.length)){const a=groups[j++%groups.length];if(a.length)out.push(a.pop());}return out;};
-  const nr=take(ls.map(x=>shuffle(x.a.filter(y=>nrOf(y.it)).concat(gen.filter(g=>g.sk===x.sk&&g.L===x.L&&nrSpec(g.it.n))))),Math.round(n*d.nr)),mc=take(ls.map(x=>shuffle(x.a.filter(y=>y.it.o))),n-nr.length);
-  return shuffle(mc.map(x=>Object.assign({},x,{kind:'mc',ord:optOrd(x.it)})).concat(nr.map(x=>Object.assign({},x,{kind:'nr',nr:x.it.code?nrOf(x.it):nrSpec(x.it.n)}))));}
+  const nr=take(ls.map(x=>shuffle(x.a.filter(y=>nrOf(y.it)).concat(gen.filter(g=>g.sk===x.sk&&g.L===x.L&&nrOf(g.it))))),Math.round(n*d.nr)),mc=take(ls.map(x=>shuffle(x.a.filter(y=>y.it.o))),n-nr.length);
+  return shuffle(mc.map(x=>Object.assign({},x,{kind:'mc',ord:optOrd(x.it)})).concat(nr.map(x=>Object.assign({},x,{kind:'nr',nr:nrOf(x.it)}))));}
 /* a diploma practice exam in progress is kept in this tab (sessionStorage), like the unit exam: a reload, or a phone that drops the page while another app is open, does not lose it */
 const DIPK='exam:dip',dipSave=(d,E)=>{try{sessionStorage.setItem(DIPK,JSON.stringify({k:d.k,E}));}catch(e){}},dipDrop=()=>{try{sessionStorage.removeItem(DIPK);}catch(e){}};
 function dipLoad(L){let v=null;try{v=JSON.parse(sessionStorage.getItem(DIPK));}catch(e){}const d=v&&DIP.find(x=>x.k===v.k),E=v&&v.E;
