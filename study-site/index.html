@@ -4107,7 +4107,7 @@ const EC1_C={o:'color-mix(in srgb,var(--s2) 70%,var(--ink))',r:'color-mix(in srg
 const ec1A=(f,ons=[])=>{const m=String(f).match(/^(\d*)(.*?)(\((?:s|l|g|aq)\))?$/);let b=m[2],ch='',k=0,h='';const q=b.match(/\^(\d*[+-])$/);if(q){ch=q[1];b=b.slice(0,q.index);}
   b.replace(/([A-Z][a-z]?)(\d*)|([()])(\d*)|([^])/g,(x,e,n,p,pn,o)=>{
     if(e){const v=ons[k++],t=Array.isArray(v)?v[0]:v,c=EC1_C[Array.isArray(v)?v[1]:'a'];
-      h+=t!=null&&t!==''?`<span style="position:relative;display:inline-block;line-height:1;padding:0 .1em">${e}<span style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.64em;font-weight:700;line-height:1.05;white-space:nowrap;color:${c}">${t}</span></span>`:e;
+      h+=t!=null&&t!==''?`<span style="position:relative;display:inline-block;line-height:1;padding:0 .15em">${e}<span style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.64em;font-weight:700;line-height:1.05;white-space:nowrap;color:${c}">${t}</span></span>`:e;
       if(n)h+='<sub>'+n+'</sub>';}
     else if(p)h+=p+(pn?'<sub>'+pn+'</sub>':'');else h+=o;return '';});
   return `<span style="white-space:nowrap">${m[1]}${h}${ch?'<sup>'+ch.replace('-','−')+'</sup>':''}${m[3]||''}</span>`;};
@@ -4211,7 +4211,7 @@ const ec1List=(a,nums)=>`<div style="display:grid;grid-template-columns:auto 1fr
 const EC1_Q1=['HSO3^-(aq) + HCO3^-(aq) -> H2CO3(aq) + SO3^2-(aq)','C6H12O6(aq) + 6O2(g) -> 6CO2(g) + 6H2O(l)','Ni^2+(aq) + Fe(s) -> Fe^2+(aq) + Ni(s)','Co^2+(aq) + 2Fe^2+(aq) -> 2Fe^3+(aq) + Co(s)','6CO2(g) + 6H2O(l) -> C6H12O6(aq) + 6O2(g)'];
 const EC1_Q3=['Fe^2+(aq) + Cr^3+(aq) -> Fe^3+(aq) + Cr^2+(aq)','NH3(aq) + H2O(l) -> NH4^+(aq) + OH^-(aq)','2NH3(g) + 7/2 O2(g) -> 2NO2(g) + 3H2O(g)','Mg^2+(aq) + 2OH^-(aq) -> Mg(OH)2(s)','Sn^2+(aq) + 2NO3^-(aq) + 4H^+(aq) -> Sn^4+(aq) + 2NO2(g) + 2H2O(l)','PbSO4(s) + SO3^2-(aq) + 2OH^-(aq) -> H2O(l) + Pb(s) + 2SO4^2-(aq)'];
 const EC1_F1=ec1List(EC1_Q1)+`<p style="margin:.7em .5em .25em"><b>Descriptions</b>, in the order to record:</p><div style="margin:0 .5em .35em;line-height:1.6">${['A biological redox reaction carried out in a plant cell but not in an animal cell','A biological redox reaction carried out in both animal and plant cells','A spontaneous, non-biological redox reaction','A nonspontaneous, non-biological redox reaction'].map(t=>t+' ____').join('<br>')}</div>`;
-const EC1_F4=ec1P(`When you drink alcoholic beverages, only 5% of the alcohol is removed through functions such as breathing and sweating. Your liver is responsible for eliminating the other 95%. The alcohol reacts with ${C('NAD^+(aq)')}, a substance present in the liver. The reaction is catalyzed by an enzyme called alcohol dehydrogenase and is represented by the equation`)+
+const EC1_F4=ec1P(`When you drink alcoholic beverages, only 5% of the alcohol is removed through functions such as breathing and sweating. Your liver is responsible for eliminating the other 95%. The alcohol reacts with ${ec1N('NAD^+(aq)')}, a substance present in the liver. The reaction is catalyzed by an enzyme called alcohol dehydrogenase and is represented by the equation`)+
   `<p style="margin:.4em .5em;text-align:center;line-height:2">${ec1N('C2H5OH(l) + NAD^+(aq)')}${ec1Arr('alcohol','dehydrogenase')}${ec1N('CH3CHO(aq) + NADH(aq) + H^+(aq)')} + energy</p>`;
 const EC1_F5=ec1P('In an experiment, dilute hydrochloric acid was added to a test tube containing several small pieces of zinc metal.');
 const EC1_F6=ec1P('The oil that Syncrude mines from the Athabasca Tar Sands contains large amounts of undesirable sulfur. To remove most of the sulfur, Syncrude uses a chemical process known as the Claus process, which results in a low-sulfur “sweet” crude oil. Two steps involved in the Claus process are shown below.')+
@@ -4239,8 +4239,10 @@ ECL[1]={t:EC_T[1],h:'Oxidation numbers',
     '#ec-1 .ec1c input.ok{border-color:var(--ok);background:var(--okb)}#ec-1 .ec1c input.bad{border:2px dashed var(--bad);background:var(--badb)}'+
     '#ec-1 .ec1w{font-size:.8rem;color:var(--ink2);margin-top:.35em;line-height:1.45}#ec-1 .ec1nr{margin-top:1.1em;padding-top:.7em;border-top:1px solid var(--hair)}'+
     /* each row of the page-6 tables puts its name on top and its three choices under it: the table fits a half card and a phone without scrolling sideways */
-    '#ec-1 .ec1tb .eq-tb,#ec-1 .ec1tb .eq-tb tbody{display:block}#ec-1 .ec1tb .eq-tb tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.7fr);gap:.35em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--hair)}'+
-    '#ec-1 .ec1tb .eq-tb th,#ec-1 .ec1tb .eq-tb td{border:0;padding:0}#ec-1 .ec1tb .eq-tb tr:first-child th:first-child{display:none}#ec-1 .ec1tb .eq-tb th.rn{grid-column:1/-1}#ec-1 .ec1tb .eq-tb select{width:100%}');
+    '#ec-1 .ec1tb{container-type:inline-size}#ec-1 .ec1tb .eq-tb,#ec-1 .ec1tb .eq-tb tbody{display:block}#ec-1 .ec1tb .eq-tb tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr);gap:.35em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--hair)}'+
+    '#ec-1 .ec1tb .eq-tb th,#ec-1 .ec1tb .eq-tb td{border:0;padding:0}#ec-1 .ec1tb .eq-tb tr:first-child th:first-child{display:none}#ec-1 .ec1tb .eq-tb th.rn{grid-column:1/-1}#ec-1 .ec1tb .eq-tb select{width:100%}'+
+    /* a narrow table (a phone): Before and After side by side, and the result on its own line, so that "Select…" and "unchanged" are never cut off */
+    '@container (max-width:405px){#ec-1 .ec1tb .eq-tb tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#ec-1 .ec1tb .eq-tb tr>:last-child{grid-column:1/-1}}');
   /* 1. what an oxidation number is (page 5) */
   card(g,'What an oxidation number is',`<p class="hint">Outcomes: 30–B1.2k, 30–B1.3k</p>
     <p>An <span class="key">oxidation number</span> is a positive or negative number given to an atom in a molecule or in a polyatomic ion. It is based mainly on electronegativity.</p>
@@ -4349,6 +4351,7 @@ ECL[1]={t:EC_T[1],h:'Oxidation numbers',
 /* the diploma practice questions 1 to 6 (pages 8 and 9, key on page 85). The options keep the order of the notes (a = the key letter) */
 EC_DIP[1]=[
   {q:'Numerical response. Use the equations and the descriptions below. Match each description with the number of its equation. Record the equation numbers in the order of the descriptions (four digits).',fig:EC1_F1,n:5234,ans:'5234',tol:0,abs:0,
+    m:'First find the redox reactions: in each one, an oxidation number changes. Then decide where each redox reaction happens (plant cells, animal cells, or not in a living thing) and whether it is spontaneous.',
     w:'Equation 1 is an acid-base reaction: HSO₃⁻ gives a proton to HCO₃⁻, and no oxidation number changes (S stays +4 and C stays +4). Thus it is not a redox reaction, and it matches no description. Equation 5 is photosynthesis: it happens in plant cells, with light energy, but not in animal cells. Equation 2 is cellular respiration: it happens in both animal and plant cells. Equation 3 is spontaneous: the oxidizing agent Ni²⁺(aq) (−0.26 V) is above the reducing agent Fe(s) (−0.45 V) in the table of reduction half-reactions. Equation 4 is nonspontaneous: the oxidizing agent Co²⁺(aq) (−0.28 V) is below the reducing agent Fe²⁺(aq) (+0.77 V). Record 5234.'},
   {q:'Oxidation-reduction reactions occur in biological systems. A net oxidation-reduction reaction that occurs in the body is',
     o:[ec1N('Mg^2+(aq) + 2OH^-(aq) -> Mg(OH)2(s)'),ec1N('HCO3^-(aq) + H3O^+(aq) -> H2CO3(aq) + H2O(l)'),ec1N('CH4(g) + 2O2(g) -> CO2(g) + 2H2O(g)'),ec1N('C6H12O6(aq) + 6O2(g) -> 6CO2(g) + 6H2O(l)')],a:3,
@@ -4411,16 +4414,17 @@ const EC1_GX=[{f:'K2Cr2O7',x:'Cr',v:6,k:{K:1,O:-2}},{f:'KMnO4',x:'Mn',v:7,k:{K:1
   {f:'UO2^2+',x:'U',v:6,k:{O:-2}},{f:'MoO4^2-',x:'Mo',v:6,k:{O:-2}},{f:'AsO4^3-',x:'As',v:5,k:{O:-2}},{f:'H3AsO3',x:'As',v:3,k:{H:1,O:-2}},{f:'SeO4^2-',x:'Se',v:6,k:{O:-2}},{f:'SeO3^2-',x:'Se',v:4,k:{O:-2}},
   {f:'Cr(OH)3',x:'Cr',v:3,k:{O:-2,H:1}},{f:'MnO4^-',x:'Mn',v:7,k:{O:-2}},{f:'S2O3^2-',x:'S',v:2,k:{O:-2},post:'This is the average of the two S atoms.'}];
 EC1_GX.forEach(r=>{if(Math.abs(ec1Sum(r)-r.v)>1e-9)console.error('[ec] lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);});
-/* the pool of generator 1: every sum-rule row with a whole-number answer */
-const EC1_POOL=EC1_PT.flatMap(G=>G.r).filter(r=>r.k&&Number.isInteger(r.v)).concat(EC1_GX);
+/* the pool of generator 1: every sum-rule row with a whole-number answer. IBr₂ stays in the practice table (the notes write it without a charge), but a generated question uses only real species */
+const EC1_POOL=EC1_PT.flatMap(G=>G.r).filter(r=>r.k&&Number.isInteger(r.v)&&r.f!=='IBr2').concat(EC1_GX);
 /* [element, from, to, oxidation number in from, oxidation number in to] */
 const EC1_CV=[['Mn','MnO4^-','Mn^2+',7,2],['Mn','MnO4^-','MnO2',7,4],['Cr','Cr2O7^2-','Cr^3+',6,3],['N','NO3^-','NO',5,2],['N','NO3^-','NO2',5,4],['N','HNO2','NO',3,2],['S','SO4^2-','H2SO3',6,4],
   ['S','SO3^2-','SO4^2-',4,6],['S','H2S','S8',-2,0],['Fe','Fe^2+','Fe^3+',2,3],['Sn','Sn^2+','Sn^4+',2,4],['Cl','ClO3^-','Cl^-',5,-1],['Cl','ClO^-','Cl^-',1,-1],['Cl','Cl2','Cl^-',0,-1],['I','IO3^-','I2',5,0],
   ['I','I^-','I2',-1,0],['O','H2O2','O2',-1,0],['O','H2O2','H2O',-1,-2],['C','C2O4^2-','CO2',3,4],['N','NH3','NO',-3,2],['N','N2H4','N2',-2,0],['Cu','Cu','Cu^2+',0,2],['Ag','Ag^+','Ag',1,0],
   ['Br','Br^-','Br2',-1,0],['Pb','PbO2','PbSO4',4,2],['C','CH3OH','HCOOH',-2,2],['V','VO2^+','VO^2+',5,4],['As','H3AsO3','H3AsO4',3,5],['Cr','CrO4^2-','Cr(OH)3',6,3],['Mn','Mn^2+','MnO2',2,4]];
 EC_GEN[1]=[
-  ()=>{const r=EC1_POOL[RN(0,EC1_POOL.length-1)];
-    return {q:`Calculate the oxidation number of ${EC1_NM[r.x]} in ${C(r.f)}.`,n:r.v,u:'',tol:0,ans:ec1S(r.v),w:ec1Work(r)};},
+  /* a value that is an average says so; for NH₄NO₃ the question names the ion, because its two N atoms are −3 and +5 */
+  ()=>{const r=EC1_POOL[RN(0,EC1_POOL.length-1)],avg=/average/.test(r.post||'');
+    return {q:`Calculate the ${avg?'average ':''}oxidation number of ${EC1_NM[r.x]} in ${r.lab?'the '+C(r.s)+' ion of ':''}${C(r.f)}.`,n:r.v,u:'',tol:0,ans:ec1S(r.v),w:ec1Work(r)};},
   ()=>{const [x,a,b,va,vb]=EC1_CV[RN(0,EC1_CV.length-1)],k=ecAtoms(a).a[x],d=vb-va,n=k*Math.abs(d),up=d>0;
     return {q:`In a reaction, ${C(a)} changes to ${C(b)}. How many electrons does one ${C(a)} lose or gain?`,n,u:'',tol:0,
       w:`${x} is ${ec1S(va)} in ${ecU(a)} and ${ec1S(vb)} in ${ecU(b)}. The oxidation number ${up?'increases':'decreases'} by ${Math.abs(d)} for each ${x} atom.`+(k>1?` One ${ecU(a)} has ${k} ${x} atoms: ${k} × ${Math.abs(d)} = ${n} electrons.`:'')+
