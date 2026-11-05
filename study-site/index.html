@@ -8502,7 +8502,7 @@ EC_REF.t.push(['Corrosion','The deterioration (oxidation) of a metal by electroc
 /* an equation in C notation as HTML whose species never break across lines: a line can break only after + or an arrow */
 const ec10Q=s=>{const g=[];String(s).replace(/, /g,',\u00a0').split(' ').forEach(t=>{if(/^(\+|->|<=>)$/.test(t)&&g.length)g[g.length-1]+=' '+t;else g.push(t);});return g.map(t=>`<span class="ec10n">${C(t)}</span>`).join(' ');};
 const ec10V=s=>String(s).replace(/(\d) V\b/g,'$1\u00a0V');
-/* a formula never breaks between its charge and its state ("H⁺" at the end of a line, "(aq)" on the next): a word joiner (U+2060) after </sup> */
+/* a formula never breaks between its charge and its state ("H⁺" at the end of a line, "(aq)" on the next): chgNw puts the two in one nowrap span */
 const ec10J=s=>chgNw(String(s));
 const ec10Info=t=>`<p style="margin:.25em .35em;line-height:1.45">${t}</p>`;
 /* gas labels over the liquid of a one-beaker ecCell (electrodes at x 110 and 330) */
@@ -8721,9 +8721,8 @@ ECL[10]={t:EC_T[10],h:'Electrolytic cells',d:'An electrolytic cell uses electric
       `<div class="ec10-two">${CF(ecCell({type:'electrolytic',L:{el:'Pt(s)',sol:'K2SO4(aq)',bub:true},R:{el:'Pt(s)',bub:true},cat:'K⁺',an:'SO₄²⁻',extra:ec10Gas('O₂(g)','H₂(g)')}),'1B: '+Q('Pt(s) | K2SO4(aq) | Pt(s)')+'. Oxygen forms at the anode (+), hydrogen at the cathode (−).')}`+
       `${CF(ecCell({type:'electrolytic',L:{el:'C(s)',sol:'CaCl2(aq)',bub:true},R:{el:'C(s)',bub:true},cat:'Ca²⁺',an:'Cl⁻',extra:ec10Gas('Cl₂(g)','H₂(g)')}),'1D: '+Q('C(s) | CaCl2(aq) | C(s)')+'. Chlorine forms at the anode (+), hydrogen at the cathode (−).')}</div>
       <p>An electrolytic cell with one container has no salt bridge, thus its cell notation has no ||: anode | electrolyte | cathode. The power supply pushes electrons from the anode to the cathode. The cations (${C('K^+')}, ${C('Ca^2+')}) move toward the cathode and the anions (${C('SO4^2-')}, ${C('Cl^-')}) toward the anode.</p>`));
-  /* keep a value and its unit V on one line */
-  const tw=document.createTreeWalker(g,NodeFilter.SHOW_TEXT);for(let n=tw.nextNode();n;n=tw.nextNode()){if(/\d V\b/.test(n.nodeValue))n.nodeValue=ec10V(n.nodeValue);
-    if(/^\(/.test(n.nodeValue)&&n.previousSibling&&n.previousSibling.nodeName==='SUP')n.nodeValue='\u2060'+n.nodeValue;}
+  /* keep a value and its unit V on one line (a charge and its state are kept together by C(): no word joiner, which a PDF can print as '?') */
+  const tw=document.createTreeWalker(g,NodeFilter.SHOW_TEXT);for(let n=tw.nextNode();n;n=tw.nextNode()){if(/\d V\b/.test(n.nodeValue))n.nodeValue=ec10V(n.nodeValue);}
 },qz:[
   {q:'In an electrolytic cell, the anode is',o:['positive, and oxidation occurs there','negative, and oxidation occurs there','positive, and reduction occurs there','negative, and reduction occurs there'],a:0,
     w:'The power supply pulls electrons out of the anode, thus the anode is positive. Oxidation always occurs at the anode (LEO A), in voltaic and in electrolytic cells.'},
