@@ -738,6 +738,8 @@ html{scroll-padding-top:62px}
 .cm-i .ic{flex:none}
 .cm-i:hover,.cm-i:focus-visible{background:var(--hov)}
 .cm-i.on{font-weight:600}
+/* the lesson menu lists the reference sheet and Review first, in a group that stays at the top when the menu scrolls (as the rail pins them) */
+.cm-pin{position:sticky;top:-5px;z-index:1;display:grid;gap:1px;margin:-5px -5px 3px;padding:5px 5px 4px;background:var(--glass);border-bottom:1px solid var(--hair)}
 .lesson{max-width:var(--cap);margin-inline:auto}
 .glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .card{border-radius:10px;padding:18px 20px}
@@ -18037,20 +18039,27 @@ dispatchEvent(new Event('sync-change'));
     const S=SUBJECTS.find(x=>x.name===sub);if(!S)return [];
     if(lv==='u'){const out=[];let g0=null;S.units.forEach(k=>{const g=ugOf(k);if(g&&g!==g0)out.push({h:g.name});g0=g;out.push({t:SUBJ[k].name,ic:k,cur:k===curS,go:()=>goLesson(k,curL[k])});});
       const todo=courseUnits(S).todo;if(todo.length)out.push({h:'Not on the site yet'},...todo.map(t=>({note:t})));return out;}
-    return SUBJ[curS].lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i)}));};
+    /* the lessons: the reference sheet and Review (with its badge of due questions) first, in a group that stays at the top of the menu when it scrolls,
+       as the rail pins them. Thus Review is in view in every section without scrolling the menu */
+    const S2=SUBJ[curS],rv=S2.lessons.findIndex(l=>l.rv),pin=i=>i===rv||(i===rv-1&&!!REF[curS]);
+    const ls=S2.lessons.map((le,i)=>({t:le.t,ic:le.ic||LIC[le.t]||curS,cur:i===curL[curS],chip:chipBtns[i],go:()=>showLesson(i),pin:rv>=0&&pin(i)}));
+    return ls.filter(x=>x.pin).concat(ls.filter(x=>!x.pin));};
   /* 'On this page': the top of the page, then each card that has a heading. The card on screen is marked; choosing one scrolls it to just below the bar and focuses its heading */
   const outline=()=>{const L=document.querySelector('#main>.lesson:not([hidden])');if(!L)return [];const y0=topBar()+innerHeight/4,h1=L.querySelector('h1');let on=-1;
     const cs=[...L.querySelectorAll('.card')].filter(c=>!c.parentElement.closest('.card')&&c.getClientRects().length).map(c=>({c,h:c.querySelector('h2,h3')})).filter(x=>x.h&&x.h.textContent.trim());
     cs.forEach((x,i)=>{if(x.c.getBoundingClientRect().top<=y0)on=i;});
     return [{h:'On this page'},{t:h1?h1.textContent:'Top of the page',ic:'up',here:on<0,go:()=>{window.scrollTo({top:0,behavior:RM?'auto':'smooth'});focusTo(L,'h1');return 1;}}]
       .concat(cs.map((x,i)=>({t:x.h.textContent.replace(/\s+/g,' ').trim(),ic:'dash',here:i===on,go:()=>{goTo(x.c,'h2,h3');return 1;}})));};
-  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';if(typeof popClose==='function')popClose();
+  const openMenu=b=>{const x=b.dataset.lv==='o'?{lv:'o'}:crumbs().find(y=>y.lv===b.dataset.lv);if(!x)return;menu.innerHTML='';if(typeof popClose==='function')popClose();let pb=null;
     (x.lv==='o'?outline():items(x.lv,x.sub)).forEach(it=>{if(it.h||it.note){const h=document.createElement('div');h.className=it.h?'cm-h':'cm-n';h.textContent=it.h||it.note;menu.append(h);return;}
       const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
       /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
-      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;focusPlace(document.querySelector('#main>.lesson:not([hidden])'));};menu.append(m);});
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;focusPlace(document.querySelector('#main>.lesson:not([hidden])'));};
+      if(it.pin){if(!pb){pb=document.createElement('div');pb.className='cm-pin';pb.setAttribute('role','none');menu.append(pb);}pb.append(m);}else menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
+    /* the pinned group covers the top of the menu: the browser's scrolling to a focused item (arrow keys) leaves that strip out */
+    menu.style.scrollPaddingTop=pb?pb.offsetHeight+'px':'';
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';
     /* the current item gets focus, and the menu (not the page: that would move the student's place) scrolls to show it */
