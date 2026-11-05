@@ -10,11 +10,13 @@
    the page's own write (Firestore without metadata changes does not), slow writes (one write at a time per document), and RETIRE through the documents.
    Exit code 0 = all pass. */
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');const os=require('os');const {execFileSync}=require('child_process');
-const FILE=path.resolve(process.argv[2]||'study-site/index.html');
+/* the file arguments; run.js passes its flags on (--full, --strict): they are not files */
+const ARGS=process.argv.slice(2).filter(a=>!a.startsWith('--'));
+const FILE=path.resolve(ARGS[0]||'study-site/index.html');
 /* a copy of the page whose RETIRE list also holds mom_0_0, retired one hour ago (for the RETIRE case) */
 const RTT=Math.floor((Date.now()-3600e3)/1000)*1000,RTP=(()=>{try{const s=fs.readFileSync(FILE,'utf8'),T=new Date(RTT).toISOString().replace(/\.\d+Z$/,'Z');if((s.match(/^const RETIRE=\{/gm)||[]).length!==1)return null;
   const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'retire-')),'index.html');fs.writeFileSync(t,s.replace(/^const RETIRE=\{/m,"const RETIRE={'mom_0_0':'"+T+"',"));return t;}catch(e){return null;}})();
-const OLD=process.argv[3]?path.resolve(process.argv[3]):(()=>{try{const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'oldpage-')),'index.html');
+const OLD=ARGS[1]?path.resolve(ARGS[1]):(()=>{try{const t=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'oldpage-')),'index.html');
   fs.writeFileSync(t,execFileSync('git',['-C',path.dirname(FILE),'show','92e381a:study-site/index.html'],{maxBuffer:64<<20}));return t;}catch(e){console.log('(no old page: the old-page case is skipped)');return null;}})();
 const LIM=256*1024,sleep=ms=>new Promise(r=>setTimeout(r,ms)),res=[];
 const ok=(t,c,info)=>{res.push([c?'PASS':'FAIL',t]);console.log((c?'PASS  ':'FAIL  ')+t+(info!==undefined?'  '+(typeof info==='string'?info:JSON.stringify(info)):''));};
