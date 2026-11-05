@@ -44,7 +44,10 @@ class Server{
       const next=op==='set'?clone(a.data):deep(clone(cur||{}),a.data);
       if(size(next)>dev.lim)throw {code:dev.fb?'invalid-argument':'invalid_argument',message:'document over the size limit'};
       if(dev.fb&&nested(next))throw {code:'invalid-argument',message:'nested arrays are not supported'};
-      dev.writes=(dev.writes||0)+1;dev.writeB=(dev.writeB||0)+size(a.data);this.docs.set(n,next);this.changed(n,dev);return true;}
+      dev.writes=(dev.writes||0)+1;dev.writeB=(dev.writeB||0)+size(a.data);
+      /* the write log: the document, the kind of write, its size, and the size of the achievement record (meta g.ach) in it */
+      (dev.wlog=dev.wlog||[]).push({path:n,op,bytes:size(a.data),ach:a.data&&a.data.g&&a.data.g.ach!=null?size({ach:a.data.g.ach}):0});
+      this.docs.set(n,next);this.changed(n,dev);return true;}
     if(op==='sub'){const id=++this.sid;this.subs.set(id,{dev,kind:a.kind,path:n,seen:new Map(),first:true});setTimeout(()=>this.deliver(id,null),5);return id;}
     if(op==='unsub'){this.subs.delete(a.id);return true;}
     throw new Error('op '+op);}
@@ -129,8 +132,16 @@ const buildLegacy=dev=>ev(dev,()=>{const o={v:3,a:{},r:{},s:{},w:{},h:{},g:{},c:
   o.g.days={v:Array.from({length:160},(_,i)=>dayOf(now-(160-i)*DAY)),t:now-DAY};o.g.n_ok={n:4000,t:now-DAY};o.c['rb2:bio']={t:Date.parse('2026-11-02T16:01:43Z')};
   return o;});
 const hourAch=dev=>ev(dev,()=>{Store.xs('g','owl',{n:Math.max(1,gN('owl'))});Store.xs('g','bird',{n:Math.max(1,gN('bird'))});});
-const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Promise(r=>setTimeout(r,300));let k=0;
-  for(const q of [...document.querySelectorAll('#'+sk+'-'+L+' .quiz .q')].filter(q=>q.querySelector('.ops')&&!q.dataset.done)){if(k>=n)break;q.querySelector('button.op').click();k++;await new Promise(r=>setTimeout(r,120));}return k;},[sk,L,n]);
+/* answers the first n open multiple-choice questions of lesson L of section sk. The option is chosen by its index in the item, not by its place on the screen
+   (the options are shuffled, thus the first button is the key at random): pick 'wrong' (the default) is the first option that is not the key, 'key' the key */
+const answer=(dev,sk,L,n,pick='wrong')=>ev(dev,async([sk,L,n,pick])=>{goLesson(sk,L);await new Promise(r=>setTimeout(r,300));let k=0;
+  const card=document.querySelector('#'+sk+'-'+L+' .quiz'),items=SUBJ[sk].lessons[L].qz||[],txt=h=>{const d=document.createElement('div');d.innerHTML=h;return d.textContent.trim();};
+  /* the questions of the card are its .q children, in the order of the lesson's items */
+  const qs=card?[...card.children].filter(x=>x.classList.contains('q')):[];
+  for(let i=0;i<qs.length&&k<n;i++){const q=qs[i],it=items[i];if(!it||!Array.isArray(it.o)||!q.querySelector('.ops')||q.dataset.done)continue;
+    const j=pick==='key'?it.a:it.o.findIndex((_,x)=>x!==it.a),want=txt(typeof optLbl==='function'?optLbl(it,j):it.o[j]);
+    const b=[...q.querySelectorAll('button.op')].find(b=>b.textContent.trim()===want);if(!b)throw new Error('answer(): no button for option '+j+' of '+sk+'_'+L+'_'+i);
+    b.click();k++;await new Promise(r=>setTimeout(r,120));}return k;},[sk,L,n,pick]);
 
 (async()=>{browser=await chromium.launch();const T0=Date.now();
   try{
@@ -151,12 +162,19 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   ok('no page errors (A)',A.errors.length===0,A.errors.slice(0,3));
 
   /* 2. cost of one answer while signed in */
-  const cost=async(dev,sk,L)=>{const w0=dev.writeB||0,r0=dev.readB||0,c0=dev.writes||0,q0=dev.calls||0;await answer(dev,sk,L,1);await until(dev,()=>!Store.pending());await sleep(300);
-    return {writes:(dev.writes||0)-c0,bytes:(dev.writeB||0)-w0,calls:(dev.calls||0)-q0,listenerBytes:(dev.readB||0)-r0};};
+  /* the writes of one answer: in all, to the answer's own section document (own), and the achievement record among them (ach: written when a tier is reached) */
+  const cost=async(dev,sk,L,pick)=>{const w0=dev.writeB||0,r0=dev.readB||0,c0=dev.writes||0,q0=dev.calls||0,l0=(dev.wlog||[]).length;await answer(dev,sk,L,1,pick);await until(dev,()=>!Store.pending());await sleep(300);
+    const log=(dev.wlog||[]).slice(l0),own=log.filter(x=>x.path.endsWith('/p_'+sk));
+    return {writes:(dev.writes||0)-c0,bytes:(dev.writeB||0)-w0,calls:(dev.calls||0)-q0,listenerBytes:(dev.readB||0)-r0,own:own.reduce((n,x)=>n+x.bytes,0),ownWrites:own.length,ownOps:[...new Set(own.map(x=>x.op))],
+      ach:log.reduce((n,x)=>n+x.ach,0),docs:log.map(x=>x.path.split('/').pop()+' '+x.op+' '+x.bytes)};};
   /* the hour-of-day achievements (Night owl before 5 am, Early bird before 8 am) reach their tier at the first correct answer in those hours, and the achievement record
      is then written with that answer: earn them before the measured answers (the first one may be large), so the run does not depend on the clock and on a random option */
   await hourAch(A);const c1=await cost(A,'th',1),c2=await cost(A,'th',1);
-  ok('one answer uploads less than 1 KB, without a read first (the first answer of a day also writes the study-day list)',c2.bytes<1024&&c2.calls===c2.writes,{firstOfDay:c1,next:c2});
+  ok('one answer uploads less than 1 KB, without a read first, in one write to its own document (the first answer of a day also writes the study-day list)',c2.bytes-c2.ach<1024&&c2.calls===c2.writes&&c2.ownWrites===1,{firstOfDay:c1,next:c2});
+  /* a correct answer (in th-0: th-1 has only two multiple-choice questions) also writes counters in meta, and the achievement record (about 1 KB) when it reaches a tier:
+     that record is not counted */
+  const c3=await cost(A,'th',0,'key');
+  ok('a correct answer uploads less than 1 KB besides the achievement record, without a read first, one write to its own document',c3.bytes-c3.ach<1024&&c3.calls===c3.writes&&c3.ownWrites===1&&c3.own<1024,c3);
 
   /* an entry whose value JSON changes (NaN becomes null) is uploaded once, not again and again */
   {const w=A.writes||0;await ev(A,()=>Store.xs('g','nanCheck',{n:NaN,v:undefined}));await sleep(4000);ok('an entry with NaN is uploaded once',(A.writes||0)-w===1,{writes:(A.writes||0)-w});}
@@ -257,7 +275,9 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   const fg=flat(await state(G)),ffl=flat(fbLegacy);let fm=0;for(const k in ffl)if(!(k in fg))fm++;
   const fsh=flat(unshard('users/fbU1/progress/'));let fsm=0;for(const k in fg)if(fsh[k]!==fg[k])fsm++;
   ok('Firestore: every old entry is kept and stored in the new documents',fm===0&&fsm===0,{missing:fm,notInAccount:fsm,docs:[...server.docs.keys()].filter(p=>p.startsWith('users/fbU1/')).length});
-  await hourAch(G);await cost(G,'th',2);const g2=await cost(G,'th',2);ok('Firestore: one answer is a small merge write',g2.bytes<1024,g2);
+  await hourAch(G);await cost(G,'th',2);const g2=await cost(G,'th',2),g3=await cost(G,'th',0,'key');
+  /* the answer's own document gets one merge write under 1 KB; a correct answer may also write the achievement record (not counted) */
+  ok('Firestore: one answer is a small merge write',[g2,g3].every(g=>g.ownWrites===1&&g.own<1024&&g.ownOps.join()==='merge'&&g.bytes-g.ach<1024),{wrong:g2,correct:g3});
   ok('Firestore: the old document is not written',JSON.stringify(server.docs.get('users/fbU1/progress/main'))===JSON.stringify(fbLegacy));
   /* another account signs in on this browser while fbU1 has answers that did not upload: they are kept for fbU1, not given to fbU2, and upload when fbU1 is back */
   G.offline=true;await answer(G,'mom',3,2);const gi=await ev(G,()=>Store.xk('a').filter(k=>k.startsWith('mom_3_')).sort((x,y)=>Store.get(y).t-Store.get(x).t).slice(0,2));
