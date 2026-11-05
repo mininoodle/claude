@@ -1419,9 +1419,9 @@ const numOK=(x,it,ulp=0)=>isFinite(x)&&Math.abs(x-it.n)<=Math.max((it.tol??(it.a
 /* an exact value (ex, or a whole number graded with an absolute or a tight tolerance: a count, an exact limit) is shown as it is, not to 3 significant figures */
 /* the element for a question text: a <div> when it has block content (paragraphs, lists, tables), which a <p> cannot hold */
 const qTag=q=>/<(p|ol|ul|table|div)[\s>]/i.test(q||'')?'div':'p';
-/* a key graded to ±0.005 (tol 0 and abs .005: a potential from the data booklet) has 2 decimals: it fills the exam's boxes as .23 */
+/* a key graded to ±0.005 (tol 0 and abs .005: a potential from the data booklet) has 2 decimals: it is shown as 0.23 V, not 0.230 V, and fills the exam's boxes as .23 */
 const dp2=it=>it.tol===0&&it.abs===.005;
-const ansText=it=>it.o?optLbl(it,it.a):(it.code?it.code+(it.any?', in any order':''):it.ans||(it.ex||Number.isInteger(it.n)&&(it.abs!=null||it.tol<.02)?String(it.n).replace('-','−'):sig(it.n)))+(it.u?' '+it.u:'');
+const ansText=it=>it.o?optLbl(it,it.a):(it.code?it.code+(it.any?', in any order':''):it.ans||(dp2(it)?it.n.toFixed(2).replace('-','−'):it.ex||Number.isInteger(it.n)&&(it.abs!=null||it.tol<.02)?String(it.n).replace('-','−'):sig(it.n)))+(it.u?' '+it.u:'');
 const sentences=w=>{const p=String(w||'').split('. ');return p.map((x,i)=>i<p.length-1?x+'.':x).filter(Boolean);};
 /* the numbers in a text: 4.19, −1.54, 12 500, 3/11, 1.6 × 10⁵ (not coefficients such as 2a, sub- or superscripts) */
 const numsIn=t=>(String(t||'').replace(/10<sup>(.*?)<\/sup>/g,'10^$1').replace(/<(su[bp])>.*?<\/\1>/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[−–]/g,'-').replace(/10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+)/g,(m,e)=>'10^'+[...e].map(c=>SUP[c]).join(''))
@@ -8308,7 +8308,7 @@ EC_GEN[9]=[
   /* E°net of the corrosion of a metal by oxygen, in moist air or in an acidic solution */
   ()=>{const M=ec9Mt[RN(0,ec9Mt.length-1)],ac=RN(0,1)===1,ox=ac?ec9OA:ec9ON,r=ecRow(M[1]),E=+(ox.E-r.E).toFixed(2),it={q:`Calculate ${ecEs('net')} for the corrosion of ${M[0]} by oxygen ${ac?'in an acidic solution':'and water in moist air (a neutral solution)'}.`,n:E,u:'V',abs:.005,tol:0,
     w:`The oxidizing agent is ${ac?'O₂(g) with H⁺(aq)':'O₂(g) with H₂O(l)'}: ${ox.u}, E°r = ${ox.Es} V. The reducing agent is ${ecU(r.r)}: ${r.u}, E°r = ${r.Es} V. The net equation is ${ec9Rx(r,ac)}. E°net = ${ox.Es} V − (${r.Es} V) = ${ecVs(E)} V.`};
-    if(E<1)it.ans=E.toFixed(2);return it;},
+    return it;},
   /* a coefficient in the balanced net equation of a corrosion reaction */
   ()=>{const M=ec9Mt[RN(0,ec9Mt.length-1)],ac=RN(0,1)===1,ox=ac?ec9OA:ec9ON,r=ecRow(M[1]),z=r.n,k=z===3?4:2,o=z===3?3:1,m=ecU(r.r),i=ecU(r.k),
     sp=ac?[[m,k],['O₂(g)',o],['H⁺(aq)',4*o],[i,k],['H₂O(l)',2*o]]:[[m,k],['O₂(g)',o],['H₂O(l)',2*o],[i,k],['OH⁻(aq)',4*o]],t=sp[RN(0,sp.length-1)],
