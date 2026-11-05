@@ -17276,8 +17276,9 @@ function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.q
   let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id),a=Store.get(id);
     if(Store.renewed(id)&&!okTwo(d)){out++;ans++;if(!h&&!a){nr++;nq++;}else if(h&&h.l===0)nr++;return;}
     if(a||(h&&(h.c||h.m)))ans++;if(d.size>=1||(h&&h.hd)||(a&&a.ok&&!a.s&&a.hi))ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
-  /* nr: questions whose latest answer was wrong, or that changed (nq). A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
-  const n=le.qz.length-out;return {n,ans,ok1,ok2,nr,nq,lv:n&&ok2===n?3:n&&ok1===n?2:ans||ok1?1:0};}
+  /* nr: questions whose latest answer was wrong, or that changed (nq). A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down.
+     ch: the lesson has a challenge problem (CH), which mastery unlocks: the texts say so only then */
+  const n=le.qz.length-out;return {n,ans,ok1,ok2,nr,nq,ch:!!(CH[sk]&&CH[sk][L]),lv:n&&ok2===n?3:n&&ok1===n?2:ans||ok1?1:0};}
 const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
 /* the questions of a lesson whose latest answer was wrong or that changed with no answer since (nq), and the next lesson check date of a lesson (0: none) */
 const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h?h.l===0:!Store.get(id)&&!!Store.renewed(id);});
@@ -17289,7 +17290,7 @@ function unitLessons(sk){return SUBJ[sk].lessons.map((le,L)=>le.qz?Object.assign
 const lvSteps=(lv,big)=>`<span class="lvs${big?' big':''}" aria-hidden="true">${[1,2,3].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</span>`;
 /* why a Mastered lesson needs review: questions answered wrong last time, and questions that changed since the student answered them (nq) */
 const nrWhy=v=>{const q=v.nq||0,w=v.nr-q;return [w?`your last answer to ${w} of ${v.n} questions was wrong`:'',q?`${q} ${q===1?'question':'questions'} changed since you answered ${q===1?'it':'them'}`:''].filter(Boolean).join(', and ');};
-const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?nrWhy(v):`the challenge problem is unlocked`][v.lv];
+const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?nrWhy(v):v.ch?`the challenge problem is unlocked`:`${v.n} of ${v.n} answered correctly on two days at least 2 days apart`][v.lv];
 
 /* ----- every answer goes through here. o.rv: a wrong answer shows the right one, and a correct answer on that day adds no mastery day ----- */
 function onAnswer(id,ok,o={}){
@@ -17303,7 +17304,7 @@ function onAnswer(id,ok,o={}){
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
   markStudy();if(!o.nocombo)comboStep(ok);
   if(before){const a=lessonLevel(o.sk,o.L),t=SUBJ[o.sk].lessons[o.L].t;
-    if(a.lv===3&&before.lv<3){toast(icon('check',15)+' Lesson mastered: '+t+'. Its challenge problem is unlocked.');lcSeed(o.sk,o.L);}
+    if(a.lv===3&&before.lv<3){toast(icon('check',15)+' Lesson mastered: '+t+'.'+(a.ch?' Its challenge problem is unlocked.':''));lcSeed(o.sk,o.L);}
     else if(a.lv===2&&before.lv<2)toast(icon('target',15)+' Practised: '+t+'. Answer the questions again in 2 days or later to master it.');}
   afterChange();}
 function afterChange(){chipProgress();checkAch();refreshLive();homeDot();}
@@ -17365,7 +17366,7 @@ function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
     const msg=['Answer the questions above to start this lesson.',
       `Answer every question correctly once to reach <b>Practised</b>. ${v.ok1} of ${v.n} have been answered correctly.`,
       `Answer each question correctly again at least 2 days after the first time to reach <b>Mastered</b>. ${v.ok2} of ${v.n} have been answered correctly on two such days.`,
-      v.nr?nrMsg(v):'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
+      v.nr?nrMsg(v):v.ch?'You mastered this lesson. Its challenge problem is unlocked below.':'You mastered this lesson: you answered each of its questions correctly on two days at least 2 days apart.'][v.lv];
     const miss=v.lv===3&&v.nr?lcMissed(sk,L):[],nc=v.lv===3&&!v.nr?lcNext(sk,L):0,mt=!v.nq?'Practise the missed':v.nq<miss.length?'Practise the missed and changed':'Answer the changed';
     c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${lvName(v)}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
       (v.lv>=1&&v.lv<3?(need.length?`<div class="row"><button type="button" class="btn">${icon('target',15)}Practise for mastery (${need.length} ${need.length===1?'question':'questions'})</button></div><p class="hint">A question that you answer wrong goes into spaced repetition and comes back after 1 day.</p>`
