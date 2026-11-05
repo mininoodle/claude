@@ -17286,10 +17286,12 @@ const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
 /* the live views: functions that redraw a part of a page after the progress changes. Each belongs to the page that was on screen when it was added (a lesson
    adds its views while it is built and shown), or to no page. refreshLive() runs the views of no page and of the page on screen; the views of a hidden page
-   run when it is shown again (refreshLive(L) from showLesson). Pages that left the document are dropped. LIVE keeps the add/delete/forEach/size of a Set */
+   run when it is shown again (refreshLive(L) from showLesson). Pages that left the document are dropped. The first run on a new day (a page left open past
+   midnight) runs every view, as what depends on the date changes on every page. LIVE keeps the add/delete/forEach/size of a Set */
 const LIVEP=new Map(),LIVE={add(f){const k=shownPage()||null;let s=LIVEP.get(k);if(!s)LIVEP.set(k,s=new Set());s.add(f);f._lp=k;return LIVE;},
   delete(f){const s=LIVEP.get(f._lp);return !!s&&s.delete(f);},forEach(cb){LIVEP.forEach(s=>[...s].forEach(f=>cb(f,f,LIVE)));},get size(){let n=0;LIVEP.forEach(s=>n+=s.size);return n;}};
-function refreshLive(L){const run=s=>{if(s)[...s].forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});};
+let LIVED='';function refreshLive(L){const run=s=>{if(s)[...s].forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});};
+  const d=today();if(d!==LIVED){const all=!!LIVED;LIVED=d;if(all){LIVEP.forEach(run);return;}}
   if(L){run(LIVEP.get(L));return;}LIVEP.forEach((s,k)=>{if(k&&!k.isConnected)LIVEP.delete(k);});run(LIVEP.get(null));const on=shownPage();if(on)run(LIVEP.get(on));}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
