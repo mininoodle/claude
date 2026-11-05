@@ -39,6 +39,7 @@ const CHECKS = {
   'hint':      ['warning', 'a numeric lesson question has no hint (no method m and no explanation sentence before the answer)'],
   'mc-long':   ['warning', 'the key is 1.5 times its longest distractor or more'],
   'mc-pos':    ['warning', 'an option refers to other options ("all of the above", "A and B") in a list that is shuffled'],
+  'w-pos':     ['warning', 'the explanation of a shuffled multiple-choice item names an option by its place ("the second row", "the second and fourth options", "options 2 and 4", "answer B"): the options are shuffled, thus the place is wrong. The page keeps the order (and shows A, B, C, D) only when the explanation says "option B" or "the second option"'],
   'dup-same':  ['warning', 'two items have the same stem (the message says if the answer is the same too)'],
   'dup-near':  ['warning', 'a review item repeats a lesson question of its section: word 3-gram Jaccard 0.7 or more, or a numeric item with the same data and the same answer'],
   'cue':       ['warning', 'the multiple-choice length cue of a section is over the target (key unique longest above 25 %, or pick-longest above max(30 %, chance + 5))'],
@@ -62,6 +63,9 @@ function analyse(o) {
   }
   const SAME = /^(the same|for the same|in the same|in the previous question)\b/i;
   const POSO = /\b(all|none|both|neither) of (the )?(above|these|them)\b|^(both|neither) [A-D]\b|\b[A-D] and [A-D]\b|\b(options?|answers?) [A-D]\b/i;
+  /* an explanation that names options by their place in a form that the page's fixedOrd does not know (thus the options stay shuffled) */
+  const ORD = 'first|second|third|fourth|fifth|last', NOUN = 'options?|answers?|choices?|rows?|statements?|sentences?|responses?|alternatives?';
+  const POSW = new RegExp('\\b(?:' + ORD + ')(?: (?:two|three))?(?:,? (?:and|or) (?:the )?(?:' + ORD + '))? (?:' + NOUN + ')\\b|\\b(?:options?|answers?|choices?|responses?|alternatives?) [1-6](?:,? (?:and|or) [1-6])*\\b|\\b(?:choices?|answers?|responses?|alternatives?) [A-F]\\b', 'i');
   const F10 = [1e-9, 1e-6, 1e-3, 1e-2, 1e2, 1e3, 1e6, 1e9];
   const fin = x => typeof x === 'number' && isFinite(x);
   /* the numbers of a text with their written form (the same reading as the site's numsIn) */
@@ -88,6 +92,8 @@ function analyse(o) {
         if (mx && c >= 1.5 * mx) r.push(['mc-long', 'key ' + c + ' characters, longest distractor ' + mx + ' (' + (c / mx).toFixed(1) + ' times)']);
       }
       if (!fixedOrd(it)) it.o.forEach(x => { if (POSO.test(P(x))) r.push(['mc-pos', '"' + P(x).slice(0, 60) + '"']); });
+      const pw = !fixedOrd(it) && w.match(POSW);
+      if (pw) r.push(['w-pos', '"…' + w.slice(Math.max(0, pw.index - 40), pw.index + pw[0].length + 30) + '…"']);
       return r;
     }
     if (!fin(it.n) || ['tol', 'abs'].some(k => it[k] != null && !(fin(it[k]) && it[k] >= 0))) { r.push(['num-n', 'n = ' + it.n + (it.tol != null ? ', tol = ' + it.tol : '') + (it.abs != null ? ', abs = ' + it.abs : '')]); return r; }
