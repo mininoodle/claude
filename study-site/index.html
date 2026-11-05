@@ -1070,7 +1070,9 @@ function sig(x,n=3){
 /* a recomputed value that differs from a conserved one (ref) only by rounding error is shown as that value */
 const snap=(x,ref,s=1)=>Math.abs(x-ref)<=1e-9*Math.max(s,Math.abs(ref))?ref:x;
 /* chemistry text: ^2- and ^+ are charges, ^-3 and ^5 are exponents, and digits after a letter are subscripts */
-const C=s=>s.replace(/\^([0-9]*[+-](?![0-9])|[+-]?[0-9]+)/g,(m,c)=>'<sup>'+c.replace('-','−')+'</sup>').replace(/([A-Za-z\)])(\d+)/g,'$1<sub>$2</sub>').replace(/<=>/g,'⇌').replace(/->/g,'→');
+/* a charge and the state after it stay on one line (Cu²⁺(aq) never breaks before (aq)): a nowrap span, not a word joiner, which a PDF prints as '?'. It can run twice on the same HTML */
+const chgNw=h=>h.indexOf('</sup>(')<0?h:h.replace(/(<span style="white-space:nowrap">)?(<sup>[^<]*<\/sup>\((?:aq|s|l|g)\))/g,(m,p,x)=>p?m:'<span style="white-space:nowrap">'+x+'</span>');
+const C=s=>chgNw(s.replace(/\^([0-9]*[+-](?![0-9])|[+-]?[0-9]+)/g,(m,c)=>'<sup>'+c.replace('-','−')+'</sup>').replace(/([A-Za-z\)])(\d+)/g,'$1<sub>$2</sub>').replace(/<=>/g,'⇌').replace(/->/g,'→'));
 function bearing(x,y){
   const a=Math.atan2(Math.abs(y),Math.abs(x))*180/Math.PI;
   if(Math.hypot(x,y)<1e-9)return 'no direction';
@@ -4539,7 +4541,7 @@ const ecBase=()=>{if(document.getElementById('ec-css'))return;document.head.appe
   '.ec-tb td.arw i{flex:1;border-left:2px solid var(--mute);min-height:6px}.ec-tb td.arw b{width:0;height:0;border:6px solid transparent;flex:none}'+
   '.ec-tb td.up b{border-bottom:10px solid var(--mute);border-top:0}.ec-tb td.dn b{border-top:10px solid var(--mute);border-bottom:0}'+
   '.ec-tb td.arw span{writing-mode:vertical-rl;font-size:.7rem;font-weight:600;color:var(--ink2);white-space:nowrap;padding:.35em 0;letter-spacing:.01em}.ec-tb td.up span{transform:rotate(180deg)}'+
-  '.ec-tag{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:.05em .45em;margin:0 .35em;border-radius:99px;background:var(--s2);color:#fff;vertical-align:.12em}'+
+  '.ec-tag{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:.05em .45em;margin:0 .35em;border-radius:99px;background:var(--s2);color:#191919;vertical-align:.12em}'+
   '.ec-tb button.ecpk{font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:9px;padding:.2em .4em;margin:-.2em -.1em;cursor:pointer;text-align:inherit;line-height:inherit;min-height:2.2em}'+
   '.ec-tb button.ecpk:hover{background:var(--hov);border-color:var(--hair)}.ec-tb button.ecpk:focus-visible{outline:2px solid var(--s1);outline-offset:1px}'+
   '.ec-tb button.ecpk[aria-pressed="true"]{background:color-mix(in srgb,var(--s1) 16%,transparent);border:2px solid var(--s1)}'+
@@ -4694,7 +4696,8 @@ function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'br
     if(sep==='bridge')alt.push('A salt bridge'+(o.bridge?' of '+ecU(o.bridge):'')+' joins the two solutions.');if(sep==='cup')alt.push('The right half-cell is in a porous cup inside the beaker.');
     alt.push(mtype==='power'?'A power supply is connected to the electrodes by a wire.':mtype==='V'?'A voltmeter'+(o.E?' that reads '+o.E:'')+' is connected to the electrodes by a wire.':mtype==='load'?'A light bulb is connected to the electrodes by a wire.':'A wire joins the electrodes.');
     if(flow)alt.push('Electrons flow through the wire from the anode to the cathode. Cations move toward the cathode and anions toward the anode.');
-    const nk=Object.keys(nums).filter(k=>P[k]);if(nk.length)alt.push('Numbered parts: '+nk.map(k=>nums[k]).sort((a,b)=>a-b).join(', ')+'.');}
+    const nk=Object.keys(nums).filter(k=>P[k]),na=flow?['eflow','cat','an'].filter(k=>nums[k]!=null):[];if(nk.length)alt.push('Numbered parts: '+nk.map(k=>nums[k]).sort((a,b)=>a-b).join(', ')+'.');
+    if(na.length)alt.push('Numbered arrows: '+na.map(k=>nums[k]).sort((a,b)=>a-b).join(', ')+'.');}
   return `<svg viewBox="0 0 ${W} ${H}" class="ecc" role="img" aria-label="${(o.alt||alt.join(' ')).replace(/"/g,'&quot;')}">${back}${mid}${top}${o.extra||''}</svg>`;}
 /* the icon of the section and of its lessons (24 px line icons, drawn like the others in ICON), and the lesson titles in LIC */
 Object.assign(ICON,{
@@ -5951,7 +5954,7 @@ EC_REF.f.push(['Predicting a redox reaction','SOA + SRA: spontaneous when the SO
    virtual titration), ec4Pr (the titrant and sample pairs of the generators: the net equations and the mole ratios come from EC_E0 with ecPair), ec4Fr (a ratio as a fraction) */
 const ec4sup=e=>String(e).replace('-','⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
 const ec4s=(x,n=3)=>{if(!isFinite(x))return '?';if(x===0)return '0';x*=1+1e-12;const a=Math.abs(x);if(a>=1e4||a<1e-2){const [m,e]=x.toExponential(n-1).split('e');return m.replace('-','−')+' × 10'+ec4sup(+e);}let s=x.toPrecision(n);if(s.includes('e'))s=String(Number(s));return s.replace('-','−');};
-const ec4Cn=s=>C(s).split(' ').map(t=>/<su[bp]>/.test(t)?'<span style="white-space:nowrap">'+t+'</span>':t).join(' ');
+const ec4Cn=s=>C(s).split(/ (?![^<]*>)/).map(t=>/<su[bp]>/.test(t)?'<span style="white-space:nowrap">'+t+'</span>':t).join(' ');
 const ec4Eq=s=>{const [l,r]=String(s).split(/\s*->\s*/);return '<span style="display:inline-block">'+ec4Cn(l)+'&nbsp;→</span> <span style="display:inline-block">'+ec4Cn(r)+'</span>';};
 const ec4Ip=h=>'<p style="margin:.4em .5em">'+h+'</p>';
 const ec4Ic=s=>'<p style="margin:.5em .3em;text-align:center;font-size:min(1em,3.4vw)">'+ec4Eq(s)+'</p>';
@@ -6796,8 +6799,8 @@ ecCSS(6,'#ec-6 .ec6hc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))
   '@container (max-width:439px){#ec-6 .ec6hw .ec6hc{grid-template-columns:minmax(0,1fr)}}'+
   '@container (min-width:760px){#ec-6 .ec6g2 .mtl{grid-template-columns:repeat(2,minmax(0,1fr))}}'+
   '@container (min-width:820px){#ec-6 .ec6two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}#ec-6 .ec6two figure.cf{margin-top:.3em}}');
-/* C() with a word joiner between a charge and its state: Zn²⁺|(aq) does not break at the end of a line */
-const C6=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060('),
+/* C() keeps a charge and its state on one line (Zn²⁺|(aq) does not break at the end of a line) */
+const C6=C,
   ec6T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12.5,w:600,f:'ink'},o)),
   /* a leader line from a label to a part, with a dot on the part */
   ec6Ld=(x1,y1,x2,y2)=>`<path d="M${x1},${y1}L${x2},${y2}" fill="none" stroke="var(--ink2)" stroke-width="1.2"/><circle cx="${x2}" cy="${y2}" r="2.2" fill="var(--ink2)"/>`,
@@ -7588,7 +7591,7 @@ EC_REF.t.push(['Net cell potential, E°net','The difference between the reductio
    Lesson-local helpers: ec8Grid (sentences with blanks to fill from lists, saved under mt_<lesson id>_g<slot>), the drawings ec8Dry, ec8Alk, ec8Btn,
    ec8Fuel, ec8Pem, ec8NiCd, ec8Air and ec8Lead, and the small text helpers ec8T, ec8Ld, ec8Q. Question figures use inline styles: they are also shown outside the lesson */
 /* C() with no line break between a charge and its state (SO₄²⁻|(aq)): a word joiner after the charge */
-const C8=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060(');
+const C8=C;
 const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
   /* a leader line from a label to a part, with a dot on the part */
   ec8Ld=(x1,y1,x2,y2)=>`<path d="M${x1},${y1}L${x2},${y2}" fill="none" stroke="var(--ink2)" stroke-width="1.2"/><circle cx="${x2}" cy="${y2}" r="2.3" fill="var(--ink2)"/>`,
@@ -7603,7 +7606,7 @@ const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o
   ec8C=h=>`<p style="margin:.25em .5em;text-align:center">${h}</p>`,
   ec8Q='<b>Numerical response.</b> ',
   /* rows of the table of potentials as centred lines with their E° (a question figure: on a phone, a table would scroll sideways) */
-  ec8Rows=rows=>rows.map(r=>ec8C(r.h.replace(/<\/sup>\(/g,'</sup>\u2060(')+'&ensp;<span style="white-space:nowrap"><i>E</i>° = '+r.Es+' V</span>')).join('');
+  ec8Rows=rows=>rows.map(r=>ec8C(chgNw(r.h)+'&ensp;<span style="white-space:nowrap"><i>E</i>° = '+r.Es+' V</span>')).join('');
 
 /* the zinc-carbon dry cell, cut in half. o.nums: numbered parts (1 metal cap, 2 carbon rod, 3 MnO2 paste, 4 electrolyte paste, 5 zinc can, 6 steel case, 7 metal bottom) */
 function ec8Dry(o={}){const N=!!o.nums,L=(n,t,yc,side,tx,ty)=>ec8Lab(N,n,t,side==='r'?138:302,yc,side)+ec8Ld(side==='r'?141:299,yc,tx,ty);
@@ -7940,11 +7943,11 @@ EC_DIP[8]=[
 /* 94 */ {q:'Use the information below. The standard voltage produced by this aluminum–air cell is',fig:F92,o:['+2.36 V','+2.06 V','+0.83 V','+1.05 V'],a:1,
   w:`Cathode: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq), E°r = ${e8OH.Es} V. Anode: Al(s) → Al³⁺(aq) + 3e⁻, from the row Al³⁺(aq) + 3e⁻ ⇌ Al(s), E°r = ${e8Al.Es} V. E°net = ${e8OH.Es} V − (${e8Al.Es} V) = ${ecVs(e8OH.E-e8Al.E)} V. Do not multiply the E° values by the coefficients.`},
 /* 95 */ {q:ec8Q+'Use the information below. When three aluminum–air cells are connected in series, the net voltage generated by the battery is +/− __________ V.',fig:F92,n:+(3*(e8OH.E-e8Al.E)).toFixed(2),u:'V',abs:.005,tol:0,
-  m:'Find E°net of one cell first: E°r(cathode) − E°r(anode). In series the voltages add.',
+  m:'Find E°net of one cell first: E°r cathode − E°r anode. In series the voltages add.',
   w:`One cell: E°net = ${e8OH.Es} V − (${e8Al.Es} V) = ${ecVs(e8OH.E-e8Al.E)} V. Cells in series add their voltages: 3 × 2.06 V = 6.18 V. Record 6.18.`},
 /* 96 */ {q:ec8Q+'Use the information below. On discharging, the electrical potential of a NiCad battery is +1.40 V. The reduction potential for half-reaction I is −__________ V.',fig:F96,n:1.89,u:'V',abs:.005,tol:0,
-  m:'Half-reaction II is the reduction, at the cathode. Use E°net = E°r(cathode) − E°r(anode) and solve for E°r(anode).',
-  w:'Half-reaction II has the electrons on the left: it is the reduction, at the cathode, with E°r = −0.49 V. Half-reaction I is the oxidation of cadmium at the anode. Its reduction potential is the E° of Cd(OH)₂(s) + 2e⁻ → Cd(s) + 2OH⁻(aq). E°net = E°r(cathode) − E°r(anode), thus +1.40 V = −0.49 V − E°r(anode). E°r(anode) = −0.49 V − 1.40 V = −1.89 V. The blank follows the minus sign: record 1.89.'},
+  m:'Half-reaction II is the reduction, at the cathode. Use E°net = E°r cathode − E°r anode and solve for E°r anode.',
+  w:'Half-reaction II has the electrons on the left: it is the reduction, at the cathode, with E°r = −0.49 V. Half-reaction I is the oxidation of cadmium at the anode. Its reduction potential is the E° of Cd(OH)₂(s) + 2e⁻ → Cd(s) + 2OH⁻(aq). E°net = E°r cathode − E°r anode, thus +1.40 V = −0.49 V − E°r anode. E°r anode = −0.49 V − 1.40 V = −1.89 V. The blank follows the minus sign: record 1.89.'},
 /* 97 */ {q:'Use the information below. Before the car is started, the battery’s chemical energy is in the form of',fig:F97,o:['kinetic energy','potential energy','vibrational energy','translational energy'],a:1,
   w:'Chemical energy is stored in the bonds and the arrangement of the reactants (Pb, PbO₂ and H₂SO₄): it is potential energy. When the starter motor draws a current, the redox reaction changes it to electrical energy. Kinetic, vibrational and translational energy are energies of motion.'},
 /* 98 */ {q:'Use the information below. A car is started and then left running to recharge the battery. In these two processes, the battery',fig:F97,o:['acts as an electrolytic cell only','acts as a voltaic cell only','first acts as an electrolytic cell, then as a voltaic cell','first acts as a voltaic cell, then as an electrolytic cell'],a:3,
@@ -7957,7 +7960,7 @@ EC_DIP[8]=[
 /* 101 */ {q:'Use the information below. In this cell, the separator must be porous in order to',fig:F100,o:['allow the migration of ions','replenish the electrolyte','provide a pathway for electron flow','provide a surface on which electron transfer can occur'],a:0,
   w:'The separator keeps the zinc apart from the silver oxide, thus the electrons must travel through the external circuit. It is porous so that ions (OH⁻(aq) toward the anode) can move through it and keep each side electrically neutral, like a salt bridge. Electrons do not flow through the separator, and it does not add electrolyte.'},
 /* 102 */ {q:ec8Q+'Use the information below. During discharge, the voltage generated by the cell is +/− __________ V.',fig:F100,n:1.59,u:'V',abs:.005,tol:0,
-  m:'The half-reaction with the higher E° is the cathode. E°net = E°r(cathode) − E°r(anode).',
+  m:'The half-reaction with the higher E° is the cathode. E°net = E°r cathode − E°r anode.',
   w:'Cathode: Ag₂O(s) + H₂O(l) + 2e⁻ → 2Ag(s) + 2OH⁻(aq), E°r = +0.34 V. Anode: Zn(s) + 2OH⁻(aq) → Zn(OH)₂(s) + 2e⁻, from the half-reaction with E°r = −1.25 V. E°net = +0.34 V − (−1.25 V) = +1.59 V. Record 1.59.'},
 /* 103 */ {q:ec8Q+'Use the information below. In the diagram, the anode, the cathode, the electrolyte, and a product of the reaction are labelled, respectively, _____, _____, _____ and _____. (Record all four digits of your answer.)',fig:F103,n:2654,code:'2654',tol:0,abs:0,
   m:'Find where the fuel (H₂) enters: it is oxidized at the anode. Oxygen is reduced at the cathode.',
@@ -7991,7 +7994,7 @@ EC_RQ[8]=[
    o:['cathode, and it is positive','anode, and it is negative','cathode, and it is negative','anode, and it is positive'],a:0,
    w:'In PbO₂(s), Pb is +4. It becomes +2 in PbSO₄(s): it gains electrons, thus PbO₂(s) is reduced, and reduction occurs at the cathode. In a voltaic cell the cathode is the positive electrode: the electrons from the external circuit arrive there.'},
   {q:'The mercury cell has '+ecEs('net')+' = 1.35 V. Its anode half-reaction, written as a reduction, is '+C8('ZnO(s) + H2O(l) + 2e^- -> Zn(s) + 2OH^-(aq)')+' with '+ecEs('')+' = −1.26 V. Calculate the reduction potential of '+C8(E8.hgC)+'.',n:.09,u:'V',abs:.005,tol:0,ex:1,
-   w:'E°net = E°r(cathode) − E°r(anode). The mercury half-reaction is the cathode. E°r(cathode) = E°net + E°r(anode) = 1.35 V + (−1.26 V) = +0.09 V.'}];
+   w:'E°net = E°r cathode − E°r anode. The mercury half-reaction is the cathode. E°r cathode = E°net + E°r anode = 1.35 V + (−1.26 V) = +0.09 V.'}];
 
 /* ---------- challenge, written response ---------- */
 EC_CH[8]={q:'An aluminum-air battery is designed for an electric car. It runs until 5.40 kg of aluminum is used up. The half-reactions are '+C8(E8.aaA)+' and '+C8(E8.aaC)+'. Calculate the mass of oxygen from the air that the battery uses.',
@@ -8020,7 +8023,7 @@ EC_GEN[8]=[
   /* an unknown reduction potential from E°net and the other half-reaction */
   ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),hideA=a.E===0?false:c.E===0?true:!!RN(0,1),h=hideA?a:c,k=hideA?c:a;
     return {q:`A standard ${nm} has E°net = ${p.Es} V. Its ${hideA?'cathode':'anode'} half-reaction, written as a reduction, is ${k.u} with E° = ${k.Es} V. Calculate the reduction potential of the ${hideA?'anode':'cathode'} half-reaction, ${h.u}.`,n:h.E,u:'V',abs:.005,tol:0,ans:ecVs(h.E),
-      w:`E°net = E°r(cathode) − E°r(anode). ${hideA?`E°r(anode) = E°r(cathode) − E°net = ${c.Es} V − ${ecVs(p.E).replace('+','')} V`:`E°r(cathode) = E°net + E°r(anode) = ${ecVs(p.E).replace('+','')} V + (${a.Es} V)`} = ${h.Es} V.`};},
+      w:`E°net = E°r cathode − E°r anode. ${hideA?`E°r anode = E°r cathode − E°net = ${c.Es} V − ${ecVs(p.E).replace('+','')} V`:`E°r cathode = E°net + E°r anode = ${ecVs(p.E).replace('+','')} V + (${a.Es} V)`} = ${h.Es} V.`};},
   /* the mass of anode metal used for an amount of electrons */
   ()=>{const [nm,s,eq,z]=G8M[RN(0,G8M.length-1)],ne=RN(.1,.999,.001),M=EC_M[s],m=ne/z*M;
     return {q:`The anode of a cell is ${nm}: ${ecU(eq)}. The cell delivers ${ne.toFixed(3)} mol of electrons. Calculate the mass of ${nm} that is used up.`,n:m,u:'g',tol:.01,
@@ -8035,11 +8038,11 @@ EC_GEN[8]=[
       [nm,k1,n1,c1,k2,n2,c2,vb,eq]=R,m1=RN(10,60,.1),M1=ecMolar(k1),M2=ecMolar(k2),x=m1/M1*c2/c1,m2=x*M2;
     return {q:`The overall reaction of ${g8A(nm)} is ${ecU(eq)}. When ${m1.toFixed(1)} g of ${n1} reacts, calculate the mass of ${n2} that is ${vb}.`,n:m2,u:'g',tol:.01,
       w:`n(${ecU(k1.replace(/\(.*\)$/,''))}) = ${m1.toFixed(1)} g ÷ ${M1.toFixed(2)} g/mol = ${sig(m1/M1)} mol. The mole ratio is ${c1} : ${c2}, thus n(${ecU(k2.replace(/\(.*\)$/,''))}) = ${sig(m1/M1)} × ${c2}/${c1} = ${sig(x)} mol. m = ${sig(x)} mol × ${M2.toFixed(2)} g/mol = ${sig(m2)} g.`};}];
-EC_METHOD[8]='Find what is oxidized (the metal or the fuel, at the anode) and what is reduced (often O₂ or a metal oxide, at the cathode). E°net = E°r(cathode) − E°r(anode). For cells in series, multiply E°net by the number of cells. For a mass, go through the moles of electrons.';
+EC_METHOD[8]='Find what is oxidized (the metal or the fuel, at the anode) and what is reduced (often O₂ or a metal oxide, at the cathode). E°net = E°r cathode − E°r anode. For cells in series, multiply E°net by the number of cells. For a mass, go through the moles of electrons.';
 EC_HT[8]={title:'How to answer battery and fuel cell questions',pre:'You do not need to memorize any cell. Read the information, find what is oxidized and what is reduced, then use what you know about voltaic cells.',items:[
   {q:'Identify the anode, the cathode and the agents',s:['Find the metal or the fuel (such as H₂) that loses electrons. It is the reducing agent, and its electrode is the anode (−).','Find the substance that gains electrons: often O₂ or a metal oxide such as MnO₂, HgO, Ag₂O or PbO₂. It is the oxidizing agent, at the cathode (+).','Electrons flow through the external circuit from the anode to the cathode. Anions move toward the anode and cations toward the cathode.'],chk:'Oxidation numbers confirm it: at the anode the number increases, at the cathode it decreases.'},
-  {q:'Calculate E°net of a battery cell',s:['Write both half-reactions as reductions, with their E° values from the information or the data booklet.','The half-reaction with the higher E° is the reduction at the cathode. The other one goes in reverse at the anode.','E°net = E°r(cathode) − E°r(anode). Keep the signs and do not multiply E° by coefficients.'],chk:'A cell that produces electricity has a positive E°net.'},
-  {q:'Find an unknown reduction potential',s:['Write E°net = E°r(cathode) − E°r(anode).','Put in the two values you know.','Solve: E°r(anode) = E°r(cathode) − E°net, or E°r(cathode) = E°net + E°r(anode).'],chk:'The anode must have the lower reduction potential.'},
+  {q:'Calculate E°net of a battery cell',s:['Write both half-reactions as reductions, with their E° values from the information or the data booklet.','The half-reaction with the higher E° is the reduction at the cathode. The other one goes in reverse at the anode.','E°net = E°r cathode − E°r anode. Keep the signs and do not multiply E° by coefficients.'],chk:'A cell that produces electricity has a positive E°net.'},
+  {q:'Find an unknown reduction potential',s:['Write E°net = E°r cathode − E°r anode.','Put in the two values you know.','Solve: E°r anode = E°r cathode − E°net, or E°r cathode = E°net + E°r anode.'],chk:'The anode must have the lower reduction potential.'},
   {q:'Find the voltage of a battery',s:['Find E°net of one cell.','In series the voltages add: battery voltage = (number of cells) × E°net.','For a target voltage, divide it by E°net and round up to a whole number of cells.'],chk:'A bigger cell lasts longer, but it has the same voltage.'},
   {q:'Classify a cell',s:['Can a power supply reverse its reaction? Then it is a secondary (rechargeable) cell.','Are its fuel and oxidizing agent supplied all the time from outside? Then it is a fuel cell.','Otherwise it is a primary cell: it is used until its reactants run out.'],chk:'Discharging is voltaic (spontaneous). Recharging is electrolytic (non-spontaneous) and needs a power supply.'}]};
 EC_REF.f.push(['Battery of cells in series','battery voltage = (number of cells) × '+ecEs('net')],
@@ -8057,7 +8060,7 @@ EC_REF.t.push(['Battery','Two or more cells joined together to give a higher vol
    ec9N (a no-break space between a number and V), ec9Info (the information box of a diploma question), ec9Tab (a small table for a question), ec9T (a label in a drawing),
    ec9Arc (a curved arrow), ec9Rx (the net equation of the corrosion of a metal by oxygen), ec9Drop (the rusting drop on iron, p. 65), ec9Sac (a sacrificial anode, p. 66),
    ec9Imp (a low-voltage current, p. 66), ec9Coat (a scratched tin or zinc coating) */
-const ec9C=s=>C(s).replace(/<sup>([^<]*)<\/sup>\((aq|s|l|g)\)/g,'<span style="white-space:nowrap"><sup>$1</sup>($2)</span>');
+const ec9C=C;
 const ec9Eq=s=>{const g=[];String(s).split(' ').forEach(t=>{if(/^(\+|->|<=>)$/.test(t)&&g.length)g[g.length-1]+=' '+t;else g.push(t);});return g.map(t=>'<span style="white-space:nowrap">'+ec9C(t)+'</span>').join(' ');};
 const ec9N=s=>String(s).replace(/(\d) V(?=[\s).,;:<]|$)/g,'$1 V');
 const ec9Info=t=>'<p style="margin:.35em .5em;line-height:1.45">'+t+'</p>';
@@ -8180,10 +8183,10 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
       P('With sulfide ions present, silver is the reducing agent of the half-reaction '+E('Ag2S(s) + 2e^- <=> 2Ag(s) + S^2-(aq)')+', −0.69 V. Silver with sulfide ions is a much stronger reducing agent.')+
       I('Reduction','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Oxidation, × 2','4Ag(s) + 2S^2-(aq) -> 2Ag2S(s) + 4e^-')+I('Net','4Ag(s) + 2S^2-(aq) + O2(g) + 2H2O(l) -> 2Ag2S(s) + 4OH^-(aq)')+
       P(ecEs('net')+' = +0.40 V − (−0.69 V) = <b>+1.09 V</b>: spontaneous. The black tarnish is silver sulfide, '+ec9C('Ag2S(s)')+'.'))+
-    ex('Example 5: aluminium. Aluminium (−1.66 V) is a much stronger reducing agent than iron. Calculate '+ecEs('net')+' for its oxidation by oxygen and water. Why does an aluminium boat not corrode away?',
+    ex('Example 5: aluminum. Aluminum (−1.66 V) is a much stronger reducing agent than iron. Calculate '+ecEs('net')+' for its oxidation by oxygen and water. Why does an aluminum boat not corrode away?',
       I('Reduction, × 3','3O2(g) + 6H2O(l) + 12e^- -> 12OH^-(aq)')+I('Oxidation, × 4','4Al(s) -> 4Al^3+(aq) + 12e^-')+I('Net','4Al(s) + 3O2(g) + 6H2O(l) -> 4Al^3+(aq) + 12OH^-(aq)')+
-      P(ecEs('net')+' = +0.40 V − (−1.66 V) = <b>+2.06 V</b>. The aluminium does react, at once.')+
-      P('It forms a thin, tough layer of aluminium oxide, '+ec9C('Al2O3(s)')+', that is impermeable to oxygen and water. The layer protects the metal below. Rust on iron is porous and flakes off, thus iron keeps corroding.')));
+      P(ecEs('net')+' = +0.40 V − (−1.66 V) = <b>+2.06 V</b>. The aluminum does react, at once.')+
+      P('It forms a thin, tough layer of aluminum oxide, '+ec9C('Al2O3(s)')+', that is impermeable to oxygen and water. The layer protects the metal below. Rust on iron is porous and flakes off, thus iron keeps corroding.')));
   /* 5. try it: an iron nail in salt water */
   const c5=card(g,'Try it: an iron nail in salt water',`<p>An iron nail is left in salt water, ${ec9C('NaCl(aq)')}, that is open to the air. The entities present are ${['Fe(s)','Na^+(aq)','Cl^-(aq)','O2(g)','H2O(l)'].map(ec9C).join(', ')}. They are underlined in the table.</p><p class="hint">Tap the strongest oxidizing agent (left side) and the strongest reducing agent (right side), then Check.</p>`);
   ecTable(c5,ecRows(['Cl2(g)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','Fe^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Na^+(aq)']),{hl:['Fe(s)','Na^+(aq)','Cl^-(aq)','O2(g)','H2O(l)'],pick:true,slot:0,
@@ -8270,8 +8273,8 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
     w:'Corrosion is the deterioration (oxidation) of a metal by electrochemical means, for example iron rusting, silver tarnishing and copper patina. The metal loses electrons.'},
   {q:'Use the table of reduction potentials. Which metal is <b>not</b> oxidized by oxygen and water in a neutral solution (+0.40 V)?',o:['silver','copper','nickel','zinc'],a:0,
     w:'A metal is oxidized when its half-reaction is below the oxygen-water half-reaction (+0.40 V). Ag⁺(aq) + e⁻ ⇌ Ag(s) is +0.80 V, above it: silver is not oxidized. Copper (+0.34 V), nickel (−0.26 V) and zinc (−0.76 V) are below it. Copper corrodes only slowly: E°net = +0.06 V.'},
-  {q:'The half-reaction of aluminium is −1.66 V, far below that of iron (−0.45 V). Yet an aluminium boat does not corrode away. Why?',o:['A tough layer of Al₂O₃(s) forms and keeps out oxygen and water','Aluminium is above the oxygen half-reaction in the reduction table','Oxygen cannot accept electrons from a metal stronger than iron','The aluminium is reduced by the water instead of oxidized'],a:0,
-    w:'Aluminium does react: E°net = +0.40 V − (−1.66 V) = +2.06 V. The aluminium oxide layer that forms is not porous, thus it protects the metal below. Rust on iron is porous and flakes off.'},
+  {q:'The half-reaction of aluminum is −1.66 V, far below that of iron (−0.45 V). Yet an aluminum boat does not corrode away. Why?',o:['A tough layer of Al₂O₃(s) forms and keeps out oxygen and water','Aluminum is above the oxygen half-reaction in the reduction table','Oxygen cannot accept electrons from a metal stronger than iron','The aluminum is reduced by the water instead of oxidized'],a:0,
+    w:'Aluminum does react: E°net = +0.40 V − (−1.66 V) = +2.06 V. The aluminum oxide layer that forms is not porous, thus it protects the metal below. Rust on iron is porous and flakes off.'},
   {q:'A steel can is coated with tin. The coating is scratched, and the can gets wet. Why does the iron at the scratch corrode quickly?',o:['Iron is a stronger reducing agent than tin: the iron is the anode','Tin is a stronger reducing agent than iron: the tin becomes the anode','The tin oxidizes the iron directly, without oxygen and water','Tin ions are reduced on the iron, which loses its electrons'],a:0,
     w:'Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V) is below Sn²⁺(aq) + 2e⁻ ⇌ Sn(s) (−0.14 V), thus Fe(s) is the stronger reducing agent. At the scratch, the iron is oxidized (the anode), and oxygen is reduced on the tin (the cathode): E°net = +0.40 V − (−0.45 V) = +0.85 V. A zinc coat would be oxidized instead of the iron.'},
   {q:'Galvanized steel is coated with zinc. Calculate '+ecEs('net')+' for the oxidation of zinc by oxygen and water in moist air.',n:1.16,u:'V',abs:.005,tol:0,
@@ -8290,7 +8293,7 @@ ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation
     m:'Find n = m/M of the magnesium (in grams), then use the half-reaction for the mole ratio of electrons.',
     w:'The anode reaction is Mg(s) → Mg²⁺(aq) + 2e⁻. n(Mg) = 2500 g ÷ 24.31 g/mol = 102.8 mol. Two moles of electrons come from each mole of magnesium. n(e⁻) = 2 × 102.8 mol = 206 mol.'},
   {q:'Most metals form a corrosion layer that protects the metal below. Which layer forms on copper and gives old copper roofs their green colour?',o:[ec9C('CuCO3(s)'),ec9C('Fe2O3(s)'),ec9C('Ag2S(s)'),ec9C('Al2O3(s)')],a:0,
-    w:'The green patina of copper is copper carbonate, CuCO₃(s). The tarnish on silver is Ag₂S(s), the layer on aluminium is Al₂O₃(s), and rust is a hydrated Fe₂O₃(s). The copper carbonate layer protects the copper, but rust is porous.'}]};
+    w:'The green patina of copper is copper carbonate, CuCO₃(s). The tarnish on silver is Ag₂S(s), the layer on aluminum is Al₂O₃(s), and rust is a hydrated Fe₂O₃(s). The copper carbonate layer protects the copper, but rust is porous.'}]};
 
 /* the diploma questions 106 to 111 (p. 67-68; key p. 85: 106 D, 107 A, 108 A, 109 C, 110 3142, 111 D). The options of 106 and 107 are reworded so that the key is not the longest option */
 EC_DIP[9]=[
@@ -8353,7 +8356,7 @@ EC_WRQ.push({q:'A steel (iron) pipeline is buried in moist soil that contains di
     '<p>(c) Copper (+0.34 V) is a weaker reducing agent than iron (−0.45 V). Joined to copper, the iron would still be the anode and would corrode even faster, with the copper as the cathode.</p>')});
 
 /* generators: one for each kind of numeric question of the lesson */
-const ec9Mt=[['iron','Fe^2+(aq)','Fe'],['zinc','Zn^2+(aq)','Zn'],['nickel','Ni^2+(aq)','Ni'],['tin','Sn^2+(aq)','Sn'],['lead','Pb^2+(aq)','Pb'],['magnesium','Mg^2+(aq)','Mg'],['aluminium','Al^3+(aq)','Al'],['cadmium','Cd^2+(aq)','Cd'],['cobalt','Co^2+(aq)','Co'],['copper','Cu^2+(aq)','Cu']];
+const ec9Mt=[['iron','Fe^2+(aq)','Fe'],['zinc','Zn^2+(aq)','Zn'],['nickel','Ni^2+(aq)','Ni'],['tin','Sn^2+(aq)','Sn'],['lead','Pb^2+(aq)','Pb'],['magnesium','Mg^2+(aq)','Mg'],['aluminum','Al^3+(aq)','Al'],['cadmium','Cd^2+(aq)','Cd'],['cobalt','Co^2+(aq)','Co'],['copper','Cu^2+(aq)','Cu']];
 EC_GEN[9]=[
   /* E°net of the corrosion of a metal by oxygen, in moist air or in an acidic solution */
   ()=>{const M=ec9Mt[RN(0,ec9Mt.length-1)],ac=RN(0,1)===1,ox=ac?ec9OA:ec9ON,r=ecRow(M[1]),E=+(ox.E-r.E).toFixed(2),it={q:`Calculate ${ecEs('net')} for the corrosion of ${M[0]} by oxygen ${ac?'in an acidic solution':'and water in moist air (a neutral solution)'}.`,n:E,u:'V',abs:.005,tol:0,
@@ -8379,7 +8382,7 @@ EC_GEN[9]=[
       :{q:`A ${kg.toFixed(2)} kg ${A[0]} sacrificial anode on the steel hull of a ship is used up. Without it, the same electrons would have come from iron, oxidized to Fe²⁺(aq). Calculate the mass of iron, in kilograms, that the anode protected.`,n:mFe/1000,u:'kg',tol:.01,
         m:'Find the amount of electrons from the anode metal, then the amount of iron that would give the same electrons: Fe(s) → Fe²⁺(aq) + 2e⁻.',
         w:`The anode reaction is ${head} n(e⁻) = 2 × ${sig(nA,4)} mol = ${sig(ne,4)} mol. Fe(s) → Fe²⁺(aq) + 2e⁻, thus n(Fe) = ${sig(ne,4)} mol ÷ 2 = ${sig(nA,4)} mol. m(Fe) = ${sig(nA,4)} mol × 55.85 g/mol = ${sig(mFe/1000)} kg.`};}];
-EC_METHOD[9]='E°net = E°r(cathode) − E°r(anode). In corrosion the cathode reaction is the reduction of oxygen: +0.40 V in moist air, +1.23 V in an acidic solution. The metal is oxidized at the anode.';
+EC_METHOD[9]='E°net = E°r cathode − E°r anode. In corrosion the cathode reaction is the reduction of oxygen: +0.40 V in moist air, +1.23 V in an acidic solution. The metal is oxidized at the anode.';
 EC_HT[9]={pre:'Use the table of reduction potentials. In moist air the oxidizing agent is O₂(g) with H₂O(l) (+0.40 V); in an acidic solution it is O₂(g) with H⁺(aq) (+1.23 V).',items:[
   {q:'Decide whether a metal corrodes, and find E°net',s:['Find the half-reaction of the metal ion in the table (for iron: Fe²⁺(aq) + 2e⁻ ⇌ Fe(s), −0.45 V).','Choose the oxygen half-reaction: +0.40 V in a neutral solution, +1.23 V when H⁺(aq) is present.','The metal corrodes if its half-reaction is below the oxygen half-reaction.','E°net = E°r(oxygen, the cathode) − E°r(metal, the anode).','For the net equation, multiply the half-reactions so that 4 electrons are lost and gained (for a 3+ ion, 12 electrons).'],chk:'A metal that corrodes gives a positive E°net. Silver and gold are above +0.40 V: they do not rust in moist air.'},
   {q:'Decide whether a metal can be a sacrificial anode for iron',s:['Find the metal in the table.','It must be a stronger reducing agent than iron: its half-reaction is below Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V).','It must not react vigorously with water: Li, Na, K, Ca and Ba cannot be used.','Zinc and magnesium meet both conditions.'],chk:'A metal above iron (tin, lead, copper, silver) makes the iron the anode: the iron corrodes faster.'},
@@ -8403,7 +8406,7 @@ EC_REF.t.push(['Corrosion','The deterioration (oxidation) of a metal by electroc
 const ec10Q=s=>{const g=[];String(s).replace(/, /g,',\u00a0').split(' ').forEach(t=>{if(/^(\+|->|<=>)$/.test(t)&&g.length)g[g.length-1]+=' '+t;else g.push(t);});return g.map(t=>`<span class="ec10n">${C(t)}</span>`).join(' ');};
 const ec10V=s=>String(s).replace(/(\d) V\b/g,'$1\u00a0V');
 /* a formula never breaks between its charge and its state ("H⁺" at the end of a line, "(aq)" on the next): a word joiner (U+2060) after </sup> */
-const ec10J=s=>String(s).replace(/<\/sup>\(/g,'</sup>\u2060(');
+const ec10J=s=>chgNw(String(s));
 const ec10Info=t=>`<p style="margin:.25em .35em;line-height:1.45">${t}</p>`;
 /* gas labels over the liquid of a one-beaker ecCell (electrodes at x 110 and 330) */
 const ec10Gas=(l,r)=>(l?svgText(ecU(l),124,170,{a:'start',s:12,w:650,f:'ink',c:'l'}):'')+(r?svgText(ecU(r),316,170,{a:'end',s:12,w:650,f:'ink',c:'r'}):'');
@@ -8707,8 +8710,8 @@ EC_RQ[10]=[
   {q:'An iron bolt is electroplated with nickel. The electrolyte is 1.0 mol/L '+C('NiSO4(aq)')+' and the anode is platinum, an inert electrode. While the cell operates,',
     o:['['+C('Ni^2+(aq)')+'] decreases, and the solution near the anode becomes acidic','['+C('Ni^2+(aq)')+'] stays the same, and the solution near the anode becomes acidic','['+C('Ni^2+(aq)')+'] decreases, and the solution near the anode becomes basic','['+C('Ni^2+(aq)')+'] stays the same, and the solution near the anode becomes basic'],a:0,
     w:'At the cathode, the SOA Ni²⁺(aq) (−0.26 V) is reduced: Ni²⁺(aq) + 2e⁻ → Ni(s). Nickel ions leave the solution, thus [Ni²⁺(aq)] decreases. The platinum anode does not react, thus the SRA is H₂O(l) (+1.23 V): 2H₂O(l) → O₂(g) + 4H⁺(aq) + 4e⁻. The H⁺(aq) ions make the solution near the anode acidic. With a nickel anode, Ni(s) would be oxidized instead, and [Ni²⁺(aq)] would stay about the same.'},
-  {q:'Which statement is true for both voltaic cells and electrolytic cells?',o:['Reduction occurs at the cathode.','The anode is the negative electrode.','The net reaction is spontaneous.','The cathode is the positive electrode.'],a:0,
-    w:'In every electrochemical cell, reduction occurs at the cathode and oxidation at the anode. The signs of the electrodes and the spontaneity are different: a voltaic cell has a negative anode and a spontaneous reaction, an electrolytic cell a positive anode and a non-spontaneous reaction.'},
+  {q:'In an electrolytic cell, the cations of the electrolyte move toward the',o:['cathode, which is the negative electrode','anode, which is the positive electrode','cathode, which is the positive electrode','anode, which is the negative electrode'],a:0,
+    w:'The power supply pushes electrons into the cathode, thus the cathode is negative and the anode is positive. The cations move toward the negative cathode, where an oxidizing agent is reduced, and the anions move toward the positive anode. In a voltaic cell the cations also move toward the cathode, but there the cathode is the positive electrode.'},
   {q:'Calculate the minimum voltage needed to electrolyze 1.0 mol/L '+C('KBr(aq)')+' with inert electrodes.',n:1.90,u:'V',abs:.005,tol:0,
     w:'The entities are K⁺(aq), Br⁻(aq) and H₂O(l). The SOA is H₂O(l) (−0.83 V): K⁺(aq) (−2.93 V) is much weaker. The SRA is Br⁻(aq) (+1.07 V), below H₂O(l) (+1.23 V). E°net = −0.83 V − (+1.07 V) = −1.90 V. The minimum voltage is 1.90 V.'}];
 EC_CH[10]={q:'A 1.0 mol/L solution of tin(II) chloride, '+C('SnCl2(aq)')+', is electrolyzed with carbon electrodes. Predict the reactions at the electrodes and calculate the minimum voltage. Think about every role that each entity can play.',n:0.29,u:'V',abs:.005,tol:0,ans:'0.29',
@@ -8747,11 +8750,11 @@ EC_GEN[10]=[
   ()=>{const X=EC10_SALT[RN(0,EC10_SALT.length-1)],p=ecPredict([X[2],X[3],'H2O(l)']);
     return {q:`Calculate ${ecEs('net')} for the electrolysis of 1.0 mol/L ${X[0]}, ${C(X[1]+'(aq)')}, with inert electrodes. Include the sign.`,n:p.E,u:'V',abs:.005,tol:0,ans:ecVs(p.E),
       w:`The entities are ${ecU(X[2])}, ${ecU(X[3])} and H₂O(l). The SOA is ${ecU(p.soa)} (${ecV(p.rr.E)}). The SRA is ${ecU(p.sra)} (${ecV(p.or.E)}). Cathode: ${p.redU}. Anode: ${p.oxU}. E°net = ${ecV(p.rr.E)} − (${ecV(p.or.E)}) = ${ecV(p.E)}.`};}];
-EC_METHOD[10]='List the entities, with H₂O(l). The SOA is reduced at the cathode and the SRA is oxidized at the anode. E°net = E°r(cathode) − E°r(anode) is negative: the minimum voltage is its size.';
+EC_METHOD[10]='List the entities, with H₂O(l). The SOA is reduced at the cathode and the SRA is oxidized at the anode. E°net = E°r cathode − E°r anode is negative: the minimum voltage is its size.';
 EC_HT[10]={pre:'List every entity first: the ions of the dissolved compound, H₂O(l) for any aqueous solution, and the electrodes if they are not inert. Then use the table as for a voltaic cell.',items:[
   {q:'Predict the electrode reactions of an electrolysis',s:['Underline the entities on the table. Water is on both sides: as an OA (−0.83 V) and as an RA (+1.23 V).','The SOA is the highest entity on the left side. It is reduced at the cathode (−).','The SRA is the lowest entity on the right side. It is oxidized at the anode (+).','Write both half-reactions, balance the electrons, and add them. Cancel what is on both sides.'],
     chk:'A metal ion below water on the left side (Al³⁺, Mg²⁺, Na⁺, K⁺) is never reduced in an aqueous solution: water is reduced to H₂(g) instead.'},
-  {q:'Calculate the minimum voltage',s:['Find E°r of the SOA half-reaction (cathode) and of the SRA half-reaction (anode).','E°net = E°r(cathode) − E°r(anode). For an electrolytic cell it is negative.','The minimum voltage is the size of E°net: an E°net of −1.37 V needs at least 1.37 V.'],chk:'Do not multiply E° by the coefficients. Only the electrons are balanced.'},
+  {q:'Calculate the minimum voltage',s:['Find E°r of the SOA half-reaction (cathode) and of the SRA half-reaction (anode).','E°net = E°r cathode − E°r anode. For an electrolytic cell it is negative.','The minimum voltage is the size of E°net: an E°net of −1.37 V needs at least 1.37 V.'],chk:'Do not multiply E° by the coefficients. Only the electrons are balanced.'},
   {q:'Is it the chloride anomaly?',s:['Look for Cl⁻(aq) in an aqueous solution where water is the predicted SRA.','Chlorine gas forms at the anode instead of oxygen: 2Cl⁻(aq) → Cl₂(g) + 2e⁻ (E°r = +1.36 V).','Use +1.36 V for the anode to find the minimum voltage of the observed reaction.'],
     chk:'If a stronger reducing agent than water is present (I⁻, Br⁻, Sn²⁺, Fe²⁺), it is oxidized first and the anomaly does not matter.'},
   {q:'Molten salt or aqueous solution?',s:['A molten salt contains no water: the metal ion is the only OA and the anion is the only RA.','Thus very active metals, such as sodium, are made from molten compounds, not from their solutions.'],chk:'The products of a molten salt (for example Na and Cl₂) must be kept apart, or they react again.'},
@@ -8774,8 +8777,8 @@ EC_REF.t.push(['Electrolysis','The process that uses electrical energy to bring 
    Lesson-local helpers: ec11s (a number to n significant digits, unicode power of ten, for plain text), ec11Map (the road map figure), ec11Ref (the copper refining cell),
    ec11Steps (the step-by-step try-it of the practice questions; saved answer mt_ec-11_fs<slot>), ec11P (its 14 problems), ec11Met and ec11Pairs (data of the generators) */
 const ec11sup=e=>String(e).replace('-','⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
-/* C() with no line break between a charge and its state (SO₄²⁻|(aq)): a word joiner after the charge, as in lessons 8 and 9 */
-const ec11C=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060(');
+/* C() keeps a charge and its state on one line (SO₄²⁻|(aq)) */
+const ec11C=C;
 const ec11s=(x,n=3)=>{if(!isFinite(x))return '?';if(x===0)return '0';const a=Math.abs(x);if(a>=1e4||a<1e-2){const [m,e]=x.toExponential(n-1).split('e');return m.replace('-','−')+' × 10'+ec11sup(+e);}let s=x.toPrecision(n);if(s.includes('e'))s=String(Number(s));return s.replace('-','−');};
 ecCSS(11,'#ec-11 .ec11-pick{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .7em;margin:.2em 0 .7em;font-weight:600}#ec-11 .ec11-pick select{font-weight:400}'+
   '#ec-11 .ec11-st{list-style:none;padding:0;margin:.7em 0;display:grid;grid-template-columns:minmax(0,1fr);gap:.5em;counter-reset:ec11}'+
@@ -8982,8 +8985,8 @@ EC_DIP[11]=[
     w:'Copper is deposited at the cathode: Cu²⁺(aq) + 2e⁻ → Cu(s). n(Cu) = 0.100 g ÷ 63.55 g/mol = 1.574 × 10⁻³ mol. n(e⁻) = 2 × 1.574 × 10⁻³ mol = 3.147 × 10⁻³ mol. q = n(e⁻)F = (3.147 × 10⁻³ mol)(9.65 × 10⁴ C/mol) = 303.7 C. t = q / I = 303.7 C ÷ 3.50 A = 86.8 s. Record 86.8.'},
   {q:'Numerical response. Use the following information. In order to plate the bumper, the number of moles of chromium(II) ions that must react in the cell is __________ mol.',fig:fCr,n:112/EC_M.Cr,u:'mol',tol:.01,
     w:'The chromium(II) ions are reduced at the bumper: Cr²⁺(aq) + 2e⁻ → Cr(s). One mole of Cr²⁺(aq) ions gives one mole of chromium. n = m / M = 112 g ÷ 52.00 g/mol = 2.15 mol. Record 2.15.'},
-  {q:'Numerical response. Use the following information and your recorded answer for the previous numerical response (the moles of chromium(II) ions). In order to plate the bumper, the cell must operate for __________ min.',fig:fCr,n:3.46,u:'min',tol:.01,
-    w:'Cr²⁺(aq) + 2e⁻ → Cr(s), thus n(e⁻) = 2 × 2.15 mol = 4.30 mol. q = n(e⁻)F = (4.30 mol)(9.65 × 10⁴ C/mol) = 4.150 × 10⁵ C. t = q / I = 4.150 × 10⁵ C ÷ 2000 A = 207.5 s. t = 207.5 s ÷ 60 s/min = 3.46 min. Record 3.46.'},
+  {q:'Numerical response. Use the following information. In order to plate the bumper, the cell must operate for __________ min.',fig:fCr,n:3.46,u:'min',tol:.01,
+    w:'n(Cr) = 112 g ÷ 52.00 g/mol = 2.154 mol. Cr²⁺(aq) + 2e⁻ → Cr(s), thus n(e⁻) = 2 × 2.154 mol = 4.308 mol. q = n(e⁻)F = (4.308 mol)(9.65 × 10⁴ C/mol) = 4.157 × 10⁵ C. t = q / I = 4.157 × 10⁵ C ÷ 2000 A = 207.8 s. t = 207.8 s ÷ 60 s/min = 3.46 min. Record 3.46.'},
   {q:'If the electrochemical cell Cd(s) | '+ec11C('Cd^2+(aq)')+' || '+ec11C('Ag^+(aq)')+' | Ag(s) produces a 6.00 A current for 2.00 h, the mass change of the anode will be a',o:['25.2 g decrease','2.25 g increase','48.3 g decrease','48.3 g increase'],a:0,
     w:'Cd(s) is the SRA, thus cadmium is the anode: Cd(s) → Cd²⁺(aq) + 2e⁻. t = 2.00 h × 3600 s/h = 7200 s. q = It = (6.00 A)(7200 s) = 4.32 × 10⁴ C. n(e⁻) = 4.32 × 10⁴ C ÷ 9.65 × 10⁴ C/mol = 0.4477 mol. n(Cd) = ½ × 0.4477 mol = 0.2238 mol. m = (0.2238 mol)(112.41 g/mol) = 25.2 g. The anode dissolves, thus its mass decreases. 48.3 g is the mass of silver that plates onto the cathode.'},
   {q:'Numerical response. Use the following information. The mass of sodium that will react when 0.350 mol of electrons is transferred is __________ g.',fig:fNa,n:.35*EC_M.Na,u:'g',tol:.01,
@@ -9074,7 +9077,7 @@ EC_REF.t.push(['Faraday’s law','The amount of a substance that reacts at an el
    then the fig, thus the stems say "Use the information below". The figures are HTML with inline styles, because they are also shown outside the lesson page */
 const NR='<b>Numerical response.</b> ',
   /* C() with no line break inside a formula: a browser may break a line between a charge and (aq) */
-  Cn=s=>C(s).split(' ').map(t=>/<sup>/.test(t)?`<span style="white-space:nowrap">${t}</span>`:t).join(' '),
+  Cn=s=>C(s).split(/ (?![^<]*>)/).map(t=>/<sup>/.test(t)?`<span style="white-space:nowrap">${t}</span>`:t).join(' '),
   /* an equation (C notation with ->): each side is an inline block, thus a narrow screen breaks the line at the arrow first */
   eqH=s=>{const [l,r]=String(s).split(/\s*->\s*/);return `<span style="display:inline-block">${Cn(l)} →</span> <span style="display:inline-block">${Cn(r)}</span>`;},
   ip=h=>`<p style="margin:.4em .5em">${h}</p>`,                                          /* a paragraph of the information */
@@ -9210,7 +9213,7 @@ const ip=h=>`<p style="margin:.35em .5em">${h}</p>`,                            
   T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
   /* a formula or an equation (C notation) as HTML in which a line never breaks inside a species: with C() alone, a line can break
      after a charge and before the state, as in "Cl⁻ | (aq)" */
-  Cn=s=>C(s).split(' ').map(t=>t.includes('<sup>')?`<span style="white-space:nowrap">${t}</span>`:t).join(' '),
+  Cn=s=>C(s).split(/ (?![^<]*>)/).map(t=>t.includes('<sup>')?`<span style="white-space:nowrap">${t}</span>`:t).join(' '),
   /* more room under an ecCell drawing, for labels under the beakers (ecCell sets its height from the labels it draws itself) */
   tall=(svg,h)=>{const s=svg.replace(/^<svg viewBox="0 0 (\d+) \d+"/,'<svg viewBox="0 0 $1 '+h+'"');if(s===svg)console.error('[ec] slot 7d: the ecCell output changed, a figure may cut off its labels');return s;},
   /* an arrow and its label, for a part that is named from the side */
@@ -9348,14 +9351,14 @@ EC_DIP[7]=[
   o:['2Ag(s) + 2H⁺(aq) → H₂(g) + 2Ag⁺(aq)','Cu(s) + 2H⁺(aq) → H₂(g) + Cu²⁺(aq)','Pb(s) + 2H⁺(aq) → H₂(g) + Pb²⁺(aq)','Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq)'],a:3,
   w:'The oxidizing agent in the acid is H⁺(aq) (0.00 V). A metal reacts with it when the metal’s half-reaction is below the H⁺(aq) half-reaction in the table. Ag⁺/Ag (+0.80 V) and Cu²⁺/Cu (+0.34 V) are above it: no reaction. Pb²⁺/Pb (−0.13 V) is only just below it: lead reacts very slowly. Mg²⁺/Mg (−2.37 V) is far below it: magnesium is the strongest reducing agent, and it reacts first and vigorously, Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq).'},
 /* 52 */ {q:NR+'Use the information below. The electrical potential for the reaction of the metal that reacted immediately and vigorously with the acid is +/− __________ V.',fig:F51,n:2.37,u:'V',abs:.005,tol:0,
-  m:'Find the metal that reacted: the strongest reducing agent. Then E°net = E°r(cathode) − E°r(anode).',
+  m:'Find the metal that reacted: the strongest reducing agent. Then E°net = E°r cathode − E°r anode.',
   w:'The metal that reacts immediately and vigorously is the strongest reducing agent, Mg(s). H⁺(aq) is reduced at the cathode: 2H⁺(aq) + 2e⁻ → H₂(g), E°r = 0.00 V. Mg(s) is oxidized at the anode: Mg(s) → Mg²⁺(aq) + 2e⁻, and Mg²⁺(aq)/Mg(s) has E°r = −2.37 V. E°net = 0.00 V − (−2.37 V) = +2.37 V. Record 2.37.'},
 /* 53 */ {q:NR+'Use the information below. The mass of metal that reacted with the hydrochloric acid is __________ g.',fig:F51,n:3.04,u:'g',tol:.01,
   m:'Write the balanced equation. Find the limiting reagent: compare the amount of H⁺(aq) with the amount of Mg(s). Then m = nM.',
   w:'The metal that reacts is magnesium: Mg(s) + 2H⁺(aq) → H₂(g) + Mg²⁺(aq). n(H⁺) = cV = 1.00 mol/L × 0.250 L = 0.250 mol. The strip has n(Mg) = 12.50 g ÷ 24.31 g/mol = 0.514 mol, but the acid can react with only 0.250 mol ÷ 2 = 0.125 mol of Mg. Thus H⁺(aq) is the limiting reagent, and some magnesium is left over. m = 0.125 mol × 24.31 g/mol = 3.04 g. Record 3.04.'},
 /* 54 */ {q:NR+'Use the equation below. The standard electrode potential for the half-reaction<br>'+Cn('RhCl6^3-(aq) + 3e^- -> Rh(s) + 6Cl^-(aq)')+'<br>is +/− __________ V.',fig:F54,n:.44,u:'V',abs:.005,tol:0,ex:1,
-  m:'E°net = E°r(cathode) − E°r(anode). Find the half-reaction at the anode and look up its E°r. Then solve for E°r(cathode).',
-  w:'Zn(s) is oxidized, thus the zinc half-cell is the anode: Zn²⁺(aq) + 2e⁻ ⇌ Zn(s), E°r = −0.76 V. RhCl₆³⁻(aq) is reduced, thus its half-reaction is at the cathode. E°r(cathode) = E°net + E°r(anode). E°r = +1.20 V + (−0.76 V) = +0.44 V. Record 0.44.'},
+  m:'E°net = E°r cathode − E°r anode. Find the half-reaction at the anode and look up its E°r. Then solve for E°r cathode.',
+  w:'Zn(s) is oxidized, thus the zinc half-cell is the anode: Zn²⁺(aq) + 2e⁻ ⇌ Zn(s), E°r = −0.76 V. RhCl₆³⁻(aq) is reduced, thus its half-reaction is at the cathode. E°r cathode = E°net + E°r anode. E°r = +1.20 V + (−0.76 V) = +0.44 V. Record 0.44.'},
 /* 55 */ {q:'If the '+Cn('Cu^2+(aq)')+' / '+Cn('Cu(s)')+' reduction half-reaction was assigned a reduction potential value of 0.00 V for an electrode potential table, then the '+Cn('Ni^2+(aq)')+' / '+Cn('Ni(s)')+' half-reaction on that table would have a reduction potential value of',
   o:['+0.26 V','+0.08 V','−0.26 V','−0.60 V'],a:3,
   w:'In the data booklet, Cu²⁺(aq)/Cu(s) is +0.34 V and Ni²⁺(aq)/Ni(s) is −0.26 V. Setting copper to 0.00 V subtracts 0.34 V from every value in the table. Ni²⁺(aq)/Ni(s): −0.26 V − 0.34 V = −0.60 V. The difference between the two half-cells, 0.60 V, stays the same.'},
@@ -9366,14 +9369,14 @@ EC_DIP[7]=[
   w:'A reaction is spontaneous when E°net is positive. Only +0.15 V is positive. A negative E°net means that the reaction needs a power supply, and 0.00 V means that there is no net reaction.'},
 /* 58 */ {q:'The voltage of an electrochemical cell is +0.20 V. If one of the half-reactions is the reduction of '+Cn('Cu^2+(aq)')+', then the other half-reaction that occurs could be',
   o:['2I⁻(aq) → I₂(s) + 2e⁻','S(s) + 2H⁺(aq) + 2e⁻ → H₂S(aq)','H₂S(aq) → S(s) + 2H⁺(aq) + 2e⁻','I₂(s) + 2e⁻ → 2I⁻(aq)'],a:2,
-  w:'The reduction of Cu²⁺(aq) is at the cathode: E°r = +0.34 V. The other half-reaction must be an oxidation, at the anode. E°r(anode) = E°r(cathode) − E°net = +0.34 V − 0.20 V = +0.14 V. The half-reaction S(s) + 2H⁺(aq) + 2e⁻ ⇌ H₂S(aq) has E°r = +0.14 V, and at the anode it runs as an oxidation: H₂S(aq) → S(s) + 2H⁺(aq) + 2e⁻. The iodide oxidation (+0.54 V) would give −0.20 V, and a reduction cannot pair with another reduction.'},
+  w:'The reduction of Cu²⁺(aq) is at the cathode: E°r = +0.34 V. The other half-reaction must be an oxidation, at the anode. E°r anode = E°r cathode − E°net = +0.34 V − 0.20 V = +0.14 V. The half-reaction S(s) + 2H⁺(aq) + 2e⁻ ⇌ H₂S(aq) has E°r = +0.14 V, and at the anode it runs as an oxidation: H₂S(aq) → S(s) + 2H⁺(aq) + 2e⁻. The iodide oxidation (+0.54 V) would give −0.20 V, and a reduction cannot pair with another reduction.'},
 /* 59 */ {q:'In the reaction of sodium metal with water, the reduction half-reaction produces',
   o:['hydroxide ions, which results in a pH above 7','hydroxide ions, which results in a pH below 7','hydrogen gas, which results in a pH below 7','hydrogen gas, which results in a pH of 7'],a:0,
   w:'Na(s) is the SRA and water is the SOA. The reduction is 2H₂O(l) + 2e⁻ → H₂(g) + 2OH⁻(aq), E°r = −0.83 V. It produces hydrogen gas and hydroxide ions, and the OH⁻(aq) makes the solution basic: the pH rises above 7. Net: 2Na(s) + 2H₂O(l) → 2Na⁺(aq) + H₂(g) + 2OH⁻(aq), E°net = −0.83 V − (−2.71 V) = +1.88 V.'},
 /* 60 */ {q:'Use the information below. The half-reaction for the reduction that occurs in this reaction is',fig:F60,o:['Na(g) → Na⁺(g) + e⁻','Na(g) + e⁻ → Na⁺(g)','Cl₂(g) + 2e⁻ → 2Cl⁻(g)','Cl₂(g) → 2Cl⁻(g) + 2e⁻'],a:2,
   w:'Reduction is a gain of electrons. Each chlorine atom goes from 0 in Cl₂(g) to −1 in NaCl(g): Cl₂(g) + 2e⁻ → 2Cl⁻(g). Na(g) → Na⁺(g) + e⁻ is the oxidation. The other two equations do not balance for charge.'},
 /* 61 */ {q:NR+'Under standard conditions, hydrogen gas reacts with '+Cn('Au^3+(aq)')+' ions to produce '+Cn('Au(s)')+'. The net cell potential for the reaction is +/− __________ V.',n:1.5,u:'V',abs:.005,tol:0,
-  m:'The oxidizing agent is reduced at the cathode, and hydrogen is oxidized at the anode. E°net = E°r(cathode) − E°r(anode).',
+  m:'The oxidizing agent is reduced at the cathode, and hydrogen is oxidized at the anode. E°net = E°r cathode − E°r anode.',
   w:'H₂(g) is oxidized at the anode: H₂(g) → 2H⁺(aq) + 2e⁻, E°r = 0.00 V (the hydrogen reference). Au³⁺(aq) is reduced at the cathode: Au³⁺(aq) + 3e⁻ → Au(s), E°r = +1.50 V. E°net = +1.50 V − 0.00 V = +1.50 V. Record 1.50.'},
 /* 62 */ {q:'Use the information below. The oxidation half-reaction for the discharge of this cell is',fig:F62,
   o:['Cd(s) + 2OH⁻(aq) → Cd(OH)₂(s) + 2e⁻','NiO₂(s) + 2H₂O(l) + 2e⁻ → Ni(OH)₂(s) + 2OH⁻(aq)','NiO₂(s) + 2H₂O(l) → Ni(OH)₂(s) + 2OH⁻(aq) + 2e⁻','Cd(s) + 2OH⁻(aq) + 2e⁻ → Cd(OH)₂(s)'],a:0,
@@ -9425,7 +9428,7 @@ EC_DIP[7]=[
   w:'Cu²⁺(aq) (+0.34 V) is a stronger oxidizing agent than Ni²⁺(aq) (−0.26 V). Thus Cu²⁺(aq) is reduced at the copper electrode, the cathode, and nickel is oxidized at the nickel electrode, the anode. The wire is the external circuit: it carries the electrons from the anode to the cathode. Thus cathode 4 (Cu(s)), external circuit 6 (the wire), oxidizing agent 3 (the Cu²⁺(aq) solution) and anode 1 (Ni(s)): record 4631.'},
 /* 80 */ {q:'Use the diagram below. Given that the reading on the voltmeter for this cell is +1.74 V, which of the following statements is correct?',fig:F80,
   o:['The reduction potential of Q²⁺(aq) is +2.50 V.','Zn(s) is a weaker reducing agent than Q(s).','Q²⁺(aq) would react spontaneously with Cu(s).','Q²⁺(aq) is a stronger oxidizing agent than Zn²⁺(aq).'],a:1,
-  w:'The arrow shows the electrons leaving Q(s) and flowing through the wire to Zn(s). Thus Q(s) is oxidized at the anode, and Zn²⁺(aq) is reduced at the zinc cathode. E°net = E°r(cathode) − E°r(anode): +1.74 V = −0.76 V − E°r(Q), thus Q²⁺(aq) + 2e⁻ ⇌ Q(s) has E°r = −2.50 V, not +2.50 V. Q(s) is a stronger reducing agent than Zn(s). Q²⁺(aq) is a weaker oxidizing agent than Zn²⁺(aq) and Cu²⁺(aq), thus it cannot oxidize Cu(s).'},
+  w:'The arrow shows the electrons leaving Q(s) and flowing through the wire to Zn(s). Thus Q(s) is oxidized at the anode, and Zn²⁺(aq) is reduced at the zinc cathode. E°net = E°r cathode − E°r anode: +1.74 V = −0.76 V − E°r(Q), thus Q²⁺(aq) + 2e⁻ ⇌ Q(s) has E°r = −2.50 V, not +2.50 V. Q(s) is a stronger reducing agent than Zn(s). Q²⁺(aq) is a weaker oxidizing agent than Zn²⁺(aq) and Cu²⁺(aq), thus it cannot oxidize Cu(s).'},
 /* 81 */ {q:'In an experiment, a student compares several electrochemical cells. Each cell contains two metal strips in their metallic ion solutions. A voltmeter is connected by a wire between the metal strips, and a salt bridge connects the solutions. The dependent (responding) variable is the',
   o:['voltage','concentration of the solution','reaction of a metal and a metallic ion','metal and metallic ion solution selected'],a:0,
   w:'The responding variable is what the student measures as the result: the voltage of each cell, read on the voltmeter. The metal and metallic ion solution selected for each cell is the manipulated variable. The concentration of the solutions is kept the same: a controlled variable.'},
@@ -9436,9 +9439,9 @@ EC_DIP[7]=[
   o:['X(s) to the inert electrode and the pH in the hydrogen half-cell increases','X(s) to the inert electrode and the pH in the hydrogen half-cell decreases','the inert electrode to X(s) and the pH in the hydrogen half-cell increases','the inert electrode to X(s) and the pH in the hydrogen half-cell decreases'],a:0,
   w:'Anions migrate toward the anode, thus X(s) is the anode: X(s) → X²⁺(aq) + 2e⁻. The electrons flow through the wire from X(s) to the inert electrode, the cathode. There H⁺(aq) is reduced: 2H⁺(aq) + 2e⁻ → H₂(g). The concentration of H⁺(aq) decreases, thus the pH in the hydrogen half-cell increases.'},
 /* 84 */ {q:'Use the information below. If the voltmeter reads +0.45 V under standard conditions, then '+Cn('X(s)')+' is most likely',fig:F83,o:['Ni(s)','Fe(s)','Zn(s)','Mg(s)'],a:1,
-  w:'The hydrogen half-cell is the cathode: E°r = 0.00 V. E°net = E°r(cathode) − E°r(anode): +0.45 V = 0.00 V − E°r(X), thus X²⁺(aq) + 2e⁻ ⇌ X(s) has E°r = −0.45 V. Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) has E°r = −0.45 V. Nickel would give +0.26 V, zinc +0.76 V and magnesium +2.37 V.'},
+  w:'The hydrogen half-cell is the cathode: E°r = 0.00 V. E°net = E°r cathode − E°r anode: +0.45 V = 0.00 V − E°r(X), thus X²⁺(aq) + 2e⁻ ⇌ X(s) has E°r = −0.45 V. Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) has E°r = −0.45 V. Nickel would give +0.26 V, zinc +0.76 V and magnesium +2.37 V.'},
 /* 85 */ {q:NR+'Use the diagram below. A student attempted to replicate a traditional Daniell cell by setting up the electrochemical cell shown. Under standard conditions, the electrical potential of the cell should be +/− __________ V.',fig:F85,n:1.1,u:'V',abs:.005,tol:0,
-  m:'Find the cathode: the half-cell with the stronger oxidizing agent. E°net = E°r(cathode) − E°r(anode).',
+  m:'Find the cathode: the half-cell with the stronger oxidizing agent. E°net = E°r cathode − E°r anode.',
   w:'Cu²⁺(aq) (+0.34 V) is a stronger oxidizing agent than Zn²⁺(aq) (−0.76 V), thus the copper half-cell is the cathode and zinc is oxidized at the anode. The NaNO₃(aq) salt bridge only lets ions move between the half-cells. E°net = +0.34 V − (−0.76 V) = +1.10 V. Record 1.10.'},
 /* 86 */ {q:'Use the diagram below. The cell in the diagram was constructed and connected by a chemistry student. The voltage of the cell remained at 0.00 V trial after trial. One possible reason for the malfunction of the cell was that the',fig:F86,
   o:['concentrations of the two solutions were too low','solution in the U-tube was a non-electrolyte','redox reaction was non-spontaneous','voltmeter was connected backward'],a:1,
@@ -9446,7 +9449,7 @@ EC_DIP[7]=[
 /* 87 */ {q:'Use the information below. The student chose zinc for the anode because zinc',fig:F87,o:['gains electrons easily','can be easily reduced','is an oxidizing agent','is a reducing agent'],a:3,
   w:'Oxidation occurs at the anode. Zn(s) loses electrons easily (Zn²⁺/Zn is −0.76 V, low in the table), thus zinc is a good reducing agent. Gaining electrons and being reduced describe an oxidizing agent, which reacts at the cathode.'},
 /* 88 */ {q:'Use the information below. If the cell generates a voltage of +1.24 V under standard conditions, the half-reaction occurring at the cathode will have an electrode potential of',fig:F87,o:['+2.00 V','−2.00 V','+0.48 V','−0.48 V'],a:2,
-  w:'E°net = E°r(cathode) − E°r(anode), thus E°r(cathode) = E°net + E°r(anode). The zinc anode has E°r = −0.76 V. E°r(cathode) = +1.24 V + (−0.76 V) = +0.48 V. (+2.00 V would come from +1.24 V − (−0.76 V).)'},
+  w:'E°net = E°r cathode − E°r anode, thus E°r cathode = E°net + E°r anode. The zinc anode has E°r = −0.76 V. E°r cathode = +1.24 V + (−0.76 V) = +0.48 V. (+2.00 V would come from +1.24 V − (−0.76 V).)'},
 /* 89 */ {q:'Use the information below. If the zinc anode loses 200 g of mass during the operation of the cell, then the number of moles of electrons transferred is',fig:F87,o:['1.53 mol','3.06 mol','6.12 mol','12.2 mol'],a:2,
   w:'n(Zn) = 200 g ÷ 65.38 g/mol = 3.06 mol. Each zinc atom loses 2 electrons: Zn(s) → Zn²⁺(aq) + 2e⁻. n(e⁻) = 2 × 3.06 mol = 6.12 mol.'},
 /* 90 */ {q:NR+'Use the information below. If the charge on the unidentified metal ion is 3+, then the number of moles of the metal produced when the zinc anode decreases in mass by 200 g is __________ mol.',fig:F87,n:2.04,u:'mol',tol:.01,
