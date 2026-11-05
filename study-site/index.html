@@ -1719,7 +1719,7 @@ function matching(host,pairs,intro,slot){
   const ol=$('ol',box),lv=$('[aria-live]',box);
   function render(res,msg){ol.innerHTML=pairs.map((p,i)=>`<li class="${res?(okAt(i)?'ok':'bad'):''}"><span class="ordn">${i+1}</span><span id="${uid}-${i}">${p[0]}</span><select aria-labelledby="${uid}-${i}" data-i="${i}"><option value="-1">Select…</option>${terms.map((t,j)=>`<option value="${j}"${sel[i]===j?' selected':''}>${t}</option>`).join('')}</select></li>`).join('');lv.textContent=msg||'';
     $$('select',ol).forEach(e=>e.onchange=()=>{sel[+e.dataset.i]=+e.value;save();e.closest('li').className='';});}
-  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){lv.textContent='Choose a term for each row first.';return;}const n=pairs.filter((p,i)=>okAt(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){render(false,'Choose a term for each row first.');return;}const n=pairs.filter((p,i)=>okAt(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
   $('[data-a=show]',box).onclick=()=>{sel=pairs.map((p,i)=>ans(i));save();render(true,'These are the answers.');};
   $('[data-a=clear]',box).onclick=()=>{sel=pairs.map(()=>-1);save();render(false,'');};
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
@@ -3810,7 +3810,7 @@ function eqTable(host,o,slot){
   const ss=$$('select',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=s=>sel[+s.dataset.i][+s.dataset.j]===o.rows[+s.dataset.i][1][+s.dataset.j];
   const paint=res=>ss.forEach(s=>{s.value=String(sel[+s.dataset.i][+s.dataset.j]);s.classList.toggle('ok',!!res&&ok(s));s.classList.toggle('bad',!!res&&!ok(s));});
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');});
-  $('[data-a=check]',box).onclick=()=>{if(!sel.some(r=>r.some(x=>x>=0))){lv.textContent='Choose your answers in the table first.';wv.innerHTML='';return;}const n=ss.filter(ok).length;paint(true);lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct.';wv.innerHTML=n===ss.length&&o.after?`<p class="fb info">${o.after}</p>`:'';if(sel.some(r=>r.some(x=>x>=0)))markStudy();};
+  $('[data-a=check]',box).onclick=()=>{if(!sel.some(r=>r.some(x=>x>=0))){paint(false);lv.textContent='Choose your answers in the table first.';wv.innerHTML='';return;}const n=ss.filter(ok).length;paint(true);lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct.';wv.innerHTML=n===ss.length&&o.after?`<p class="fb info">${o.after}</p>`:'';if(sel.some(r=>r.some(x=>x>=0)))markStudy();};
   $('[data-a=show]',box).onclick=()=>{sel=o.rows.map(r=>r[1].slice());save();paint(true);lv.textContent='These are the answers.';wv.innerHTML=o.after?`<p class="fb info">${o.after}</p>`:'';};
   $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';wv.innerHTML='';};
   paint(false);if(sel.some(r=>r.some(x=>x>=0)))lv.textContent='Your last answers are restored.';
@@ -4019,7 +4019,7 @@ EQL.push({t:'ICE tables',d:'An ICE table records the initial, change and equilib
       <tr><th>I</th>${P.sp.map((s,j)=>cell('I',j,P.gI[j])).join('')}</tr><tr><th>C</th>${P.sp.map((s,j)=>cell('Cc',j,0)).join('')}</tr><tr><th>E</th>${P.sp.map((s,j)=>cell('E',j,P.gE[j])).join('')}</tr></table></div>
       ${P.K!=null?`<p style="margin-top:.8em"><label>K<sub>c</sub> = <input type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-r="K" style="width:7rem"></label></p>`:''}<div class="row"><button type="button" class="btn sm" data-a="c">Check the table</button><button type="button" class="btn sm ghost" data-a="s">Show the solution</button></div><p class="fb" hidden aria-live="polite"></p>`;
     $$('figure.cf',body).forEach(figFit);const ok=(inp)=>{const x=parseNum(inp.value),t=inp.dataset.r==='K'?P.K:P[inp.dataset.r][+inp.dataset.j];return !isNaN(x)&&Math.abs(x-t)<=Math.max(.03*Math.abs(t),inp.dataset.r==='K'?0:.006);};
-    $('[data-a=c]',body).onclick=()=>{let n=0,all=$$('input',body);if(!all.some(i2=>i2.value.trim())){const fb=$('.fb',body);fb.hidden=false;fb.className='fb';fb.textContent='Fill in the empty cells first.';return;}all.forEach(i2=>{const o=ok(i2);if(o)n++;i2.classList.toggle('ok',o);i2.classList.toggle('bad',!o);i2.setAttribute('aria-invalid',String(!o));});const fb=$('.fb',body);fb.hidden=false;fb.className='fb '+(n===all.length?'ok':'bad');const kB=all.some(i2=>i2.dataset.r==='K'&&!ok(i2));fb.innerHTML=n===all.length?'All cells are correct. '+P.ke:kB&&n===all.length-1?'The table is correct. Check your calculation of K<sub>c</sub>.':n+' of '+all.length+' cells are correct. Check the signs of the changes and the mole ratios.';};
+    $('[data-a=c]',body).onclick=()=>{let n=0,all=$$('input',body);if(!all.some(i2=>i2.value.trim())){all.forEach(i2=>{i2.classList.remove('ok','bad');i2.removeAttribute('aria-invalid');});const fb=$('.fb',body);fb.hidden=false;fb.className='fb';fb.textContent='Fill in the empty cells first.';return;}all.forEach(i2=>{const o=ok(i2);if(o)n++;i2.classList.toggle('ok',o);i2.classList.toggle('bad',!o);i2.setAttribute('aria-invalid',String(!o));});const fb=$('.fb',body);fb.hidden=false;fb.className='fb '+(n===all.length?'ok':'bad');const kB=all.some(i2=>i2.dataset.r==='K'&&!ok(i2));fb.innerHTML=n===all.length?'All cells are correct. '+P.ke:kB&&n===all.length-1?'The table is correct. Check your calculation of K<sub>c</sub>.':n+' of '+all.length+' cells are correct. Check the signs of the changes and the mole ratios.';};
     $('[data-a=s]',body).onclick=()=>{$$('input',body).forEach(i2=>{const t=i2.dataset.r==='K'?P.K:P[i2.dataset.r][+i2.dataset.j];i2.value=(i2.dataset.r==='Cc'&&t>0?'+':'')+t;i2.classList.remove('bad');i2.classList.add('ok');i2.removeAttribute('aria-invalid');});const fb=$('.fb',body);fb.hidden=false;fb.className='fb info';fb.innerHTML=P.ke;saveI();};
     const key='ice_'+i,sv=Store.w(key)||{},kOf=x=>x.dataset.r+(x.dataset.j||''),saveI=()=>{const o={};$$('input',body).forEach(x=>{if(x.value)o[kOf(x)]=x.value;});Store.wSet(key,o);};
     $$('input',body).forEach(x=>{if(sv[kOf(x)]!=null)x.value=sv[kOf(x)];x.addEventListener('input',saveI);});}
@@ -5250,7 +5250,7 @@ function ec1Grid(host,groups,slot){
     inp.classList.toggle('ok',ok);inp.classList.toggle('bad',!ok);inp.setAttribute('aria-invalid',String(!ok));
     if(show){w.innerHTML=ec1Work(r);w.hidden=false;return;}
     w.textContent=!t||ok?'':a.post?'Write the sign before the number: +2, not 2+.':isFinite(a.x)&&Math.abs(Math.abs(a.x)-Math.abs(r.v))<.011?'Check the sign.':'';w.hidden=!w.textContent;});
-  function check(){const R=rows(),ins=$$('input',body);if(ins.every(x=>!x.value.trim())){lv.textContent='Type an oxidation number in each box first.';return;}
+  function check(){const R=rows(),ins=$$('input',body);if(ins.every(x=>!x.value.trim())){ins.forEach(x=>{x.classList.remove('ok','bad');x.removeAttribute('aria-invalid');wOf(x).hidden=true;});lv.textContent='Type an oxidation number in each box first.';return;}
     paint(false);markStudy();const n=ins.filter(x=>okv(x.value,R[+x.dataset.i].v)).length,e=ins.filter(x=>!x.value.trim()).length,
       ns=ins.some(x=>{const v=R[+x.dataset.i].v,t=x.value.trim();return v>0&&okv(t,v)&&!/^\+/.test(t);});
     lv.textContent=(n===ins.length?'All '+n+' are correct.':n+' of '+ins.length+' are correct.'+(e?' '+e+(e===1?' box is':' boxes are')+' empty.':''))+(ns?' Write a + sign before a positive oxidation number (+6, not 6).':'');}
@@ -6961,7 +6961,7 @@ function ec6Grid(host,o,slot){
   const paint=res=>{ss.forEach((s,i)=>{s.value=String(sel[i]);});lis.forEach((li,i)=>{li.className=res?(ok(i)?'ok':'bad'):'';});};
   const after=()=>{wv.innerHTML=o.after?`<div class="fb info">${o.after}</div>`:'';$$('figure.cf',wv).forEach(figFit);};
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i]=+s.value;save();s.closest('li').className='';lv.textContent='';});
-  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){lv.textContent='Choose an answer in each row first.';return;}const n=R.filter((r,i)=>ok(i)).length;paint(true);markStudy();
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){paint(false);lv.textContent='Choose an answer in each row first.';return;}const n=R.filter((r,i)=>ok(i)).length;paint(true);markStudy();
     lv.textContent=n===R.length?'All '+n+' are correct.':n+' of '+R.length+' are correct.'+(sel.some(x=>x<0)?' Some rows have no answer.':'');if(n===R.length)after();else wv.innerHTML='';};
   $('[data-a=show]',box).onclick=()=>{sel=R.map(r=>r.a);save();paint(true);lv.textContent='These are the answers.';after();};
   $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';wv.innerHTML='';};
@@ -7001,7 +7001,7 @@ function ec6Coef(host,eqs,o,slot){
   const after=()=>{wv.innerHTML=o.after?`<div class="fb info">${o.after}</div>`:'';$$('figure.cf',wv).forEach(figFit);};
   const mark=(i,r)=>{lis[i].className=r[0]?'ok':'bad';$('.ec6r',lis[i]).textContent=r[1];$$('input',lis[i]).forEach(x=>{x.classList.toggle('ok',!!r[2]);x.classList.toggle('bad',!r[2]);});
     const s=$('select',lis[i]);if(s){const g=s.value===String(eqs[i].el[1]);s.classList.toggle('ok',g);s.classList.toggle('bad',!g);}};
-  $('[data-a=check]',box).onclick=()=>{if(val.every(a=>a.every(x=>x===''))){lv.textContent='Type the coefficients first.';return;}
+  $('[data-a=check]',box).onclick=()=>{if(val.every(a=>a.every(x=>x===''))){eqs.forEach((e,i)=>reset(i));lv.textContent='Type the coefficients first.';return;}
     let n=0;eqs.forEach((e,i)=>{const r=grade(i);if(r[0])n++;mark(i,r);});markStudy();
     lv.textContent=n===eqs.length?'All '+n+' equations are correct.':n+' of '+eqs.length+' equations are correct.';if(n===eqs.length)after();else wv.innerHTML='';};
   $('[data-a=show]',box).onclick=()=>{val=eqs.map(e=>e.a.map(String).concat(e.el?[String(e.el[1])]:[]));save();paint();eqs.forEach((e,i)=>mark(i,grade(i)));lv.textContent='These are the answers.';after();};
@@ -7408,7 +7408,7 @@ function ec7Grid(host,o,slot){
     lis.forEach((li,i)=>{const good=F[i].every((x,j)=>ok(i,j));li.classList.toggle('ok',!!res&&good);li.classList.toggle('bad',!!res&&!good);});};
   const reveal=()=>{wv.innerHTML=o.after?`<div class="fb info">${W7(o.after)}</div>`:'';if(!open){open=true;o.done&&o.done();}},hide=()=>{wv.innerHTML='';if(open){open=false;o.reset&&o.reset();}};
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');s.closest('li').classList.remove('ok','bad');});
-  $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){lv.textContent='Make your choices first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){paint(false);lv.textContent='Make your choices first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
     lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct. Try again, or show the answers.';if(n===ss.length)reveal();};
   $('[data-a=show]',box).onclick=()=>{sel=F.map(f=>f.map(x=>x[2]));save();paint(true);lv.textContent='These are the answers.';reveal();};
   $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';hide();};
@@ -7427,7 +7427,7 @@ function ec7Num(host,o,slot){
   const num=i=>parseNum(ins[i].value),ok=i=>{const x=num(i);return isFinite(x)&&Math.abs(x-R[i][1])<=.005+1e-9;},flip=i=>{const x=num(i);return isFinite(x)&&Math.abs(R[i][1])>.005&&Math.abs(x+R[i][1])<=.005+1e-9;};
   const paint=res=>ins.forEach((x,i)=>{x.classList.toggle('ok',!!res&&ok(i));x.classList.toggle('bad',!!res&&!ok(i));lis[i].classList.toggle('ok',!!res&&ok(i));lis[i].classList.toggle('bad',!!res&&!ok(i));if(res&&!ok(i))x.setAttribute('aria-invalid','true');else x.removeAttribute('aria-invalid');});
   ins.forEach(x=>{x.addEventListener('input',()=>{save();x.classList.remove('ok','bad');x.closest('li').classList.remove('ok','bad');x.removeAttribute('aria-invalid');});x.addEventListener('keydown',e=>{if(e.key==='Enter')$('[data-a=check]',box).click();});});
-  $('[data-a=check]',box).onclick=()=>{if(ins.every(x=>!x.value.trim())){lv.textContent='Type your answers first.';return;}const bad=R.map((r,i)=>i).filter(i=>!ok(i)),sg=bad.find(flip),nn=bad.some(i=>ins[i].value.trim()&&isNaN(num(i)));paint(true);markStudy();
+  $('[data-a=check]',box).onclick=()=>{if(ins.every(x=>!x.value.trim())){paint(false);lv.textContent='Type your answers first.';return;}const bad=R.map((r,i)=>i).filter(i=>!ok(i)),sg=bad.find(flip),nn=bad.some(i=>ins[i].value.trim()&&isNaN(num(i)));paint(true);markStudy();
     lv.textContent=!bad.length?(R.length>1?'All '+R.length+' are correct.':'Correct.'):(R.length>1?(R.length-bad.length)+' of '+R.length+' '+(R.length-bad.length===1?'is':'are')+' correct.':'Not correct.')+(sg!=null?' Answer '+(sg+1)+' has the right size but the wrong sign.':'')+(nn?' Type a number, for example −0.34.':'');
     wv.innerHTML=!bad.length&&o.after?`<p class="fb info">${W7(o.after)}</p>`:'';};
   $('[data-a=show]',box).onclick=()=>{ins.forEach((x,i)=>{x.value=ecVs(R[i][1]);});save();paint(true);lv.textContent='These are the answers.';wv.innerHTML=o.after?`<p class="fb info">${W7(o.after)}</p>`:'';};
@@ -7843,7 +7843,7 @@ function ec8Grid(host,o,slot){
     lis.forEach((li,i)=>{const g=F[i].every((x,j)=>ok(i,j));li.classList.toggle('ok',!!res&&g);li.classList.toggle('bad',!!res&&!g);});};
   const reveal=()=>{wv.innerHTML=o.after?`<p class="fb info">${o.after}</p>`:'';open=true;},hide=()=>{wv.innerHTML='';open=false;};
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');s.removeAttribute('aria-invalid');s.closest('li').classList.remove('ok','bad');});
-  $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){lv.textContent='Choose your answers first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(a=>a.every(x=>x<0))){paint(false);lv.textContent='Choose your answers first.';return;}const n=ss.filter(s=>ok(+s.dataset.i,+s.dataset.j)).length;paint(true);markStudy();
     lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct. Try again, or show the answers.';if(n===ss.length)reveal();else hide();};
   $('[data-a=show]',box).onclick=()=>{sel=F.map(f=>f.map(x=>x[1]));save();paint(true);lv.textContent='These are the answers.';reveal();};
   $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';hide();};
@@ -14406,7 +14406,7 @@ const FF_ADD={
     const ss=$$('select',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=x=>sel[+x.dataset.n]===B[+x.dataset.n][2];tblCue($('.ff-sc',box));
     const paint=res=>ss.forEach(x=>{x.value=String(sel[+x.dataset.n]);x.classList.toggle('ok',!!res&&ok(x));x.classList.toggle('bad',!!res&&!ok(x));});
     ss.forEach(x=>x.onchange=()=>{sel[+x.dataset.n]=+x.value;save();x.classList.remove('ok','bad');});
-    $('[data-a=check]',box).onclick=()=>{if(!sel.some(x=>x>=0)){lv.textContent='Choose your answers in the table first.';wv.innerHTML='';return;}const k=ss.filter(ok).length;paint(true);lv.textContent=k===ss.length?'All '+k+' are correct.':k+' of '+ss.length+' are correct.';wv.innerHTML=k===ss.length?`<p class="fb info">${o.after}</p>`:'';if(sel.some(x=>x>=0))markStudy();};
+    $('[data-a=check]',box).onclick=()=>{if(!sel.some(x=>x>=0)){paint(false);lv.textContent='Choose your answers in the table first.';wv.innerHTML='';return;}const k=ss.filter(ok).length;paint(true);lv.textContent=k===ss.length?'All '+k+' are correct.':k+' of '+ss.length+' are correct.';wv.innerHTML=k===ss.length?`<p class="fb info">${o.after}</p>`:'';if(sel.some(x=>x>=0))markStudy();};
     $('[data-a=show]',box).onclick=()=>{sel=B.map(b=>b[2]);save();paint(true);lv.textContent='These are the answers.';wv.innerHTML=`<p class="fb info">${o.after}</p>`;};
     $('[data-a=clear]',box).onclick=()=>{sel=B.map(()=>-1);save();paint(false);lv.textContent='';wv.innerHTML='';};
     paint(false);if(sel.some(x=>x>=0))lv.textContent='Your last answers are restored.';

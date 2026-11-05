@@ -32,7 +32,7 @@ The page is opened from the file (`file://`) with every network request blocked,
 | `layout.test.js` | The layout of every page at 390 and 1366 px (`--full`: 24 widths from 360 to 5120 px). | 30 s |
 | `click-guard.test.js` | The ghost-click guard with real input: a mouse double-click or two quick taps on a button that is replaced by an option do not answer it; a tap far away or later does; Enter or Space always acts at once (also after Try again in the lesson quiz). | 3 s |
 | `reload-place.test.js` | A reload goes back to the block at the top of the window (a card, or a question of the quiz) at the same offset: after a raw jump (End key, a jump to a part of the page) in lessons with waiting question figures, after a natural scroll, and by y for an older saved place; a place inside a worked example that is closed after the reload shows its card at the top. | 27 s |
-| `empty-check.test.js` | A try-it Check pressed before anything is chosen asks for an answer first and marks nothing (the widgets one by one, then every Check button of every lesson on a fresh page; lists in order and the pH slider always hold an answer and are left out). | 16 s |
+| `empty-check.test.js` | A try-it Check pressed before anything is chosen asks for an answer first and marks nothing (the widgets one by one, then every Check button of every lesson on a fresh page; lists in order and the pH slider always hold an answer and are left out). A choice that is taken back after a Check leaves no mark of that Check at the next empty Check. | 25 s |
 
 ### `smoke.test.js`
 
