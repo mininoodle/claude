@@ -1082,7 +1082,13 @@ function bearing(x,y){
    const RETIRE={'mom_1_11':'2026-11-05T18:00:00Z','ns_2_r4':'2026-11-05T18:00:00Z'};
    The answer, spaced repetition, history and review entries of the id that were saved at or before that time are then cleared: at load, and in every copy
    that arrives later from another tab, the account or a backup file. The clear is recorded as 'rt:<id>' and syncs like the other clears, thus every device
-   drops the same entries. Answers given after that time are kept. A reworded stem that asks the same question does not belong here. */
+   drops the same entries. Answers given after that time are kept. A reworded stem that asks the same question does not belong here.
+   The time must be at or before the moment the page is published (use the time of the commit), never a planned time: a later time also cuts the answers that students
+   give to the new question before it, on every device. The page reports a time after now as a console error at load, which fails the smoke test (and ids.test.js
+   checks it too); a page test that fakes the clock must set it after the latest RETIRE time.
+   A copy written by a page from before format 4 (an old page that is still open, its copy in this browser, the old single account document, an old backup) shows the
+   old version of every RETIRE question, thus its entries of these ids are cleared whatever their time (MIGRATIONS[4] in Store).
+   A student who had answered the old question keeps the lesson's level: see Store.renewed and lessonLevel0. */
 const RETIRE={};
 const Store=(()=>{
   const KEY='unit-study-site.v2',NOC='unit-study-site.noclaude',MAPS=['a','r','s','w','h','g'];let D={a:{},r:{},s:{},w:{},h:{},g:{},c:{},pos:null,u:null},lastW=null,canSave=true,warned=0;
@@ -1095,8 +1101,10 @@ const Store=(()=>{
   /* MIGRATIONS[n] turns a copy of format n-1 into format n. upgrade() runs the steps a copy needs: on the copy in this browser at load, and on every copy that arrives
      (another tab, the account copy, a backup file). Changes to the content of a question are not format steps: they are clears with a fixed cut-off time
      (RB2 below, RETIRE), which every copy that arrives passes through in fold() */
-  /* 4: the entries are unchanged; the account copy moved from one document to one document per section (see 'the account copy' below) */
-  const MIGRATIONS={4:o=>o},RTM=['a','h','s','r'],RTL=typeof RETIRE==='object'&&RETIRE||{};
+  /* 4: the entries are unchanged; the account copy moved from one document to one document per section (see 'the account copy' below).
+     A copy of format 3 was written by a page from before RETIRE, which shows the old version of each RETIRE question: its entries of these ids are answers to the old
+     questions whatever their time (such a page, still open, can answer one after the RETIRE time), thus they become tombstones of the RETIRE time */
+  const MIGRATIONS={4:o=>{for(const id in RTL){const T=Date.parse(RTL[id]);if(T>0)RTM.forEach(m=>{const e=o[m]&&o[m][id];if(e&&typeof e==='object'&&!e.x)o[m][id]={x:1,t:T};});}return o;}},RTM=['a','h','s','r'],RTL=typeof RETIRE==='object'&&RETIRE||{};
   const upgrade=o=>{for(let v=(typeof o.v==='number'?o.v:3)+1;v<=SCHEMA;v++)if(MIGRATIONS[v])o=MIGRATIONS[v](o)||o;return o;};
   try{const s=localStorage.getItem(KEY);lastW=s;if(s){let o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);o=upgrade(o);LX=extra(o);MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,rt=0,mode='device',lastPull=0,pulled=false,uid=null,src='',unsub=null,err='',cur=Promise.resolve(true),scope=()=>null;
@@ -1299,6 +1307,8 @@ const Store=(()=>{
     const [ch,up]=adopt(upgrade(o));if(ch)emit();if(up)local();}catch(e){console.error('[store] the copy saved by another tab could not be read',e);}});
   /* RETIRE: each listed id that has no record yet, or an older one. At load, and when this copy is replaced by another account's copy */
   function retire(){let n=0;for(const id in RTL){const T=Date.parse(RTL[id]),c='rt:'+id;if(!(T>0)||D.c[c]&&(D.c[c].t||0)>=T)continue;D.c[c]={t:T};dq('c',c);n++;RTM.forEach(m=>{const e=D[m][id];if(e&&!e.x&&(e.t||0)<=T){D[m][id]={x:1,t:T};dq(m,id);}});}if(n)save();}
+  /* a RETIRE time must be a time at or before now (see RETIRE): the page tests fail on this console error */
+  for(const id in RTL){const T=Date.parse(RTL[id]);if(!(T>0&&T<=Date.now()))console.error('[store] RETIRE: the time of '+id+' must be a time at or before now, not '+RTL[id]);}
   retire();
   const g=(m,id)=>{const e=D[m][id];return e&&!e.x?e:null;},p=(m,id,e)=>{D[m][id]=Object.assign({},e,{t:Date.now()});dq(m,id);touch();};
   return {get:id=>g('a',id),set:(id,e)=>p('a',id,e),

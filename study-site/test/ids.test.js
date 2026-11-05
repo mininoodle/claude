@@ -159,6 +159,7 @@ lib.run('ids', async ({ launch }) => {
   const browser = await launch(), h = await lib.openPage(browser, a.file, { width: 1366, height: 900 });
   h.at('rebuilding every lesson');
   const c = await collect(h.page);
+  const rt = await h.page.evaluate(() => typeof RETIRE === 'object' && RETIRE ? Object.assign({}, RETIRE) : {});
   await h.page.waitForTimeout(300);
   await h.close();
   const { E, shared, notes } = entries(c), ids = Object.keys(E), kinds = {};
@@ -173,6 +174,11 @@ lib.run('ids', async ({ launch }) => {
   const allow = new Set();
   if (a.opt('--allow')) fs.readFileSync(path.resolve(a.opt('--allow')), 'utf8').split('\n').map(s => s.replace(/#.*/, '').trim()).filter(Boolean).forEach(id => allow.add(id.split(/\s+/)[0]));
   let bad = shared.length;
+  /* RETIRE: each time a time at or before now (a later time cuts the answers to the new question on every device), each id a question of the page */
+  const now = Date.now(), rbad = Object.entries(rt).map(([id, t]) => { const T = Date.parse(t); return !(T > 0) ? id + ': ' + t + ' is not a time' : T > now ? id + ': ' + t + ' is after now' : !E[id] || !/^(mc|num|other)$/.test(E[id][0]) ? id + ' names no question' : null; }).filter(Boolean);
+  console.log('RETIRE: ' + Object.keys(rt).length + ' ids' + (rbad.length ? '   <- FAIL' : ', each time at or before now'));
+  if (rbad.length) lib.list(rbad, 20);
+  bad += rbad.length;
   if (L) {
     const R = compare(L.ids, E, allow);
     console.log('\nagainst ' + path.relative(process.cwd(), LOCK) + ' (made from ' + L.made_from + ', ' + Object.keys(L.ids).length + ' ids): ' + R.same + ' unchanged');
