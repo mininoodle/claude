@@ -1654,12 +1654,16 @@ function makePDF(lines){const W=612,H=792,M=56,pages=[];let cur=[],y=H-M;const e
   obj.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`;});const xr=out.length;
   out+=`xref\n0 ${obj.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${obj.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
   const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u;}
-/* offer a file to the student: the artifact's downloads capability when there is one, else a normal download link. what: 'The PDF', 'The backup' */
+/* offer a file to the student: the artifact's downloads capability when there is one, else a normal download link. what: 'The PDF', 'The backup'.
+   In a frame a link can be blocked without any sign (a sandbox without allow-downloads), thus there the page does not say that the file was saved (SAVE_NS) */
+const SAVE_NS=' If no file appears, this view cannot download files.';
 async function saveFile(name,blob,what='The file'){
   try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:blob});return what+' was sent to your downloads.';}}
   catch(e){if(e&&e.code==='declined')return 'The download was cancelled.';}
   /* a normal browser: a link to the file */
-  try{const u=URL.createObjectURL(blob),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return what+' was saved to your downloads.';}catch(e){}
+  let framed=true;try{framed=window.top!==window;}catch(e){}
+  try{const u=URL.createObjectURL(blob),a=el('a',{href:u,download:name,style:'display:none'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
+    return framed?'Your browser should now save '+what.replace(/^The /,'the ')+' to your downloads.'+SAVE_NS:what+' was saved to your downloads.';}catch(e){}
   return 'A download is not available in this view.';}
 const savePDF=(name,lines)=>saveFile(name,new Blob([makePDF(lines)],{type:'application/pdf'}),'The PDF');
 /* numeric-response format: 4 boxes, direct value or a.bc × 10^d */
@@ -17603,9 +17607,22 @@ function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDo
 const syncHead=st=>st.local!=='ok'?'Not saved in this browser':st.remote==='viewer'?'Saved in this browser only':st.remote==='outdated'?'This page is out of date':st.remote==='stopped'?'Upload stopped':st.remote==='retrying'?'Your latest changes are not uploaded yet':st.remote==='unreached'?'Your account cannot be reached right now':'';
 /* a backup of all progress: one JSON file. Restoring one adds it to the progress here, in another browser or in the other copy of the site, and never deletes */
 ICON.upload=ICON.upload||'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 19.5h14"/>';
+ICON.copy=ICON.copy||'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>';
 const BKK='unit-study-site.backup',BKP=`<div class="bkp"><p class="hint">A backup is a file with all of your progress. Restoring it adds to the progress here and never deletes anything.</p><div class="bkb"><button type="button" class="btn sm ghost" data-bk>${icon('save',15)}Download a backup</button><button type="button" class="btn sm ghost" data-rs>${icon('upload',15)}Restore from a backup</button></div></div>`;
-async function backupSave(){const msg=await saveFile('study-progress-'+today()+'.json',new Blob([JSON.stringify(Store.exportCopy())],{type:'application/json'}),'The backup');
-  if(/ was s/.test(msg))try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}toast(msg);refreshLive();}
+async function backupSave(){const name='study-progress-'+today()+'.json',txt=JSON.stringify(Store.exportCopy()),msg=await saveFile(name,new Blob([txt],{type:'application/json'}),'The backup');
+  if(/ was s/.test(msg))try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}if(msg.endsWith(SAVE_NS))backupCopy(name,txt);else toast(msg);refreshLive();}
+/* a frame that may not download files: the backup as text to copy into a file, and a button to say that the file did arrive (only then is the backup date kept) */
+function backupCopy(name,txt){const back=document.activeElement;
+  const d=el('dialog',{class:'confirm','aria-labelledby':'bc-h'},`<h3 id="bc-h">Did the backup download?</h3><p>Your browser should now save the file <b>${name}</b> to your downloads, but this view may not be able to download files. If no file appears, copy the backup, paste it into a new text file and save it with this name. <i>Restore from a backup</i> reads that file.</p>
+    <p class="hint" role="status" data-st></p><textarea readonly rows="4" hidden aria-label="The backup as text" style="width:100%;font-size:.8rem"></textarea>
+    <div class="row"><button type="button" class="btn ghost" data-x>Close</button><button type="button" class="btn ghost" data-ok>The file was saved</button><button type="button" class="btn" data-cp>${icon('copy',15)}Copy the backup</button></div>`);
+  document.body.append(d);const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus();},st=$('[data-st]',d),ta=$('textarea',d);ta.value=txt;
+  $('[data-x]',d).onclick=close;d.addEventListener('cancel',e=>{e.preventDefault();close();});
+  $('[data-ok]',d).onclick=()=>{try{localStorage.setItem(BKK,String(Date.now()));}catch(e){}close();refreshLive();};
+  $('[data-cp]',d).onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
+    if(!ok){ta.hidden=false;ta.focus();ta.select();try{ok=document.execCommand('copy');}catch(e){}}
+    st.textContent=(ok?'The backup is copied. Paste it':'Copy the selected text (Ctrl+C, or Cmd+C on a Mac), then paste it')+' into a new text file and save it as '+name+'.';};
+  d.showModal();$('[data-cp]',d).focus();}
 function backupLoad(){const i=el('input',{type:'file',accept:'.json,application/json',style:'display:none'});document.body.append(i);
   i.addEventListener('change',async()=>{const f=i.files&&i.files[0];i.remove();if(!f)return;let o=null;try{o=JSON.parse(await f.text());}catch(e){}const r=o?Store.importCopy(o):{err:'format'};
     toast(r.err==='newer'?'This backup was made by a newer version of the site. Reload the page, then restore it again.':r.err?'This file is not a backup of this study site.':r.n?`The backup is restored: ${r.n} saved ${r.n===1?'item was':'items were'} added or updated. Nothing was deleted.`:'The backup has nothing newer than the progress on this device.');
