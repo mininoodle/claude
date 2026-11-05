@@ -84,7 +84,7 @@ const file=path.resolve(process.argv[2]||path.join(__dirname,'..','index.html'))
     bx.querySelector(`button.ecpk[data-s="o"][data-i="${rows.indexOf(pr.rr)}"]`).click();bx.querySelector(`button.ecpk[data-s="r"][data-i="${rows.indexOf(pr.or)}"]`).click();bx.querySelector('[data-a=check]').click();
     ok(bx.querySelector('[aria-live]').textContent==='Both are correct.','ecTable try-it: the right picks are not accepted');bx.querySelector('[data-a=clear]').click();host.remove();
     /* generators: 200 items each, accepted by the grader */
-    (GEN.ec||[]).forEach((f,j)=>{for(let k=0;k<200;k++){const it=f();if(!(it&&typeof it.q==='string'&&typeof it.w==='string'&&isFinite(it.n)&&numOK(it.n,it)&&Number.isInteger(it.L)&&it.L>=0&&it.L<12)){fails.push('GEN.ec['+j+'] gave a bad item: '+JSON.stringify(it).slice(0,200));break;}}n++;});
+    (GEN.ec||[]).forEach((f,j)=>{for(let k=0;k<200;k++){let it;try{it=f();}catch(e){fails.push('GEN.ec['+j+'] (ec_'+f.L+'_g'+f.k+') stopped with an error: '+(e&&e.message||e));break;}if(!(it&&typeof it.q==='string'&&typeof it.w==='string'&&isFinite(it.n)&&numOK(it.n,it)&&Number.isInteger(it.L)&&it.L>=0&&it.L<12)){fails.push('GEN.ec['+j+'] gave a bad item: '+JSON.stringify(it).slice(0,200));break;}}n++;});
     return {fails,n};});
   const all=r.fails.concat(errs);console.log((all.length?'FAIL':'PASS')+' ec-framework: '+r.n+' checks groups, '+all.length+' problems');all.slice(0,40).forEach(x=>console.log('  - '+x));
   await b.close();process.exit(all.length?1:0);})();

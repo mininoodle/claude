@@ -1035,7 +1035,7 @@ function courseCard(g){const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g
 try{history.scrollRestoration='manual';}catch(e){}
 const PLK='unit-study-site.place',savePlace=()=>{try{sessionStorage.setItem(PLK,JSON.stringify({h:location.hash,y:Math.round(scrollY)}));}catch(e){}};
 addEventListener('pagehide',savePlace);document.addEventListener('visibilitychange',()=>{if(document.hidden)savePlace();});
-addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY)window.scrollTo(0,v.y);});
+addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY){qfAbove(v.y+innerHeight);window.scrollTo(0,v.y);}});
 /* the arrow keys in a tab list change the lesson on each press: those changes replace the history entry */
 document.addEventListener('keydown',e=>{if(/^Arrow/.test(e.key)&&e.target.closest&&e.target.closest('[role=tablist]')){NAVREP=1;setTimeout(()=>{NAVREP=0;});}},true);
 </script>
@@ -1458,6 +1458,8 @@ let qfLazy=0,qfIO=null;const qfSet=new Set();
 const qfDraw=b=>{if(b._qf==null)return;const h=b._qf;b._qf=null;qfSet.delete(b);if(qfIO)qfIO.unobserve(b);b.innerHTML=h;};
 const qfSweep=()=>qfSet.forEach(b=>{if(!b.isConnected){qfSet.delete(b);if(qfIO)qfIO.unobserve(b);}});
 const qfigAll=root=>{qfSweep();[...qfSet].forEach(b=>{if(!root||root.contains(b))qfDraw(b);});};
+/* the waiting figures above a place y of the page are drawn at once: a reload goes back to the place the student left (savePlace), which was measured with them drawn */
+const qfAbove=y=>{qfSweep();[...qfSet].filter(b=>b.getBoundingClientRect().top+scrollY<y).forEach(qfDraw);};
 const qfEst=h=>{let px=0;String(h).replace(/viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/g,(m,w,v)=>{px+=Math.min(1.3,v/w)*460;return m;});
   return Math.round(px+30*(String(h).match(/<tr[\s>]/g)||[]).length+26*(String(h).match(/<p[\s>]|<br/g)||[]).length)||120;};
 function qfLater(box,html){box._qf=html;box.innerHTML=`<div class="qf-ph" style="height:${qfEst(html)}px"></div>`;
@@ -8744,10 +8746,10 @@ const EC10_CL=[['sodium chloride','NaCl','Na^+(aq)'],['potassium chloride','KCl'
   ['zinc chloride','ZnCl2','Zn^2+(aq)'],['nickel(II) chloride','NiCl2','Ni^2+(aq)'],['cobalt(II) chloride','CoCl2','Co^2+(aq)'],['copper(II) chloride','CuCl2','Cu^2+(aq)'],['cadmium chloride','CdCl2','Cd^2+(aq)']];
 EC_GEN[10]=[
   ()=>{const X=EC10_SALT[RN(0,EC10_SALT.length-1)],p=ecPredict([X[2],X[3],'H2O(l)']),v=-p.E;
-    return {q:`Calculate the minimum voltage needed to electrolyze 1.0 mol/L ${X[0]}, ${C(X[1]+'(aq)')}, with inert electrodes.`,n:v,u:'V',abs:.005,tol:0,ans:v.toFixed(2),
+    return {q:`Calculate the minimum voltage needed to electrolyze 1.0 mol/L ${X[0]}, ${C(X[1]+'(aq)')}, with inert electrodes.`,n:v,u:'V',abs:.005,tol:0,
       w:`The entities are ${ecU(X[2])}, ${ecU(X[3])} and H₂O(l). The SOA is ${ecU(p.soa)} (${ecV(p.rr.E)}). The SRA is ${ecU(p.sra)} (${ecV(p.or.E)}). Cathode: ${p.redU}. Anode: ${p.oxU}. E°net = ${ecV(p.rr.E)} − (${ecV(p.or.E)}) = ${ecV(p.E)}. The minimum voltage is ${v.toFixed(2)} V.`};},
   ()=>{const X=EC10_CL[RN(0,EC10_CL.length-1)],p=ecPredict([X[2],'Cl^-(aq)','H2O(l)'],{cl:true}),v=-p.E;
-    return {q:`A 1.0 mol/L solution of ${X[0]}, ${C(X[1]+'(aq)')}, is electrolyzed with carbon electrodes. Chlorine gas forms at the anode. Calculate the minimum voltage for the reaction that occurs.`,n:v,u:'V',abs:.005,tol:0,ans:v.toFixed(2),
+    return {q:`A 1.0 mol/L solution of ${X[0]}, ${C(X[1]+'(aq)')}, is electrolyzed with carbon electrodes. Chlorine gas forms at the anode. Calculate the minimum voltage for the reaction that occurs.`,n:v,u:'V',abs:.005,tol:0,
       w:`The entities are ${ecU(X[2])}, Cl⁻(aq) and H₂O(l). The SOA is ${ecU(p.soa)} (${ecV(p.rr.E)}). The table predicts H₂O(l) (+1.23 V) as the SRA, but Cl⁻(aq) is oxidized instead: the chloride anomaly. Cathode: ${p.redU}. Anode: ${p.oxU}. E°net = ${ecV(p.rr.E)} − (${ecV(p.or.E)}) = ${ecV(p.E)}. The minimum voltage is ${v.toFixed(2)} V.`};},
   ()=>{const X=EC10_SALT[RN(0,EC10_SALT.length-1)],p=ecPredict([X[2],X[3],'H2O(l)']);
     return {q:`Calculate ${ecEs('net')} for the electrolysis of 1.0 mol/L ${X[0]}, ${C(X[1]+'(aq)')}, with inert electrodes. Include the sign.`,n:p.E,u:'V',abs:.005,tol:0,ans:ecVs(p.E),
