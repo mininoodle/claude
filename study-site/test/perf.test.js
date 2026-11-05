@@ -10,6 +10,8 @@ The speed work on the page (perf items P1, P3, P4, P5 and P7). Exit code 0 = pas
     loop error (an error event on the window) and the lesson height of a fresh page at that width
   - P3: the looping drawings of en-2 play in view, rest after about 5 s, play again after a click in their card, and rest off screen
   - P7: the canvases of a hidden lesson hold no pixels, and a canvas in view is drawn in the first frame when its lesson is shown again
+  - S1: the page writes its address with the History API: at load one history.replaceState and for a new lesson one history.pushState, each under
+    20 ms at CPU x4 (location.replace at load cost about 0.3 s at x4 while the document was still loading)
 Lessons are named by their position (eq-3, en-2 and a lesson with a canvas near its top), which the id lock keeps. */
 const fs = require('fs'), path = require('path');
 let chromium;
@@ -132,6 +134,24 @@ const until = (page, fn, arg, ms) => page.waitForFunction(fn, arg, { timeout: ms
     }
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await ctx.close();
+
+    /* S1: the address writes, timed in the page (the History methods are wrapped before the page loads), at CPU x4 */
+    {
+      const c2 = await b.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
+      await c2.addInitScript(() => { window.__hist = []; for (const n of ['pushState', 'replaceState']) { const f = History.prototype[n];
+        History.prototype[n] = function (...a) { const t = performance.now(); try { return f.apply(this, a); } finally { window.__hist.push({ n, u: String(a[2] || ''), ms: performance.now() - t }); } }; } });
+      const p2 = await c2.newPage(), cdp = await c2.newCDPSession(p2); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+      await p2.route(/^https?:\/\//, r => r.abort()); await p2.goto(url, { waitUntil: 'load', timeout: 90000 });
+      await p2.waitForFunction(() => document.querySelector('#main > article:not([hidden])'), null, { timeout: 60000 });
+      const boot = await p2.evaluate(() => ({ calls: window.__hist.slice(), hash: location.hash })), bms = boot.calls.reduce((s, c) => s + c.ms, 0);
+      check(boot.calls.length >= 1 && boot.calls.every(c => c.n === 'replaceState') && boot.calls.some(c => c.u.endsWith(boot.hash)) && bms < 20,
+        `S1: at load the address ${boot.hash} is written with history.replaceState (${boot.calls.length} call(s), ${bms.toFixed(1)} ms at CPU x4, under 20)`);
+      const ch = await p2.evaluate(async () => { const n0 = window.__hist.length, k = SUBJECTS.flatMap(S => S.units).find(u => SUBJ[u]); goLesson(k, 1);
+        await new Promise(r => setTimeout(r, 300)); return { calls: window.__hist.slice(n0), hash: location.hash, k }; });
+      check(ch.calls.length === 1 && ch.calls[0].n === 'pushState' && ch.calls[0].u.endsWith(ch.hash) && ch.calls[0].ms < 20,
+        `S1: a new lesson adds its address ${ch.hash} with one history.pushState (${ch.calls.map(c => c.n + ' ' + c.ms.toFixed(1) + ' ms').join(', ')} at CPU x4)`);
+      await c2.close();
+    }
   } finally { await b.close(); }
   console.log(fails.length ? `\n${fails.length} check(s) failed` : '\nall perf checks passed');
   process.exit(fails.length ? 1 : 0);

@@ -969,9 +969,18 @@ function quizBusy(){const c=LASTQ,A=c&&c.isConnected&&!c.closest('[hidden]')&&c.
 function pageShown(L,o={}){const first=o.first||document.readyState==='loading',same=L===PAGE;PAGE=L;if(!first&&typeof ACH_Q!=='undefined'&&ACH_Q.length)setTimeout(()=>celebrateNext(),400);
   if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;
   /* the page's address: a new history entry for a page the student opens, the same entry at load, for a page shown again,
-     for the arrow keys (one press, one lesson) and for a page opened by Back or Forward. The same entry is this document's own address with the new
-     fragment: a bare '#/...' would be read against the base address, which in a srcdoc frame or under a <base href> is another page, and the site would unload */
-  const h=pageHash(L);if(h&&location.hash!==h)try{if(first||same||NAVREP||HASHNAV)location.replace(location.href.split('#')[0]+h);else location.hash=h;}catch(e){}}
+     for the arrow keys (one press, one lesson) and for a page opened by Back or Forward (see setAddr) */
+  const h=pageHash(L);offAC(L);if(h&&location.hash!==h)setAddr(h,!(first||same||NAVREP||HASHNAV));}
+/* write the address: history.pushState (a new entry) or replaceState (the same entry). location.hash and location.replace cost much more in a big document
+   (about 0.3 s at load on a slow phone, and up to 0.1 s for each page change late in a long visit), thus they are only the fallback where the History API
+   is missing or refuses. The address is this document's own address with the new fragment: a bare '#/...' would be read against the base address, which in
+   a srcdoc frame or under a <base href> is another page, and the site would unload. Back and Forward fire hashchange between these entries too */
+function setAddr(h,push){const u=location.href.split('#')[0]+h;
+  try{if(push)history.pushState(null,'',u);else history.replaceState(history.state,'',u);if(location.hash===h)return;}catch(e){}
+  try{if(push)location.hash=h;else location.replace(u);}catch(e){}}
+/* the answers come back from the saved progress, not from the browser's form state: without it, a new history entry does not save the state of
+   every control of every page that is open (it halves the cost of pushState late in a long visit). New controls of page L get it when L is shown */
+function offAC(L){for(const x of L.querySelectorAll('input:not([autocomplete]),select:not([autocomplete]),textarea:not([autocomplete])'))x.autocomplete='off';}
 
 /* ----- the address of each page: #/eq/3 (section key, lesson number from 0), #/today, #/test, or #/chem (a subject). The '#/' form matches no
    element id, thus the browser does not jump. A fragment also works inside the sandboxed artifact frame. Back and Forward step through the pages,
