@@ -919,8 +919,9 @@ button.lvl:hover{background:var(--hov);color:var(--ink)}
 /* ===== ux-nav: navigation helpers. This script runs before the main script; its functions are called by the main script and by the sidebar skin ===== */
 /* the bottom of the bar that stays at the top of the window (the breadcrumb, sticky at every width): a scroll target lands below it, not under it */
 function topBar(){const c=document.querySelector('.crumb');if(c&&getComputedStyle(c).position==='sticky')return c.offsetHeight;const t=document.getElementById('top');return t?Math.max(0,t.getBoundingClientRect().bottom):0;}
-/* scroll element e to just below that bar (smoothly when it is near, at once when it is more than 3 screens away), and give it focus (sel: the part to focus, as focusTo) */
-function goTo(e,sel){if(!e)return;const y=Math.max(0,e.getBoundingClientRect().top+scrollY-topBar()-12);window.scrollTo({top:y,behavior:RM||Math.abs(y-scrollY)>3*innerHeight?'auto':'smooth'});if(sel)focusTo(e,sel);}
+/* scroll element e to just below that bar (smoothly when it is near, at once when it is more than 3 screens away), and give it focus (sel: the part to focus, as focusTo).
+   The question figures that still wait above e (qfLater) are drawn first, thus e does not move down when they are drawn after the jump */
+function goTo(e,sel){if(!e)return;qfAbove(e.getBoundingClientRect().top+scrollY);const y=Math.max(0,e.getBoundingClientRect().top+scrollY-topBar()-12);window.scrollTo({top:y,behavior:RM||Math.abs(y-scrollY)>3*innerHeight?'auto':'smooth'});if(sel)focusTo(e,sel);}
 /* the level pill under a lesson's title goes to the lesson's questions */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button.lvl[data-lvl]'),L=b&&b.closest('.lesson');if(L)goTo($('.card.quiz',L),'h3');});
 
@@ -1458,13 +1459,16 @@ let qfLazy=0,qfIO=null;const qfSet=new Set();
 const qfDraw=b=>{if(b._qf==null)return;const h=b._qf;b._qf=null;qfSet.delete(b);if(qfIO)qfIO.unobserve(b);b.innerHTML=h;};
 const qfSweep=()=>qfSet.forEach(b=>{if(!b.isConnected){qfSet.delete(b);if(qfIO)qfIO.unobserve(b);}});
 const qfigAll=root=>{qfSweep();[...qfSet].forEach(b=>{if(!root||root.contains(b))qfDraw(b);});};
-/* the waiting figures above a place y of the page are drawn at once: a reload goes back to the place the student left (savePlace), which was measured with them drawn */
-const qfAbove=y=>{qfSweep();[...qfSet].filter(b=>b.getBoundingClientRect().top+scrollY<y).forEach(qfDraw);};
+/* the waiting figures above a place y of the page are drawn at once: a reload goes back to the place the student left (savePlace), which was measured with them drawn,
+   and a jump to a card (goTo) lands where it would land with every figure drawn. A card that skips its rendering off screen (cvr: the card watcher) keeps its old
+   height until it is drawn again, thus it loses cvr here: its new height counts at once, and the watcher gives cvr back when the page is idle */
+const qfAbove=y=>{qfSweep();[...qfSet].filter(b=>b.getBoundingClientRect().top+scrollY<y).forEach(b=>{qfDraw(b);const c=b.closest('.card.cvr');if(c)c.classList.remove('cvr');});};
 const qfEst=h=>{let px=0;String(h).replace(/viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/g,(m,w,v)=>{px+=Math.min(1.3,v/w)*460;return m;});
   return Math.round(px+30*(String(h).match(/<tr[\s>]/g)||[]).length+26*(String(h).match(/<p[\s>]|<br/g)||[]).length)||120;};
 function qfLater(box,html){box._qf=html;box.innerHTML=`<div class="qf-ph" style="height:${qfEst(html)}px"></div>`;
   if(!window.IntersectionObserver){qfDraw(box);return;}
-  if(!qfIO)qfIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)qfDraw(e.target);});qfSweep();},{rootMargin:'100% 0px'});
+  /* the root is the page's own document: in a frame (an artifact on claude.ai) the default root, the top window, would ignore the margin and draw a figure only once it is in view */
+  if(!qfIO){const cb=es=>{es.forEach(e=>{if(e.isIntersecting)qfDraw(e.target);});qfSweep();};try{qfIO=new IntersectionObserver(cb,{root:document,rootMargin:'100% 0px'});}catch(e){qfIO=new IntersectionObserver(cb,{rootMargin:'100% 0px'});}}
   qfSet.add(box);qfIO.observe(box);}
 addEventListener('beforeprint',()=>qfigAll());
 /* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
@@ -2465,9 +2469,12 @@ const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}"${o.mx!=null?` data-mx="
    then the writes, then the labels, thus a lesson page with 19 figures costs two layouts, not two for each figure. One ResizeObserver fits a figure again
    when one of its drawings changes width (--k depends on the width only) */
 const figQ=new Set(),figW=new WeakMap();let figRO=null;
-const figKey=fig=>$$('svg',fig).map(s=>Math.round(s.getBoundingClientRect().width*10)).join();
+/* the scale of a figure on screen (its box on screen / its layout width): a lesson's cards come in scaled to .985 (the entrance animation), and a width read then
+   would give a --k 1.5 % too large, which no resize corrects later. The widths of the drawings are divided by it */
+const figSc=fig=>{const o=fig.offsetWidth,r=o?fig.getBoundingClientRect().width/o:1;return Math.abs(r-1)>.004?r:1;};
+const figKey=fig=>{const c=figSc(fig);return $$('svg',fig).map(s=>Math.round(s.getBoundingClientRect().width/c*10)).join();};
 function figFitRun(figs){const S=[];
-  figs.forEach(fig=>{const ws=[];$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,sr=s.getBoundingClientRect(),w=sr.width;ws.push(Math.round(w*10));if(!w||!vb||!vb.width)return;S.push({s,sr,k:vb.width/w});});figW.set(fig,ws.join());});
+  figs.forEach(fig=>{const ws=[],c=figSc(fig);$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,sr=s.getBoundingClientRect(),w=sr.width/c;ws.push(Math.round(w*10));if(!w||!vb||!vb.width)return;S.push({s,sr,k:vb.width/w});});figW.set(fig,ws.join());});
   S.forEach(o=>{o.K=clamp(o.k,1,2.1);o.s.style.setProperty('--k',o.K.toFixed(3));o.s.classList.toggle('compact',o.k>1.5);});
   /* a label grows only up to the edge of the drawing, where it would be clipped: its own --k is the room it has */
   S.forEach(o=>{const K=o.K,sr=o.sr;o.lbs=$$('.lb',o.s);o.ks=o.lbs.map(t=>{if(K<=1)return K;let b,M;try{b=t.getBBox();M=t.parentNode.getScreenCTM();}catch(e){return K;}if(!b.width||!M)return K;
@@ -4603,8 +4610,9 @@ function ecTable(host,rows,o={}){ecBase();
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
   let seen=JSON.stringify(s);const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=valid(v)?JSON.stringify({o:v.o,r:v.r}):JSON.stringify({o:-1,r:-1});if(j===seen)return;seen=j;s=JSON.parse(j);paint(false);};LIVE.add(view);
   paint(false);if(s.o>=0||s.r>=0)lv.textContent='Your last choice is restored.';return box;}
-/* a reduction table that comes as HTML (ecTableH: a question figure, a worked example) gets the scroll cue of its box (tblCue) when it is put in the page */
-{const cue=n=>{if(n.nodeType!==1)return;if(n.matches('.ec-tbx>.tw'))tblCue(n);else n.querySelectorAll('.ec-tbx>.tw').forEach(tblCue);};
+/* a box of a table that comes as HTML (ecTableH: a question figure, a worked example; a static <div class="tw">) gets the scroll cue (tblCue) when it is put in the page.
+   The boxes that fitTable makes have it already (tblCue runs once for a box) */
+{const cue=n=>{if(n.nodeType!==1)return;if(n.matches('.tw'))tblCue(n);else n.querySelectorAll('.tw').forEach(tblCue);};
   new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(cue))).observe($('#main'),{childList:true,subtree:true});}
 /* the same table as an HTML string, without a try-it: for the fig of a question ("Use the following information") or a worked example */
 const ecTableH=(rows,o={})=>{ecBase();return '<div class="ec-tbx">'+ecTableHtml(rows,Object.assign({},o,{pick:null})).html+'</div>';};
@@ -8990,7 +8998,7 @@ EC_DIP[11]=[
   {q:'Numerical response. Use the following information. In order to plate the bumper, the number of moles of chromium(II) ions that must react in the cell is __________ mol.',fig:fCr,n:112/EC_M.Cr,u:'mol',tol:.01,
     w:'The chromium(II) ions are reduced at the bumper: Cr²⁺(aq) + 2e⁻ → Cr(s). One mole of Cr²⁺(aq) ions gives one mole of chromium. n = m / M = 112 g ÷ 52.00 g/mol = 2.15 mol. Record 2.15.'},
   {q:'Numerical response. Use the following information. In order to plate the bumper, the cell must operate for __________ min.',fig:fCr,n:3.46,u:'min',tol:.01,
-    w:'n(Cr) = 112 g ÷ 52.00 g/mol = 2.154 mol. Cr²⁺(aq) + 2e⁻ → Cr(s), thus n(e⁻) = 2 × 2.154 mol = 4.308 mol. q = n(e⁻)F = (4.308 mol)(9.65 × 10⁴ C/mol) = 4.157 × 10⁵ C. t = q / I = 4.157 × 10⁵ C ÷ 2000 A = 207.8 s. t = 207.8 s ÷ 60 s/min = 3.46 min. Record 3.46.'},
+    w:'n(Cr) = 112 g ÷ 52.00 g/mol = 2.154 mol. Cr²⁺(aq) + 2e⁻ → Cr(s), thus n(e⁻) = 2 × 2.154 mol = 4.308 mol. q = n(e⁻)F = (4.308 mol)(9.65 × 10⁴ C/mol) = 4.157 × 10⁵ C. t = q / I = 4.157 × 10⁵ C ÷ 2000 A = 207.85 s. t = 207.85 s ÷ 60 s/min = 3.46 min. Record 3.46.'},
   {q:'If the electrochemical cell Cd(s) | '+ec11C('Cd^2+(aq)')+' || '+ec11C('Ag^+(aq)')+' | Ag(s) produces a 6.00 A current for 2.00 h, the mass change of the anode will be a',o:['25.2 g decrease','2.25 g increase','48.3 g decrease','48.3 g increase'],a:0,
     w:'Cd(s) is the SRA, thus cadmium is the anode: Cd(s) → Cd²⁺(aq) + 2e⁻. t = 2.00 h × 3600 s/h = 7200 s. q = It = (6.00 A)(7200 s) = 4.32 × 10⁴ C. n(e⁻) = 4.32 × 10⁴ C ÷ 9.65 × 10⁴ C/mol = 0.4477 mol. n(Cd) = ½ × 0.4477 mol = 0.2238 mol. m = (0.2238 mol)(112.41 g/mol) = 25.2 g. The anode dissolves, thus its mass decreases. 48.3 g is the mass of silver that plates onto the cathode.'},
   {q:'Numerical response. Use the following information. The mass of sodium that will react when 0.350 mol of electrons is transferred is __________ g.',fig:fNa,n:.35*EC_M.Na,u:'g',tol:.01,
