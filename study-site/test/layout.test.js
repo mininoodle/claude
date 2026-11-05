@@ -19,6 +19,8 @@ const widths = a.opt('--widths') ? a.opt('--widths').split(',').map(Number) : a.
 
 /* in the page: the measures of the page that is shown (the check of measure-all.js, unchanged) */
 const check = () => {
+  /* the question figures of a quiz card are drawn when they come near the view: draw them all, so that each one is measured */
+  if (typeof qfigAll === 'function') qfigAll();
   const out = { rows: 0, off: [], overflow: [], col: 0, crumb: [0, 0], hs: false };
   const main = document.getElementById('main'), cs = getComputedStyle(main), mr = main.getBoundingClientRect(), inL = mr.left + parseFloat(cs.paddingLeft), inR = mr.right - parseFloat(cs.paddingRight);
   const L = document.querySelector('#main > article:not([hidden])'); if (!L) return { err: 'no article' };
