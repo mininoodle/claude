@@ -1001,20 +1001,29 @@ function hashPos(p){let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)
 addEventListener('hashchange',()=>{let t=null;try{t=hashTarget(location.hash);}catch(e){}if(!t)return;
   const on=document.querySelector('#main>.lesson:not([hidden])'),id=t.subj?null:SUBJ[t.s]?t.s+'-'+(t.i==null?curL[t.s]:t.i):t.s+'-0';if(on&&on.id===id)return;
   HASHNAV=1;try{if(t.subj||!SUBJ[t.s]){const i=SUBJECTS.indexOf(t.subj||SUBJECTS.find(s=>s.k===t.s));tabSeg.set(i);showTab(i);}else goLesson(t.s,t.i==null?curL[t.s]:t.i);}finally{HASHNAV=0;}});
-/* ----- site search: the lessons' titles, headings and descriptions and the reference sheets' terms, formulas and hormones (indexed at the
-   first search, from SUBJECTS, SUBJ and REF), and the card headings of the lessons already open ----- */
+/* ----- site search: the lessons' titles, headings and descriptions and the reference sheets' terms, formulas and hormones (indexed while the
+   browser is idle after load, from SUBJECTS, SUBJ and REF), and the card headings of the lessons already open ----- */
 const txt=h=>{const t=document.createElement('template');t.innerHTML=String(h==null?'':h);return t.content.textContent.replace(/\s+/g,' ').trim();};
-/* one plain form for the text and the query: no accents, no case; H₃O⁺ = H3O+, curly quotes and dashes as plain ones. fold also drops the tags of the
-   lesson and reference texts; text that is already plain (a heading's text, the query) goes through plain only, thus a '<' in it stays text */
-const fplain=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`]/g,"'");
+/* one plain form for the text and the query: no accents, no case; H₃O⁺ = H3O+, dashes as plain ones, no apostrophes (faradays = Faraday’s), E° = e0.
+   fold also drops the tags of the lesson and reference texts; text that is already plain (a heading's text, the query) goes through plain only, thus a '<' in it stays text */
+const fplain=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f^]/g,'').replace(/[−‒–—]/g,'-').replace(/[‘’ʼ′`']/g,'').replace(/e°/g,'e0');
+/* a word of the query also matches the other words that students type for the same thing: a galvanic cell is a voltaic cell, Eo is E° (e0) */
+const FSYN={galvanic:['voltaic'],voltaic:['galvanic'],eo:['e0'],eonet:['e0net']},fword=v=>[v].concat(FSYN[v]||[]);
 const fold=s=>fplain(txt(s));
-let FIND=null;
-function findIndex(){if(FIND)return FIND;FIND=[];
-  SUBJECTS.forEach(S=>S.units.forEach(k=>{const U=SUBJ[k];if(!U)return;const path=S.name+' › '+U.name;
-    U.lessons.forEach((le,i)=>FIND.push({kind:0,t:txt(le.t),body:(le.h||'')+' '+(le.d||''),k,i,path:path+' › '+txt(le.t)}));
-    const R=typeof REF!=='undefined'&&REF[k],ri=U.lessons.findIndex(l=>l.rv)-1;
-    if(R&&ri>=0)[].concat(R.t||[],R.f||[],R.h||[]).forEach(r=>FIND.push({kind:1,t:txt(r[0]),body:r.slice(1).join(' '),k,i:ri,path:path+' › '+txt(U.lessons[ri].t)}));}));
-  FIND.forEach(x=>{x.ft=fold(x.t);x.fb=fold(x.body);});return FIND;}
+let FIND=null,FINDQ=null;
+/* the entries of section k of subject S */
+function findUnit(S,k){const U=SUBJ[k];if(!U)return;const path=S.name+' › '+U.name,out=[];
+  U.lessons.forEach((le,i)=>out.push({kind:0,t:txt(le.t),body:(le.h||'')+' '+(le.d||''),k,i,path:path+' › '+txt(le.t)}));
+  const R=typeof REF!=='undefined'&&REF[k],ri=U.lessons.findIndex(l=>l.rv)-1;
+  if(R&&ri>=0)[].concat(R.t||[],R.f||[],R.h||[]).forEach(r=>out.push({kind:1,t:txt(r[0]),body:r.slice(1).join(' '),k,i:ri,path:path+' › '+txt(U.lessons[ri].t)}));
+  out.forEach(x=>{x.ft=fold(x.t);x.fb=fold(x.body);FIND.push(x);});}
+const findStart=()=>{if(!FIND){FIND=[];FINDQ=SUBJECTS.flatMap(S=>S.units.map(k=>[S,k]));}};
+/* the index: built a section at a time while the browser is idle after load (thus the first key of a search does not wait for it), and finished at once
+   when a search comes first */
+function findIndex(){findStart();while(FINDQ.length)findUnit(...FINDQ.shift());return FIND;}
+const findIdle=d=>{findStart();const t0=performance.now();do{if(FINDQ.length)findUnit(...FINDQ.shift());}while(FINDQ.length&&(d?d.timeRemaining()>4:performance.now()-t0<12));
+  if(FINDQ.length)(window.requestIdleCallback?requestIdleCallback(findIdle,{timeout:3000}):setTimeout(findIdle,50));};
+addEventListener('load',()=>{try{if(window.requestIdleCallback)requestIdleCallback(findIdle,{timeout:3000});else setTimeout(findIdle,500);}catch(e){}});
 /* the card headings of the lessons that are built (they exist only once a lesson has been opened). A lesson keeps its list until its number of cards
    changes, thus a key typed in the search does not read every heading of every open lesson again (the Review page, whose cards change, is read each time) */
 function findCards(){const out=[];document.querySelectorAll('#main>article.lesson').forEach(A=>{const m=/^(.+)-(\d+)$/.exec(A.id),U=m&&SUBJ[m[1]];if(!U)return;const k=m[1],i=+m[2],le=U.lessons[i];if(!le)return;
@@ -1023,9 +1032,9 @@ function findCards(){const out=[];document.querySelectorAll('#main>article.lesso
   A.querySelectorAll('.card h2,.card h3').forEach(h=>{const t=h.textContent.replace(/\s+/g,' ').trim(),ft=fplain(t);if(!ft||seen.has(ft))return;seen.add(ft);
     list.push({kind:2,t,ft,fb:'',k,i,path});});A._find=list;A._findN=n;out.push(...list);});return out;}
 /* up to max matches: every word of the query is in the entry. Titles first, then card headings, terms, and matches in the text */
-function findTopics(q,max=8){const w=fplain(q).split(' ').filter(Boolean);if(!w.length)return [];const hits=[];
-  for(const x of findIndex().concat(findCards())){const inT=w.every(v=>x.ft.includes(v));if(!inT&&!w.every(v=>x.ft.includes(v)||x.fb.includes(v)))continue;
-    let sc=inT?[100,60,80][x.kind]:[40,20,0][x.kind];if(x.ft.startsWith(w[0]))sc+=30;else if((' '+x.ft).includes(' '+w[0]))sc+=15;hits.push([sc-Math.min(10,x.ft.length/20),x]);}
+function findTopics(q,max=8){const w=fplain(q).split(' ').filter(Boolean).map(fword);if(!w.length)return [];const hits=[],has=(s,v)=>v.some(a=>s.includes(a));
+  for(const x of findIndex().concat(findCards())){const inT=w.every(v=>has(x.ft,v));if(!inT&&!w.every(v=>has(x.ft,v)||has(x.fb,v)))continue;
+    let sc=inT?[100,60,80][x.kind]:[40,20,0][x.kind];if(w[0].some(a=>x.ft.startsWith(a)))sc+=30;else if(has(' '+x.ft,w[0].map(a=>' '+a)))sc+=15;hits.push([sc-Math.min(10,x.ft.length/20),x]);}
   hits.sort((a,b)=>b[0]-a[0]);const seen=new Set(),res=[];
   for(const [,x] of hits){const key=x.k+'|'+x.i+'|'+x.ft;if(seen.has(key))continue;seen.add(key);res.push(x);if(res.length>=max)break;}return res;}
 /* open a match: a lesson at its top; a card heading: its card; a reference entry: the reference sheet with its search box filled in */
