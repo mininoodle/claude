@@ -7,6 +7,7 @@ oldCredit, lessonLevel0). The page is copied twice: with RETIRE = {} and with RE
   - Learning, because the old mom_2_12 was only ever answered wrong: still Learning (the change must not raise the lesson to Mastered)
   - Practised (every question correct once): a wrong first answer to the new question keeps Practised
   - mom_2_12 never answered: an ordinary question, the same level as without the change
+  - a question that changes a second time keeps the credit of the first version (rk) through the second change
   - a copy of format 3 (an old page) with an answer to the old mom_2_12 after the RETIRE time: it does not count for the new question; the credit is kept
 In each case the level and XP right after load are the same as with RETIRE = {}. Exit code 0 = pass. */
 const { chromium } = require('playwright'), fs = require('fs'), path = require('path'), os = require('os');
@@ -67,6 +68,11 @@ const check = (c, msg, info) => { count++; if (!c) fails.push(msg); console.log(
     ({ r, sr } = await both('Never answered', seed([6, 2], null)));
     check(sr.lv === 1 && sr.nq === 0 && !sr.miss.length, 'Never answered: an ordinary question (not "changed")', sr);
     await r.ctx.close();
+
+    /* a question that changes a second time: the first change was at T - 3 days, the student answered that version once (credit kept as rk 2) */
+    { const s2 = JSON.parse(seed([6, 2], { h: { d: [ds(T0)], c: 1, m: 0, l: 1, rt: 1, rk: 2, t: T0 } })); s2.c['rt:mom_2_12'] = { t: T - 3 * DAY };
+      ({ r, sr } = await both('Changed twice', JSON.stringify(s2)));
+      check(sr.lv === 3 && sr.nq === 1, 'Changed twice: the credit of the first version (rk) is kept through the second change', sr); await r.ctx.close(); }
 
     /* a copy of format 3 (no v) with an answer to the OLD question after the RETIRE time (an old page still open) */
     const late = { h: { d: [ds(T0 - 6 * DAY), ds(T0 - 2 * DAY), ds(NOW)], c: 3, m: 0, l: 1, t: NOW - 60e3 }, a: { v: 0, ok: 1, t: NOW - 60e3 } };

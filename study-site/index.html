@@ -1153,7 +1153,7 @@ const Store=(()=>{
   const MIGRATIONS={4:o=>{for(const id in RTL){const T=Date.parse(RTL[id]);if(T>0)RTM.forEach(m=>{const e=o[m]&&o[m][id];if(e&&typeof e==='object'&&!e.x&&!(e.q4>0&&e.q4===e.t))o[m][id]=rtomb(m,e,T);});}return o;}},RTM=['a','h','s','r'],RTL=typeof RETIRE==='object'&&RETIRE||{};
   /* the tombstone of a RETIRE id's entry e: it also keeps (w) the fields that the mastery credit of the old version needs (okDays, lessonLevel0), thus the lesson
      keeps its level after the change, no lower and no higher (Store.was) */
-  const RTW={a:['ok','s','hi','t'],h:['d','hd','o2','l','rv']},rtomb=(m,e,T)=>{const o={x:1,t:T},k=RTW[m];if(k&&e&&typeof e==='object'&&!e.x){const w={};k.forEach(f=>{if(e[f]!=null)w[f]=e[f];});o.w=w;}return o;};
+  const RTW={a:['ok','s','hi','t'],h:['d','hd','o2','l','rv','rk']},rtomb=(m,e,T)=>{const o={x:1,t:T},k=RTW[m];if(k&&e&&typeof e==='object'&&!e.x){const w={};k.forEach(f=>{if(e[f]!=null)w[f]=e[f];});o.w=w;}return o;};
   const upgrade=o=>{for(let v=(typeof o.v==='number'?o.v:3)+1;v<=SCHEMA;v++)if(MIGRATIONS[v])o=MIGRATIONS[v](o)||o;return o;};
   try{const s=localStorage.getItem(KEY);lastW=s;if(s){let o=JSON.parse(s);if(o&&typeof o==='object'){gate(o);o=upgrade(o);LX=extra(o);MAPS.forEach(m=>{D[m]=o[m]||{};});D.c=o.c||{};D.pos=o.pos||null;D.u=o.u||null;}}}catch(e){canSave=false;}
   const subs=[];let ref=null,dirty=false,busy=false,timer=0,rt=0,mode='device',lastPull=0,pulled=false,uid=null,src='',unsub=null,err='',cur=Promise.resolve(true),scope=()=>null;
@@ -17348,8 +17348,9 @@ function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.q
      ch: the lesson has a challenge problem (CH), which mastery unlocks: the texts say so only then */
   const n=le.qz.length;return {n,ans,ok1,ok2,nr,nq,ch:!!(CH[sk]&&CH[sk][L]),lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
 /* the mastery credit of the old version of a RETIRE question, from its tombstones (Store.was): 2 Mastered (two correct days far enough apart), 1 Practised, 0 none.
-   The first answer to the new question keeps it in the history entry (rk), as that answer replaces the tombstones */
-function oldCredit(id){const oh=Store.was('h',id),oa=Store.was('a',id);if(!oh&&!oa)return 0;const od=okDays(id,oh,oa);return okTwo(od)?2:od.size||(oh&&oh.hd)||(oa&&oa.ok&&!oa.s&&oa.hi)?1:0;}
+   The first answer to the new question keeps it in the history entry (rk), as that answer replaces the tombstones. A question that changes again keeps the higher
+   of the two credits (the rk of the version before) */
+function oldCredit(id){const oh=Store.was('h',id),oa=Store.was('a',id);if(!oh&&!oa)return 0;const od=okDays(id,oh,oa);return Math.max(oh&&oh.rk||0,okTwo(od)?2:od.size||(oh&&oh.hd)||(oa&&oa.ok&&!oa.s&&oa.hi)?1:0);}
 const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
 /* the questions of a lesson whose latest answer was wrong or that changed with no answer since (nq), and the next lesson check date of a lesson (0: none) */
 const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h?h.l===0:!Store.get(id)&&!!Store.renewed(id);});
