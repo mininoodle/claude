@@ -7,7 +7,9 @@ challenge problem of a lesson is ch_u_L, the correct-count of a lesson cnt_u_L, 
 holds the lesson's element id (mt_u-L_2, hs_u-L, ord_u-L, spd_u-L_name, note_u-L_name). Moving an item moves the answers
 of every item after it onto other questions. ids.lock.json maps each id to what it names:
   questions  kind (mc or num), for MC the answer index a and the option count, a hash of the stem (HTML and spacing removed)
-  try-its    kind, the rows or parts and the answer pattern, a hash of the row texts (option and term texts are not locked)
+  try-its    kind, the rows or parts and the answer pattern, a hash of the row texts (option and term texts are not locked). A key that a
+             lesson reads outside these widgets (the Electrochemistry try-its other than ecTable, a lesson's own table) is locked by
+             the text and the controls of the element its widget was built in
 --check (the default) fails (exit 1) when a locked id
   - moved:     its question or try-it is now at another id
   - vanished:  no longer exists
@@ -59,9 +61,15 @@ async function collect(page) {
       eqTable: ([h, o, slot], lid) => ({ fkey: 'mt_' + lid + '_tb' + (slot || 0), cols: (o.cols || []).map(String), rows: (o.rows || []).map(r => String(r[0])), ans: (o.rows || []).map(r => (r[1] || []).join(',')), opt: (o.opt || []).map(x => x.length) }),
       notesBox: ([h, name], lid) => ({ fkey: 'note_' + lid + '_' + name, name: String(name) }),
       speed: ([h, name, o], lid) => ({ fkey: 'spd_' + lid + '_' + name, name: String(name), title: String(o && o.title || '') }),
+      /* the Electrochemistry reduction table: a try-it when o.pick (tap the SOA and the SRA); the rows (oxidizing and reducing agent, E°) and the answer */
+      ecTable: ([h, rows, o], lid) => { o = o || {}; const rk = r => r && r.L ? String(r.k || '') + ' | ' + String(r.r || '') + ' | ' + (r.E != null ? r.E : '') : Array.isArray(r) ? String(r[0]) + ' | ' + r[1] : String(r);
+        return { fkey: o.pick ? 'mt_' + lid + '_et' + (o.slot || 0) : null, rows: (rows || []).map(rk), pick: o.pick === true ? 'auto ' + (o.hl || []).join(',') : JSON.stringify(o.pick || null) }; },
     };
-    let cur = null, building = null;
-    const origW = Store.w, hook = function (key) { if (cur) cur.add(key); else if (building) out.stray.push({ lid: building, key }); return origW.apply(this, arguments); };
+    let cur = null, building = null, host = null;
+    /* a key read outside the wrapped widgets: its widget is local to a lesson. It finds its lesson with host.closest('.lesson') before it reads its key,
+       thus the last element that asked for its lesson is the widget's host: its text and controls are recorded once the lesson is built */
+    const origC = Element.prototype.closest; Element.prototype.closest = function (s) { if (s === '.lesson' && building) host = this; return origC.call(this, s); };
+    const origW = Store.w, hook = function (key) { if (cur) cur.add(key); else if (building) out.stray.push({ lid: building, key, h: host }); return origW.apply(this, arguments); };
     try { Store.w = hook; out.storeHook = Store.w === hook; } catch (e) { /* a frozen Store: the formulas give the keys */ }
     const orig = {};
     for (const name in W) {
@@ -82,10 +90,13 @@ async function collect(page) {
     /* rebuild every lesson: drop the articles built so far, then open each lesson */
     document.querySelectorAll('#main > article.lesson').forEach(A => { if (/^[a-z0-9]+-\d+$/.test(A.id) && !/^(home|test)-/.test(A.id)) A.remove(); });
     for (const k of units) for (let L = 0; L < SUBJ[k].lessons.length; L++) {
-      building = k + '-' + L;
+      building = k + '-' + L; host = null;
       try { goLesson(k, L); } catch (e) { out.errors.push(building + ': ' + (e && e.message || e)); }
+      const A = document.getElementById(building);
+      out.stray.forEach(s => { if (!(s.h instanceof Node)) return; const h = A && A.contains(s.h) ? s.h : null;
+        s.h = h ? { txt: h.textContent.replace(/\s+/g, ' ').trim(), ctl: ['select', 'input', 'textarea', 'button'].map(t => h.querySelectorAll(t).length).join(',') } : null; });
     }
-    building = null;
+    building = null; Element.prototype.closest = origC;
     for (const name in orig) window[name] = orig[name];
     try { Store.w = origW; } catch (e) { /* frozen */ }
     return out;
@@ -100,6 +111,7 @@ function entries(c) {
   c.lessons.forEach(l => { if (l.qz) E['cnt_' + l.k + '_' + l.L] = ['cnt', '', H(title[l.k + '-' + l.L]), cut(title[l.k + '-' + l.L])]; });
   c.ice.forEach(P => { E[P.id] = ['ice', P.sp.join(',') + (P.K ? '|K' : ''), H(norm(P.n) + '\n' + norm(P.text)), cut(norm(P.n) + ': ' + norm(P.text))]; });
   for (const w of c.w) {
+    if (!w.keys.length && !w.fkey) continue;
     const keys = w.keys.length ? w.keys : [w.fkey], lt = title[w.lid] || w.lid, card = norm(w.card);
     let e;
     if (w.kind === 'hotspot') { const n = w.names.map(norm); e = ['hs', String(n.length), H(n.slice().sort().join('\n')), cut(card || n.join(', '))]; }
@@ -109,12 +121,15 @@ function entries(c) {
     else if (w.kind === 'eqTable') { const n = w.rows.map(norm); e = ['tb', n.length + 'x' + w.opt.join(',') + ':' + w.ans.join(';'), H(w.cols.map(norm).join('\n') + '\n' + n.join('\n')), cut(card || n.join(', ')), H(n.slice().sort().join('\n'))]; }
     else if (w.kind === 'notesBox') e = ['note', '', H(lt + '\n' + w.name), cut(lt + ': ' + w.name)];
     else if (w.kind === 'speed') e = ['spd', '', H(lt + '\n' + w.name + '\n' + norm(w.title)), cut(lt + ': ' + norm(w.title))];
+    else if (w.kind === 'ecTable') { const n = w.rows.map(norm); e = ['et', n.length + ':' + w.pick, H(n.join('\n')), cut(card || n.join(', ')), H(n.slice().sort().join('\n'))]; }
     if (w.keys.length && w.keys[0] !== w.fkey) notes.push(w.kind + ' in ' + w.lid + ' reads ' + w.keys.join(', ') + ' (its formula gives ' + w.fkey + ')');
     for (const key of keys) { (keyUse[key] = keyUse[key] || []).push(w.kind + ' in ' + w.lid + (card ? ' "' + cut(card, 40) + '"' : '')); E[key] = e; }
   }
-  /* a key that a lesson reads outside the known widgets: locked by its lesson only */
+  /* a key that a lesson reads outside the known widgets: locked by the text and the controls of the element its widget was built in, else by its lesson only */
   const seen = new Set();
-  for (const s of c.stray) { if (E[s.key] || seen.has(s.key) || /^ice_/.test(s.key)) continue; seen.add(s.key); const lt = title[s.lid] || s.lid; E[s.key] = ['w', '', H(lt + '\n' + s.key), cut(lt)]; notes.push('the key ' + s.key + ' is read in ' + s.lid + ' outside the known widgets: it is locked by its lesson only'); }
+  for (const s of c.stray) { if (E[s.key] || seen.has(s.key) || /^ice_/.test(s.key)) continue; seen.add(s.key); const lt = title[s.lid] || s.lid;
+    if (s.h && s.h.txt) { const t = norm(s.h.txt); E[s.key] = ['wd', s.h.ctl, H(t), cut(lt + ': ' + t)]; notes.push('the key ' + s.key + ' is read in ' + s.lid + ' by a widget of the lesson: it is locked by the text and controls of its box'); }
+    else { E[s.key] = ['w', '', H(lt + '\n' + s.key), cut(lt)]; notes.push('the key ' + s.key + ' is read in ' + s.lid + ' outside the known widgets: it is locked by its lesson only'); } }
   const shared = Object.entries(keyUse).filter(([k, v]) => v.length > 1);
   return { E, shared, notes };
 }
@@ -143,7 +158,7 @@ function compare(L, C, allow) {
 function writeLock(file, E, made) {
   const ids = Object.keys(E), count = {};
   ids.forEach(id => { count[E[id][0]] = (count[E[id][0]] || 0) + 1; });
-  const head = { about: 'The saved-answer ids of study-site/index.html and what each one names. Checked by ids.test.js; refreshed with ids.test.js --write. Each entry: [kind, structure, hash of the text, start of the text, (lists) hash of the sorted rows]. kind: mc, num (questions), cnt (lesson correct-count), ice, hs, ord, mt, nr, tb, note, spd, w (try-its). structure: a/option count for mc; rows/terms:answers for mt; rows x options:answers for tb; item count for hs and ord; species for ice.', made_from: made, made_at: new Date().toISOString().slice(0, 10), count: Object.assign({ total: ids.length }, count) };
+  const head = { about: 'The saved-answer ids of study-site/index.html and what each one names. Checked by ids.test.js; refreshed with ids.test.js --write. Each entry: [kind, structure, hash of the text, start of the text, (lists) hash of the sorted rows]. kind: mc, num (questions), cnt (lesson correct-count), ice, hs, ord, mt, nr, tb, et, note, spd, wd, w (try-its; et: an Electrochemistry reduction-table pick, wd: a widget of the lesson, by the text of its box; w: by its lesson only). structure: a/option count for mc; rows/terms:answers for mt; rows x options:answers for tb; item count for hs and ord; species for ice.', made_from: made, made_at: new Date().toISOString().slice(0, 10), count: Object.assign({ total: ids.length }, count) };
   const s = '{\n' + Object.entries(head).map(([k, v]) => JSON.stringify(k) + ':' + JSON.stringify(v)).join(',\n') + ',\n"ids":{\n' + ids.map(id => JSON.stringify(id) + ':' + JSON.stringify(E[id])).join(',\n') + '\n}}\n';
   fs.writeFileSync(file, s);
 }
@@ -159,6 +174,7 @@ lib.run('ids', async ({ launch }) => {
   const browser = await launch(), h = await lib.openPage(browser, a.file, { width: 1366, height: 900 });
   h.at('rebuilding every lesson');
   const c = await collect(h.page);
+  const rt = await h.page.evaluate(() => typeof RETIRE === 'object' && RETIRE ? Object.assign({}, RETIRE) : {});
   await h.page.waitForTimeout(300);
   await h.close();
   const { E, shared, notes } = entries(c), ids = Object.keys(E), kinds = {};
@@ -173,6 +189,11 @@ lib.run('ids', async ({ launch }) => {
   const allow = new Set();
   if (a.opt('--allow')) fs.readFileSync(path.resolve(a.opt('--allow')), 'utf8').split('\n').map(s => s.replace(/#.*/, '').trim()).filter(Boolean).forEach(id => allow.add(id.split(/\s+/)[0]));
   let bad = shared.length;
+  /* RETIRE: each time a time at or before now (a later time cuts the answers to the new question on every device), each id a question of the page */
+  const now = Date.now(), rbad = Object.entries(rt).map(([id, t]) => { const T = Date.parse(t); return !(T > 0) ? id + ': ' + t + ' is not a time' : T > now ? id + ': ' + t + ' is after now' : !E[id] || !/^(mc|num|other)$/.test(E[id][0]) ? id + ' names no question' : null; }).filter(Boolean);
+  console.log('RETIRE: ' + Object.keys(rt).length + ' ids' + (rbad.length ? '   <- FAIL' : ', each time at or before now'));
+  if (rbad.length) lib.list(rbad, 20);
+  bad += rbad.length;
   if (L) {
     const R = compare(L.ids, E, allow);
     console.log('\nagainst ' + path.relative(process.cwd(), LOCK) + ' (made from ' + L.made_from + ', ' + Object.keys(L.ids).length + ' ids): ' + R.same + ' unchanged');

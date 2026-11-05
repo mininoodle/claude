@@ -4,9 +4,11 @@
 Navigation and usability of the page shell (rail, breadcrumb, address, search, place, toasts). Exit code 0 = pass, 1 = fail.
   - the student's place: a lesson shown again opens where it was left; the pager, the current lesson again and a rebuild open at the top
   - the address: #/<section>/<lesson>, a new history entry per page, Back opens the previous lesson, an address opens its lesson at load
-  - keyboard focus goes to the new page's h1 after a breadcrumb menu choice
+  - keyboard focus goes to the new page's h1 after a breadcrumb menu choice (when it opens at its top); a lesson shown again at its kept place
+    (breadcrumb menu, Back) gets focus at that place, and the next Tab keeps the page there
   - 'On this page' lists the headed cards and scrolls the chosen one below the bar
-  - the site search finds lesson titles and reference terms, '/' goes to it, and a phone has a search button
+  - the site search finds lesson titles and reference terms, '/' goes to it, and a phone has a search button; its index is built while the page
+    is idle after load; a word typed without its apostrophe and the usual other words (galvanic, E0, Eo) find their topics
   - the course units: every unit of SUBJECTS is listed as on the site, on the Today card
   - the rail at 1366x768: Review and the mode/account buttons are in view in every section
   - a phone: the breadcrumb is sticky and the rail is one row
@@ -77,8 +79,32 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       check(h.back === `${k}-0`, `Back opens the previous lesson (${h.back})`);
       /* focus after a breadcrumb menu choice */
       await p.focus('.crumb-b[data-lv="l"]'); await p.keyboard.press('ArrowDown'); await frames(p); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await frames(p);
-      const fo = await p.evaluate(() => { const e = document.activeElement; return e && e.tagName === 'H1' && !!e.closest('#main > article:not([hidden])'); });
-      check(fo, 'focus goes to the new lesson\'s h1 after a breadcrumb menu choice');
+      const fo = await p.evaluate(() => { const e = document.activeElement; return !!e && !!e.closest('#main > article:not([hidden])') && (scrollY > 0 || e.tagName === 'H1'); });
+      check(fo, 'focus goes to the new lesson after a breadcrumb menu choice (its h1 when it opens at the top)');
+      /* a lesson shown again at its kept place by keyboard: focus is at that place (not the h1 far above), and the next Tab goes on from there */
+      for (const how of ['menu', 'Back']) {
+        const y0 = await p.evaluate(async k => { const f = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          goLesson(k, 1); await f(); scrollTo(0, 3000); await f(); const y = Math.round(scrollY);
+          goLesson(k, 2); await f(); const b = document.querySelector('#' + k + '-2 .card button'); if (b) b.focus({ preventScroll: true }); return y; }, k);
+        if (how === 'menu') { await p.focus('.crumb-b[data-lv="l"]'); await p.keyboard.press('ArrowDown'); await frames(p); await p.keyboard.press('ArrowUp'); await p.keyboard.press('Enter'); }
+        else await p.evaluate(() => history.back());
+        await p.waitForTimeout(400);
+        const a = await p.evaluate(k => { const e = document.activeElement, r = e && e.getBoundingClientRect(); return { on: curS + '-' + curL[curS], y: Math.round(scrollY), inL: !!e && !!e.closest('#' + k + '-1'), tag: e && e.tagName, top: r ? Math.round(r.top) : null, bottom: r ? Math.round(r.bottom) : null, bar: Math.round(topBar()), vh: innerHeight }; }, k);
+        await p.keyboard.press('Tab'); await frames(p);
+        const y1 = await p.evaluate(() => Math.round(scrollY));
+        check(a.on === k + '-1' && Math.abs(a.y - y0) <= 2 && a.inL && a.tag !== 'H1' && a.bottom > a.bar && a.top < a.vh && Math.abs(y1 - y0) < a.vh,
+          `${how}: ${k}-1 comes back at ${y0} (${a.y}) with focus at the place (${a.tag} at ${a.top} px), and Tab keeps the page near it (${y1})`);
+      }
+      /* the kept place is in a closed worked example (<details>): its hidden part has rectangles but cannot take focus, thus focus goes to a block that can */
+      const fx = await p.evaluate(async () => { const f = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        for (const k of SUBJECTS.flatMap(S => S.units).filter(u => SUBJ[u])) for (let i = 0; i < SUBJ[k].lessons.length; i++) { if (!SUBJ[k].lessons[i].qz) continue;
+          goLesson(k, i); await f(); const L = document.getElementById(k + '-' + i);
+          const d = [...L.querySelectorAll('details:not([open])')].find(d => d.children.length > 1 && d.children[1].getClientRects().length && d.getBoundingClientRect().top + scrollY > 2 * innerHeight);
+          if (!d) continue; scrollTo(0, d.children[1].getBoundingClientRect().top + scrollY - topBar() - 4); await f(); focusPlace(L);
+          const e = document.activeElement, r = e.getBoundingClientRect();
+          return { at: k + '-' + i, y: Math.round(scrollY), tag: e.tagName, inL: L.contains(e), drawn: !e.closest('details:not([open])>:not(summary)'), seen: r.bottom > topBar() && r.top < innerHeight }; }
+        return null; });
+      check(!!fx && fx.inL && fx.drawn && fx.seen && fx.tag !== 'H1', 'a kept place in a closed worked example: focus lands on a block in the window that is drawn ' + JSON.stringify(fx));
       /* On this page */
       await p.evaluate(() => scrollTo(0, 0)); await p.click('.crumb-o'); await frames(p);
       const n = await p.evaluate(() => document.querySelectorAll('.crumb-menu .cm-i').length);
@@ -86,7 +112,14 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       await p.keyboard.press('End'); await p.keyboard.press('Enter'); await p.waitForTimeout(800);
       const oc = await p.evaluate(() => { const e = document.activeElement, bar = document.querySelector('.crumb').getBoundingClientRect().bottom; return { h: /^H[23]$/.test(e.tagName), below: e.closest('.card').getBoundingClientRect().top >= bar - 1 }; });
       check(oc.h && oc.below, 'the chosen card\'s heading has focus and the card is below the bar');
-      /* the search */
+      /* the search: the index was built while the page was idle (no search yet) */
+      const idle = await p.evaluate(() => ({ built: !!FIND && !!FINDQ && FINDQ.length === 0, n: FIND ? FIND.length : 0 }));
+      check(idle.built && idle.n > 100, `the search index is built while the page is idle after load (${idle.n} entries)`);
+      const fq = await p.evaluate(() => { const q = s => findTopics(s).map(r => fplain(r.t)), ec = typeof SUBJ.ec !== 'undefined';
+        const faraday = SUBJECTS.flatMap(S => S.units).filter(k => SUBJ[k]).flatMap(k => SUBJ[k].lessons.map(l => l.t)).find(t => /’s |'s /.test(t));
+        return { word: faraday || null, apos: faraday ? q(faraday.replace(/[’']/g, '')).includes(fplain(faraday)) : true,
+          galv: !ec || findTopics('galvanic').length > 0, e0: !ec || findTopics('E0').length > 0, eo: !ec || findTopics('Eo').length > 0 }; });
+      check(fq.apos && fq.galv && fq.e0 && fq.eo, `the search folds apostrophes ('${fq.word}' without it) and knows galvanic, E0 and Eo (${JSON.stringify(fq)})`);
       const s = await p.evaluate(units => {
         const t = units.map(k => SUBJ[k].lessons[0].t), hits = t.filter(x => findTopics(x).some(r => r.t === x)).length;
         const k = units.find(u => REF[u] && REF[u].t && REF[u].t.length), term = k ? findIndex().find(x => x.kind === 1 && x.k === k) : null;

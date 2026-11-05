@@ -3,3 +3,14 @@
 # or two lessons that ask the same short question on purpose). Say why in a comment after the entry.
 # Example:
 #   ch_th_8 w-none   # the answer is "twice the fuel": a ratio stated in words
+ff_2_17 mc-pos     # "A and B" are the points A, B and C of the conductor in the stem, not option letters
+ns_4_r5 mc-pos     # A, B, C and D are the axons of the data table in the stem, not option letters
+ns_7_9 mc-pos      # "None of these" does not depend on the order of the options
+en_1_2 mc-pos      # "all of them" is part of a sentence (the four signalling chemicals of the stem), not "all of the above"
+en_2_2 mc-pos      # "stores all of them" is part of a sentence, not "all of the above"
+sn_1_r10 w-none    # a code answer (457, any order) written "4, 5 and 7"; the grader takes 457 and 745
+ri1_0_13 w-none    # the answer is written in words: "Six plus six equals twelve."
+ec_11_11 digits    # the explanation ends with the molar mass of the metal it names (tin, 118.71 g/mol), after the answer 119 g/mol
+gen_ec_46 digits   # the same: each sample ends with the molar mass of the metal it names, after the calculated value
+eq_3_26 dup-same   # the same stem as eq_3_24 on purpose: another graph (its own fig) and another answer
+ec_10_r1 dup-near  # the same template as ec_10_2 with another salt (NiI2, not AgNO3) and another answer

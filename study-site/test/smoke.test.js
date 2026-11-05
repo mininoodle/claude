@@ -36,6 +36,12 @@ function helpers() {
   window.__btn = (re, root) => [...(root || document).querySelectorAll('button')].find(b => re.test(b.textContent) && !b.disabled);
 }
 
+/* in the page: each RETIRE time is a time at or before now, and each RETIRE id names a question (see RETIRE in the page) */
+function retireCheck() {
+  if (typeof RETIRE !== 'object' || !RETIRE) return [];
+  return Object.keys(RETIRE).map(id => { const T = Date.parse(RETIRE[id]); return !(T > 0) ? id + ': ' + RETIRE[id] + ' is not a time' : T > Date.now() ? id + ': ' + RETIRE[id] + ' is after now' : !qItem(id) ? id + ' names no question' : null; }).filter(Boolean);
+}
+
 /* in the page: the checks of the page that is shown */
 function checkShown(pg) {
   const out = [], A = document.querySelector('#main > article:not([hidden])');
@@ -169,6 +175,7 @@ lib.run('smoke', async ({ launch }) => {
     const t0 = Date.now(), h = await lib.openPage(browser, a.file, { width: w, height: 900, css: '.cele{display:none!important}' });
     await h.page.evaluate(helpers);
     const pages = await lib.pageList(h.page), home = pages.find(p => p.kind === 'home'), test = pages.find(p => p.kind === 'test');
+    if (w === width) say('RETIRE', await h.page.evaluate(retireCheck));
     const tag = w === width ? '' : ' [' + w + ' px]';
     await visit(h, Object.assign({}, home, { name: 'Today' + tag }));
     let n = 0;
