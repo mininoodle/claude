@@ -856,6 +856,9 @@ body{--on-a1:#fff}
    (62 px) made the browser scroll up about 400 px to show a button that is in that strip; a negative scroll margin tells it the button is in view.
    The menu's items keep their margin, thus the arrow keys still scroll a long menu */
 .crumb-path .crumb-b,.crumb-tools button{scroll-margin-top:-100px}
+/* a narrow screen: the path buttons (subject, section, lesson) are the navigation there. They look 26 px tall, but a clear layer takes their hit area
+   to the full 44 px of the bar (no change to how they look, their hover or their focus ring) */
+@media(max-width:900px){html .crumb-path .crumb-b{position:relative}html .crumb-path .crumb-b::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}}
 /* the breadcrumb's tools at its right end: 'On this page' (on a phone, its icon only) */
 .crumb-tools{display:flex;align-items:center;gap:2px;flex:none}
 html .crumb-tools .crumb-b{margin-left:0;flex:none}
