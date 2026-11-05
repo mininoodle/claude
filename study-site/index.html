@@ -937,6 +937,10 @@ addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=sho
 ['click','keydown'].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest('#rail')){RAILNAV=1;setTimeout(()=>{RAILNAV=0;});}},true));
 /* the Previous/Next pager opens the next lesson at its top */
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
+/* a page shown again at the place where the student left it (pageShown scrolls there): call before pageShown */
+const atPlace=(L,o={})=>!o.first&&document.readyState!=='loading'&&L!==PAGE&&!TOP&&L._y>0;
+/* the entrance animation plays for a page that opens at its top. A page shown again at its place does not play it: its content would vanish and slide */
+function enterPage(L,o){if(RM||atPlace(L,o))return;void L.offsetWidth;L.classList.add('enter');}
 /* keyboard focus after a page is shown: its h1 when it opens at the top, else the first block of the card at the top of the window (below the bar),
    thus the next Tab goes on from the place that was kept, not from the top of the page */
 function focusPlace(L){if(!L)return;const y=topBar()+8;if(scrollY<=0){focusTo(L,'h1');return;}
@@ -1859,7 +1863,7 @@ function showLesson(i,o={}){
       const lab=tk===sk?SUBJ[tk].lessons[tj].t:SUBJ[tk].name+': '+SUBJ[tk].lessons[tj].t;
       const b=el('button',{type:'button',class:'btn ghost'},j<i?icon('left',15)+t+lab:t+lab+icon('right',15,'r'));b.onclick=()=>{if(curS!==tk)goSection(tk,tj);else showLesson(tj);};pg.append(b);});
   }else{le._refresh&&le._refresh();refreshLive();}
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}
+  L.hidden=false;enterPage(L,o);
   const sub=SUBJECTS.find(s=>s.units.includes(curS));document.title=le.t+' · '+(sub?sub.name:S.name)+' · Study site';
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   centreChip(!o.first);
@@ -17605,7 +17609,7 @@ function reviewCard(g){const c=card(g,'','');let busy=0;
 function showHome(){keepPlace();curS='home';document.body.dataset.s='home';chipBtns=[];const nav=$('#chips');nav.innerHTML='';nav.hidden=true;$('#units').hidden=true;
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#home-0');
   if(!L){L=el('article',{class:'lesson',id:'home-0',role:'tabpanel'});$('#main').append(L);LIVE.add(()=>{if(!L.hidden&&!HOME_BUSY){L.classList.remove('enter');homeRender(L);}});}
-  homeRender(L);L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
+  homeRender(L);L.hidden=false;enterPage(L);pageShown(L);savePos();}
 function homeRender(L){HOME_BUSY=0;if(dailyClaim(Store.x('g','daily'),1)){homeDot();if(gv('achMig'))checkAch();}const xs=xpState(),lv=lvFor(xs.xp),lo=50*(lv-1)*lv,hi=50*lv*(lv+1);
   L.innerHTML=`<header class="lhead"><div><h1>Today</h1><p class="lede">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Do the daily challenge, then continue a lesson.</p></div><div class="emblem" aria-hidden="true"><div class="em-ring" style="--p:${(xs.xp-lo)/(hi-lo)}"><div class="em-in"><b class="lvnum">${lv}</b></div></div><small>Level ${lv} · ${achTitle(achPoints()).name}</small></div></header><div class="grid"></div>`;
   const g=$('.grid',L);dailyCard(g);weekCard(g);overviewCard(g);levelCard(g,xs,lv,lo,hi);mapCard(g);courseCard(g);achCard(g);backupCard(g);syncCard(g);$$('.grid>.card',L).forEach((c,j)=>c.style.setProperty('--i',Math.min(j,7)));homeDot();}
@@ -17771,7 +17775,7 @@ function showTest(){keepPlace();curS='test';document.body.dataset.s='test';chipB
   $$('.lesson').forEach(e=>{e.hidden=true;e.classList.remove('enter');});let L=$('#test-0');
   if(!L){L=el('article',{class:'lesson',id:'test-0',role:'tabpanel'});$('#main').append(L);testSetupPage(L);}
   else if(!TBUSY)testSetupPage(L);
-  L.hidden=false;if(!RM){void L.offsetWidth;L.classList.add('enter');}pageShown(L);savePos();}
+  L.hidden=false;enterPage(L);pageShown(L);savePos();}
 function testHead(L,title,lede){const back=L.contains(document.activeElement);L.innerHTML=`<header class="lhead"><div><h1>${title}</h1><p class="lede">${lede}</p></div><div class="emblem" aria-hidden="true"><div class="em-ring"><div class="em-in">${icon('test',36)}</div></div><small></small></div></header><div class="grid"></div>`;if(back)focusTo(L,'h1');return $('.grid',L);}
 
 function testSetupPage(L){TBUSY=0;const g=testHead(L,'Test','Build a test from any subjects and units, choose its length, and rate your confidence after each answer.'),st=testSetup();
