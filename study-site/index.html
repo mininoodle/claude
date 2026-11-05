@@ -1879,7 +1879,7 @@ function showLesson(i,o={}){
       if(tk===sk&&(j<0||j>=S.lessons.length)){pg.append(el('span'));return;}
       const lab=tk===sk?SUBJ[tk].lessons[tj].t:SUBJ[tk].name+': '+SUBJ[tk].lessons[tj].t;
       const b=el('button',{type:'button',class:'btn ghost'},j<i?icon('left',15)+t+lab:t+lab+icon('right',15,'r'));b.onclick=()=>{if(curS!==tk)goSection(tk,tj);else showLesson(tj);};pg.append(b);});
-  }else{le._refresh&&le._refresh();refreshLive();}
+  }else{le._refresh&&le._refresh();refreshLive(L);}
   L.hidden=false;enterPage(L,o);
   const sub=SUBJECTS.find(s=>s.units.includes(curS));document.title=le.t+' · '+(sub?sub.name:S.name)+' · Study site';
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
@@ -17284,7 +17284,13 @@ const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')
 const lessonIcon=(sk,L)=>{const le=SUBJ[sk].lessons[L];return le.ic||LIC[le.t]||sk;};
 const LX=(sk,t)=>SUBJ[sk].lessons.findIndex(l=>l.t===t);
 const UORDER=SUBJECTS.flatMap(s=>s.units);
-const LIVE=new Set();function refreshLive(){LIVE.forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});}
+/* the live views: functions that redraw a part of a page after the progress changes. Each belongs to the page that was on screen when it was added (a lesson
+   adds its views while it is built and shown), or to no page. refreshLive() runs the views of no page and of the page on screen; the views of a hidden page
+   run when it is shown again (refreshLive(L) from showLesson). Pages that left the document are dropped. LIVE keeps the add/delete/forEach/size of a Set */
+const LIVEP=new Map(),LIVE={add(f){const k=shownPage()||null;let s=LIVEP.get(k);if(!s)LIVEP.set(k,s=new Set());s.add(f);f._lp=k;return LIVE;},
+  delete(f){const s=LIVEP.get(f._lp);return !!s&&s.delete(f);},forEach(cb){LIVEP.forEach(s=>[...s].forEach(f=>cb(f,f,LIVE)));},get size(){let n=0;LIVEP.forEach(s=>n+=s.size);return n;}};
+function refreshLive(L){const run=s=>{if(s)[...s].forEach(f=>{try{f();}catch(e){console.error('[live] view failed',e);}});};
+  if(L){run(LIVEP.get(L));return;}LIVEP.forEach((s,k)=>{if(k&&!k.isConnected)LIVEP.delete(k);});run(LIVEP.get(null));const on=shownPage();if(on)run(LIVEP.get(on));}
 
 /* ----- mastery: the days on which each question was answered correctly ----- */
 /* Mastered needs two correct days at least MGAP calendar days apart, so that two rounds just before and just after midnight are not enough.
