@@ -17420,8 +17420,9 @@ const fmtS=ms=>{const d=Math.round(Math.max(0,ms)/100);return Math.floor(d/600)+
 const fmtDay=d=>{const [y,m,da]=d.split('-').map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});};
 const gN=k=>(Store.x('g',k)||{}).n||0,gv=k=>(Store.x('g',k)||{}).v,gset=(k,v)=>Store.xs('g',k,{v});
 /* the question generators of a unit, each with a stable id unit_lesson_g<k>: k is its place among the generators of that lesson. A new generator goes at the end of GEN[unit], thus it never moves another */
-/* a generator that carries its lesson and its place (f.L and f.k: the ec wrappers) keeps the id sk_L_gk; the others are numbered in order within their lesson, after one call */
-const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{if(Number.isInteger(f.L)&&Number.isInteger(f.k))return {f,L:f.L,id:sk+'_'+f.L+'_g'+f.k};let L=-1;try{L=f().L;}catch(e){}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
+/* a generator that carries its lesson and its place (f.L and f.k: the ec wrappers) keeps the id sk_L_gk; the others are numbered in order within their lesson, after one call.
+   A call that throws (a rare bad sample) is made again, up to 8 times: a generator dropped here would give its id to the next generator of its lesson */
+const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{if(Number.isInteger(f.L)&&Number.isInteger(f.k))return {f,L:f.L,id:sk+'_'+f.L+'_g'+f.k};let L=-1;for(let t=0;t<8&&!(L>=0);t++){try{L=f().L;}catch(e){}}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
 /* a generator id gives a new question with other numbers each time */
 const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')[0],g=SUBJ[sk]&&genList(sk).find(x=>x.id===id);if(!g)return null;const it=g.f();return {it,id,sk,L:g.L,gen:1};}
   const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
