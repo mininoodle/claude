@@ -30,6 +30,7 @@ The page is opened from the file (`file://`) with every network request blocked,
 | `lint.test.js` | The content lint (below). Reports by default; `--strict` fails on errors. Prints the counts for the README. | 3 s |
 | `smoke.test.js` | Opens every page through the app shell (subject tab, unit or section bar, lesson chip) and scrolls through it. Fails on any page error or console error, a page that does not open, or a page with no cards. | 55 s |
 | `layout.test.js` | The layout of every page at 390 and 1366 px (`--full`: 24 widths from 360 to 5120 px). | 30 s |
+| `empty-check.test.js` | A try-it Check pressed before anything is chosen asks for an answer first and marks nothing (the widgets one by one, then every Check button of every lesson on a fresh page; lists in order and the pH slider always hold an answer and are left out). | 16 s |
 
 ### `smoke.test.js`
 
