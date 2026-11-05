@@ -1529,8 +1529,11 @@ function quiz(host,items,title,base){
     /* clears this lesson's own questions (not its review bank): the answers and the correct-count. Spaced repetition and the mastery history stay.
        It sits below a divider, and it needs a second selection within 5 s (a double tap does not count), like Submit in the timed exam */
     const r=el('div',{class:'row',style:'border-top:1px solid var(--hair);margin-top:1.4em;padding-top:1em'}),b=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear my answers for this lesson');let armed=0;
-    b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent='Select again to clear. Your mastery level and review dates stay.';setTimeout(()=>{armed=0;if(b.isConnected)b.innerHTML=icon('reset',14)+'Clear my answers for this lesson';},5000);return;}if(now-armed<600)return;
-      const bp=base.split('_'),le=SUBJ[bp[0]]&&SUBJ[bp[0]].lessons[+bp[1]];Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();focusTo(c,'h3');toast('Your answers in '+(le?le.t:'this lesson')+' are cleared. Your mastery level and review dates stay.');};r.append(b);c.append(r);upd();};
+    /* the first selection is also said in a status region: a screen reader does not always read the new text of the focused button */
+    const st=el('span',{role:'status',style:'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap'});
+    b.onclick=()=>{const now=Date.now();if(!armed){armed=now;b.textContent='Select again to clear. Your mastery level and review dates stay.';st.textContent='Select again within 5 seconds to clear your answers for this lesson. Your mastery level and review dates stay.';
+        setTimeout(()=>{armed=0;st.textContent='';if(b.isConnected)b.innerHTML=icon('reset',14)+'Clear my answers for this lesson';},5000);return;}if(now-armed<600)return;st.textContent='';
+      const bp=base.split('_'),le=SUBJ[bp[0]]&&SUBJ[bp[0]].lessons[+bp[1]];Store.clear(clearScope('l:'+base),'l:'+base);render();afterChange();focusTo(c,'h3');toast('Your answers in '+(le?le.t:'this lesson')+' are cleared. Your mastery level and review dates stay.');};r.append(b,st);c.append(r);upd();};
   let quiet=0;render();QUIZ[base]=()=>{if(!quiet&&sg()!==last)render();};
   /* a page left open past midnight: a correct answer from the day before is no longer filled in */
   const day=()=>{if(!c.isConnected){LIVE.delete(day);return;}if(!quiet&&sg()!==last)render();};LIVE.add(day);return c;
@@ -1622,7 +1625,7 @@ function nrCode(host,o,slot){
     b.oninput=()=>{b.value=b.value.replace(/[^0-9.]/g,'');Store.wSet(key,val().replace(/\s+$/,''));bx.classList.remove('ok','bad');if(b.value&&bx.children[k+1])bx.children[k+1].focus();};
     b.onkeydown=e=>{if(e.key==='Backspace'&&!b.value&&k>0)bx.children[k-1].focus();};b.onfocus=()=>b.select();bx.append(b);}
   const mark=show=>{const ok=val()===o.a;lv.textContent=show?'This is the answer.':ok?'Correct.':'Not correct. Try again, or show the answer.';wv.innerHTML=(ok||show)&&o.w?`<p class="fb info">${o.w}</p>`:'';if(!show)markStudy();};
-  $('[data-a=check]',box).onclick=()=>mark(false);
+  $('[data-a=check]',box).onclick=()=>{if(!val().trim()){lv.textContent='Fill in the boxes first.';wv.innerHTML='';return;}mark(false);};
   $('[data-a=show]',box).onclick=()=>{[...o.a].forEach((c,k)=>bx.children[k].value=c);Store.wSet(key,o.a);mark(true);};
   $('[data-a=clear]',box).onclick=()=>{[...bx.children].forEach(b=>b.value='');Store.wSet(key,'');lv.textContent='';wv.innerHTML='';};
 }
@@ -1635,7 +1638,7 @@ function matching(host,pairs,intro,slot){
   const ol=$('ol',box),lv=$('[aria-live]',box);
   function render(res,msg){ol.innerHTML=pairs.map((p,i)=>`<li class="${res?(okAt(i)?'ok':'bad'):''}"><span class="ordn">${i+1}</span><span id="${uid}-${i}">${p[0]}</span><select aria-labelledby="${uid}-${i}" data-i="${i}"><option value="-1">Select…</option>${terms.map((t,j)=>`<option value="${j}"${sel[i]===j?' selected':''}>${t}</option>`).join('')}</select></li>`).join('');lv.textContent=msg||'';
     $$('select',ol).forEach(e=>e.onchange=()=>{sel[+e.dataset.i]=+e.value;save();e.closest('li').className='';});}
-  $('[data-a=check]',box).onclick=()=>{const n=pairs.filter((p,i)=>okAt(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
+  $('[data-a=check]',box).onclick=()=>{if(sel.every(x=>x<0)){lv.textContent='Choose a term for each row first.';return;}const n=pairs.filter((p,i)=>okAt(i)).length;render(true,n===pairs.length?'All '+n+' are correct.':n+' of '+pairs.length+' are correct.');};
   $('[data-a=show]',box).onclick=()=>{sel=pairs.map((p,i)=>ans(i));save();render(true,'These are the answers.');};
   $('[data-a=clear]',box).onclick=()=>{sel=pairs.map(()=>-1);save();render(false,'');};
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
@@ -3701,7 +3704,7 @@ function eqTable(host,o,slot){
   const ss=$$('select',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=s=>sel[+s.dataset.i][+s.dataset.j]===o.rows[+s.dataset.i][1][+s.dataset.j];
   const paint=res=>ss.forEach(s=>{s.value=String(sel[+s.dataset.i][+s.dataset.j]);s.classList.toggle('ok',!!res&&ok(s));s.classList.toggle('bad',!!res&&!ok(s));});
   ss.forEach(s=>s.onchange=()=>{sel[+s.dataset.i][+s.dataset.j]=+s.value;save();s.classList.remove('ok','bad');});
-  $('[data-a=check]',box).onclick=()=>{const n=ss.filter(ok).length;paint(true);lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct.';wv.innerHTML=n===ss.length&&o.after?`<p class="fb info">${o.after}</p>`:'';if(sel.some(r=>r.some(x=>x>=0)))markStudy();};
+  $('[data-a=check]',box).onclick=()=>{if(!sel.some(r=>r.some(x=>x>=0))){lv.textContent='Choose your answers in the table first.';wv.innerHTML='';return;}const n=ss.filter(ok).length;paint(true);lv.textContent=n===ss.length?'All '+n+' are correct.':n+' of '+ss.length+' are correct.';wv.innerHTML=n===ss.length&&o.after?`<p class="fb info">${o.after}</p>`:'';if(sel.some(r=>r.some(x=>x>=0)))markStudy();};
   $('[data-a=show]',box).onclick=()=>{sel=o.rows.map(r=>r[1].slice());save();paint(true);lv.textContent='These are the answers.';wv.innerHTML=o.after?`<p class="fb info">${o.after}</p>`:'';};
   $('[data-a=clear]',box).onclick=()=>{sel=blank();save();paint(false);lv.textContent='';wv.innerHTML='';};
   paint(false);if(sel.some(r=>r.some(x=>x>=0)))lv.textContent='Your last answers are restored.';
@@ -10017,7 +10020,7 @@ ${taper(co,[[100,10],[85,11],[70,12],[55,13],[40,14],[25,15],[10,16]],'var(--e-c
 /* numerical response, digits in any order: nrCode with a check that accepts every order of the digits of o.a.
    Show clears every box first, thus no digit of the student stays in a box that the answer does not use */
 function snNR(host,o,slot){nrCode(host,o,slot);const box=host.lastElementChild,bx=$('.nr',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),srt=v=>[...v].sort().join('');
-  $('[data-a=check]',box).onclick=()=>{const ok=srt([...bx.children].map(z=>z.value).join(''))===srt(o.a);lv.textContent=ok?'Correct.':'Not correct. Try again, or show the answer.';wv.innerHTML=ok&&o.w?`<p class="fb info">${o.w}</p>`:'';markStudy();};
+  $('[data-a=check]',box).onclick=()=>{if(![...bx.children].some(z=>z.value)){lv.textContent='Fill in the boxes first.';wv.innerHTML='';return;}const ok=srt([...bx.children].map(z=>z.value).join(''))===srt(o.a);lv.textContent=ok?'Correct.':'Not correct. Try again, or show the answer.';wv.innerHTML=ok&&o.w?`<p class="fb info">${o.w}</p>`:'';markStudy();};
   const sb=$('[data-a=show]',box),sh0=sb.onclick;sb.onclick=()=>{[...bx.children].forEach(b=>b.value='');sh0();};
   $('p.hint',box).textContent='Record the '+(['','one','two','three','four'][o.a.length])+' digits in the boxes, in any order.';}
 /* the face of the illusion, as an outline of its strokes. rot: turned a quarter turn to the left */
