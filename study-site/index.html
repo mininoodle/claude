@@ -937,6 +937,12 @@ addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=sho
 ['click','keydown'].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest('#rail')){RAILNAV=1;setTimeout(()=>{RAILNAV=0;});}},true));
 /* the Previous/Next pager opens the next lesson at its top */
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
+/* keyboard focus after a page is shown: its h1 when it opens at the top, else the first block of the card at the top of the window (below the bar),
+   thus the next Tab goes on from the place that was kept, not from the top of the page */
+function focusPlace(L){if(!L)return;const y=topBar()+8;if(scrollY<=0){focusTo(L,'h1');return;}
+  const c=[...L.querySelectorAll('.card')].find(c=>!c.parentElement.closest('.card')&&c.getClientRects().length&&c.getBoundingClientRect().bottom>y);
+  const t=c&&([...c.querySelectorAll('h2,h3,p,li,figure,.q,table')].find(e=>e.getClientRects().length&&e.getBoundingClientRect().bottom>y)||c);
+  if(!t){focusTo(L,'h1');return;}if(!t.matches('button,input,select,textarea,a[href],[tabindex]'))t.tabIndex=-1;t.focus({preventScroll:true});}
 /* showLesson, showHome and showTest call this when page L is on screen. It goes back to where the student left L, or to the top when L is new,
    rebuilt, chosen again (the current lesson's chip is a 'back to top') or opened with the pager. At load the browser keeps the place of a reload */
 /* ----- keyboard focus: a quiz card that renders again (after 'Clear my answers') replaces the button that had focus. Focus then goes to the card's
@@ -1858,7 +1864,7 @@ function showLesson(i,o={}){
   chipBtns.forEach((b,j)=>{b.setAttribute('aria-selected',j===i);b.tabIndex=j===i?0:-1;});
   centreChip(!o.first);
   pageShown(L,o);savePos();if(chipBtns.length===S.lessons.length)chipProgress();
-  if(back)focusTo(L,'h1');
+  if(back)focusPlace(L);
 }
 function showUnit(k,first){
   $('#units').hidden=false;$('#chips').hidden=false;
@@ -18039,7 +18045,7 @@ dispatchEvent(new Event('sync-change'));
       const on=it.cur||it.here,m=document.createElement('button');m.type='button';m.className='cm-i'+(on?' on':'');m.setAttribute('role','menuitemradio');m.setAttribute('aria-checked',on?'true':'false');
       m.innerHTML=icon(it.ic,15)+'<span>'+esc(it.t)+'</span>'+(it.cur?icon('check',14):'');
       /* a lesson's progress ring or the Review badge, copied from its chip (on a phone the chips are hidden, thus the menu shows the progress) */
-      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;const L=document.querySelector('#main>.lesson:not([hidden])');if(L)focusTo(L,'h1');};menu.append(m);});
+      const pr=it.chip&&it.chip.querySelector('.pr,.due');if(pr){m.append(pr.cloneNode(true));if(it.chip.title)m.title=it.chip.title;}m.onclick=()=>{if(it.cur){closeMenu(true);return;}closeMenu();if(it.go())return;focusPlace(document.querySelector('#main>.lesson:not([hidden])'));};menu.append(m);});
     menu.hidden=false;mBtn=b;b.setAttribute('aria-expanded','true');
     const cr=crumb.getBoundingClientRect(),br=b.getBoundingClientRect();menu.style.top=Math.round(br.bottom-cr.top+4)+'px';menu.style.left='0px';
     menu.style.left=Math.round(Math.max(8,Math.min(br.left-cr.left,cr.width-menu.offsetWidth-8)))+'px';

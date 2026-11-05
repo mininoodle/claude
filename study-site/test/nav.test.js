@@ -4,7 +4,8 @@
 Navigation and usability of the page shell (rail, breadcrumb, address, search, place, toasts). Exit code 0 = pass, 1 = fail.
   - the student's place: a lesson shown again opens where it was left; the pager, the current lesson again and a rebuild open at the top
   - the address: #/<section>/<lesson>, a new history entry per page, Back opens the previous lesson, an address opens its lesson at load
-  - keyboard focus goes to the new page's h1 after a breadcrumb menu choice
+  - keyboard focus goes to the new page's h1 after a breadcrumb menu choice (when it opens at its top); a lesson shown again at its kept place
+    (breadcrumb menu, Back) gets focus at that place, and the next Tab keeps the page there
   - 'On this page' lists the headed cards and scrolls the chosen one below the bar
   - the site search finds lesson titles and reference terms, '/' goes to it, and a phone has a search button
   - the course units: every unit of SUBJECTS is listed as on the site, on the Today card
@@ -77,8 +78,22 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
       check(h.back === `${k}-0`, `Back opens the previous lesson (${h.back})`);
       /* focus after a breadcrumb menu choice */
       await p.focus('.crumb-b[data-lv="l"]'); await p.keyboard.press('ArrowDown'); await frames(p); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await frames(p);
-      const fo = await p.evaluate(() => { const e = document.activeElement; return e && e.tagName === 'H1' && !!e.closest('#main > article:not([hidden])'); });
-      check(fo, 'focus goes to the new lesson\'s h1 after a breadcrumb menu choice');
+      const fo = await p.evaluate(() => { const e = document.activeElement; return !!e && !!e.closest('#main > article:not([hidden])') && (scrollY > 0 || e.tagName === 'H1'); });
+      check(fo, 'focus goes to the new lesson after a breadcrumb menu choice (its h1 when it opens at the top)');
+      /* a lesson shown again at its kept place by keyboard: focus is at that place (not the h1 far above), and the next Tab goes on from there */
+      for (const how of ['menu', 'Back']) {
+        const y0 = await p.evaluate(async k => { const f = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          goLesson(k, 1); await f(); scrollTo(0, 3000); await f(); const y = Math.round(scrollY);
+          goLesson(k, 2); await f(); const b = document.querySelector('#' + k + '-2 .card button'); if (b) b.focus({ preventScroll: true }); return y; }, k);
+        if (how === 'menu') { await p.focus('.crumb-b[data-lv="l"]'); await p.keyboard.press('ArrowDown'); await frames(p); await p.keyboard.press('ArrowUp'); await p.keyboard.press('Enter'); }
+        else await p.evaluate(() => history.back());
+        await p.waitForTimeout(400);
+        const a = await p.evaluate(k => { const e = document.activeElement, r = e && e.getBoundingClientRect(); return { on: curS + '-' + curL[curS], y: Math.round(scrollY), inL: !!e && !!e.closest('#' + k + '-1'), tag: e && e.tagName, top: r ? Math.round(r.top) : null, bottom: r ? Math.round(r.bottom) : null, bar: Math.round(topBar()), vh: innerHeight }; }, k);
+        await p.keyboard.press('Tab'); await frames(p);
+        const y1 = await p.evaluate(() => Math.round(scrollY));
+        check(a.on === k + '-1' && Math.abs(a.y - y0) <= 2 && a.inL && a.tag !== 'H1' && a.bottom > a.bar && a.top < a.vh && Math.abs(y1 - y0) < a.vh,
+          `${how}: ${k}-1 comes back at ${y0} (${a.y}) with focus at the place (${a.tag} at ${a.top} px), and Tab keeps the page near it (${y1})`);
+      }
       /* On this page */
       await p.evaluate(() => scrollTo(0, 0)); await p.click('.crumb-o'); await frames(p);
       const n = await p.evaluate(() => document.querySelectorAll('.crumb-menu .cm-i').length);
