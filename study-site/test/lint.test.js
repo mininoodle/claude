@@ -166,7 +166,8 @@ function analyse(o) {
         else {
           if (L == null) L = it.L;
           if (!SUBJ[k].lessons[it.L] || !SUBJ[k].lessons[it.L].qz) probs.push(['gen-bad', 'L = ' + it.L + ' is not a lesson with questions']);
-          if (/NaN|undefined|Infinity/.test(String(it.q) + ' ' + String(it.w) + ' ' + String(it.o || ''))) probs.push(['gen-bad', 'NaN, undefined or Infinity in the text: "' + P(it.q).slice(0, 60) + '"']);
+          /* a value that is not a number stands as a word of its own in the text (tags removed): the formula NaNO<sub>3</sub> is not one */
+          if (/(^|[^\w₀-₉])(NaN|undefined|Infinity)(?![\w₀-₉])/.test(P(String(it.q) + ' ' + String(it.w) + ' ' + String(it.o || '')))) probs.push(['gen-bad', 'NaN, undefined or Infinity in the text: "' + P(it.q).slice(0, 60) + '"']);
           check(it, 'gen').forEach(p => probs.push(p));
         }
         for (const [c, m] of probs) { bad[c] = (bad[c] || 0) + 1; if (!ex[c]) ex[c] = m; }
