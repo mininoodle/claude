@@ -29,7 +29,8 @@ const KEY={48:'D',49:'B',50:'A',51:'D',52:2.37,53:3.04,54:.44,55:'D',56:'A',57:'
   /* on a narrow phone (320 px), nothing in a diploma question is wider than the question, and the page does not scroll sideways */
   const q=await b.newPage({viewport:{width:320,height:800}});await q.route(/^https?:\/\//,r=>r.abort());await q.goto('file://'+file);await q.waitForTimeout(600);
   await q.evaluate(()=>goSection('ec',7));await q.waitForTimeout(600);
-  fails.push(...await q.evaluate(()=>{const f=[],own=ECL[7].qz.length-EC_DIP[7].length,qs=[...document.querySelectorAll('section.quiz .q')].slice(own);
+  /* the question figures of a quiz card are drawn when they come near the view: draw them all before measuring */
+  fails.push(...await q.evaluate(()=>{if(typeof qfigAll==='function')qfigAll();const f=[],own=ECL[7].qz.length-EC_DIP[7].length,qs=[...document.querySelectorAll('section.quiz .q')].slice(own);
     if(qs.length!==EC_DIP[7].length)f.push('lesson 7 at 320 px shows '+qs.length+' diploma questions, not '+EC_DIP[7].length);
     qs.forEach((e,j)=>{const r=e.getBoundingClientRect().right;const w=[...e.querySelectorAll('*')].find(x=>!x.closest('svg')&&x.getBoundingClientRect().width&&x.getBoundingClientRect().right>r+1);
       if(w)f.push('question '+(48+j)+' at 320 px: "'+(w.textContent||'').slice(0,30)+'" is wider than the question');});

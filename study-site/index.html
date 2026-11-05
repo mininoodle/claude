@@ -1447,11 +1447,25 @@ function diagnose(x,it){const n=it.n;if(!isFinite(x)||!n||it.code)return '';cons
 /* a correct numeric entry that is not the three-digit key (inside the 2 % window of an item with the default tolerance): say so, so that early rounding is seen */
 function keyNote(v,it){if(it.o||it.code||it.ans||it.ex||it.abs!=null||(it.tol!=null&&it.tol!==.02)||!it.n)return '';const x=parseNum(v);if(!isFinite(x)||+x.toPrecision(3)===+it.n.toPrecision(3))return '';
   const d=diagnose(x,it);return /9\.81/.test(d)?'Accepted, but y'+d.slice(1)+' ':`Accepted. The key is ${ansText(it)}: keep all digits until the last step. `;}
+/* lazy question figures: the quiz card of a lesson builds its questions with qfLazy set, thus the figure of a question is drawn only when it comes within about
+   one screen of the view (an IntersectionObserver). A lesson with 40 figures in its questions opens without building them. The empty box keeps an estimated
+   height (its drawings at their aspect ratio, its lines and its table rows). Printing draws every figure first; qfigAll(root) draws them at once (the tests) */
+let qfLazy=0,qfIO=null;const qfSet=new Set();
+const qfDraw=b=>{if(b._qf==null)return;const h=b._qf;b._qf=null;qfSet.delete(b);if(qfIO)qfIO.unobserve(b);b.innerHTML=h;};
+const qfSweep=()=>qfSet.forEach(b=>{if(!b.isConnected){qfSet.delete(b);if(qfIO)qfIO.unobserve(b);}});
+const qfigAll=root=>{qfSweep();[...qfSet].forEach(b=>{if(!root||root.contains(b))qfDraw(b);});};
+const qfEst=h=>{let px=0;String(h).replace(/viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/g,(m,w,v)=>{px+=Math.min(1.3,v/w)*460;return m;});
+  return Math.round(px+30*(String(h).match(/<tr[\s>]/g)||[]).length+26*(String(h).match(/<p[\s>]|<br/g)||[]).length)||120;};
+function qfLater(box,html){box._qf=html;box.innerHTML=`<div class="qf-ph" style="height:${qfEst(html)}px"></div>`;
+  if(!window.IntersectionObserver){qfDraw(box);return;}
+  if(!qfIO)qfIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)qfDraw(e.target);});qfSweep();},{rootMargin:'100% 0px'});
+  qfSet.add(box);qfIO.observe(box);}
+addEventListener('beforeprint',()=>qfigAll());
 /* one question. sv is a saved answer or null; with sv.re (a text) a correct numeric answer from an earlier day is not filled in: the student solves it again.
    cb receives {v,ok,s,hi}: hi is the number of hints used. In test mode a numeric question has one attempt and no hints. note follows 'does not count' after Show answer.
    opt.hintNote follows a correct answer that used a hint. opt.retry(q): a 'Try again' button under a wrong multiple-choice answer or a shown answer calls it */
 function qEl(it,label,sv,cb,test,note=' Clear your answers to try it again.',opt={}){
-  const q=el('div',{class:'q'},`<div class="qt">${label?`<b>${label}</b> `:''}${it.q}</div>${it.fig?`<div class="qfig">${it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});
+  const q=el('div',{class:'q'},`<div class="qt">${label?`<b>${label}</b> `:''}${it.q}</div>${it.fig?`<div class="qfig">${qfLazy?'':it.fig}</div>`:''}`),fb=el('p',{class:'fb',hidden:'','aria-live':'polite'});if(it.fig&&qfLazy)qfLater($('.qfig',q),it.fig);
   const rr=opt.retry?el('div',{class:'row',hidden:''},`<button type="button" class="btn sm ghost">${icon('reset',14)}Try again</button>`):null;if(rr)rr.firstChild.onclick=()=>opt.retry(q);
   const say=(cls,h)=>{fb.hidden=false;fb.className='fb '+cls;fb.innerHTML=h;};
   if(it.o){
@@ -1501,7 +1515,8 @@ function quiz(host,items,title,base){
     const mk=(it,i)=>{const id=base+'_'+i;return qEl(it,(i+1)+'.',saved(id,it),e=>{const p=Store.get(id),bp=base.split('_'),pre=lessonLevel(bp[0],+bp[1]);if(p&&p.s){Store.set(id,{v:e.v,ok:0,s:1});last=sg();upd(true);return;}
       const ok=!!(e.ok&&!e.s),same=ok&&p&&p.ok&&p.t&&dayOf(p.t)===today();if(same&&p.hi&&!e.hi)e=Object.assign({},e,{hi:p.hi});Store.set(id,e);last=sg();upd(true);if(same)return;
       srMark(id,ok);onAnswer(id,ok,{sk:bp[0],L:+bp[1],rv:e.s||it.o?1:0,before:pre,v:e.s?'':e.v,hint:!!e.hi});},false,' Select Try again to answer it again.',{hintNote:'You used a hint, thus this answer counts for Practised but not as a mastery day.',retry:q=>retry(q,it,i)});};
-    items.forEach((it,i)=>c.append(mk(it,i)));
+    /* the first drawing of the card waits with the figures of its questions; a card drawn again (a sync, Clear) draws them at once */
+    qfLazy=!c._qd;c._qd=1;try{items.forEach((it,i)=>c.append(mk(it,i)));}finally{qfLazy=0;}
     /* clears this lesson's own questions (not its review bank): the answers and the correct-count. Spaced repetition and the mastery history stay.
        It sits below a divider, and it needs a second selection within 5 s (a double tap does not count), like Submit in the timed exam */
     const r=el('div',{class:'row',style:'border-top:1px solid var(--hair);margin-top:1.4em;padding-top:1em'}),b=el('button',{type:'button',class:'btn sm ghost'},icon('reset',14)+'Clear my answers for this lesson');let armed=0;
@@ -2439,17 +2454,25 @@ const taper=(d,steps,c1,c2)=>steps.map(([p,w])=>`<path d="${d}" fill="none" stro
 /* number in a circle. The class lb keeps it readable when the figure is small */
 const badge=(n,x,y,fill,r=11)=>`<g class="lb" pointer-events="none"><circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="var(--fig)" stroke-width="2"/><text x="${x}" y="${y+4.4}" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff">${n}</text></g>`;
 const svgText=(t,x,y,o={})=>`<text class="lb ${o.c||''}"${o.mx!=null?` data-mx="${o.mx}"`:''} x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||12}" font-weight="${o.w||500}" fill="var(--${o.f||'ink2'})">${t}</text>`;
-/* keep the labels of a scaled figure readable: --k is the number of drawing units in one screen pixel */
-function figFit(fig){
-  const f=()=>$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,sr=s.getBoundingClientRect(),w=sr.width;if(!w||!vb||!vb.width)return;const k=vb.width/w,K=clamp(k,1,2.1);s.style.setProperty('--k',K.toFixed(3));s.classList.toggle('compact',k>1.5);
-    /* a label grows only up to the edge of the drawing, where it would be clipped: its own --k is the room it has */
-    const lbs=$$('.lb',s),ks=lbs.map(t=>{if(K<=1)return K;let b,M;try{b=t.getBBox();M=t.parentNode.getScreenCTM();}catch(e){return K;}if(!b.width||!M)return K;
+/* keep the labels of a scaled figure readable: --k is the number of drawing units in one screen pixel.
+   figFit(fig) queues the figure. The figures queued in one task are fitted together at its end (a microtask, before the page is drawn): all the reads first,
+   then the writes, then the labels, thus a lesson page with 19 figures costs two layouts, not two for each figure. One ResizeObserver fits a figure again
+   when one of its drawings changes width (--k depends on the width only) */
+const figQ=new Set(),figW=new WeakMap();let figRO=null;
+const figKey=fig=>$$('svg',fig).map(s=>Math.round(s.getBoundingClientRect().width*10)).join();
+function figFitRun(figs){const S=[];
+  figs.forEach(fig=>{const ws=[];$$('svg',fig).forEach(s=>{const vb=s.viewBox.baseVal,sr=s.getBoundingClientRect(),w=sr.width;ws.push(Math.round(w*10));if(!w||!vb||!vb.width)return;S.push({s,sr,k:vb.width/w});});figW.set(fig,ws.join());});
+  S.forEach(o=>{o.K=clamp(o.k,1,2.1);o.s.style.setProperty('--k',o.K.toFixed(3));o.s.classList.toggle('compact',o.k>1.5);});
+  /* a label grows only up to the edge of the drawing, where it would be clipped: its own --k is the room it has */
+  S.forEach(o=>{const K=o.K,sr=o.sr;o.lbs=$$('.lb',o.s);o.ks=o.lbs.map(t=>{if(K<=1)return K;let b,M;try{b=t.getBBox();M=t.parentNode.getScreenCTM();}catch(e){return K;}if(!b.width||!M)return K;
       const [ox,oy]=getComputedStyle(t).transformOrigin.split(' ').map(parseFloat),X=(x,y)=>M.a*x+M.c*y+M.e,P=X(b.x+ox,b.y+oy),xs=[X(b.x,b.y),X(b.x+b.width,b.y),X(b.x,b.y+b.height),X(b.x+b.width,b.y+b.height)],lo=Math.min(...xs),hi=Math.max(...xs);
       /* data-mx: a right-hand limit inside the drawing (in drawing units), for a label that must not grow into the next part of the figure */
       const mx=t.getAttribute('data-mx'),R=mx==null?sr.right-1:Math.min(sr.right-1,X(+mx,b.y+b.height/2));
-      let m=K;if(hi-P>.01)m=Math.min(m,(R-P)/(hi-P));if(P-lo>.01)m=Math.min(m,(P-sr.left-1)/(P-lo));return Math.max(1,m);});
-    lbs.forEach((t,i)=>ks[i]<K?t.style.setProperty('--k',ks[i].toFixed(3)):t.style.removeProperty('--k'));});
-  new ResizeObserver(f).observe(fig);f();
+      let m=K;if(hi-P>.01)m=Math.min(m,(R-P)/(hi-P));if(P-lo>.01)m=Math.min(m,(P-sr.left-1)/(P-lo));return Math.max(1,m);});});
+  S.forEach(o=>o.lbs.forEach((t,i)=>o.ks[i]<o.K?t.style.setProperty('--k',o.ks[i].toFixed(3)):t.style.removeProperty('--k')));}
+function figFit(fig){if(!figQ.size)queueMicrotask(()=>{const a=[...figQ];figQ.clear();figFitRun(a);});figQ.add(fig);
+  if(!figRO)figRO=new ResizeObserver(es=>{const ch=[];es.forEach(e=>{const f=e.target;if(!f.isConnected){figRO.unobserve(f);return;}if(figW.get(f)!==figKey(f))ch.push(f);});if(ch.length)figFitRun(ch);});
+  figRO.observe(fig);
 }
 
 /* ---------- neuron ---------- */

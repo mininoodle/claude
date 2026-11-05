@@ -30,7 +30,8 @@ const KEY={7:'C',8:'A',9:'B',10:'2314',11:'2415',12:'C',13:'A',14:'B',15:'A',16:
     return f;},KEY);
   /* every figure fits a 320 px phone: no element of a diploma item is wider than the item (main clips it, thus a column of a table would be lost) */
   await p.setViewportSize({width:320,height:800});await p.evaluate(()=>goSection('ec',3));await p.waitForTimeout(500);
-  fails.push(...await p.evaluate(()=>{const D=EC_DIP[3],qs=[...document.querySelectorAll('#ec-3 section.quiz .q')].slice(-D.length),f=[];
+  /* the question figures of a quiz card are drawn when they come near the view: draw them all before measuring */
+  fails.push(...await p.evaluate(()=>{if(typeof qfigAll==='function')qfigAll();const D=EC_DIP[3],qs=[...document.querySelectorAll('#ec-3 section.quiz .q')].slice(-D.length),f=[];
     if(qs.length!==D.length)return ['the question card of lesson 3 must show the '+D.length+' diploma questions last'];
     qs.forEach((q,j)=>{const r=q.getBoundingClientRect(),w=[...q.querySelectorAll('.qt *, .qfig *')].filter(e=>{const x=e.getBoundingClientRect();return x.width&&(x.right>r.right+1||x.left<r.left-1);});
       if(w.length)f.push('question '+(7+j)+' at 320 px: '+w.length+' elements are wider than the question, for example '+w[0].tagName+' '+Math.round(w[0].getBoundingClientRect().right)+' > '+Math.round(r.right));});
