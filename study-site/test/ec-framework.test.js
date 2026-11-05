@@ -1,13 +1,19 @@
 /* usage: node study-site/test/ec-framework.test.js <path to index.html>
    The Electrochemistry section (ec): it is registered in the Chemistry tab, every lesson builds, the page has no console errors,
    the table of standard electrode potentials (EC_E0) has the values that the class notes and the diploma answer key use, every half-reaction balances,
-   ecPredict gives the notes' answers, ecTable and ecCell work, and every generator gives 200 items that the grader accepts. Exit code 0 = pass, 1 = fail. */
+   ecPredict gives the notes' answers, ecTable and ecCell work, every generator gives 200 items that the grader accepts, and ecCheck() (every check of the section:
+   the questions, banks, reference sheet, table of potentials, generators and the checks of the slots; the page does not run it when it loads) finds no problem.
+   Exit code 0 = pass, 1 = fail. */
 const path=require('path');let chromium;try{({chromium}=require('playwright'));}catch(e){({chromium}=require('/opt/node-tools/node_modules/playwright'));}
 const file=path.resolve(process.argv[2]||path.join(__dirname,'..','index.html'));
 (async()=>{const b=await chromium.launch(),p=await b.newPage({viewport:{width:1280,height:900}}),errs=[];
   p.on('pageerror',e=>errs.push('page error: '+e.message));p.on('console',m=>{if(m.type()==='error'&&!/ERR_FAILED|net::|favicon/.test(m.text()))errs.push('console: '+m.text());});
   await p.route(/^https?:\/\//,r=>r.abort());await p.goto('file://'+file);await p.waitForTimeout(800);
   const r=await p.evaluate(()=>{const fails=[],ok=(c,m)=>{if(!c)fails.push(m);},near=(a,b)=>a!=null&&Math.abs(a-b)<.0051;let n=0;
+    /* every check of the section */
+    ok(typeof window.ecCheck==='function','window.ecCheck() is missing');if(typeof window.ecCheck==='function'){const e=window.ecCheck();ok(Array.isArray(e),'ecCheck() must return a list');(e||[]).forEach(m=>fails.push('ecCheck: '+m));ok(EC_CHK.length>0,'EC_CHK holds no check of the slots');n++;}
+    /* a generator keeps the id of its place, without being called (genList) */
+    ok(genList('ec').every(g=>g.id==='ec_'+g.f.L+'_g'+g.f.k),'an ec generator id does not come from its place in EC_GEN');
     /* registration */
     ok(ORDER.indexOf('ec')===ORDER.indexOf('eq')+1,'ORDER: ec must come right after eq');ok(curL.ec===0||Number.isInteger(curL.ec),'curL.ec is missing');
     const chem=SUBJECTS.find(s=>s.k==='chem');ok(chem&&chem.units.join()==='th,eq,ec','the Chemistry tab must have the units th, eq, ec');

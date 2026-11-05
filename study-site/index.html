@@ -4369,8 +4369,13 @@ const EC_REF={f:[],t:[],ex:'anode',rt:'Formulas and terms',ft:'Formulas and key 
 const EC_GEN=[];         /* EC_GEN[i]: generators of lesson i; each returns a numeric item {q, n, u, tol, w} (becomes GEN.ec, with L = i) */
 const EC_METHOD=[];      /* EC_METHOD[i]: the method hint of the numeric questions of lesson i (becomes METHOD.ec) */
 const EC_HT=[];          /* EC_HT[i]: the How-to card of lesson i: {title?, pre?, items: [{q, s: [steps], chk?}]} (becomes HT.ec) */
-/* scoped styles for one lesson: ecCSS(i, css) adds them once. Every selector starts with #ec-i (the article of lesson i) */
-const ecCSS=(i,css)=>{const id='ec-css-'+i;if(document.getElementById(id))return;document.head.append(el('style',{id},css));};
+/* EC_CHK: the checks of the slots. A slot pushes a function that reports each problem with EC_ERR(text). ecCheck() (window.ecCheck, which the tests call) runs them
+   with the checks of the framework; the page does not run them when it loads. Outside ecCheck, EC_ERR writes a console error that starts with [ec] */
+const EC_CHK=[];let ecErrs=null;const EC_ERR=m=>{if(ecErrs)ecErrs.push(m);else console.error('[ec] '+m);};
+/* scoped styles for one lesson: ecCSS(i, css) adds them once. Every selector starts with #ec-i (the article of lesson i), thus styles that a slot gives when the
+   page loads wait in EC_CSSW and are added when the lesson is first built (the build wrapper below the slots) */
+const EC_CSSW={};let ecCSSwait=true;
+const ecCSS=(i,css)=>{const id='ec-css-'+i;if(document.getElementById(id))return;if(ecCSSwait){if(EC_CSSW[i]==null)EC_CSSW[i]=css;return;}document.head.append(el('style',{id},css));};
 /* constants of the data booklet: the Faraday constant (C/mol) and the molar masses (g/mol) of the elements in this unit */
 const EC_F=9.65e4;
 const EC_M={H:1.01,Li:6.94,C:12.01,N:14.01,O:16.00,F:19.00,Na:22.99,Mg:24.31,Al:26.98,P:30.97,S:32.06,Cl:35.45,K:39.10,Ca:40.08,Sc:44.96,Cr:52.00,Mn:54.94,Fe:55.85,Co:58.93,Ni:58.69,Cu:63.55,Zn:65.38,Ga:69.72,Br:79.90,Ag:107.87,Cd:112.41,In:114.82,Sn:118.71,I:126.90,Ba:137.33,Pt:195.08,Au:196.97,Hg:200.59,Pb:207.20};
@@ -4525,9 +4530,11 @@ const ecBase=()=>{if(document.getElementById('ec-css'))return;document.head.appe
    o.pick: a try-it. The student taps the SOA in the left column and the SRA in the right column, then Check. o.pick is {soa: row index, sra: row index},
      or true: the answer is ecPredict(o.hl) on these rows. o.slot: the number of this try-it in its lesson (saved answer mt_<lesson>_et<slot>). o.w: the explanation after Check or Show.
    o.cap: a line under the table. Returns the box (a div) */
-function ecTable(host,rows,o={}){ecBase();
+/* the inside of a reduction table box as HTML: the table, its caption and the buttons of a try-it (o.pick), with R (the rows), n and ans. ecTable puts it in the page;
+   ecTableH returns it as text, without building any element */
+function ecTableHtml(rows,o){
   const R=rows.map(r=>r&&r.L?r:Array.isArray(r)?ecRowOf(r[0],r[1]):ecRowOf(r,null)),n=R.length,showE=o.E!=null?!!o.E:R.every(r=>r.E!=null),pres=new Set((o.hl||[]).map(ecK)),arw=o.arrows!==false;
-  const lid=(host.closest('.lesson')||{}).id||'x',uid='ectb'+(ecTable.n=(ecTable.n||0)+1),shade=new Set(o.rows||[]);
+  const uid='ectb'+(ecTable.n=(ecTable.n||0)+1),shade=new Set(o.rows||[]);
   let ans=null;if(o.pick){if(o.pick===true){const p=ecPredict(o.hl||[],{rows:R});if(p)ans={soa:R.indexOf(p.rr),sra:R.indexOf(p.or)};}else ans=o.pick;}
   const sp=arr=>arr.map(([c,k],j)=>`<span class="ecs${j===0?' ecm'+(pres.has(k)?' ecp':''):''}">${(c===1?'':c)+C(k)}</span>`).join(' + ');
   const tag=t=>`<span class="ec-tag">${t}</span>`,btn=(s,i,t,lab)=>ans?`<button type="button" class="ecpk" data-s="${s}" data-i="${i}" aria-pressed="false" aria-label="${lab}">${t}</button>`:t;
@@ -4537,8 +4544,10 @@ function ecTable(host,rows,o={}){ecBase();
     h+=`<tr${shade.has(i)?' class="hl"':''}>`+(i===0&&arw?`<td class="arw up" rowspan="${n}" aria-hidden="true"><div><b></b><i></i>${lbl[0]?`<span>${lbl[0]}</span><i></i>`:''}</div></td>`:'')+
       `<td class="oa">${btn('o',i,L,'Strongest oxidizing agent: '+ecU(r.k))}${o.mark&&o.mark.soa===i?tag('SOA'):''}</td><td class="eqm">⇌</td><td class="ra">${o.mark&&o.mark.sra===i?tag('SRA'):''}${btn('r',i,Rt,'Strongest reducing agent: '+ecU(r.r))}</td>`+
       (showE?`<td class="e0">${r.Es}</td>`:'')+(i===0&&arw?`<td class="arw dn" rowspan="${n}" aria-hidden="true"><div>${lbl[1]?`<i></i><span>${lbl[1]}</span>`:''}<i></i><b></b></div></td>`:'')+'</tr>';});
-  const box=el('div',{class:'ec-tbx'});box.innerHTML=`<div class="tw">${h}</tbody></table></div>`+(o.cap?`<p class="hint cap">${o.cap}</p>`:'')+
-    (ans?`<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answer</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`:'');
+  return {R,n,ans,html:`<div class="tw">${h}</tbody></table></div>`+(o.cap?`<p class="hint cap">${o.cap}</p>`:'')+
+    (ans?`<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answer</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`:'')};}
+function ecTable(host,rows,o={}){ecBase();
+  const lid=(host.closest('.lesson')||{}).id||'x',{R,n,ans,html}=ecTableHtml(rows,o),box=el('div',{class:'ec-tbx'});box.innerHTML=html;
   host.append(box);tblCue($('.tw',box));
   /* a label that is longer than its arrow is hidden */
   const fit=()=>$$('td.arw span',box).forEach(s=>{s.style.display='';const d=s.parentElement;if(d.clientHeight&&s.offsetHeight>d.clientHeight-30)s.style.display='none';});requestAnimationFrame(fit);new ResizeObserver(fit).observe(box);
@@ -4555,7 +4564,7 @@ function ecTable(host,rows,o={}){ecBase();
   let seen=JSON.stringify(s);const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=valid(v)?JSON.stringify({o:v.o,r:v.r}):JSON.stringify({o:-1,r:-1});if(j===seen)return;seen=j;s=JSON.parse(j);paint(false);};LIVE.add(view);
   paint(false);if(s.o>=0||s.r>=0)lv.textContent='Your last choice is restored.';return box;}
 /* the same table as an HTML string, without a try-it: for the fig of a question ("Use the following information") or a worked example */
-const ecTableH=(rows,o={})=>ecTable(el('div'),rows,Object.assign({},o,{pick:null})).outerHTML;
+const ecTableH=(rows,o={})=>{ecBase();return '<div class="ec-tbx">'+ecTableHtml(rows,Object.assign({},o,{pick:null})).html+'</div>';};
 /* ---------- an electrochemical cell (SVG) ----------
    ecCell(o) returns an SVG string: put it in CF(svg, caption) or in the fig of a question.
    o.type: 'voltaic' (default) or 'electrolytic'. o.sep: 'bridge' (two beakers and a salt bridge; the default of a voltaic cell), 'cup' (the right half-cell is in a porous cup
@@ -5074,7 +5083,7 @@ const EC1_PT=[
   {n:'C',name:'Carbon',x:'C',r:[{f:'CH4',v:-4,k:{H:1}},{f:'CaC2',v:-1,k:{Ca:2}},{f:'CO2',v:4,k:{O:-2}},{f:'C2H5OH',v:-2,k:{H:1,O:-2},post:'This is the average of the two C atoms (−3 and −1).'},{f:'CH3CO2^-',v:0,k:{H:1,O:-2},post:'This is the average of the two C atoms (−3 and +3).'}]},
   {n:'F, Br, I',name:'Fluorine, bromine and iodine',mix:1,r:[{f:'CuF2',x:'F',v:-1,t:'F is always −1. Then Cu is +2.'},{f:'CH3Br',x:'Br',v:-1,t:'Br is a halogen: −1. Then C is −2: C + 3(+1) + (−1) = 0.'},
     {f:'IBr2',x:'I',v:2,k:{Br:-1},post:'Br is more electronegative than I.'},{f:'IBr2',x:'Br',v:-1,t:'Br is more electronegative than I, thus each Br is −1. Then I is +2.'},{f:'OF2',x:'F',v:-1,t:'F is always −1. Then O is +2: OF₂ is an exception to the oxygen rule.'}]}];
-EC1_PT.forEach(G=>G.r.forEach(r=>{if(!r.x)r.x=G.x;if(r.k&&Math.abs(ec1Sum(r)-r.v)>1e-9)console.error('[ec] lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);}));
+EC1_PT.forEach(G=>G.r.forEach(r=>{if(!r.x)r.x=G.x;}));EC_CHK.push(()=>EC1_PT.forEach(G=>G.r.forEach(r=>{if(r.k&&Math.abs(ec1Sum(r)-r.v)>1e-9)EC_ERR('lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);})));
 /* the practice table as a try-it (a lesson-local helper: the framework has no typed fill-in table). The student chooses an element, types the oxidation number of that element
    in each entity (+6, −2, 0, or a fraction such as 8/3), then Check. Show the answers fills in the answers and the working of each box. Clear empties the boxes of the element shown.
    One saved object for all the groups, {"group-row": text}, under an mt_ key: Clear answers for the section removes it */
@@ -5340,7 +5349,7 @@ const EC1_GX=[{f:'K2Cr2O7',x:'Cr',v:6,k:{K:1,O:-2}},{f:'KMnO4',x:'Mn',v:7,k:{K:1
   {f:'C2H4',x:'C',v:-2,k:{H:1}},{f:'C2H2',x:'C',v:-1,k:{H:1}},{f:'CCl4',x:'C',v:4,k:{Cl:-1}},{f:'VO2^+',x:'V',v:5,k:{O:-2}},{f:'VO^2+',x:'V',v:4,k:{O:-2}},{f:'TiCl4',x:'Ti',v:4,k:{Cl:-1}},
   {f:'UO2^2+',x:'U',v:6,k:{O:-2}},{f:'MoO4^2-',x:'Mo',v:6,k:{O:-2}},{f:'AsO4^3-',x:'As',v:5,k:{O:-2}},{f:'H3AsO3',x:'As',v:3,k:{H:1,O:-2}},{f:'SeO4^2-',x:'Se',v:6,k:{O:-2}},{f:'SeO3^2-',x:'Se',v:4,k:{O:-2}},
   {f:'Cr(OH)3',x:'Cr',v:3,k:{O:-2,H:1}},{f:'MnO4^-',x:'Mn',v:7,k:{O:-2}},{f:'S2O3^2-',x:'S',v:2,k:{O:-2},post:'This is the average of the two S atoms.'}];
-EC1_GX.forEach(r=>{if(Math.abs(ec1Sum(r)-r.v)>1e-9)console.error('[ec] lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);});
+EC_CHK.push(()=>EC1_GX.forEach(r=>{if(Math.abs(ec1Sum(r)-r.v)>1e-9)EC_ERR('lesson 1: the sum for '+r.f+' gives '+ec1Sum(r)+', not '+r.v);}));
 /* the pool of generator 1: every sum-rule row with a whole-number answer. IBr₂ stays in the practice table (the notes write it without a charge), but a generated question uses only real species */
 const EC1_POOL=EC1_PT.flatMap(G=>G.r).filter(r=>r.k&&Number.isInteger(r.v)&&r.f!=='IBr2').concat(EC1_GX);
 /* [element, from, to, oxidation number in from, oxidation number in to] */
@@ -6318,8 +6327,8 @@ EC_REF.t.push(['Titrant','The solution of known concentration that is added from
 {try{
 /* Lesson 5: Balancing redox equations. Notes p. 25 to 32: the half-reaction method in acidic solution (the example on p. 25, practice 1 to 16 on p. 26 and 27),
    the oxidation-number method in neutral solution (two examples and practice 1 to 5 on p. 28), and the diploma questions 34 to 37 and 39 to 47 (p. 29 to 32, key on p. 85).
-   Question 38 is in lesson 6. Every equation of this slot is checked with ecBal when the page loads (a problem is a console error that starts with [ec] lesson 5). */
-const ec5Err=m=>console.error('[ec] lesson 5: '+m);
+   Question 38 is in lesson 6. Every equation of this slot is checked with ecBal by ecCheck() (the checks are functions in EC_CHK; a problem starts with "lesson 5"). */
+const ec5Err=m=>EC_ERR('lesson 5: '+m);
 /* the electrons of a half-reaction, and two half-reactions added (each one multiplied) as a key that does not depend on the order of the entities */
 const ec5E=s=>{const q=ecParse(s),x=q.L.concat(q.R).find(y=>y[1]==='e^-');return x?x[0]:0;};
 const ec5Key=s=>{const q=ecParse(s),f=a=>a.map(([c,k])=>k+':'+c).sort().join(',');return f(q.L)+'>'+f(q.R);};
@@ -6453,7 +6462,7 @@ const EC5_PR=[
   [['Cr2O7^2-(aq)','HCHO(aq)'],['Cr^3+(aq)','HCOOH(aq)'],'HCHO(aq) + H2O(l) -> HCOOH(aq) + 2H^+(aq) + 2e^-',3,'Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)',1,'Cr2O7^2-(aq) + 3HCHO(aq) + 8H^+(aq) -> 2Cr^3+(aq) + 3HCOOH(aq) + 4H2O(l)'],
   [['CH3NO2(aq)','Ti^3+(aq)'],['CH3NH2(aq)','Ti^4+(aq)'],'Ti^3+(aq) -> Ti^4+(aq) + e^-',6,'CH3NO2(aq) + 6H^+(aq) + 6e^- -> CH3NH2(aq) + 2H2O(l)',1,'CH3NO2(aq) + 6Ti^3+(aq) + 6H^+(aq) -> CH3NH2(aq) + 6Ti^4+(aq) + 2H2O(l)'],
   [['MnO4^-(aq)','Sb2O3(aq)'],['Mn^2+(aq)','Sb2O5(aq)'],'Sb2O3(aq) + 2H2O(l) -> Sb2O5(aq) + 4H^+(aq) + 4e^-',5,'MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)',4,'4MnO4^-(aq) + 5Sb2O3(aq) + 12H^+(aq) -> 4Mn^2+(aq) + 5Sb2O5(aq) + 6H2O(l)']]
-  .map(([L,R,ox,mo,red,mr,a],i)=>{const n=ec5E(ox)*mo;if(ec5Add(ox,mo,red,mr)!==ec5Key(a)||n!==ec5E(red)*mr)ec5Err('practice question '+(i+1)+': the half-reactions do not add up to the answer');
+  .map(([L,R,ox,mo,red,mr,a],i)=>{const n=ec5E(ox)*mo;EC_CHK.push(()=>{if(ec5Add(ox,mo,red,mr)!==ec5Key(a)||n!==ec5E(red)*mr)ec5Err('practice question '+(i+1)+': the half-reactions do not add up to the answer');});
     return {n:String(i+1),L,R,f:['H2O(l)','H^+(aq)'],c:'acidic',a,w:`<p>Oxidation: ${C(ox)}${mo>1?' &nbsp;(× '+mo+')':''}</p><p>Reduction: ${C(red)}${mr>1?' &nbsp;(× '+mr+')':''}</p><p>${n}e⁻ are lost and ${n}e⁻ are gained. Add the two half-reactions. Cancel the electrons, and the ${C('H^+(aq)')} and ${C('H2O(l)')} that are on both sides:</p><p>${C(a)}</p>`};});
 /* try-it 3: the oxidation-number method, practice 1 to 5 (p. 28). The skeletons of the notes already show H⁺(aq) and H₂O(l) where they are needed */
 const EC5_ON=[
@@ -6468,11 +6477,11 @@ const EC5_ON=[
   [['BrO3^-(aq)','I^-(aq)','H^+(aq)'],['Br^-(aq)','I2(s)','H2O(l)'],'BrO3^-(aq) + 6I^-(aq) + 6H^+(aq) -> Br^-(aq) + 3I2(s) + 3H2O(l)',
     'Br: +5 → −1, each BrO₃⁻ gains 6e⁻. I: −1 → 0, each I⁻ loses 1e⁻. Thus 6I⁻ for each BrO₃⁻, and 6I⁻ give 3I₂. O: 3 in BrO₃⁻, thus 3H₂O. H: 6 in 3H₂O, thus 6H⁺. Charge: −1 − 6 + 6 = −1 on the left and −1 on the right.']]
   .map(([L,R,a,w],i)=>({n:String(i+1),L,R,f:[],a,w:'<p>'+w.split('. ').join('.</p><p>')+'</p><p>'+C(a)+'</p>'}));
-[...EC5_HR,...EC5_PR,...EC5_ON].forEach(p=>{const b=ecBal(p.a);if(b)ec5Err(p.n+' ('+p.a+') does not balance: '+b);if(!p.L.concat(p.R).every(k=>ec5Key(p.a).includes(k+':')))ec5Err(p.n+': the answer does not contain every entity of the skeleton');});
+EC_CHK.push(()=>[...EC5_HR,...EC5_PR,...EC5_ON].forEach(p=>{const b=ecBal(p.a);if(b)ec5Err(p.n+' ('+p.a+') does not balance: '+b);if(!p.L.concat(p.R).every(k=>ec5Key(p.a).includes(k+':')))ec5Err(p.n+': the answer does not contain every entity of the skeleton');}));
 /* the worked example on p. 25, and the two examples of the oxidation-number method on p. 28 */
 const EC5_EX={red:'CrO4^2-(aq) + 8H^+(aq) + 3e^- -> Cr^3+(aq) + 4H2O(l)',ox:'Cl^-(aq) + 2H2O(l) -> ClO2^-(aq) + 4H^+(aq) + 4e^-',red4:'4CrO4^2-(aq) + 32H^+(aq) + 12e^- -> 4Cr^3+(aq) + 16H2O(l)',ox3:'3Cl^-(aq) + 6H2O(l) -> 3ClO2^-(aq) + 12H^+(aq) + 12e^-',a:'4CrO4^2-(aq) + 3Cl^-(aq) + 20H^+(aq) -> 4Cr^3+(aq) + 3ClO2^-(aq) + 10H2O(l)',
   on1:'SeO3^2-(aq) + Cl2(aq) + H2O(l) -> SeO4^2-(aq) + 2Cl^-(aq) + 2H^+(aq)',on2:'8H^+(aq) + MnO4^-(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)',nr:'Cr2O7^2-(aq) + 3C2O4^2-(aq) + 14H^+(aq) -> 2Cr^3+(aq) + 6CO2(g) + 7H2O(l)'};
-if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a)||ec5Add(EC5_EX.red4,1,EC5_EX.ox3,1)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2,EC5_EX.red4,EC5_EX.ox3,EC5_EX.nr].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});
+EC_CHK.push(()=>{if(ec5Add(EC5_EX.red,4,EC5_EX.ox,3)!==ec5Key(EC5_EX.a)||ec5Add(EC5_EX.red4,1,EC5_EX.ox3,1)!==ec5Key(EC5_EX.a))ec5Err('the worked example does not add up');[EC5_EX.on1,EC5_EX.on2,EC5_EX.red4,EC5_EX.ox3,EC5_EX.nr].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+': '+b);});});
 
 /* ---------- "Use the following information" boxes of the diploma questions ---------- */
 const ec5I=(...ps)=>`<div style="padding:.15em .45em .3em;line-height:1.5;font-size:.95rem">${ps.join('')}</div>`,ec5P=h=>`<p style="margin:.35em 0">${h}</p>`,ec5Q=s=>`<p style="margin:.45em 0;text-align:center">${C(s)}</p>`;
@@ -6669,13 +6678,13 @@ EC_WRQ.push({q:'A breathalyzer uses acidified potassium dichromate to oxidize th
   marks:['(a) Oxidation: C₂H₅OH(l) + H₂O(l) → CH₃COOH(aq) + 4H⁺(aq) + 4e⁻','(a) Reduction: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 6e⁻ → 2Cr³⁺(aq) + 7H₂O(l)','(b) Multiplies the oxidation by 3 and the reduction by 2: 12e⁻ lost and gained','(b) 3C₂H₅OH(l) + 2Cr₂O₇²⁻(aq) + 16H⁺(aq) → 3CH₃COOH(aq) + 4Cr³⁺(aq) + 11H₂O(l), with H⁺ and H₂O cancelled',
     '(c) n(Cr₂O₇²⁻) = (0.0100 mol/L)(0.00250 L) = 2.50 × 10⁻⁵ mol','(c) n(C₂H₅OH) = 3/2 × 2.50 × 10⁻⁵ mol = 3.75 × 10⁻⁵ mol; m = (3.75 × 10⁻⁵ mol)(46.08 g/mol) = 1.73 × 10⁻³ g'],
   model:'<p>(a) Oxidation: '+C('C2H5OH(l) + H2O(l) -> CH3COOH(aq) + 4H^+(aq) + 4e^-')+'. Reduction: '+C('Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)')+'.</p><p>(b) Multiply the oxidation by 3 and the reduction by 2, so that 12e⁻ are lost and 12e⁻ are gained. Add the half-reactions: 12H⁺ cancel from 28H⁺, and 3H₂O cancel from 14H₂O. '+C('3C2H5OH(l) + 2Cr2O7^2-(aq) + 16H^+(aq) -> 3CH3COOH(aq) + 4Cr^3+(aq) + 11H2O(l)')+'.</p><p>(c) <i>n</i>('+C('Cr2O7^2-')+') = (0.0100 mol/L)(0.00250 L) = 2.50 × 10<sup>−5</sup> mol. <i>n</i>('+C('C2H5OH')+') = 3/2 × 2.50 × 10<sup>−5</sup> mol = 3.75 × 10<sup>−5</sup> mol. <i>m</i> = (3.75 × 10<sup>−5</sup> mol)(46.08 g/mol) = 1.73 × 10<sup>−3</sup> g (1.73 mg).</p>'});
-[EC5_PR[0].a,'5Cu(s) + 2MnO4^-(aq) + 16H^+(aq) -> 5Cu^2+(aq) + 2Mn^2+(aq) + 8H2O(l)','2MnO4^-(aq) + 5H2O2(l) + 6H^+(aq) -> 2Mn^2+(aq) + 5O2(g) + 8H2O(l)','3H2S(g) + Cr2O7^2-(aq) + 8H^+(aq) -> 3S(s) + 2Cr^3+(aq) + 7H2O(l)','Cu(s) + 2NO3^-(aq) + 4H^+(aq) -> Cu^2+(aq) + 2NO2(g) + 2H2O(l)',
+EC_CHK.push(()=>[EC5_PR[0].a,'5Cu(s) + 2MnO4^-(aq) + 16H^+(aq) -> 5Cu^2+(aq) + 2Mn^2+(aq) + 8H2O(l)','2MnO4^-(aq) + 5H2O2(l) + 6H^+(aq) -> 2Mn^2+(aq) + 5O2(g) + 8H2O(l)','3H2S(g) + Cr2O7^2-(aq) + 8H^+(aq) -> 3S(s) + 2Cr^3+(aq) + 7H2O(l)','Cu(s) + 2NO3^-(aq) + 4H^+(aq) -> Cu^2+(aq) + 2NO2(g) + 2H2O(l)',
  '2IO3^-(aq) + 5HSO3^-(aq) -> I2(s) + 5SO4^2-(aq) + 3H^+(aq) + H2O(l)','2VO2^+(aq) + Zn(s) + 4H^+(aq) -> 2VO^2+(aq) + Zn^2+(aq) + 2H2O(l)','3Zn(s) + Cr2O7^2-(aq) + 14H^+(aq) -> 3Zn^2+(aq) + 2Cr^3+(aq) + 7H2O(l)',
  '3As2S3(s) + 28NO3^-(aq) + 10H^+(aq) + 4H2O(l) -> 6H3AsO4(aq) + 9SO4^2-(aq) + 28NO(g)','3C2H5OH(l) + 2Cr2O7^2-(aq) + 16H^+(aq) -> 3CH3COOH(aq) + 4Cr^3+(aq) + 11H2O(l)','C2H5OH(l) + H2O(l) -> CH3COOH(aq) + 4H^+(aq) + 4e^-',
  '3CH3OH(l) + Cr2O7^2-(aq) + 8H^+(aq) -> 3CH2O(aq) + 2Cr^3+(aq) + 7H2O(l)','Au(s) + 3HNO3(aq) + 4HCl(aq) -> HAuCl4(aq) + 3H2O(l) + 3NO2(g)','2H2O(l) + NO2^-(aq) + 2Al(s) -> NH3(g) + 2AlO2^-(aq) + H^+(aq)','2V2O5(s) + 3Mn(s) -> 4VO(s) + 3MnO2(s)',
  '2H^+(aq) + BrO2^-(aq) + BrO3^-(aq) -> 2BrO2(aq) + H2O(l)','2BrO2^-(aq) -> BrO3^-(aq) + BrO^-(aq)','5H2O(l) + S2O3^2-(aq) -> 2SO4^2-(aq) + 10H^+(aq) + 8e^-','C3H8(g) + 5O2(g) -> 3CO2(g) + 4H2O(l)','3H2S(g) + 3/2 O2(g) -> 3S(l) + 3H2O(g)',
  '6Ag(s) + Cr2O7^2-(aq) + 14H^+(aq) -> 6Ag^+(aq) + 2Cr^3+(aq) + 7H2O(l)','3Cu(s) + 2NO3^-(aq) + 8H^+(aq) -> 3Cu^2+(aq) + 2NO(g) + 4H2O(l)','2MnO4^-(aq) + 5H2C2O4(aq) + 6H^+(aq) -> 2Mn^2+(aq) + 10CO2(g) + 8H2O(l)','IO3^-(aq) + 3HSO3^-(aq) -> I^-(aq) + 3SO4^2-(aq) + 3H^+(aq)',
- 'ClO3^-(aq) + 3SO2(g) + 3H2O(l) -> Cl^-(aq) + 3SO4^2-(aq) + 6H^+(aq)','2IO3^-(aq) + 12H^+(aq) + 10e^- -> I2(s) + 6H2O(l)','NO2^-(aq) + H2O(l) -> NO3^-(aq) + 2H^+(aq) + 2e^-'].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+' does not balance: '+b);});
+ 'ClO3^-(aq) + 3SO2(g) + 3H2O(l) -> Cl^-(aq) + 3SO4^2-(aq) + 6H^+(aq)','2IO3^-(aq) + 12H^+(aq) + 10e^- -> I2(s) + 6H2O(l)','NO2^-(aq) + H2O(l) -> NO3^-(aq) + 2H^+(aq) + 2e^-'].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+' does not balance: '+b);}));
 
 /* ---------- generators ---------- */
 /* 1. a coefficient (or the electrons transferred) of a net equation made from two half-reactions of the data booklet table */
@@ -6683,7 +6692,7 @@ const EC5_OA=[['MnO4^-(aq)','Acidified permanganate ions, MnO₄⁻(aq), react w
   ['MnO2(s)','Manganese(IV) oxide, MnO₂(s), in an acidic solution reacts with'],['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Oxygen gas in an acidic solution reacts with'],['NO3^-(aq)','Nitrate ions in an acidic solution react with']].map(([k,t])=>[ecRow(k),t]);
 const EC5_RA=[['Fe^3+(aq)','iron(II) ions, Fe²⁺(aq)'],['Sn^4+(aq)','tin(II) ions, Sn²⁺(aq)'],['Cu^2+(aq)','copper metal, Cu(s)'],['Ag^+(aq)','silver metal, Ag(s)'],['Zn^2+(aq)','zinc metal, Zn(s)'],['Ni^2+(aq)','nickel metal, Ni(s)'],['Pb^2+(aq)','lead metal, Pb(s)'],
   ['I2(s)','iodide ions, I⁻(aq)'],['Br2(l)','bromide ions, Br⁻(aq)'],['S(s)','hydrogen sulfide, H₂S(aq)'],['SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','sulfurous acid, H₂SO₃(aq)']].map(([k,t])=>[ecRow(k),t]);
-if(EC5_OA.concat(EC5_RA).some(x=>!x[0]))ec5Err('a row of the generator is not in EC_E0');
+EC_CHK.push(()=>{if(EC5_OA.concat(EC5_RA).some(x=>!x[0]))ec5Err('a row of the generator is not in EC_E0');});
 /* the pairs that react: the oxidizing agent is at least 0.10 V above the reducing agent */
 const EC5_PAIRS=EC5_OA.flatMap(o=>EC5_RA.filter(r=>o[0]&&r[0]&&o[0].E-r[0].E>=.1).map(r=>[o,r]));
 const ec5Net=(o,r)=>{const p=ecPair(o,r),q=ecParse(p.netS),g=q.L.concat(q.R).reduce((x,[c])=>ecGcd(x,c),0),sd=a=>a.map(([c,k])=>(c/g===1?'':c/g)+k).join(' + ');
@@ -6702,10 +6711,10 @@ EC_GEN[5]=[()=>{const [o,r]=EC5_PAIRS[RN(0,EC5_PAIRS.length-1)];
     const [eq,G,Wn,vb]=S,m=RN(1,9.99,.01),M1=ecMolar(G[1]),M2=ecMolar(Wn[1]),n1=m/M1,n2=n1*Wn[2]/G[2],x=n2*M2;
     return {q:`In acidic solution, ${C(eq)}. Calculate the mass of ${Wn[0]}, ${C(Wn[1])}, that ${vb} ${m.toFixed(2)} g of ${G[0]}, ${C(G[1])}.`,n:x,u:'g',tol:.01,
       w:`n(${ecU(G[1].replace(/\(.*\)$/,''))}) = ${m.toFixed(2)} g ÷ ${M1.toFixed(2)} g/mol = ${sig(n1,4)} mol. The mole ratio is ${Wn[2]} ${ecU(Wn[1].replace(/\(.*\)$/,''))} : ${G[2]} ${ecU(G[1].replace(/\(.*\)$/,''))}, thus n(${ecU(Wn[1].replace(/\(.*\)$/,''))}) = ${sig(n1,4)} mol × ${Wn[2]}/${G[2]} = ${sig(n2,4)} mol. m = (${sig(n2,4)} mol)(${M2.toFixed(2)} g/mol) = ${sig(x)} g.`};}];
-['MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)','Cr2O7^2-(aq) + 14H^+(aq) + 6Fe^2+(aq) -> 2Cr^3+(aq) + 7H2O(l) + 6Fe^3+(aq)','2AuCl4^-(aq) + 3C2O4^2-(aq) -> 2Au(s) + 8Cl^-(aq) + 6CO2(g)'].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+' does not balance: '+b);});
+EC_CHK.push(()=>['MnO4^-(aq) + 8H^+(aq) + 5Fe^2+(aq) -> Mn^2+(aq) + 4H2O(l) + 5Fe^3+(aq)','Cr2O7^2-(aq) + 14H^+(aq) + 6Fe^2+(aq) -> 2Cr^3+(aq) + 7H2O(l) + 6Fe^3+(aq)','2AuCl4^-(aq) + 3C2O4^2-(aq) -> 2Au(s) + 8Cl^-(aq) + 6CO2(g)'].forEach(s=>{const b=ecBal(s);if(b)ec5Err(s+' does not balance: '+b);}));
 /* 3. one half-reaction of the data booklet, balanced from its skeleton (the entity and what it becomes): the electrons, or the coefficient of H⁺(aq) or H₂O(l) */
 const EC5_HX=['MnO4^-(aq)','Cr2O7^2-(aq)','IO3^-(aq)','ClO4^-(aq)','MnO2(s)','HNO2(aq)','NO3^-(aq)','SO4^2-(aq) + 4H^+(aq) + 2e^- <=> H2SO3(aq) + H2O(l)','H3PO4(aq)','S(s)'].map(k=>ecRow(k));
-if(EC5_HX.some(r=>!r||r.R[0][1]==='H2O(l)'))ec5Err('a half-reaction of generator 3 is not in EC_E0');
+EC_CHK.push(()=>{if(EC5_HX.some(r=>!r||r.R[0][1]==='H2O(l)'))ec5Err('a half-reaction of generator 3 is not in EC_E0');});
 EC_GEN[5].push(()=>{const r=EC5_HX[RN(0,EC5_HX.length-1)],eq=r.s.replace('<=>','->'),q=ecParse(eq),co=(arr,k)=>(arr.find(x=>x[1]===k)||[0])[0],
     asks=[['e',r.n],['H^+(aq)',co(q.L,'H^+(aq)')]].concat(co(q.R,'H2O(l)')?[['H2O(l)',co(q.R,'H2O(l)')]]:[]),[k,n]=asks[RN(0,asks.length-1)],sk=r.L[0][1]+' -> '+r.R[0][1];
   return {q:`Balance the half-reaction ${C(sk)} in acidic solution with the lowest whole-number coefficients. ${k==='e'?'How many electrons are in the balanced half-reaction?':'What is the coefficient of '+C(k)+'?'}`,n,u:'',tol:0,
@@ -9408,10 +9417,26 @@ EC_DIP[7]=[
 }catch(e){console.error('[ec] slot 7d stopped with an error: '+(e&&e.stack||e));}}
 /* ===== EC LESSON SLOTS END ===== */
 
-/* the diploma questions (EC_DIP[i]) follow each lesson's own questions. Then the lessons, the banks and the table of potentials are checked when the page loads:
-   a problem is a console error that starts with [ec]. The generators are checked where GEN.ec is wired in (RN is declared there) */
-(()=>{const err=m=>console.error('[ec] '+m),str=x=>typeof x==='string'&&x.trim()!=='',num=x=>typeof x==='number'&&isFinite(x),txt=s=>String(s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
-  const IK=new Set(['q','o','a','w','n','u','tol','abs','ans','ex','m','fig','code','any']),LK=new Set(['t','h','d','ic','qt','build','qz']);
+/* the diploma questions (EC_DIP[i]) follow each lesson's own questions. A missing or broken lesson gets a placeholder (a console error that starts with [ec]).
+   The other checks of the section are in ecCheck() below: the tests call it; the page does not run it when it loads */
+(()=>{const err=m=>console.error('[ec] '+m),ph=g=>card(g,'This lesson could not load','<p>Reload the page. If the problem stays, the lesson has an error.</p>');
+  for(let i=0;i<EC_N;i++){let L=ECL[i];const at='lesson '+i;
+    if(!L||typeof L!=='object'){err(at+' is missing. A placeholder is shown.');L=ECL[i]={t:EC_T[i],d:'This lesson could not load.',build:ph,qz:[]};}
+    if(typeof L.build!=='function'){err(at+': build(g) is missing');L.build=ph;}
+    if(L.qz!=null&&!Array.isArray(L.qz)){err(at+': qz must be an array');L.qz=[];}
+    const own=L.qz||[],dip=EC_DIP[i];if(dip!=null){if(!Array.isArray(dip))err('EC_DIP['+i+'] must be an array of question items');else L.qz=own.concat(dip);}
+    if(!L.qz||!L.qz.length){err(at+': qz needs at least one question');L.qz=[{q:'Oxidation is',o:['a loss of electrons','a gain of electrons'],a:0,w:'LEO: Loss of Electrons is Oxidation.'}];}}
+  /* the styles that the slots gave when the page loaded are added at the first build of their lesson. An error in a build function shows a short message
+     instead of a broken lesson. The error is still reported */
+  ecCSSwait=false;
+  ECL.forEach((L,i)=>{const b=L.build;if(typeof b!=='function')return;L.build=function(g,le){if(EC_CSSW[i]!=null){const c=EC_CSSW[i];delete EC_CSSW[i];ecCSS(i,c);}try{return b.call(this,g,le);}catch(e){console.error('[ec] lesson '+i+': build failed: '+(e&&e.stack||e));card(g,'A part of this lesson could not load','<p class="hint">Reload the page. The questions below still work.</p>');}};});
+})();
+/* every check of the section: the lessons and their questions, the diploma questions, the banks, the challenges, the reference sheet, the written-response items,
+   the method hints, the How-to cards, the table of potentials (balance and order), 5 items of each generator, and the checks of the slots (EC_CHK).
+   It returns the problems as a list of texts (empty: no problem). Run it after the page has loaded: window.ecCheck() */
+function ecCheck(){const out=[],err=m=>out.push(m),str=x=>typeof x==='string'&&x.trim()!=='',num=x=>typeof x==='number'&&isFinite(x),txt=s=>String(s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
+  /* boot adds rq (the review bank) to a lesson and m (the method hint) to its numeric questions */
+  const IK=new Set(['q','o','a','w','n','u','tol','abs','ans','ex','m','fig','code','any']),LK=new Set(['t','h','d','ic','qt','build','qz','rq']);
   const item=(it,at)=>{if(!it||typeof it!=='object'){err(at+': not an object');return;}
     Object.keys(it).forEach(k=>{if(!IK.has(k))err(at+': unknown field "'+k+'"');});
     if(!str(it.q))err(at+': q (the question) is missing');if(!str(it.w))err(at+': w (the explanation) is missing');
@@ -9429,17 +9454,14 @@ EC_DIP[7]=[
     if(!numOK(it.n,it))err(at+': its own n is not accepted (check tol and abs)');};
   /* the table of potentials: every half-reaction balances, and E° does not increase down the table */
   EC_E0.forEach((r,i)=>{const b=ecBal(r.s);if(b)err('EC_E0 row '+i+' ('+r.u+') does not balance: '+b);if(i&&r.E>EC_E0[i-1].E)err('EC_E0 row '+i+' ('+r.u+') is not in order');});
-  for(let i=0;i<EC_N;i++){let L=ECL[i];const at='lesson '+i;
-    if(!L||typeof L!=='object'){err(at+' is missing. A placeholder is shown.');L=ECL[i]={t:EC_T[i],d:'This lesson could not load.',build(g){card(g,'This lesson could not load','<p>Reload the page. If the problem stays, the lesson has an error.</p>');},qz:[]};}
+  /* the 12 lessons (boot adds the reference sheet and the Review page after them) */
+  if(ECL.length<EC_N)err('ECL has '+ECL.length+' lessons, not '+EC_N);
+  for(let i=0;i<Math.min(EC_N,ECL.length);i++){const L=ECL[i],at='lesson '+i,dip=Array.isArray(EC_DIP[i])?EC_DIP[i]:[],nOwn=(L.qz||[]).length-dip.length;
     Object.keys(L).forEach(k=>{if(!LK.has(k))err(at+': unknown field "'+k+'"');});
     if(L.t!==EC_T[i])err(at+': t must be "'+EC_T[i]+'" (EC_T['+i+'])');
-    if(typeof L.build!=='function'){err(at+': build(g) is missing');L.build=g=>{card(g,'This lesson could not load','<p>Reload the page. If the problem stays, the lesson has an error.</p>');};}
     ['h','d','qt','ic'].forEach(k=>{if(L[k]!=null&&!str(L[k]))err(at+': '+k+' must be a string');});
-    if(L.qz!=null&&!Array.isArray(L.qz)){err(at+': qz must be an array');L.qz=[];}
-    const own=L.qz||[];own.forEach((it,j)=>item(it,at+' qz['+j+']'));
-    const dip=EC_DIP[i];if(dip!=null){if(!Array.isArray(dip))err('EC_DIP['+i+'] must be an array of question items');else{dip.forEach((it,j)=>item(it,'EC_DIP['+i+']['+j+']'));L.qz=own.concat(dip);}}
-    if(!L.qz||!L.qz.length){err(at+': qz needs at least one question');L.qz=[{q:'Oxidation is',o:['a loss of electrons','a gain of electrons'],a:0,w:'LEO: Loss of Electrons is Oxidation.'}];}}
-  if(ECL.length!==EC_N)err('ECL has '+ECL.length+' lessons, not '+EC_N);
+    (L.qz||[]).forEach((it,j)=>item(it,j<nOwn?at+' qz['+j+']':'EC_DIP['+i+']['+(j-nOwn)+']'));
+    if(dip.length&&!dip.every((it,j)=>L.qz[nOwn+j]===it))err('EC_DIP['+i+'] must follow the questions of lesson '+i);}
   if(EC_DIP.length>EC_N)err('EC_DIP has an entry after lesson '+(EC_N-1));
   EC_RQ.forEach((a,i)=>{if(a==null)return;if(!(i<EC_N)||!Array.isArray(a)){err('EC_RQ['+i+'] must be an array of items for lesson 0 to '+(EC_N-1));return;}a.forEach((it,j)=>item(it,'EC_RQ['+i+']['+j+']'));});
   Object.keys(EC_CH).forEach(k=>{if(!/^(\d|1[01])$/.test(k))err('EC_CH['+k+']: the key must be a lesson index from 0 to 11');else item(EC_CH[k],'EC_CH['+k+']');});
@@ -9449,9 +9471,13 @@ EC_DIP[7]=[
   EC_METHOD.forEach((m,i)=>{if(m!=null&&(!str(m)||i>=EC_N))err('EC_METHOD['+i+'] must be a string for lesson 0 to '+(EC_N-1));});
   EC_HT.forEach((h,i)=>{if(h==null)return;if(i>=EC_N||!h||!Array.isArray(h.items)||!h.items.length||!h.items.every(x=>x&&str(x.q)&&Array.isArray(x.s)&&x.s.length&&x.s.every(str)&&(x.chk==null||str(x.chk))))err('EC_HT['+i+'] needs items: [{q, s: [steps], chk}]');
     ['title','pre'].forEach(k=>{if(h&&h[k]!=null&&!str(h[k]))err('EC_HT['+i+'].'+k+' must be a string');});});
-  /* an error in a build function shows a short message instead of a broken lesson. The error is still reported */
-  ECL.forEach((L,i)=>{const b=L.build;if(typeof b!=='function')return;L.build=function(g,le){try{return b.call(this,g,le);}catch(e){console.error('[ec] lesson '+i+': build failed: '+(e&&e.stack||e));card(g,'A part of this lesson could not load','<p class="hint">Reload the page. The questions below still work.</p>');}};});
-})();
+  /* the generators: 5 items each, with q, w and a number n that its own tolerance accepts */
+  EC_GEN.forEach((a,i)=>{if(!Array.isArray(a))return;a.forEach((f,j)=>{try{for(let k=0;k<5;k++){const it=f();if(!it||typeof it.q!=='string'||!it.q||typeof it.w!=='string'||!it.w||!isFinite(it.n)||!numOK(it.n,it))throw new Error('each item needs q, w and a number n that its own tolerance accepts');}}
+    catch(e){err('EC_GEN['+i+']['+j+']: '+(e&&e.message||e));}});});
+  /* the checks of the slots */
+  ecErrs=out;try{EC_CHK.forEach((f,j)=>{try{f();}catch(e){err('EC_CHK['+j+'] stopped with an error: '+(e&&e.message||e));}});}finally{ecErrs=null;}
+  return out;}
+window.ecCheck=ecCheck;
 SUBJ.ec={name:'Electrochemistry',short:'Electro',lessons:ECL};
 
 /* ===================== NERVOUS SYSTEM (Biology 30 / IB) ===================== */
@@ -13545,10 +13571,10 @@ eq:[
 ()=>{const r=KA[RN(4,17)],x=1e-14/r[2];return {L:5,q:`The K<sub>a</sub> of ${C(r[0])}(aq) is ${sig(r[2],2)}. Calculate the K<sub>b</sub> of its conjugate base, ${C(r[1])}(aq).`,n:x,tol:.05,w:`K<sub>b</sub> = K<sub>w</sub> / K<sub>a</sub> = (1.0 × 10<sup>−14</sup>) / (${sig(r[2],2)}) = ${sig(x,2)}.`};},
 ()=>{const va=RN(10,30,5),cb=RN(.05,.25,.05),vb=RN(8,40,.5),x=cb*vb/va;return {L:8,q:`${va.toFixed(1)} mL of HCl(aq) is neutralized by ${vb.toFixed(1)} mL of ${cb.toFixed(3)} mol/L NaOH(aq). Calculate the concentration of the acid.`,n:x,u:'mol/L',w:`The mole ratio is 1 : 1. C = (${vb.toFixed(1)} mL)(${cb.toFixed(3)} mol/L) / ${va.toFixed(1)} mL = ${sig(x)} mol/L.`};}]
 };
-/* the electrochemistry generators come from its lesson slots (EC_GEN[i]); each item gets the lesson index L. Each generator is tried 5 times here (RN is declared above) */
+/* the electrochemistry generators come from its lesson slots (EC_GEN[i]); each item gets the lesson index L. Each wrapper also carries L and k (its place in EC_GEN[i]),
+   thus genList gives it the id ec_L_gk without calling it, and a generator that fails never moves the ids of the others. ecCheck() samples them (not the page load) */
 {const g=[];EC_GEN.forEach((a,i)=>{if(a==null)return;if(!Array.isArray(a)||i>=EC_N){console.error('[ec] EC_GEN['+i+'] must be an array of functions for lesson 0 to '+(EC_N-1));return;}
-  a.forEach((f,j)=>{try{if(typeof f!=='function')throw new Error('not a function');for(let k=0;k<5;k++){const it=f();if(!it||typeof it.q!=='string'||!it.q||typeof it.w!=='string'||!it.w||!isFinite(it.n)||!numOK(it.n,it))throw new Error('each item needs q, w and a number n that its own tolerance accepts');}
-    g.push(()=>Object.assign(f(),{L:i}));}catch(e){console.error('[ec] EC_GEN['+i+']['+j+']: '+(e&&e.message||e));}});});if(g.length)GEN.ec=g;}
+  a.forEach((f,j)=>{if(typeof f!=='function'){console.error('[ec] EC_GEN['+i+']['+j+']: not a function');return;}g.push(Object.assign(()=>Object.assign(f(),{L:i}),{L:i,k:j}));});});if(g.length)GEN.ec=g;}
 
 /* ===================== hints, written response, reference sheets, graph questions, extra labs ===================== */
 const METHOD={
@@ -17251,7 +17277,8 @@ const fmtS=ms=>{const d=Math.round(Math.max(0,ms)/100);return Math.floor(d/600)+
 const fmtDay=d=>{const [y,m,da]=d.split('-').map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});};
 const gN=k=>(Store.x('g',k)||{}).n||0,gv=k=>(Store.x('g',k)||{}).v,gset=(k,v)=>Store.xs('g',k,{v});
 /* the question generators of a unit, each with a stable id unit_lesson_g<k>: k is its place among the generators of that lesson. A new generator goes at the end of GEN[unit], thus it never moves another */
-const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{let L=-1;try{L=f().L;}catch(e){}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
+/* a generator that carries its lesson and its place (f.L and f.k: the ec wrappers) keeps the id sk_L_gk; the others are numbered in order within their lesson, after one call */
+const GENS={};function genList(sk){if(GENS[sk])return GENS[sk];const n={};return GENS[sk]=(GEN[sk]||[]).map(f=>{if(Number.isInteger(f.L)&&Number.isInteger(f.k))return {f,L:f.L,id:sk+'_'+f.L+'_g'+f.k};let L=-1;try{L=f().L;}catch(e){}const k=n[L]||0;n[L]=k+1;return {f,L,id:sk+'_'+L+'_g'+k};}).filter(g=>g.L>=0);}
 /* a generator id gives a new question with other numbers each time */
 const qItem=id=>{if(!id)return null;if(/_g\d+$/.test(id)){const sk=id.split('_')[0],g=SUBJ[sk]&&genList(sk).find(x=>x.id===id);if(!g)return null;const it=g.f();return {it,id,sk,L:g.L,gen:1};}
   const [sk,L,j]=id.split('_'),le=SUBJ[sk]&&SUBJ[sk].lessons[+L],r=j&&j[0]==='r',arr=le&&(r?le.rq:le.qz),it=arr&&arr[+(r?j.slice(1):j)];return it?{it,id,sk,L:+L}:null;};
