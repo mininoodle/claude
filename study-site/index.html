@@ -1076,9 +1076,21 @@ function courseCard(g){const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g
 /* the browser's own scroll restoration would move the page during Back and Forward before the page changes, thus the site keeps the places itself.
    For a reload, or a return to the site, the place of the page on screen is kept for this tab when the page is hidden */
 try{history.scrollRestoration='manual';}catch(e){}
-const PLK='unit-study-site.place',savePlace=()=>{try{sessionStorage.setItem(PLK,JSON.stringify({h:location.hash,y:Math.round(scrollY)}));}catch(e){}};
+/* The place is also kept as the block at the top of the window: the card (its index among the page's cards), the question in it (its index among the card's
+   questions, or -1) and its offset on screen. After a jump (the End key, a scrollbar drag) the question figures that were passed over were never drawn, and a reload
+   draws them (qfAbove): the same y would then show another question. A place without a block (an older copy, a changed page) still uses y */
+const placeTop=()=>{const P=document.querySelector('#main > article:not([hidden])');if(!P)return null;const y0=topBar()+8,on=e=>e.getClientRects().length&&e.getBoundingClientRect().bottom>y0;
+  const cs=[...P.querySelectorAll('.card')].filter(c=>!c.parentElement.closest('.card')),ci=cs.findIndex(on);if(ci<0)return null;
+  const qi=[...cs[ci].querySelectorAll('.q')].findIndex(on);return {cs,ci,qi};};
+const placeEl=(c,q)=>{const P=document.querySelector('#main > article:not([hidden])');if(!P||!(c>=0))return null;const cd=[...P.querySelectorAll('.card')].filter(x=>!x.parentElement.closest('.card'))[c];
+  return cd&&(q>=0?cd.querySelectorAll('.q')[q]||null:cd);};
+const PLK='unit-study-site.place',savePlace=()=>{try{const v={h:location.hash,y:Math.round(scrollY)},t=v.y>0&&placeTop();
+  if(t){const e=t.qi>=0?t.cs[t.ci].querySelectorAll('.q')[t.qi]:t.cs[t.ci];Object.assign(v,{c:t.ci,q:t.qi,o:Math.round(e.getBoundingClientRect().top)});}sessionStorage.setItem(PLK,JSON.stringify(v));}catch(e){}};
 addEventListener('pagehide',savePlace);document.addEventListener('visibilitychange',()=>{if(document.hidden)savePlace();});
-addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY){qfAbove(v.y+innerHeight);window.scrollTo(0,v.y);}});
+addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(!(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY))return;
+  /* the figures above the block first (they move it), then those from the block to one screen below the place (drawn when the place was left; they do not move the block) */
+  const e=v.o!=null&&placeEl(v.c,v.q);if(e){qfAbove(e.getBoundingClientRect().top+scrollY);const y=Math.max(0,Math.round(e.getBoundingClientRect().top+scrollY-v.o));qfAbove(y+innerHeight);window.scrollTo(0,y);return;}
+  qfAbove(v.y+innerHeight);window.scrollTo(0,v.y);});
 /* the arrow keys in a tab list change the lesson on each press: those changes replace the history entry */
 document.addEventListener('keydown',e=>{if(/^Arrow/.test(e.key)&&e.target.closest&&e.target.closest('[role=tablist]')){NAVREP=1;setTimeout(()=>{NAVREP=0;});}},true);
 </script>
