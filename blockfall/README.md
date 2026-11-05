@@ -88,3 +88,7 @@ Settings, under Opponent:
 At level 10 the bot sends about 140 to 170 lines per minute, which is close to top human players.
 
 The bot runs in a Web Worker, so the game stays smooth while it thinks. If the browser cannot start a worker, the bot runs on the main thread, and the game can stutter a little at high levels.
+
+## Tests
+
+The `tests/` folder has an end-to-end test suite and a rules referee for the bot. See [`tests/README.md`](tests/README.md).
