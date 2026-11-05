@@ -4138,18 +4138,20 @@ EC_REF.t.push(['Strongest oxidizing agent (SOA)','The oxidizing agent present th
 {try{
 /* lesson 4: Redox titrations. Notes pp. 20-24: the outcome 30–B1.8k, the introduction, the example (pp. 20-21), practice questions 1-4 (pp. 21-22),
    diploma questions 28-33 (pp. 23-24, key p. 85).
-   Lesson-local helpers (all inside this slot): ec4s (a number to n significant digits with a unicode power of ten, for plain text), ec4Cn (a formula that does not
+   Lesson-local helpers (all inside this slot): ec4s (a number to n significant digits with a unicode power of ten, for plain text), ec4r (a number rounded as it is shown in a step), ec4Cn (a formula that does not
    break between a charge and its state), ec4Eq (an equation that breaks only at its arrow), ec4Ip and ec4Ic (a paragraph and an equation line of a question figure),
    ec4Tb (a table of buret readings, HTML with inline styles: question figures are also shown outside the lesson), ec4Rd (a two-row table of readings),
    ec4App (the titration apparatus, SVG), ec4Col (the colour changes of permanganate and dichromate, SVG), ec4Titr (the virtual titration try-it, saved as
    mt_<lesson>_vt<slot>), ec4Steps (the step-by-step try-it, saved as mt_<lesson>_ts<slot>), ec4P (its four practice questions), ec4V (the samples of the
    virtual titration), ec4Pr (the titrant and sample pairs of the generators: the net equations and the mole ratios come from EC_E0 with ecPair), ec4Fr (a ratio as a fraction) */
 const ec4sup=e=>String(e).replace('-','⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
-const ec4s=(x,n=3)=>{if(!isFinite(x))return '?';if(x===0)return '0';const a=Math.abs(x);if(a>=1e4||a<1e-2){const [m,e]=x.toExponential(n-1).split('e');return m.replace('-','−')+' × 10'+ec4sup(+e);}let s=x.toPrecision(n);if(s.includes('e'))s=String(Number(s));return s.replace('-','−');};
+const ec4s=(x,n=3)=>{if(!isFinite(x))return '?';if(x===0)return '0';x*=1+1e-12;const a=Math.abs(x);if(a>=1e4||a<1e-2){const [m,e]=x.toExponential(n-1).split('e');return m.replace('-','−')+' × 10'+ec4sup(+e);}let s=x.toPrecision(n);if(s.includes('e'))s=String(Number(s));return s.replace('-','−');};
 const ec4Cn=s=>C(s).split(' ').map(t=>/<su[bp]>/.test(t)?'<span style="white-space:nowrap">'+t+'</span>':t).join(' ');
 const ec4Eq=s=>{const [l,r]=String(s).split(/\s*->\s*/);return '<span style="display:inline-block">'+ec4Cn(l)+'&nbsp;→</span> <span style="display:inline-block">'+ec4Cn(r)+'</span>';};
 const ec4Ip=h=>'<p style="margin:.4em .5em">'+h+'</p>';
 const ec4Ic=s=>'<p style="margin:.5em .3em;text-align:center;font-size:min(1em,3.4vw)">'+ec4Eq(s)+'</p>';
+/* a value rounded to n significant digits (a tie rounds up), as it is shown in a step: the next step of a working uses the shown value, so a student can repeat each step */
+const ec4r=(x,n=4)=>+(x*(1+1e-12)).toPrecision(n);
 const ec4Fr=(a,b)=>{const g=ecGcd(a,b);return b/g===1?String(a/g):(a/g)+'/'+(b/g);};
 /* a table of buret readings. fin, ini: the final and the initial readings (mL). o.cap: a title, o.dp: the decimals (2), o.col: the final colours, o.vol: true adds the volume used,
    o.rot: one row for each trial (it fits a phone: question figures and worked examples use it) */
@@ -4245,7 +4247,9 @@ function ec4Titr(host,P,slot){
       alt:`A buret of ${p.tc} ${p.tt} held over an Erlenmeyer flask that holds ${p.sa} of ${p.sb}. The buret reads ${rg.toFixed(2)} mL. The solution in the flask is ${CW[s]}.`});
     R(0,rg.toFixed(2)+' mL');R(1,V.toFixed(2)+' mL');R(2,CW[s]);st.textContent=msg||MS(s,p);};
   const add=dk=>{const k=kOf(cur)+dk;if(k>mx(cur)){draw('The buret does not hold that much titrant. Refill and start again.');return;}setK(k);const d=k/100-veq(P[cur]);spot=d<0&&d>-1;draw();};
-  const W=p=>{const v=ve(p),nt=p.ct*v/1000,ns=nt*p.r,c=ns/(p.vs/1000);
+  /* the working: each amount is rounded to 4 significant digits, as shown, before the next step */
+  const calc=p=>{const v=ve(p),nt=ec4r(p.ct*v/1000),ns=ec4r(nt*p.r);return {v,nt,ns,c:ns/(p.vs/1000)};};
+  const W=p=>{const {v,nt,ns,c}=calc(p);
     return `The endpoint is the first pale pink that stays: final reading ${(p.i+v).toFixed(2)} mL − initial reading ${p.i.toFixed(2)} mL = ${v.toFixed(2)} mL. Net: ${p.eq}. `+
       `n(MnO₄⁻) = (${p.ct.toFixed(4)} mol/L)(${(v/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(${p.sp}) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(ns,4)} mol. `+
       `c = ${ec4s(ns,4)} mol ÷ ${(p.vs/1000).toFixed(5)} L = <b>${ec4s(c)} mol/L</b>. The exact volume at the equivalence point is ${veq(p).toFixed(2)} mL: the endpoint is at most one drop past it.`;};
@@ -4256,7 +4260,7 @@ function ec4Titr(host,P,slot){
     let m=okV&&okC?'Both are correct.':okV?(tq?'The volume is correct. Check the concentration: n = cV of the titrant, the mole ratio, then c = n/V of the sample.':'The volume is correct. Now calculate the concentration.'):'';
     if(!okV)m=(tv?'The volume is not correct. '+(isFinite(xv)&&Math.abs(xv-(e+p.i))<=.12?'This is the final buret reading: subtract the initial reading.':'Find the first pale pink that stays. Add one drop at a time near the endpoint.'):'Type the volume too.')+(tq?(okC?' The concentration is correct.':' The concentration is not correct.'):'');
     lv.textContent=m;wv.innerHTML=okV&&okC?`<p class="fb ok">${W(p)}</p>`:'';};
-  const show=()=>{const p=P[cur],v=ve(p);iv.value=v.toFixed(2);ic.value=ec4s(p.ct*v/1000*p.r/(p.vs/1000));plain();[iv,ic].forEach(x=>x.classList.add('ok'));saveA();setK(Math.round(v*100));spot=false;draw();
+  const show=()=>{const p=P[cur],{v,c}=calc(p);iv.value=v.toFixed(2);ic.value=ec4s(c);plain();[iv,ic].forEach(x=>x.classList.add('ok'));saveA();setK(Math.round(v*100));spot=false;draw();
     lv.textContent='This is the answer.';wv.innerHTML=`<p class="fb info">${W(p)}</p>`;};
   const clr=()=>{iv.value='';ic.value='';plain();saveA();setK(0);spot=false;draw();lv.textContent='';wv.innerHTML='';};
   $('[data-a=check]',qa).onclick=chk;$('[data-a=show]',qa).onclick=show;$('[data-a=clear]',qa).onclick=clr;
@@ -4314,35 +4318,36 @@ const ec4V=[
     tt:'KMnO₄(aq)',tc:'0.0150 mol/L',sa:'10.00 mL',sb:'Sn²⁺(aq)',ct:.015,vs:10,c:.0545,r:2.5,rt:'5/2',i:1.2,sp:'Sn²⁺',eq:ec4Net(1)},
   {n:'C: hydrogen peroxide',d:'The flask holds 10.00 mL of acidified H₂O₂(aq) of unknown concentration. The buret holds 0.0200 mol/L KMnO₄(aq). Oxygen gas forms as the hydrogen peroxide is oxidized. Find the endpoint, then calculate [H₂O₂(aq)].',
     tt:'KMnO₄(aq)',tc:'0.0200 mol/L',sa:'10.00 mL',sb:'H₂O₂(aq)',ct:.02,vs:10,c:.0866,r:2.5,rt:'5/2',i:.4,sp:'H₂O₂',eq:ec4Net(2),gas:true}];
-/* the practice questions of pp. 21-22 as step-by-step problems. The values are computed from the data; f keeps 4 significant digits in the steps, g gives the answer */
-const ec4P=(()=>{const f=x=>ec4s(x,4),g=x=>ec4s(x,3),S=(l,u,v,w,d,o)=>Object.assign({l,u,v,w,d:d==null?f(v):d},o||{}),
+/* the practice questions of pp. 21-22 as step-by-step problems. The values are computed from the data; f keeps 5 significant digits in the steps (each step uses the shown value of the
+   step before, ec4r), g gives the answer */
+const ec4P=(()=>{const f=x=>ec4s(x,5),g=x=>ec4s(x,3),S=(l,u,v,w,d,o)=>Object.assign({l,u,v,w,d:d==null?f(v):d},o||{}),
   rat=(a,b)=>`Mole ratio: mol of ${a} for 1 mol of ${b}`,net=i=>ec4Eq(ec4Pr[i].es),P=[];
-  {const fin=[17.9,34.3,16.5,33.0],ini=[1.1,17.9,0.0,16.5],v=fin.map((x,i)=>x-ini[i]),av=(v[1]+v[2]+v[3])/3,nt=8.08e-3*av/1000,ns=5*nt,c=ns/0.01*1000;
+  {const fin=[17.9,34.3,16.5,33.0],ini=[1.1,17.9,0.0,16.5],v=fin.map((x,i)=>x-ini[i]),av=(v[1]+v[2]+v[3])/3,avd=+(av*(1+1e-12)).toFixed(2),nt=ec4r(8.08e-3*avd/1000,5),ns=ec4r(5*nt,5),c=ns/0.01*1000;
     P.push({n:'1. Iron(II) with permanganate',q:'<b>Practice question 1.</b> The following evidence was obtained when 10.00 mL samples of an acidified iron(II) solution were titrated with an 8.08 mmol/L solution of potassium permanganate. Calculate the concentration of the reducing agent.'+
       ec4Tb(fin,ini,{dp:1,cap:'Volumes of '+C('KMnO4(aq)')+' added to 10.00 mL samples of acidified '+ec4Cn('Fe^2+(aq)')+' solution'}),
-      st:[S('Average volume of '+C('KMnO4(aq)')+' used','mL',av,'Volumes used: 16.8, 16.4, 16.5 and 16.5 mL. Trial 1 is 0.3 mL more than the others: it is the rough trial and is left out. Average of trials 2 to 4 = (16.4 + 16.5 + 16.5) ÷ 3 = 16.47 mL','16.47',{abs:.04}),
+      st:[S('Average volume of '+C('KMnO4(aq)')+' used','mL',av,'Volumes used: 16.8, 16.4, 16.5 and 16.5 mL. Trial 1 (16.8 mL) is more than 0.2 mL from the others: it is the rough trial and is left out. Average of trials 2 to 4 = (16.4 + 16.5 + 16.5) ÷ 3 = 16.47 mL','16.47',{abs:.04}),
         S(rat(C('Fe^2+'),C('MnO4^-')),'',5,'The SOA is '+C('MnO4^-(aq)')+' with '+C('H^+(aq)')+', and the SRA is '+C('Fe^2+(aq)')+'. Net: '+net(0)+'. There are 5 mol of '+C('Fe^2+')+' for 1 mol of '+C('MnO4^-'),'5',{abs:.001}),
-        S('Amount of '+C('MnO4^-')+', <i>n</i> = <i>cV</i>','mol',nt,`8.08 mmol/L = 8.08 × 10⁻³ mol/L. <i>n</i> = (8.08 × 10⁻³ mol/L)(${(av/1000).toFixed(5)} L) = ${f(nt)} mol`),
+        S('Amount of '+C('MnO4^-')+', <i>n</i> = <i>cV</i>','mol',nt,`8.08 mmol/L = 8.08 × 10⁻³ mol/L. <i>n</i> = (8.08 × 10⁻³ mol/L)(${(avd/1000).toFixed(5)} L) = ${f(nt)} mol`),
         S('Amount of '+C('Fe^2+'),'mol',ns,`<i>n</i>(Fe²⁺) = 5 × ${f(nt)} mol = ${f(ns)} mol`),
         S('Concentration of '+C('Fe^2+')+', <i>c</i> = <i>n</i>/<i>V</i>','mmol/L',c,`<i>c</i> = ${f(ns)} mol ÷ 0.01000 L = ${g(c/1000)} mol/L = ${g(c)} mmol/L`,g(c),{tol:.004})],
       a:`Answer: [Fe²⁺(aq)] = <b>${g(c)} mmol/L</b> (${g(c/1000)} mol/L). The average of all four trials would give ${g(8.08e-3*(v[0]+v[1]+v[2]+v[3])/4*5/0.01)} mmol/L: the rough trial must be left out.`});}
-  {const nt=8.08e-3*0.0131,ns=2.5*nt,c=ns/0.01*1000;
+  {const nt=ec4r(8.08e-3*0.0131,5),ns=ec4r(2.5*nt,5),c=ns/0.01*1000;
     P.push({n:'2. Hydrogen peroxide with permanganate',q:'<b>Practice question 2.</b> The same potassium permanganate solution from practice question 1 (8.08 mmol/L) was added to 10.00 mL samples of a dilute acidified solution of hydrogen peroxide. If an average of 13.1 mL of the titrant was required to completely oxidize the reducing agent, what is the concentration of the hydrogen peroxide?',
       st:[S(rat(C('H2O2'),C('MnO4^-')),'',2.5,'The SOA is '+C('MnO4^-(aq)')+' with '+C('H^+(aq)')+'. '+C('H2O2(aq)')+' is the SRA: it is oxidized to '+C('O2(g)')+'. Net: '+net(2)+'. There are 5 mol of '+C('H2O2')+' for 2 mol of '+C('MnO4^-')+': 5/2 = 2.5','5/2',{abs:.001}),
         S('Amount of '+C('MnO4^-')+', <i>n</i> = <i>cV</i>','mol',nt,`<i>n</i> = (8.08 × 10⁻³ mol/L)(0.0131 L) = ${f(nt)} mol`),
         S('Amount of '+C('H2O2'),'mol',ns,`<i>n</i>(H₂O₂) = 5/2 × ${f(nt)} mol = ${f(ns)} mol`),
         S('Concentration of '+C('H2O2')+', <i>c</i> = <i>n</i>/<i>V</i>','mmol/L',c,`<i>c</i> = ${f(ns)} mol ÷ 0.01000 L = ${g(c/1000)} mol/L = ${g(c)} mmol/L`,g(c),{tol:.01})],
       a:`Answer: [H₂O₂(aq)] = <b>${g(c)} mmol/L</b> (${g(c/1000)} mol/L).`});}
-  {const fin=[18.5,35.4,18.3,35.1],ini=[1.1,18.5,1.6,18.3],v=fin.map((x,i)=>x-ini[i]),av=(v[1]+v[2]+v[3])/3,ns=0.0500*0.01,nt=ns*2/5,c=nt/(av/1000)*1000;
+  {const fin=[18.5,35.4,18.3,35.1],ini=[1.1,18.5,1.6,18.3],v=fin.map((x,i)=>x-ini[i]),av=+((v[1]+v[2]+v[3])/3*(1+1e-12)).toFixed(2),ns=ec4r(0.0500*0.01,5),nt=ec4r(ns*2/5,5),c=nt/(av/1000)*1000;
     P.push({n:'3. Standardizing permanganate with tin(II)',q:'<b>Practice question 3.</b> Freshly prepared aqueous potassium permanganate can be standardized by titrating it against acidified aqueous tin(II) chloride. The following data was obtained when 10.00 mL samples of acidified tin(II) solution were reacted with fresh '+C('KMnO4(aq)')+'. Calculate the concentration of the oxidizing agent.'+
       ec4Tb(fin,ini,{dp:1,cap:'Volumes of '+C('KMnO4(aq)')+' added to 10.00 mL samples of acidified 0.0500 mol/L '+C('SnCl2(aq)')}),
       st:[S('Average volume of '+C('KMnO4(aq)')+' used','mL',av,'Volumes used: 17.4, 16.9, 16.7 and 16.8 mL. Trial 1 (17.4 mL) is more than 0.2 mL from the others: it is the rough trial and is left out. Average of trials 2 to 4 = (16.9 + 16.7 + 16.8) ÷ 3 = 16.80 mL','16.80',{abs:.04}),
         S(rat(C('MnO4^-'),C('Sn^2+')),'',.4,'The SOA is '+C('MnO4^-(aq)')+' with '+C('H^+(aq)')+', and the SRA is '+C('Sn^2+(aq)')+'. Net: '+net(1)+'. There are 2 mol of '+C('MnO4^-')+' for 5 mol of '+C('Sn^2+')+': 2/5 = 0.4','2/5',{abs:.001}),
-        S('Amount of '+C('Sn^2+')+' (the primary standard), <i>n</i> = <i>cV</i>','mol',ns,'<i>n</i> = (0.0500 mol/L)(0.01000 L) = 5.000 × 10⁻⁴ mol'),
-        S('Amount of '+C('MnO4^-'),'mol',nt,`<i>n</i>(MnO₄⁻) = 2/5 × 5.000 × 10⁻⁴ mol = ${f(nt)} mol`),
+        S('Amount of '+C('Sn^2+')+' (the primary standard), <i>n</i> = <i>cV</i>','mol',ns,`<i>n</i> = (0.0500 mol/L)(0.01000 L) = ${f(ns)} mol`),
+        S('Amount of '+C('MnO4^-'),'mol',nt,`<i>n</i>(MnO₄⁻) = 2/5 × ${f(ns)} mol = ${f(nt)} mol`),
         S('Concentration of '+C('MnO4^-')+', <i>c</i> = <i>n</i>/<i>V</i>','mmol/L',c,`<i>c</i> = ${f(nt)} mol ÷ ${(av/1000).toFixed(5)} L = ${g(c/1000)} mol/L = ${g(c)} mmol/L`,g(c),{tol:.004})],
       a:`Answer: [MnO₄⁻(aq)] = <b>${g(c)} mmol/L</b> (${g(c/1000)} mol/L). The permanganate is now a standard solution.`});}
-  {const nt=0.0955*0.0124,ns=3*nt,c=ns/0.01;
+  {const nt=ec4r(0.0955*0.0124,5),ns=ec4r(3*nt,5),c=ns/0.01;
     P.push({n:'4. Tin(II) with dichromate',q:'<b>Practice question 4.</b> A redox titration was completed by titrating 10.0 mL of aqueous tin(II) nitrate with acidified 0.0955 mol/L potassium dichromate solution. If, on average, 12.4 mL of potassium dichromate solution was required for complete reaction, what is the molar concentration of the tin(II) nitrate solution?',
       st:[S(rat(C('Sn^2+'),C('Cr2O7^2-')),'',3,'The SOA is '+C('Cr2O7^2-(aq)')+' with '+C('H^+(aq)')+' (+1.23 V). '+C('NO3^-(aq)')+' with '+C('H^+(aq)')+' is also an oxidizing agent, but a weaker one (+0.80 V). The SRA is '+C('Sn^2+(aq)')+' (+0.15 V). Net: '+net(4)+'. There are 3 mol of '+C('Sn^2+')+' for 1 mol of '+C('Cr2O7^2-'),'3',{abs:.001}),
         S('Amount of '+C('Cr2O7^2-')+', <i>n</i> = <i>cV</i>','mol',nt,`<i>n</i> = (0.0955 mol/L)(0.0124 L) = ${f(nt)} mol`),
@@ -4372,7 +4377,7 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
     <li>The <span class="key">sample</span> is a measured volume of the solution of unknown concentration, in an Erlenmeyer flask.</li>
     <li>The <span class="key">endpoint</span> is the point where a colour change shows that the reaction is complete.</li>
     <li>Unlike acid-base titrations, a redox titration cannot use an acid-base indicator to show when it is complete. A visible colour change is often the easiest method.</li>
-    <li>The titrant is an oxidizing agent that changes colour as it is reduced: acidified permanganate, ${ec4Cn('MnO4^-(aq)')}, or acidified dichromate, ${ec4Cn('Cr2O7^2-(aq)')}.</li></ul>`,'w7');
+    <li>Usually the titrant is an oxidizing agent that changes colour as it is reduced: acidified permanganate, ${ec4Cn('MnO4^-(aq)')}, or acidified dichromate, ${ec4Cn('Cr2O7^2-(aq)')}.</li></ul>`,'w7');
   card(g,'Titrants that show their own endpoint',CF(ec4Col(),'Both are strong oxidizing agents in an acidic solution, and both change colour when they are reduced. The colours of the ions are in the data booklet.','ec4-col')+
     `<table><tr><th>Half-reaction (data booklet)</th><th><i>E</i>°</th></tr><tr><td>${ec4Eq('MnO4^-(aq) + 8H^+(aq) + 5e^- -> Mn^2+(aq) + 4H2O(l)')}</td><td style="white-space:nowrap">+1.51 V</td></tr><tr><td>${ec4Eq('Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)')}</td><td style="white-space:nowrap">+1.23 V</td></tr></table>
     <p class="note">Permanganate is purple (pink when it is dilute) and becomes almost colourless. Dichromate is orange and becomes green. Both half-reactions need ${ec4Cn('H^+(aq)')}: the titration is done in an acidic solution.</p>`,'w5');
@@ -4400,17 +4405,17 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
       ecTableH(R,{hl:ents,mark:{soa:R.indexOf(pr.rr),sra:R.indexOf(pr.or)},rows:[R.indexOf(pr.rr),R.indexOf(pr.or)]})+
       `<p><b>2. Write the half-reactions and balance the electrons gained and lost.</b><br>Reduction: ${ec4Eq('Cr2O7^2-(aq) + 14H^+(aq) + 6e^- -> 2Cr^3+(aq) + 7H2O(l)')}<br>Oxidation: ${ec4Eq('3Sn^2+(aq) -> 3Sn^4+(aq) + 6e^-')} (multiplied by 3: 6 electrons lost, 6 gained)</p>
       <p><b>3. Write the net redox equation, add the given information, and solve with stoichiometry.</b></p>
-      <table style="width:auto;margin:.3em 0"><tr><th style="${th}"></th><th style="${td}">${ec4Cn('Cr2O7^2-(aq)')}</th><th style="${td}">${ec4Cn('Sn^2+(aq)')}</th></tr><tr><th scope="row" style="${th}">Coefficient</th><td style="${td}">1</td><td style="${td}">3</td></tr><tr><th scope="row" style="${th}"><i>V</i></th><td style="${td}">12.1 mL</td><td style="${td}">25.0 mL</td></tr><tr><th scope="row" style="${th}"><i>c</i></th><td style="${td}">?</td><td style="${td}">0.100 mol/L</td></tr><tr><th scope="row" style="${th}"><i>n</i></th><td style="${td}">8.33 × 10<sup>−4</sup> mol</td><td style="${td}">2.50 × 10<sup>−3</sup> mol</td></tr></table>
+      <table style="width:auto;margin:.3em 0"><tr><th style="${th}"></th><th style="${td}">${ec4Cn('Cr2O7^2-(aq)')}</th><th style="${td}">${ec4Cn('Sn^2+(aq)')}</th></tr><tr><th scope="row" style="${th}">Coefficient</th><td style="${td}">1</td><td style="${td}">3</td></tr><tr><th scope="row" style="${th}"><i>V</i></th><td style="${td}">12.1 mL</td><td style="${td}">25.0 mL</td></tr><tr><th scope="row" style="${th}"><i>c</i></th><td style="${td}">?</td><td style="${td}">0.100 mol/L</td></tr><tr><th scope="row" style="${th}"><i>n</i></th><td style="${td}">8.333 × 10<sup>−4</sup> mol</td><td style="${td}">2.50 × 10<sup>−3</sup> mol</td></tr></table>
       <p>Net: ${ec4Eq(pr.netS)}</p>
-      <p><i>n</i>(${ec4Cn('Sn^2+')}) = <i>cV</i> = (0.100 mol/L)(0.0250 L) = 2.50 × 10<sup>−3</sup> mol<br><i>n</i>(${ec4Cn('Cr2O7^2-')}) = 2.50 × 10<sup>−3</sup> mol × (1 mol ${ec4Cn('Cr2O7^2-')} ÷ 3 mol ${ec4Cn('Sn^2+')}) = 8.33 × 10<sup>−4</sup> mol<br>
-      <i>c</i>(${ec4Cn('Cr2O7^2-')}) = <i>n</i>/<i>V</i> = 8.33 × 10<sup>−4</sup> mol ÷ 0.0121 L = <b>0.0689 mol/L</b> (68.9 mmol/L)</p>`)));
+      <p><i>n</i>(${ec4Cn('Sn^2+')}) = <i>cV</i> = (0.100 mol/L)(0.0250 L) = 2.50 × 10<sup>−3</sup> mol<br><i>n</i>(${ec4Cn('Cr2O7^2-')}) = 2.50 × 10<sup>−3</sup> mol × (1 mol ${ec4Cn('Cr2O7^2-')} ÷ 3 mol ${ec4Cn('Sn^2+')}) = 8.333 × 10<sup>−4</sup> mol<br>
+      <i>c</i>(${ec4Cn('Cr2O7^2-')}) = <i>n</i>/<i>V</i> = 8.333 × 10<sup>−4</sup> mol ÷ 0.0121 L = <b>0.0689 mol/L</b> (68.9 mmol/L)</p>`)));
   card(g,'Buret readings from several trials',`<ul><li>Read the buret at the bottom of the meniscus. Record the initial and the final reading of each trial.</li><li>Volume used = final reading − initial reading.</li>
     <li>The first trial is often a quick rough trial that finds the approximate volume.</li><li>Average only the trials that agree within 0.2 mL. Leave out a trial that went past the endpoint: its colour is dark pink or purple instead of pale pink.</li></ul>`+
     ex('Example 2. A student titrates 20.00 mL samples of acidified tin(II) chloride with 0.0250 mol/L '+C('KMnO4(aq)')+'. Use the data to find the concentration of the tin(II) ions.',
       ec4Tb([19.20,36.95,18.70,36.50],[0.50,19.20,0.85,18.70],{col:['purple','pale pink','pale pink','pale pink'],vol:true,rot:true})+
       `<p>Trial 1 is a rough trial: it went past the endpoint (purple) and it is about 0.9 mL more than the others. Trials 2, 3 and 4 agree within 0.10 mL. Average = (17.75 + 17.85 + 17.80) ÷ 3 = 17.80 mL.</p>
       <p>Net: ${ec4Eq('2MnO4^-(aq) + 16H^+(aq) + 5Sn^2+(aq) -> 2Mn^2+(aq) + 8H2O(l) + 5Sn^4+(aq)')}</p>
-      <p><i>n</i>(${ec4Cn('MnO4^-')}) = (0.0250 mol/L)(0.01780 L) = 4.450 × 10<sup>−4</sup> mol<br><i>n</i>(${ec4Cn('Sn^2+')}) = 5/2 × 4.450 × 10<sup>−4</sup> mol = 1.113 × 10<sup>−3</sup> mol<br><i>c</i>(${ec4Cn('Sn^2+')}) = 1.113 × 10<sup>−3</sup> mol ÷ 0.02000 L = <b>0.0556 mol/L</b></p>`),'w7');
+      <p><i>n</i>(${ec4Cn('MnO4^-')}) = (0.0250 mol/L)(0.01780 L) = 4.450 × 10<sup>−4</sup> mol<br><i>n</i>(${ec4Cn('Sn^2+')}) = 5/2 × 4.450 × 10<sup>−4</sup> mol = 1.1125 × 10<sup>−3</sup> mol<br><i>c</i>(${ec4Cn('Sn^2+')}) = 1.1125 × 10<sup>−3</sup> mol ÷ 0.02000 L = <b>0.0556 mol/L</b></p>`),'w7');
   card(g,'Analysis of an ore',`<p class="hint">Is there enough of a metal in an ore to justify a mine? A titration gives the amount of the metal ion, then <i>m</i> = <i>nM</i> gives its mass.</p>`+
     ex('Example 3. A 0.875 g sample of iron ore is dissolved in acid, and all of the iron is changed to '+ec4Cn('Fe^2+(aq)')+'. The solution needs 21.40 mL of 0.0200 mol/L acidified '+C('K2Cr2O7(aq)')+' to reach the endpoint. Calculate the percent by mass of iron in the ore.',
       `<p>The SOA is ${ec4Cn('Cr2O7^2-(aq)')} with ${ec4Cn('H^+(aq)')} (+1.23 V), and the SRA is ${ec4Cn('Fe^2+(aq)')} (+0.77 V).</p><p>Net: ${ec4Eq(ec4Pr[3].es)}</p>
@@ -4425,12 +4430,12 @@ ECL[4]={t:EC_T[4],h:'Redox titrations',d:'A redox titration finds an unknown con
     ['Finding the exact concentration of a titrant with a primary standard','standardization'],['A lasting colour change shows that the reaction is complete','endpoint'],['The reactants have reacted in the exact mole ratio of the net equation','equivalence point'],
     ['A quick first trial that finds the approximate volume','rough trial']],'Select the term for each description.',0);
   const nq=card(g,'Diploma-style question: the order of the steps','');
-  nrCode(nq,{q:'<p><b>Steps of a redox titration calculation</b></p><ol><li>Calculate the concentration of the sample, <i>c</i> = <i>n</i>/<i>V</i>.</li><li>Calculate the amount of the titrant, <i>n</i> = <i>cV</i>.</li><li>Identify the SOA and the SRA, and write the balanced net equation.</li><li>Use the mole ratio of the net equation to find the amount of the sample.</li></ol><p>The steps above are done in the order _____, _____, _____ and _____.</p><p class="hint">Record all four digits of your answer.</p>',
+  nrCode(nq,{q:'<p><b>Steps of a redox titration calculation</b></p><ol><li>Calculate the concentration of the sample, <i>c</i> = <i>n</i>/<i>V</i>.</li><li>Calculate the amount of the titrant, <i>n</i> = <i>cV</i>.</li><li>Identify the SOA and the SRA, and write the balanced net equation.</li><li>Use the mole ratio of the net equation to find the amount of the sample.</li></ol><p>In the method of this lesson, the steps above are done in the order _____, _____, _____ and _____.</p><p class="hint">Record all four digits of your answer.</p>',
     a:'3241',w:'First the net equation from the SOA and the SRA (3). Then the amount of the titrant, n = cV (2). The mole ratio gives the amount of the sample (4). Last, its concentration, c = n/V (1). Record 3241.'},0);
 },qz:[
   {q:'Calculate the amount of permanganate ions in 18.25 mL of 0.0150 mol/L '+C('KMnO4(aq)')+'.',n:.0150*.01825,u:'mol',tol:.01,w:'Change the volume to litres: 18.25 mL = 0.01825 L. Each formula unit of KMnO₄ gives one MnO₄⁻ ion. n = cV = (0.0150 mol/L)(0.01825 L) = 2.74 × 10⁻⁴ mol.'},
   {q:'A 25.00 mL sample of acidified iron(II) sulfate solution is titrated with 0.0180 mol/L '+C('KMnO4(aq)')+'. The endpoint is reached after 19.65 mL. Calculate the concentration of '+C('Fe^2+(aq)')+'.',n:.0180*.01965*5/.025,u:'mol/L',tol:.01,
-    w:'Net: MnO₄⁻(aq) + 8H⁺(aq) + 5Fe²⁺(aq) → Mn²⁺(aq) + 4H₂O(l) + 5Fe³⁺(aq). n(MnO₄⁻) = (0.0180 mol/L)(0.01965 L) = 3.537 × 10⁻⁴ mol. n(Fe²⁺) = 5 × 3.537 × 10⁻⁴ mol = 1.769 × 10⁻³ mol. c = 1.769 × 10⁻³ mol ÷ 0.02500 L = 0.0707 mol/L.'},
+    w:'Net: MnO₄⁻(aq) + 8H⁺(aq) + 5Fe²⁺(aq) → Mn²⁺(aq) + 4H₂O(l) + 5Fe³⁺(aq). n(MnO₄⁻) = (0.0180 mol/L)(0.01965 L) = 3.537 × 10⁻⁴ mol. n(Fe²⁺) = 5 × 3.537 × 10⁻⁴ mol = 1.7685 × 10⁻³ mol. c = 1.7685 × 10⁻³ mol ÷ 0.02500 L = 0.0707 mol/L.'},
   {q:'A 20.00 mL sample of acidified '+C('Fe^2+(aq)')+' needs 15.20 mL of 0.0200 mol/L '+C('K2Cr2O7(aq)')+' to reach the endpoint. Calculate the concentration of '+C('Fe^2+(aq)')+'.',n:.0200*.0152*6/.02,u:'mol/L',tol:.01,
     w:'Net: Cr₂O₇²⁻(aq) + 14H⁺(aq) + 6Fe²⁺(aq) → 2Cr³⁺(aq) + 7H₂O(l) + 6Fe³⁺(aq). n(Cr₂O₇²⁻) = (0.0200 mol/L)(0.01520 L) = 3.040 × 10⁻⁴ mol. n(Fe²⁺) = 6 × 3.040 × 10⁻⁴ mol = 1.824 × 10⁻³ mol. c = 1.824 × 10⁻³ mol ÷ 0.02000 L = 0.0912 mol/L.'},
   {q:'What volume of 0.0100 mol/L '+C('KMnO4(aq)')+' reacts completely with 25.0 mL of acidified 0.0400 mol/L '+C('SnCl2(aq)')+'?',n:40,u:'mL',tol:.01,
@@ -4464,9 +4469,9 @@ EC_DIP[4]=[
     o:['1.2 × 10<sup>−2</sup> mol/L','1.5 × 10<sup>−2</sup> mol/L','3.0 × 10<sup>−2</sup> mol/L','6.0 × 10<sup>−2</sup> mol/L'],a:2,
     w:'Here the H₂O₂(aq) is in the buret and the permanganate is in the flask. MnO₄⁻(aq) with H⁺(aq) is the SOA, and H₂O₂(aq) is the SRA: it is oxidized to O₂(g). Net: 2MnO₄⁻(aq) + 6H⁺(aq) + 5H₂O₂(aq) → 2Mn²⁺(aq) + 8H₂O(l) + 5O₂(g). n(MnO₄⁻) = (8.0 × 10⁻³ mol/L)(0.01700 L) = 1.36 × 10⁻⁴ mol. n(H₂O₂) = 5/2 × 1.36 × 10⁻⁴ mol = 3.40 × 10⁻⁴ mol. c(H₂O₂) = 3.40 × 10⁻⁴ mol ÷ 0.01133 L = 3.0 × 10⁻² mol/L. A 1 : 1 ratio gives 1.2 × 10⁻² mol/L, and a 5 : 1 ratio gives 6.0 × 10⁻² mol/L.'},
   {q:'Use the information below. According to the student’s data, the concentration of '+C('Fe^2+(aq)')+' is',fig:ec4F29,o:['0.206 mol/L','0.218 mol/L','0.213 mol/L','0.223 mol/L'],a:0,
-    w:'The endpoint is the first pink colour that lasts. Trials 1 and 2 are purple: they went past the endpoint, thus they are left out. Volumes of trials 3, 4 and 5: 16.35, 16.25 and 16.30 mL, an average of 16.30 mL. Net: MnO₄⁻(aq) + 8H⁺(aq) + 5Fe²⁺(aq) → Mn²⁺(aq) + 4H₂O(l) + 5Fe³⁺(aq). n(MnO₄⁻) = (6.31 × 10⁻² mol/L)(0.01630 L) = 1.029 × 10⁻³ mol. n(Fe²⁺) = 5 × 1.029 × 10⁻³ mol = 5.143 × 10⁻³ mol. c = 5.143 × 10⁻³ mol ÷ 0.0250 L = 0.206 mol/L. The average of all five trials gives 0.213 mol/L, trial 1 alone gives 0.218 mol/L, and the two purple trials give 0.223 mol/L.'},
+    w:'The endpoint is the first pink colour that lasts. Trials 1 and 2 are purple: they went past the endpoint, thus they are left out. Volumes of trials 3, 4 and 5: 16.35, 16.25 and 16.30 mL, an average of 16.30 mL. Net: MnO₄⁻(aq) + 8H⁺(aq) + 5Fe²⁺(aq) → Mn²⁺(aq) + 4H₂O(l) + 5Fe³⁺(aq). n(MnO₄⁻) = (6.31 × 10⁻² mol/L)(0.01630 L) = 1.029 × 10⁻³ mol. n(Fe²⁺) = 5 × 1.029 × 10⁻³ mol = 5.145 × 10⁻³ mol. c = 5.145 × 10⁻³ mol ÷ 0.0250 L = 0.206 mol/L. The average of all five trials gives 0.213 mol/L, trial 1 alone gives 0.218 mol/L, and the two purple trials give 0.223 mol/L.'},
   {q:'<b>Numerical response.</b> Use the information below. The ['+C('Sn^2+(aq)')+'] of the sample, expressed in scientific notation, is __________ × 10<sup>−1</sup> mol/L.',fig:ec4F30,n:3.29,u:'× 10⁻¹ mol/L',tol:.01,
-    w:'Ce⁴⁺(aq) is the oxidizing agent (+1.61 V), and Sn²⁺(aq) is the reducing agent: Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻. Net: 2Ce⁴⁺(aq) + Sn²⁺(aq) → 2Ce³⁺(aq) + Sn⁴⁺(aq). V = 43.5 mL − 12.6 mL = 30.9 mL. n(Ce⁴⁺) = (0.532 mol/L)(0.0309 L) = 1.644 × 10⁻² mol. n(Sn²⁺) = ½ × 1.644 × 10⁻² mol = 8.219 × 10⁻³ mol. [Sn²⁺] = 8.219 × 10⁻³ mol ÷ 0.0250 L = 0.329 mol/L = 3.29 × 10⁻¹ mol/L, thus record 3.29.'},
+    w:'Ce⁴⁺(aq) is the oxidizing agent (+1.61 V), and Sn²⁺(aq) is the reducing agent: Sn²⁺(aq) → Sn⁴⁺(aq) + 2e⁻. Net: 2Ce⁴⁺(aq) + Sn²⁺(aq) → 2Ce³⁺(aq) + Sn⁴⁺(aq). V = 43.5 mL − 12.6 mL = 30.9 mL. n(Ce⁴⁺) = (0.532 mol/L)(0.0309 L) = 1.644 × 10⁻² mol. n(Sn²⁺) = ½ × 1.644 × 10⁻² mol = 8.220 × 10⁻³ mol. [Sn²⁺] = 8.220 × 10⁻³ mol ÷ 0.0250 L = 0.329 mol/L = 3.29 × 10⁻¹ mol/L, thus record 3.29.'},
   {q:'Use the information below. If 15.0 mL of oxalic acid solution is completely reacted with 20.0 mL of 0.0015 mol/L acidified permanganate solution, then the oxalic acid concentration will be',fig:ec4F31,
     o:['8.0 × 10<sup>−4</sup> mol/L','2.4 × 10<sup>−3</sup> mol/L','5.0 × 10<sup>−3</sup> mol/L','6.0 × 10<sup>−3</sup> mol/L'],a:2,
     w:'n(MnO₄⁻) = (0.0015 mol/L)(0.0200 L) = 3.0 × 10⁻⁵ mol. The equation gives 5 mol of HOOCCOOH for 2 mol of MnO₄⁻: n(HOOCCOOH) = 5/2 × 3.0 × 10⁻⁵ mol = 7.5 × 10⁻⁵ mol. c = 7.5 × 10⁻⁵ mol ÷ 0.0150 L = 5.0 × 10⁻³ mol/L. The inverted ratio, 2/5, gives 8.0 × 10⁻⁴ mol/L.'},
@@ -4502,11 +4507,11 @@ EC_RQ[4]=[
     w:'Orange Cr₂O₇²⁻(aq) is reduced to green Cr³⁺(aq): Cr₂O₇²⁻ + 14H⁺ + 6e⁻ → 2Cr³⁺ + 7H₂O. The Sn⁴⁺(aq) ions are colourless, and no manganese is present.'},
   {q:'Use the information below. Calculate the concentration of the tin(II) ions.',fig:ec4Ip('A chemist titrates 25.00 mL samples of acidified '+C('SnCl2(aq)')+' with 0.0200 mol/L '+C('K2Cr2O7(aq)')+'.')+ec4Tb([16.15,29.35,15.75,30.25],[0.35,14.95,1.20,15.75],{rot:true}),
     n:.02*((14.40+14.55+14.50)/3)/1000*3/.025,u:'mol/L',tol:.01,
-    w:'Volumes: 15.80, 14.40, 14.55 and 14.50 mL. Trial 1 is the rough trial: it is more than 0.2 mL from the others, thus it is left out. Average = (14.40 + 14.55 + 14.50) ÷ 3 = 14.48 mL. n(Cr₂O₇²⁻) = (0.0200 mol/L)(0.01448 L) = 2.897 × 10⁻⁴ mol. Cr₂O₇²⁻ + 14H⁺ + 3Sn²⁺ → 2Cr³⁺ + 7H₂O + 3Sn⁴⁺, thus n(Sn²⁺) = 3 × 2.897 × 10⁻⁴ mol = 8.690 × 10⁻⁴ mol. c = 8.690 × 10⁻⁴ mol ÷ 0.02500 L = 0.0348 mol/L.'}];
+    w:'Volumes: 15.80, 14.40, 14.55 and 14.50 mL. Trial 1 is the rough trial: it is more than 0.2 mL from the others, thus it is left out. Average = (14.40 + 14.55 + 14.50) ÷ 3 = 14.48 mL. n(Cr₂O₇²⁻) = (0.0200 mol/L)(0.01448 L) = 2.896 × 10⁻⁴ mol. Cr₂O₇²⁻ + 14H⁺ + 3Sn²⁺ → 2Cr³⁺ + 7H₂O + 3Sn⁴⁺, thus n(Sn²⁺) = 3 × 2.896 × 10⁻⁴ mol = 8.688 × 10⁻⁴ mol. c = 8.688 × 10⁻⁴ mol ÷ 0.02500 L = 0.0348 mol/L.'}];
 
 EC_CH[4]={q:'A '+C('KMnO4(aq)')+' solution is standardized with sodium oxalate, a primary standard. A 0.2010 g sample of '+C('Na2C2O4(s)')+' is dissolved in acid and needs 22.45 mL of the permanganate solution: '+C('2MnO4^-(aq) + 5C2O4^2-(aq) + 16H^+(aq) -> 2Mn^2+(aq) + 10CO2(g) + 8H2O(l)')+'. The same permanganate solution is then used to titrate 20.00 mL samples of an acidified '+C('Fe^2+(aq)')+' solution, and the average volume is 16.80 mL. Calculate the concentration of the '+C('Fe^2+(aq)')+'.',
   n:.201/134*.4/.02245*.0168*5/.02,u:'mol/L',tol:.01,
-  w:'M(Na₂C₂O₄) = 134.00 g/mol. n(C₂O₄²⁻) = 0.2010 g ÷ 134.00 g/mol = 1.500 × 10⁻³ mol. n(MnO₄⁻) = 2/5 × 1.500 × 10⁻³ mol = 6.000 × 10⁻⁴ mol. c(MnO₄⁻) = 6.000 × 10⁻⁴ mol ÷ 0.02245 L = 2.673 × 10⁻² mol/L. In the second titration, n(MnO₄⁻) = (2.673 × 10⁻² mol/L)(0.01680 L) = 4.490 × 10⁻⁴ mol. MnO₄⁻ + 8H⁺ + 5Fe²⁺ → Mn²⁺ + 4H₂O + 5Fe³⁺, thus n(Fe²⁺) = 5 × 4.490 × 10⁻⁴ mol = 2.245 × 10⁻³ mol. c(Fe²⁺) = 2.245 × 10⁻³ mol ÷ 0.02000 L = 0.112 mol/L.'};
+  w:'M(Na₂C₂O₄) = 134.00 g/mol. n(C₂O₄²⁻) = 0.2010 g ÷ 134.00 g/mol = 1.500 × 10⁻³ mol. n(MnO₄⁻) = 2/5 × 1.500 × 10⁻³ mol = 6.000 × 10⁻⁴ mol. c(MnO₄⁻) = 6.000 × 10⁻⁴ mol ÷ 0.02245 L = 2.673 × 10⁻² mol/L. In the second titration, n(MnO₄⁻) = (2.673 × 10⁻² mol/L)(0.01680 L) = 4.491 × 10⁻⁴ mol. MnO₄⁻ + 8H⁺ + 5Fe²⁺ → Mn²⁺ + 4H₂O + 5Fe³⁺, thus n(Fe²⁺) = 5 × 4.491 × 10⁻⁴ mol = 2.2455 × 10⁻³ mol. c(Fe²⁺) = 2.2455 × 10⁻³ mol ÷ 0.02000 L = 0.112 mol/L.'};
 
 EC_WRQ.push({q:'A student uses acidified 0.0250 mol/L '+C('SnCl2(aq)')+' as a primary standard to find the concentration of a '+C('KMnO4(aq)')+' solution. Four 10.00 mL samples of the tin(II) solution are titrated with the permanganate solution. The buret readings (initial to final) are:<br>Trial 1: 0.20 mL to 16.10 mL<br>Trial 2: 16.10 mL to 31.55 mL<br>Trial 3: 0.65 mL to 16.15 mL<br>Trial 4: 16.15 mL to 31.65 mL<br>'+
   '(a) List the entities present in the flask during the titration. Identify the SOA and the SRA, and write the balanced net ionic equation.<br>(b) Describe how the student knows that the endpoint is reached, and explain why the tin(II) solution is acidified.<br>(c) Calculate the concentration of the '+C('KMnO4(aq)')+'. Show which trials you use, and why.',
@@ -4518,22 +4523,23 @@ EC_WRQ.push({q:'A student uses acidified 0.0250 mol/L '+C('SnCl2(aq)')+' as a pr
     '<p>(c) Volumes: 15.90, 15.45, 15.50 and 15.50 mL. Trial 1 is the rough trial: it is more than 0.2 mL from the others. Average of trials 2 to 4 = 15.48 mL.<br><i>n</i>(Sn²⁺) = (0.0250 mol/L)(0.01000 L) = 2.50 × 10<sup>−4</sup> mol<br><i>n</i>(MnO₄⁻) = 2/5 × 2.50 × 10<sup>−4</sup> mol = 1.00 × 10<sup>−4</sup> mol<br><i>c</i>(MnO₄⁻) = 1.00 × 10<sup>−4</sup> mol ÷ 0.01548 L = <b>6.46 × 10<sup>−3</sup> mol/L</b></p>'});
 
 /* generators: the concentration of a sample, the concentration of a titrant (standardization), the volume of titrant needed, a concentration from buret readings,
-   and the percent of iron in an ore. The data come from ec4Pr (EC_E0) and EC_M */
+   and the percent of iron in an ore. The data come from ec4Pr (EC_E0) and EC_M. Each amount is rounded as it is shown (ec4r) before the next step, and n is the
+   result of that working, so the shown steps can be repeated with a calculator */
 EC_GEN[4]=[
-  ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],V=RN(800,3000,5)/100,nt=ct*V/1000,ns=nt*p.r,c=ns/(vs/1000);
+  ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],V=RN(800,3000,5)/100,nt=ec4r(ct*V/1000),ns=ec4r(nt*p.r),c=ns/(vs/1000);
     return {q:`A ${vs.toFixed(2)} mL sample of ${p.sn} is titrated with ${ct.toFixed(4)} mol/L ${p.tf}. The endpoint is reached after ${V.toFixed(2)} mL of the titrant. Calculate the concentration of ${p.ru}(aq) in the sample.`,n:c,u:'mol/L',tol:.01,
       w:`The SOA is ${p.ou}(aq) with H⁺(aq), and the SRA is ${p.ru}(aq). Net: ${p.eq}. n(${p.ou}) = (${ct.toFixed(4)} mol/L)(${(V/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(${p.ru}) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(ns,4)} mol. c = ${ec4s(ns,4)} mol ÷ ${(vs/1000).toFixed(5)} L = ${ec4s(c)} mol/L.`};},
-  ()=>{const p=ec4Pr[[1,4][RN(0,1)]],cs=RN(200,1000,5)/1e4,vs=[10,20,25][RN(0,2)],V=RN(800,3000,5)/100,ns=cs*vs/1000,nt=ns/p.r,c=nt/(V/1000);
+  ()=>{const p=ec4Pr[[1,4][RN(0,1)]],cs=RN(200,1000,5)/1e4,vs=[10,20,25][RN(0,2)],V=RN(800,3000,5)/100,ns=ec4r(cs*vs/1000),nt=ec4r(ns/p.r),c=nt/(V/1000);
     return {q:`A ${p.tf} solution is standardized with acidified ${cs.toFixed(4)} mol/L SnCl₂(aq), a primary standard. A ${vs.toFixed(2)} mL sample of the tin(II) solution needs ${V.toFixed(2)} mL of the ${p.tf} to reach the endpoint. Calculate the concentration of ${p.ou}(aq) in the titrant.`,n:c,u:'mol/L',tol:.01,
       w:`Net: ${p.eq}. n(Sn²⁺) = (${cs.toFixed(4)} mol/L)(${(vs/1000).toFixed(5)} L) = ${ec4s(ns,4)} mol. n(${p.ou}) = ${p.tr} × ${ec4s(ns,4)} mol = ${ec4s(nt,4)} mol. c = ${ec4s(nt,4)} mol ÷ ${(V/1000).toFixed(5)} L = ${ec4s(c)} mol/L.`};},
-  ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],Vt=RN(1000,4000,5)/100,ss=(ct*Vt/1000*p.r/(vs/1000)).toPrecision(3),cs=+ss,ns=cs*vs/1000,nt=ns/p.r,V=nt/ct*1000;
+  ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],Vt=RN(1000,4000,5)/100,ss=(ct*Vt/1000*p.r/(vs/1000)).toPrecision(3),cs=+ss,ns=ec4r(cs*vs/1000),nt=ec4r(ns/p.r),V=ec4r(nt/ct)*1000;
     return {q:`What volume of ${ct.toFixed(4)} mol/L ${p.tf} reacts completely with a ${vs.toFixed(2)} mL sample of ${ss} mol/L ${p.sn}?`,n:V,u:'mL',tol:.01,
       w:`Net: ${p.eq}. n(${p.ru}) = (${ss} mol/L)(${(vs/1000).toFixed(5)} L) = ${ec4s(ns,4)} mol. n(${p.ou}) = ${p.tr} × ${ec4s(ns,4)} mol = ${ec4s(nt,4)} mol. V = n/c = ${ec4s(nt,4)} mol ÷ ${ct.toFixed(4)} mol/L = ${ec4s(V/1000,4)} L, that is ${ec4s(V)} mL.`};},
   ()=>{const p=ec4Pr[RN(0,4)],ct=RN(100,500)/1e4,vs=[10,20,25][RN(0,2)],V0=RN(1000,2200,5)/100,vol=[RN(200,300,5)/100,0,RN(-2,2)*.05,RN(-2,2)*.05].map(x=>+(V0+x).toFixed(2)),
-      i1=RN(0,100,5)/100,i3=RN(0,100,5)/100,ini=[i1,+(i1+vol[0]).toFixed(2),i3,+(i3+vol[2]).toFixed(2)],fin=ini.map((x,j)=>+(x+vol[j]).toFixed(2)),av=(vol[1]+vol[2]+vol[3])/3,nt=ct*av/1000,ns=nt*p.r,c=ns/(vs/1000);
+      i1=RN(0,100,5)/100,i3=RN(0,100,5)/100,ini=[i1,+(i1+vol[0]).toFixed(2),i3,+(i3+vol[2]).toFixed(2)],fin=ini.map((x,j)=>+(x+vol[j]).toFixed(2)),av=+((vol[1]+vol[2]+vol[3])/3*(1+1e-12)).toFixed(2),nt=ec4r(ct*av/1000),ns=ec4r(nt*p.r),c=ns/(vs/1000);
     return {q:`${vs.toFixed(2)} mL samples of ${p.sn} are titrated with ${ct.toFixed(4)} mol/L ${p.tf}. Use the buret readings below to calculate the concentration of ${p.ru}(aq) in the samples.`,fig:ec4Tb(fin,ini,{rot:true}),n:c,u:'mol/L',tol:.01,
-      w:`Volumes used: ${vol.map(x=>x.toFixed(2)).join(', ')} mL. Trial 1 is more than 0.2 mL from the others: it is the rough trial and is left out. Average of trials 2 to 4 = ${av.toFixed(2)} mL. Net: ${p.eq}. n(${p.ou}) = (${ct.toFixed(4)} mol/L)(${(av/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(${p.ru}) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(ns,4)} mol. c = ${ec4s(ns,4)} mol ÷ ${(vs/1000).toFixed(5)} L = ${ec4s(c)} mol/L.`};},
-  ()=>{let it=null;for(let t=0;t<100&&!it;t++){const p=ec4Pr[[0,3][RN(0,1)]],ct=RN(100,300)/1e4,m=RN(500,2000,5)/1000,V=RN(1000,4500,5)/100,nt=ct*V/1000,nFe=nt*p.r,mFe=nFe*EC_M.Fe,pc=mFe/m*100;
+      w:`Volumes used: ${vol.map(x=>x.toFixed(2)).join(', ')} mL. Trial 1 is more than 0.2 mL from the others: it is the rough trial and is left out. Average of trials 2 to 4 = (${vol.slice(1).map(x=>x.toFixed(2)).join(' + ')}) ÷ 3 = ${av.toFixed(2)} mL. Net: ${p.eq}. n(${p.ou}) = (${ct.toFixed(4)} mol/L)(${(av/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(${p.ru}) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(ns,4)} mol. c = ${ec4s(ns,4)} mol ÷ ${(vs/1000).toFixed(5)} L = ${ec4s(c)} mol/L.`};},
+  ()=>{let it=null;for(let t=0;t<100&&!it;t++){const p=ec4Pr[[0,3][RN(0,1)]],ct=RN(100,300)/1e4,m=RN(500,2000,5)/1000,V=RN(1000,4500,5)/100,nt=ec4r(ct*V/1000),nFe=ec4r(nt*p.r),mFe=ec4r(nFe*EC_M.Fe),pc=mFe/m*100;
       if(pc<5||pc>70)continue;
       it={q:`An iron ore is analyzed. A ${m.toFixed(3)} g sample is dissolved in acid, and all of the iron is changed to Fe²⁺(aq). The solution needs ${V.toFixed(2)} mL of ${ct.toFixed(4)} mol/L acidified ${p.tf} to reach the endpoint. Calculate the percent by mass of iron in the ore.`,n:pc,u:'%',tol:.01,
         w:`Net: ${p.eq}. n(${p.ou}) = (${ct.toFixed(4)} mol/L)(${(V/1000).toFixed(5)} L) = ${ec4s(nt,4)} mol. n(Fe²⁺) = ${p.rt} × ${ec4s(nt,4)} mol = ${ec4s(nFe,4)} mol. m(Fe) = (${ec4s(nFe,4)} mol)(55.85 g/mol) = ${ec4s(mFe,4)} g. Percent by mass = ${ec4s(mFe,4)} g ÷ ${m.toFixed(3)} g × 100% = ${ec4s(pc)}%.`};}
