@@ -17501,9 +17501,10 @@ function comboStep(ok){if(!comboEl){comboEl=el('div',{class:'combo glass','aria-
   comboEl.innerHTML=`${icon('bolt',16)}<span>${combo} in a row</span>`;comboEl.classList.add('on');
   if(combo===3||combo===5||combo===10||(combo>10&&combo%5===0)){comboEl.classList.remove('pop');void comboEl.offsetWidth;comboEl.classList.add('pop');}}
 
-/* a double-click or double-tap that redraws the page must not answer (or leave) what is drawn under its second click */
+/* a double-click or double-tap that redraws the page must not answer (or leave) what is drawn under its second click.
+   Enter or Space on a button also fires a click, with detail 0 and no position (0, 0): it is never a ghost tap, thus it always acts */
 let lastClk=null;
-document.addEventListener('click',e=>{if(!e.isTrusted)return;const p=lastClk,t=performance.now(),tg=e.target;lastClk={t,x:e.clientX,y:e.clientY,el:tg};
+document.addEventListener('click',e=>{if(!e.isTrusted)return;if(e.detail===0){lastClk=null;return;}const p=lastClk,t=performance.now(),tg=e.target;lastClk={t,x:e.clientX,y:e.clientY,el:tg};
   if(p&&!p.el.isConnected&&tg!==p.el&&tg.closest&&tg.closest('.op,.pager')&&t-p.t<(tg.closest('.speed')?200:400)&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<30){e.stopImmediatePropagation();e.preventDefault();}},true);
 /* a correct answer in a round also counts in the lesson quiz, so the quiz and the Review page agree with the mastery level */
 function quizKeep(x,e){if(!e.ok||!x.id||/_[rg]\d+$/.test(x.id))return;const p=Store.get(x.id),h=Store.x('h',x.id);if(p&&p.ok&&!p.s)return;
