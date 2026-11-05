@@ -1089,7 +1089,9 @@ const PLK='unit-study-site.place',savePlace=()=>{try{const v={h:location.hash,y:
 addEventListener('pagehide',savePlace);document.addEventListener('visibilitychange',()=>{if(document.hidden)savePlace();});
 addEventListener('load',()=>{let v=null;try{v=JSON.parse(sessionStorage.getItem(PLK)||'null');}catch(e){}if(!(v&&v.h&&v.h===location.hash&&v.y>0&&!scrollY))return;
   /* the figures above the block first (they move it), then those from the block to one screen below the place (drawn when the place was left; they do not move the block) */
-  const e=v.o!=null&&placeEl(v.c,v.q);if(e){qfAbove(e.getBoundingClientRect().top+scrollY);const y=Math.max(0,Math.round(e.getBoundingClientRect().top+scrollY-v.o));qfAbove(y+innerHeight);window.scrollTo(0,y);return;}
+  const e=v.o!=null&&placeEl(v.c,v.q);if(e&&e.getClientRects().length){qfAbove(e.getBoundingClientRect().top+scrollY);const at=()=>e.getBoundingClientRect().top+scrollY;let y=Math.max(0,Math.round(at()-v.o));qfAbove(y+innerHeight);
+    /* a block that is now shorter than its part above the window was (a worked example that was open is closed after the reload): its top, under the bar */
+    const y0=topBar()+8;if(e.getBoundingClientRect().height+v.o<y0)y=Math.max(0,Math.round(at()-y0));window.scrollTo(0,y);return;}
   qfAbove(v.y+innerHeight);window.scrollTo(0,v.y);});
 /* the arrow keys in a tab list change the lesson on each press: those changes replace the history entry */
 document.addEventListener('keydown',e=>{if(/^Arrow/.test(e.key)&&e.target.closest&&e.target.closest('[role=tablist]')){NAVREP=1;setTimeout(()=>{NAVREP=0;});}},true);
