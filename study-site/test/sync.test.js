@@ -4,7 +4,8 @@
    its write first with hasPendingWrites, a viewer who may not write reads nothing and every write is rejected. The Firestore path runs against a mock of the
    Firebase modules that the page imports (the same server, with setDoc merge semantics).
    Cases: migration of an old single document of about 300 KB without loss, two devices live, offline answers, a viewer who cannot write, the version gate,
-   cost per answer, an old page that is still open (the second argument, or else the page of commit 92e381a from git: the last one before the change), Firestore,
+   cost per answer, an old page that is still open (the second argument, or else the page of commit 92e381a from git: the last one before the change), the same
+   old page in another tab of the same browser (RETIRE: the new page's answers that it carries over are kept, its own answers to the old questions do not count), Firestore,
    a reload while offline (the state says the account cannot be reached; the answers upload by themselves later), a store that sends no confirmed copy after
    the page's own write (Firestore without metadata changes does not), slow writes (one write at a time per document), and RETIRE through the documents.
    Exit code 0 = all pass. */
@@ -137,9 +138,10 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   let A=await device('A');const legacy=await buildLegacy(A);const legSize=size(legacy);server.docs.set('data/users/u1/progress',clone(legacy));
   await close(A);A=await device('A');
   const tm=Date.now();ok('the device connects to the Claude account and moves the old document',await until(A,()=>Store.mode()==='account'&&!Store.pending(),null,20000),{legacyKB:Math.round(legSize/1024),seconds:(Date.now()-tm)/1000});
-  /* RETIRE: the old document comes from a page of format 3, thus its entries of the RETIRE ids become tombstones of the RETIRE time (MIGRATIONS[4]) */
+  /* RETIRE: the old document comes from a page of format 3, thus its entries of the RETIRE ids become tombstones of the RETIRE time (MIGRATIONS[4]; a tombstone also
+     keeps the old version's mastery credit as w) */
   const fa=flat(await state(A)),fl=flat(legacy),RB=Date.parse('2026-11-02T16:01:43Z'),RTI=await ev(A,()=>typeof RETIRE==='object'&&RETIRE?Object.assign({},RETIRE):{});let miss=0,diff=0,cut=0,rcut=0;
-  for(const k in fl){if(!(k in fa))miss++;else if(fa[k]!==fl[k]){const [m,id]=k.split('|');if(/^[ash]$/.test(m)&&/^(ns|sn|en)_\d+_r\d+$/.test(id)&&fa[k]===JSON.stringify({t:RB,x:1}))cut++;else if(/^[ahsr]$/.test(m)&&RTI[id]&&fa[k]===JSON.stringify({t:Date.parse(RTI[id]),x:1}))rcut++;else diff++;}}
+  for(const k in fl){if(!(k in fa))miss++;else if(fa[k]!==fl[k]){const [m,id]=k.split('|');if(/^[ash]$/.test(m)&&/^(ns|sn|en)_\d+_r\d+$/.test(id)&&fa[k]===JSON.stringify({t:RB,x:1}))cut++;else if(/^[ahsr]$/.test(m)&&RTI[id]&&(e=>e.x===1&&e.t===Date.parse(RTI[id]))(JSON.parse(fa[k])))rcut++;else diff++;}}
   ok('every entry of the old document is on the device (unchanged, or cleared by its own rb2:bio cut-off or by RETIRE)',miss===0&&diff===0,{entries:Object.keys(fl).length,missing:miss,changed:diff,clearedByRb2:cut,clearedByRetire:rcut});
   const shards=[...server.docs.keys()].filter(p=>p.startsWith('data/users/u1/')&&!p.endsWith('/progress')),fs=flat(unshard('data/users/u1/'));let smiss=0;for(const k in fl)if(fs[k]!==fa[k])smiss++;
   ok('every entry is in the new documents of the account',smiss===0,{docs:shards.length,missing:smiss});
@@ -210,6 +212,17 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
     ok('its answer reaches the new page and the new documents',await until(N,id=>!!Store.get(id),idC)&&await (async()=>{for(let i=0;i<30;i++){if(unshard('data/users/u2/').a&&unshard('data/users/u2/').a[idC])return true;await sleep(200);}return false;})());
     const nTh=await ev(N,()=>Store.xk('a').filter(k=>k.startsWith('th_0_')).length);ok('the answers of the new page are still in the new documents',Object.keys(unshard('data/users/u2/').a).filter(k=>k.startsWith('th_0_')&&!unshard('data/users/u2/').a[k].x).length===nTh&&nTh>0,{th0:nTh});
     await close(C);await close(N);}
+
+  /* 6b. an old page in the same browser, no account (RETIRE copy of the page, mom_0_0 retired one hour ago): the old tab folds the new tab's copy into its own
+     (format 3) and writes it after the new tab closed. The new page's answer to the new mom_0_0 is kept; the old tab's own answer to the old question does not count */
+  if(OLD&&RTP){const ctx=await browser.newContext({viewport:{width:1000,height:800}});await ctx.route(/^https?:\/\//,r=>r.abort());const errs=[];
+    const open=async f=>{const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));await p.goto('file://'+f);await p.waitForFunction(()=>typeof Store!=='undefined'&&document.querySelector('.lesson:not([hidden])'));return p;};
+    const say=(p,id,ok)=>p.evaluate(async([id,ok])=>{const [sk,L]=id.split('_');Store.set(id,{v:ok?0:1,ok:ok?1:0});onAnswer(id,!!ok,{sk,L:+L});await new Promise(r=>setTimeout(r,400));},[id,ok]);
+    let pn=await open(RTP);const po=await open(OLD);await say(pn,'mom_0_0',1);const tNew=await pn.evaluate(()=>Store.get('mom_0_0').t);await pn.close();await say(po,'mom_0_1',1);
+    pn=await open(RTP);const kept=await pn.evaluate(()=>{const e=Store.get('mom_0_0');return e?e.t:0;});await pn.close();
+    await say(po,'mom_0_0',0);pn=await open(RTP);const own=await pn.evaluate(()=>({a:Store.get('mom_0_0'),h:Store.x('h','mom_0_0')}));
+    ok('an old tab in the same browser: the new page\'s answer to a RETIRE question is kept after the old tab saved, and the old tab\'s own answer to the old question does not count',
+      kept===tNew&&!own.a&&!own.h&&errs.length===0,{kept:kept===tNew,oldAnswer:own,errors:errs.slice(0,2)});await ctx.close();}
 
   /* 7. a viewer who may not write (a shared link): the platform says nothing up front, the first write is refused */
   const V=await device('V',{id:'v9',viewer:true,owner:false,seed:JSON.stringify({a:{mom_0_0:{v:1,ok:1,t:Date.now()-5000}},r:{},s:{},w:{},h:{},g:{},c:{}})});
