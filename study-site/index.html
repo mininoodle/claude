@@ -1309,6 +1309,10 @@ const Store=(()=>{
     /* id records the clear as a cut-off that syncs (see setScope) */
     /* T: a fixed cut-off time. Only entries written at or before T are cleared, thus every device clears the same entries, whenever it runs the clear */
     clear(f,id,T){let n=0;const t=T||Date.now();MAPS.forEach(m=>{for(const k in D[m])if(!D[m][k].x&&(!T||(D[m][k].t||0)<=T)&&f(m,k)){D[m][k]={x:1,t};dq(m,k);n++;}});if(id){D.c[id]={t};dq('c',id);}if(n||id)touch();if(n)emit();return n;},cleared:id=>!!D.c[id],
+    /* a RETIRE question that this student had answered before it changed: the change cut its entries (they are tombstones of its time), or the student has
+       answered the new question since (its history entry keeps rt). Returns the time of the change, or 0. lessonLevel0 leaves such a question out of the level
+       until the new question is mastered, thus a retire never lowers a lesson or its XP */
+    renewed(id){const c=D.c['rt:'+id];if(!c)return 0;const T=c.t||0,h=D.h[id];if(h&&!h.x)return h.rt?T:0;return RTM.some(m=>{const e=D[m][id];return !!e&&!!e.x&&(e.t||0)===T;})?T:0;},
     pos:()=>D.pos,setPos(q){D.pos=q;save();},on:f=>subs.push(f),mode:()=>mode,connect,attach,detach,remote,sync,flush,account:()=>label,src:()=>src,lastSync:()=>lastSync,pending:()=>dirty||busy||DQ.size>0,
     error:()=>err,outdated:()=>newer>SCHEMA,canSave:()=>canSave,
     /* a backup: every entry (cleared ones too, so that a restore repeats the clears) and the clears, with its format and time */
@@ -1815,7 +1819,7 @@ const curU={};SUBJECTS.forEach(s=>curU[s.k]=s.units[0]||null);
 const savePos=()=>Store.setPos({s:curS,u:Object.assign({},curU),l:Object.assign({},curL)});
 function chipProgress(){const S=SUBJ[curS];if(!S)return;S.lessons.forEach((le,i)=>{if(le.rv&&chipBtns[i]){const n=Store.srAll().filter(([k,e])=>k.startsWith(curS+'_')&&e.d<=Date.now()&&qItem(k)).length;chipBtns[i].innerHTML=icon('target',14)+'Review'+(n?`<i class="due" aria-label="${n} questions are due">${n}</i>`:'');return;}const r=chipBtns[i]&&$('.pr',chipBtns[i]);if(!r||!le.qz)return;const v=lessonLevel(curS,i);
     r.style.setProperty('--p',v.lv>=2?1:v.ok1/v.n);r.classList.toggle('m',v.lv===3);r.innerHTML=v.lv===3?icon(v.nr?'reset':'check',13):'';chipBtns[i].dataset.lv=v.lv;
-    chipBtns[i].title=lvName(v)+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two days at least 2 days apart':'')+'.'+(v.lv===3&&v.nr?' Your last answer to '+v.nr+' of them was wrong.':'');
+    chipBtns[i].title=lvName(v)+'. '+v.ok1+' of '+v.n+' questions answered correctly at least once'+(v.lv>=2?', '+v.ok2+' of '+v.n+' on two days at least 2 days apart':'')+'.'+(v.lv===3&&v.nr?' '+nrWhy(v).replace(/^./,c=>c.toUpperCase())+'.':'');
     const em=$('#'+curS+'-'+i+' .emblem');if(em){$('.em-ring',em).style.setProperty('--p',v.lv===3?1:v.ok1/v.n);$('small',em).textContent=lvName(v)+' · '+v.ok1+' / '+v.n;}
     const lp=$('#'+curS+'-'+i+' [data-lvl]');if(lp)lp.innerHTML=lvSteps(v.lv)+'<span><b>'+lvName(v)+'</b> · '+lvHint(v)+'</span>';});}
 /* scroll the chip row so the current lesson's chip is in the middle (also after a rotation or resize) */
@@ -17255,21 +17259,27 @@ const mNext=d=>Math.max(dayNum(today())+1,dayNum([...d].sort()[0])+MGAP);
 function okDays(id){const s=new Set(),h=Store.x('h',id),a=Store.get(id);if(h&&h.d)h.d.forEach(d=>s.add(d));if(a&&a.ok&&!a.s&&!a.hi&&a.t&&!(h&&h.rv===dayOf(a.t)))s.add(dayOf(a.t));if(h&&(h.o2||h.l==null))s.old=1;return s;}
 /* lessonLevel runs for every lesson after each answer (badges, chips, the Today page): it is computed once for each change of the progress, and each caller gets its own copy */
 const lvMemo=svMemo((sk,L)=>lessonLevel0(sk,L),{q:1});function lessonLevel(sk,L){const r=lvMemo(sk,L);return r&&Object.assign({},r);}
-function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0;
+function lessonLevel0(sk,L){const le=SUBJ[sk]&&SUBJ[sk].lessons[L];if(!le||!le.qz)return null;let ans=0,ok1=0,ok2=0,out=0,nq=0;
   /* a correct answer with a hint (h.hd, or a saved answer with hi) counts for Practised (ok1), not for the two mastery days */
-  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id),a=Store.get(id);if(a||(h&&(h.c||h.m)))ans++;if(d.size>=1||(h&&h.hd)||(a&&a.ok&&!a.s&&a.hi))ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
-  /* nr: questions whose latest answer was wrong. A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
-  const n=le.qz.length;return {n,ans,ok1,ok2,nr,lv:ok2===n?3:ok1===n?2:ans||ok1?1:0};}
+  /* a question that changed after this student answered its old version (Store.renewed, see RETIRE) is left out of n until the new question is mastered on its own:
+     the lesson keeps the level earned on its other questions, and its XP. It counts in nr while it has no answer since the change (nq) or its latest answer is wrong */
+  let nr=0;le.qz.forEach((_,j)=>{const id=sk+'_'+L+'_'+j,d=okDays(id),h=Store.x('h',id),a=Store.get(id);
+    if(Store.renewed(id)&&!okTwo(d)){out++;ans++;if(!h&&!a){nr++;nq++;}else if(h&&h.l===0)nr++;return;}
+    if(a||(h&&(h.c||h.m)))ans++;if(d.size>=1||(h&&h.hd)||(a&&a.ok&&!a.s&&a.hi))ok1++;if(okTwo(d))ok2++;if(h&&h.l===0)nr++;});
+  /* nr: questions whose latest answer was wrong, or that changed (nq). A Mastered lesson with nr > 0 is shown as 'Needs review'; its level does not go down */
+  const n=le.qz.length-out;return {n,ans,ok1,ok2,nr,nq,lv:n&&ok2===n?3:n&&ok1===n?2:ans||ok1?1:0};}
 const lvName=v=>v.lv===3&&v.nr?'Needs review':LVN[v.lv];
-/* the questions of a lesson whose latest answer was wrong, and the next lesson check date of a lesson (0: none) */
-const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h&&h.l===0;});
+/* the questions of a lesson whose latest answer was wrong or that changed with no answer since (nq), and the next lesson check date of a lesson (0: none) */
+const lcMissed=(sk,L)=>SUBJ[sk].lessons[L].qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const h=Store.x('h',id);return h?h.l===0:!Store.get(id)&&!!Store.renewed(id);});
 const lcNext=(sk,L)=>SUBJ[sk].lessons[L].qz.reduce((m,_,j)=>{const e=Store.sr(sk+'_'+L+'_'+j);return e&&e.k&&(!m||e.d<m)?e.d:m;},0);
 /* questions that still need a correct answer today to move toward Mastered */
 function masteryNeeds(sk,L){const le=SUBJ[sk].lessons[L],td=today();return le.qz.map((_,j)=>sk+'_'+L+'_'+j).filter(id=>{const d=okDays(id),h=Store.x('h',id);return mStep(d,td)&&!(h&&h.rv===td);});}
 const allLessons=()=>UORDER.flatMap(unitLessons);
 function unitLessons(sk){return SUBJ[sk].lessons.map((le,L)=>le.qz?Object.assign({sk,L},lessonLevel(sk,L)):null).filter(Boolean);}
 const lvSteps=(lv,big)=>`<span class="lvs${big?' big':''}" aria-hidden="true">${[1,2,3].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</span>`;
-const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?`your last answer to ${v.nr} of ${v.n} questions was wrong`:`the challenge problem is unlocked`][v.lv];
+/* why a Mastered lesson needs review: questions answered wrong last time, and questions that changed since the student answered them (nq) */
+const nrWhy=v=>{const q=v.nq||0,w=v.nr-q;return [w?`your last answer to ${w} of ${v.n} questions was wrong`:'',q?`${q} ${q===1?'question':'questions'} changed since you answered ${q===1?'it':'them'}`:''].filter(Boolean).join(', and ');};
+const lvHint=v=>[`answer the questions below to start`,`${v.ok1} of ${v.n} questions answered correctly at least once`,`${v.ok2} of ${v.n} answered correctly on two days at least 2 days apart`,v.nr?nrWhy(v):`the challenge problem is unlocked`][v.lv];
 
 /* ----- every answer goes through here. o.rv: a wrong answer shows the right one, and a correct answer on that day adds no mastery day ----- */
 function onAnswer(id,ok,o={}){
@@ -17277,7 +17287,7 @@ function onAnswer(id,ok,o={}){
   /* the history entry also keeps l, the latest result (1 correct, 0 wrong), and for the mistake log lv and lm: the last wrong answer (an option index, a text of at most 24 characters,
      or '' when the answer was shown) and the time of that miss. Fields that this version does not set are kept */
   /* o.hint: a correct answer that used a hint adds no mastery day; hd keeps its day, so it still counts for Practised */
-  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&!o.hint&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;if(h.l==null&&new Set(h.d||[]).size>=2)e.o2=1;if(ok&&o.hint&&rv!==td)e.hd=td;
+  if(id){const h=Store.x('h',id)||{},d=(h.d||[]).slice(),rv=!ok&&o.rv?td:h.rv;if(ok&&!o.hint&&rv!==td&&!d.includes(td))d.push(td);const e=Object.assign({},h,{d:d.slice(-6),c:(h.c||0)+(ok?1:0),m:(h.m||0)+(ok?0:1),rv,l:ok?1:0});delete e.t;if(h.l==null&&new Set(h.d||[]).size>=2)e.o2=1;if(Store.renewed(id))e.rt=1;if(ok&&o.hint&&rv!==td)e.hd=td;
     if(!ok){e.lm=Date.now();if(o.v!=null)e.lv=typeof o.v==='number'?o.v:String(o.v).trim().slice(0,24);}Store.xs('h',id,e);}
   if(ok&&has){const k='cnt_'+o.sk+'_'+o.L;Store.xs('g',k,{n:gN(k)+1});}
   if(ok){inc('n_ok');const x=id&&qItem(id);if(x){if(!x.it.o)inc('n_num');if(/_r\d+$/.test(id))inc('n_rev');if(x.it.fig)inc('n_fig');}const hr=new Date().getHours();if(hr<5)inc('owl');else if(hr<8)inc('bird');}
@@ -17338,22 +17348,24 @@ function runRound(box,o){let i=0,over=false,tm=0,tEnd=0;const res=[],t0=Date.now
 function toQ(n){const h=topBar()+8,y=n.getBoundingClientRect().top;if(y<h||y>innerHeight-40)window.scrollTo({top:y+scrollY-h,behavior:RM?'auto':'smooth'});}
 
 /* ----- lesson page: mastery card and challenge problem ----- */
+/* the mastery card's words for a Mastered lesson with nr > 0 (see nrWhy) */
+const nrMsg=v=>{const q=v.nq||0,w=v.nr-q;return 'You mastered this lesson'+(w?`, but your last answer to ${w} of its questions was wrong`:'')+(q?`${w?', and ':'. '}${q} of its questions changed since you answered ${q===1?'it':'them'}`:'')+`. Answer ${v.nr===1?'it':'them'} correctly${q?'':' again'} to keep the lesson fresh.`;};
 function masteryCard(g,sk,L){const c=card(g,'','');let busy=0;
   function view(){if(!c.isConnected){LIVE.delete(view);return;}if(busy)return;const v=lessonLevel(sk,L),need=masteryNeeds(sk,L);
     const msg=['Answer the questions above to start this lesson.',
       `Answer every question correctly once to reach <b>Practised</b>. ${v.ok1} of ${v.n} have been answered correctly.`,
       `Answer each question correctly again at least 2 days after the first time to reach <b>Mastered</b>. ${v.ok2} of ${v.n} have been answered correctly on two such days.`,
-      v.nr?`You mastered this lesson, but your last answer to ${v.nr} of its questions was wrong. Answer ${v.nr===1?'it':'them'} correctly again to keep the lesson fresh.`:'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
-    const miss=v.lv===3&&v.nr?lcMissed(sk,L):[],nc=v.lv===3&&!v.nr?lcNext(sk,L):0;
+      v.nr?nrMsg(v):'You mastered this lesson. Its challenge problem is unlocked below.'][v.lv];
+    const miss=v.lv===3&&v.nr?lcMissed(sk,L):[],nc=v.lv===3&&!v.nr?lcNext(sk,L):0,mt=!v.nq?'Practise the missed':v.nq<miss.length?'Practise the missed and changed':'Answer the changed';
     c.innerHTML=`<div class="qh"><h3>Mastery</h3><span class="score">${lvName(v)}</span></div>${lvSteps(v.lv,true)}<div class="lvn"><span>Learning</span><span>Practised</span><span>Mastered</span></div><p>${msg}</p>`+
       (v.lv>=1&&v.lv<3?(need.length?`<div class="row"><button type="button" class="btn">${icon('target',15)}Practise for mastery (${need.length} ${need.length===1?'question':'questions'})</button></div><p class="hint">A question that you answer wrong goes into spaced repetition and comes back after 1 day.</p>`
         :`<p class="hint">${icon('cal',14)} Come back ${comeBack()}. A question counts for mastery when you answer it correctly again at least 2 days after the first time.</p>`)
-      :miss.length?`<div class="row"><button type="button" class="btn">${icon('reset',15)}Practise the missed ${miss.length===1?'question':'questions'} (${miss.length})</button></div>`
+      :miss.length?`<div class="row"><button type="button" class="btn">${icon('reset',15)}${mt} ${miss.length===1?'question':'questions'} (${miss.length})</button></div>`
       :nc?`<p class="hint">${icon('cal',14)} To keep this lesson fresh, ${LCN} of its questions come back in your review after about 7, 28 and 88 days. Next check: ${fmtDay(dayOf(nc))}.</p>`:'');
-    const b=$('.row .btn',c);if(b)b.onclick=()=>run(miss.length?miss:null);}
+    const b=$('.row .btn',c);if(b)b.onclick=()=>run(miss.length?miss:null,mt);}
   /* the first day on which a question of this lesson can move toward Mastered again */
   function comeBack(){const t=dayNum(today());let m=Infinity;SUBJ[sk].lessons[L].qz.forEach((_,j)=>{const d=okDays(sk+'_'+L+'_'+j);if(!okTwo(d))m=Math.min(m,d.size?mNext(d):t+1);});return m<=t+1||!isFinite(m)?'tomorrow':'on '+fmtDay(dayStr(m));}
-  function run(ids){busy=1;const items=shuffle(ids||masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML=`<h3>${ids?'Practise the missed questions':'Practise for mastery'}</h3>`;const box=el('div');c.append(box);
+  function run(ids,mt){busy=1;const items=shuffle(ids||masteryNeeds(sk,L)).map(qItem).filter(Boolean);c.innerHTML=`<h3>${ids?mt+' questions':'Practise for mastery'}</h3>`;const box=el('div');c.append(box);
     runRound(box,{items,title:'Question',done:res=>{busy=0;const n=res.filter(r=>r.ok).length;view();c.append(el('p',{class:'fb '+(n===res.length?'ok':'info')},`${n} of ${res.length} correct in this round.`));}});}
   LIVE.add(view);view();}
 function challengeCard(g,sk,L){const it=CH[sk]&&CH[sk][L];if(!it)return;const key='ch_'+sk+'_'+L,c=card(g,'','');let shown=-1;
