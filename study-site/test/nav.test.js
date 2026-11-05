@@ -95,6 +95,16 @@ const frames = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =
         check(a.on === k + '-1' && Math.abs(a.y - y0) <= 2 && a.inL && a.tag !== 'H1' && a.bottom > a.bar && a.top < a.vh && Math.abs(y1 - y0) < a.vh,
           `${how}: ${k}-1 comes back at ${y0} (${a.y}) with focus at the place (${a.tag} at ${a.top} px), and Tab keeps the page near it (${y1})`);
       }
+      /* the kept place is in a closed worked example (<details>): its hidden part has rectangles but cannot take focus, thus focus goes to a block that can */
+      const fx = await p.evaluate(async () => { const f = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        for (const k of SUBJECTS.flatMap(S => S.units).filter(u => SUBJ[u])) for (let i = 0; i < SUBJ[k].lessons.length; i++) { if (!SUBJ[k].lessons[i].qz) continue;
+          goLesson(k, i); await f(); const L = document.getElementById(k + '-' + i);
+          const d = [...L.querySelectorAll('details:not([open])')].find(d => d.children.length > 1 && d.children[1].getClientRects().length && d.getBoundingClientRect().top + scrollY > 2 * innerHeight);
+          if (!d) continue; scrollTo(0, d.children[1].getBoundingClientRect().top + scrollY - topBar() - 4); await f(); focusPlace(L);
+          const e = document.activeElement, r = e.getBoundingClientRect();
+          return { at: k + '-' + i, y: Math.round(scrollY), tag: e.tagName, inL: L.contains(e), drawn: !e.closest('details:not([open])>:not(summary)'), seen: r.bottom > topBar() && r.top < innerHeight }; }
+        return null; });
+      check(!!fx && fx.inL && fx.drawn && fx.seen && fx.tag !== 'H1', 'a kept place in a closed worked example: focus lands on a block in the window that is drawn ' + JSON.stringify(fx));
       /* On this page */
       await p.evaluate(() => scrollTo(0, 0)); await p.click('.crumb-o'); await frames(p);
       const n = await p.evaluate(() => document.querySelectorAll('.crumb-menu .cm-i').length);

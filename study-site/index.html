@@ -944,14 +944,20 @@ addEventListener('scroll',()=>{clearTimeout(dwT);dwT=setTimeout(()=>{const a=sho
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.pager'))TOP=1;},true);
 /* a page shown again at the place where the student left it (pageShown scrolls there): call before pageShown */
 const atPlace=(L,o={})=>!o.first&&document.readyState!=='loading'&&L!==PAGE&&!TOP&&L._y>0;
-/* the entrance animation plays for a page that opens at its top. A page shown again at its place does not play it: its content would vanish and slide */
-function enterPage(L,o){if(RM||atPlace(L,o))return;void L.offsetWidth;L.classList.add('enter');}
+/* the entrance animation plays for a page that opens at its top. A page shown again at its place does not play it: its content would vanish and slide.
+   Nor does the first page after a reload or the browser's Back or Forward to this site: the browser puts it back at its place once it is built */
+const NAVT=(()=>{try{const e=performance.getEntriesByType('navigation')[0];return e&&e.type||'';}catch(e){return '';}})();
+function enterPage(L,o={}){if(RM||atPlace(L,o)||(o.first||document.readyState==='loading')&&/^(reload|back_forward)$/.test(NAVT))return;void L.offsetWidth;L.classList.add('enter');}
 /* keyboard focus after a page is shown: its h1 when it opens at the top, else the first block of the card at the top of the window (below the bar),
    thus the next Tab goes on from the place that was kept, not from the top of the page */
 function focusPlace(L){if(!L)return;const y=topBar()+8;if(scrollY<=0){focusTo(L,'h1');return;}
-  const c=[...L.querySelectorAll('.card')].find(c=>!c.parentElement.closest('.card')&&c.getClientRects().length&&c.getBoundingClientRect().bottom>y);
-  const t=c&&([...c.querySelectorAll('h2,h3,p,li,figure,.q,table')].find(e=>e.getClientRects().length&&e.getBoundingClientRect().bottom>y)||c);
-  if(!t){focusTo(L,'h1');return;}if(!t.matches('button,input,select,textarea,a[href],[tabindex]'))t.tabIndex=-1;t.focus({preventScroll:true});}
+  /* a block that is drawn: the closed part of a <details> (a worked example) has rectangles in Chrome, but it is not drawn and cannot take focus */
+  const shown=e=>e.getClientRects().length&&!e.closest('details:not([open])>:not(summary)')&&(!e.checkVisibility||e.checkVisibility());
+  const c=[...L.querySelectorAll('.card')].find(c=>!c.parentElement.closest('.card')&&shown(c)&&c.getBoundingClientRect().bottom>y);
+  const t=c&&([...c.querySelectorAll('h2,h3,p,li,figure,.q,table,summary')].find(e=>shown(e)&&e.getBoundingClientRect().bottom>y)||c);
+  /* the block, else its card: focus must land (else the next Tab would start at the top of the page) */
+  for(const e of t?[t,c]:[]){if(!e.matches('button,input,select,textarea,a[href],[tabindex],summary'))e.tabIndex=-1;e.focus({preventScroll:true});if(document.activeElement===e)return;}
+  focusTo(L,'h1');}
 /* showLesson, showHome and showTest call this when page L is on screen. It goes back to where the student left L, or to the top when L is new,
    rebuilt, chosen again (the current lesson's chip is a 'back to top') or opened with the pager. At load the browser keeps the place of a reload */
 /* ----- keyboard focus: a quiz card that renders again (after 'Clear my answers') replaces the button that had focus. Focus then goes to the card's
