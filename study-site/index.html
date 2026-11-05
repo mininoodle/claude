@@ -5890,14 +5890,348 @@ EC_REF.t.push(['Fuel cell','A voltaic cell with a constant supply of fuel and ox
 }catch(e){console.error('[ec] slot 8 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 9 ----- */
 {try{
-/* placeholder of lesson 9 (written by the framework): the lesson agent replaces everything inside this try block */
-ECL[9]={t:EC_T[9],h:'Corrosion',d:'Corrosion is the oxidation of a metal by its environment. When iron rusts, oxygen and water are the oxidizing agents.',build(g){
-  card(g,'Corrosion and its prevention',`<p class="hint">Outcome: 30–B1.4k</p><ul><li>Rusting: ${C('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')} (+0.40 V) and ${C('Fe(s) -> Fe^2+(aq) + 2e^-')}.</li>
-    <li>Prevention: a barrier (paint, oil, plastic), galvanizing with zinc, alloys such as stainless steel, a sacrificial anode, or a small current that floods the iron with electrons (cathodic protection).</li></ul>`);
+/* lesson 9: Corrosion. Class notes pages 65 to 68 (corrosion, rusting as a small voltaic cell, the table of prevention methods, the sacrificial anode, cathodic protection
+   with a low-voltage current) and diploma questions 106 to 111 (answer key on page 85). These pages have no worked examples or practice questions: the examples and try-its are new.
+   Lesson-local helpers (block scoped, prefix ec9): ec9C (C() that keeps a charge and its state on one line), ec9Eq (an equation that breaks only after + or an arrow),
+   ec9N (a no-break space between a number and V), ec9Info (the information box of a diploma question), ec9Tab (a small table for a question), ec9T (a label in a drawing),
+   ec9Arc (a curved arrow), ec9Rx (the net equation of the corrosion of a metal by oxygen), ec9Drop (the rusting drop on iron, p. 65), ec9Sac (a sacrificial anode, p. 66),
+   ec9Imp (a low-voltage current, p. 66), ec9Coat (a scratched tin or zinc coating) */
+const ec9C=s=>C(s).replace(/<sup>([^<]*)<\/sup>\((aq|s|l|g)\)/g,'<span style="white-space:nowrap"><sup>$1</sup>($2)</span>');
+const ec9Eq=s=>{const g=[];String(s).split(' ').forEach(t=>{if(/^(\+|->|<=>)$/.test(t)&&g.length)g[g.length-1]+=' '+t;else g.push(t);});return g.map(t=>'<span style="white-space:nowrap">'+ec9C(t)+'</span>').join(' ');};
+const ec9N=s=>String(s).replace(/(\d) V(?=[\s).,;:<]|$)/g,'$1 V');
+const ec9Info=t=>'<p style="margin:.35em .5em;line-height:1.45">'+t+'</p>';
+const ec9Tab=(head,rows)=>{const c='padding:.3em .55em;border-bottom:1px solid var(--hair);text-align:left;vertical-align:top';
+  return '<table style="border-collapse:collapse;margin:.3em auto .2em;font-size:.93rem"><tr>'+head.map(h=>'<th style="'+c+';font-weight:650">'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(x=>'<td style="'+c+'">'+x+'</td>').join('')+'</tr>').join('')+'</table>';};
+const ec9T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12.5,w:600,f:'ink'},o));
+const ec9RC='color-mix(in srgb,var(--s2) 70%,#6b2e14)',ec9W='color-mix(in srgb,var(--s1) 16%,var(--liq))',ec9Soil='color-mix(in srgb,var(--wood) 30%,var(--fig))',ec9Fe='color-mix(in srgb,var(--steel) 55%,var(--fig))';
+/* a label with a halo of the figure background: an electron label drawn on metal stays readable in both themes */
+const ec9H=t=>t.replace('<text ','<text stroke="var(--fig)" stroke-width="3" stroke-linejoin="round" paint-order="stroke" ');
+const ec9Arc=(x1,y1,cx,cy,x2,y2,c,w,halo)=>{const L=Math.hypot(x2-cx,y2-cy),ux=(x2-cx)/L,uy=(y2-cy)/L,d=`M${x1},${y1}Q${cx},${cy} ${x2},${y2}`;
+  return (halo?`<path d="${d}" fill="none" stroke="var(--fig)" stroke-width="${w+3.2}" stroke-linecap="round"/>`:'')+`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`+sArrow(f1(x2-ux*14),f1(y2-uy*14),x2,y2,c,w);};
+/* the net equation (unicode) of the corrosion of a metal by oxygen: r is the row of its 2+ or 3+ ion, ac true in an acidic solution */
+const ec9Rx=(r,ac)=>{const k=r.n===3?4:2,o=r.n===3?3:1,m=ecU(r.r),i=ecU(r.k),c=v=>v===1?'':v;
+  return ac?`${k}${m} + ${c(o)}O₂(g) + ${4*o}H⁺(aq) → ${k}${i} + ${2*o}H₂O(l)`:`${k}${m} + ${c(o)}O₂(g) + ${2*o}H₂O(l) → ${k}${i} + ${4*o}OH⁻(aq)`;};
+const ec9ON=ecRow('O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)'),ec9OA=ecRow('O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)');
+/* p. 65: a drop of water on iron (the head of a nail). o.nums: numbered parts instead of words (1 the drop, 2 the anode, 3 the cathode, 4 the iron between them) */
+function ec9Drop(o={}){const N=!!o.nums,T=ec9T,H=N?256:300;
+  const iron='M30,140Q30,128 42,128H116Q126,128 131,135Q150,151 169,135Q174,128 184,128H398Q410,128 410,140V188Q410,200 398,200H262V240L248,246L234,240L220,246L206,240L192,246L178,240V200H42Q30,200 30,188Z',
+    drop='M46,128C64,95 126,86 178,86C234,86 284,97 304,128H184Q174,128 169,135Q150,151 131,135Q126,128 116,128Z',dome='M46,128C64,95 126,86 178,86C234,86 284,97 304,128',
+    rust='M282,128C285,119 293,113 302,116C309,108 321,109 329,114C339,109 351,114 358,118C366,120 373,124 376,128Z';
+  let s=`<path d="${iron}" fill="${ec9Fe}" stroke="var(--steel2)" stroke-width="1.6" stroke-linejoin="round"/><path d="${drop}" fill="${ec9W}" fill-opacity=".92"/>`+
+    `<path d="${dome}" fill="none" stroke="var(--gl)" stroke-width="1.6"/><path d="${rust}" fill="${ec9RC}" stroke="var(--s2)" stroke-width="1"/>`+
+    T('air',214,30,{w:500,f:'ink2'})+T('rust',384,116,{a:'start',c:'l'})+T('iron',380,174);
+  if(!N)s+=T('water',72,80,{w:500,f:'ink2'})+T('O₂',340,44)+sArrow(336,52,308,112,'var(--ink2)',1.5)+T('Fe²⁺',160,115)+ec9Arc(186,104,236,84,280,116,'var(--s5)',1.8)+
+    ec9Arc(156,162,230,214,300,146,'var(--s1)',2.2,1)+ec9H(T('e⁻',229,197,{f:'s1',w:700}))+
+    `<path d="M148,148L92,226M306,130L372,226" stroke="var(--ink2)" stroke-width="1.2"/>`+T('anode',84,242,{w:700})+T('cathode',378,242,{w:700})+
+    T('Anode: Fe(s) → Fe²⁺(aq) + 2e⁻',220,274,{s:12})+T('Cathode: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq)',220,292,{s:12});
+  else s+=`<path d="M148,148L98,220M306,130L366,220" stroke="var(--ink2)" stroke-width="1.2"/>`+ecBadge(1,100,110)+ecBadge(2,90,232)+ecBadge(3,372,232)+ecBadge(4,226,176);
+  const alt=N?'A drop of water on an iron surface, the head of a nail. Part 1 is the water drop. Part 2 is the iron surface under the middle of the drop, where the iron is pitted. Part 3 is the iron surface at the edge of the drop, next to the air, where rust forms. Part 4 is the iron metal between them.'
+    :'A drop of water on an iron surface, the head of a nail. Under the middle of the drop the iron is pitted: this is the anode, where Fe(s) is oxidized to Fe²⁺(aq). The Fe²⁺ ions move through the water toward the edge of the drop. Electrons flow through the iron from the anode to the edge of the drop: the cathode, where oxygen from the air is reduced, O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Rust forms on the iron at the edge of the drop.';
+  return `<svg viewBox="0 0 440 ${H}" role="img" aria-label="${alt}">${s}</svg>`;}
+/* p. 66: a buried steel tank protected by a magnesium sacrificial anode (drawn 340 units wide, so that the labels have room on a phone) */
+function ec9Sac(){const T=ec9T,hatch=[...Array(27)].map((_,i)=>`M${14+i*12},58l-6,7`).join('');
+  const s=`<rect x="6" y="58" width="328" height="186" rx="8" fill="${ec9Soil}"/><path d="M6,58H334" stroke="var(--ink2)" stroke-width="1.6"/><path d="${hatch}" stroke="var(--ink2)" stroke-width="1"/>`+
+    `<rect x="26" y="20" width="24" height="38" rx="3" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.4"/><rect x="31" y="25" width="14" height="8" rx="1.5" fill="none" stroke="var(--ink2)" stroke-width="1.1"/><path d="M50,30q8,0 8,8v11" fill="none" stroke="var(--ink2)" stroke-width="1.6"/><path d="M38,58V96" stroke="var(--steel2)" stroke-width="5"/>`+
+    `<path d="M34,96H184A11,24 0 0 1 184,144H34A11,24 0 0 1 34,96Z" fill="var(--steel)" stroke="var(--steel2)" stroke-width="1.6"/><ellipse cx="34" cy="120" rx="11" ry="24" fill="var(--steel)" stroke="var(--steel2)" stroke-width="1.6"/>`+
+    `<path d="M72,96A11,24 0 0 1 72,144M110,96A11,24 0 0 1 110,144M148,96A11,24 0 0 1 148,144" fill="none" stroke="var(--steel2)" stroke-width="1.2" stroke-opacity=".6"/>`+
+    `<path d="M195,120H232V184H252" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linejoin="round"/><rect x="252" y="168" width="70" height="32" rx="3" fill="color-mix(in srgb,var(--steel) 45%,var(--fig))" stroke="var(--ink2)" stroke-width="1.4"/>`+
+    T('Mg(s)',287,189)+sArrow(243,178,243,134,'var(--s1)',2)+T('e⁻',250,158,{f:'s1',w:700,a:'start',c:'l'})+sArrow(226,110,202,110,'var(--s1)',2)+T('e⁻',214,101,{f:'s1',w:700})+
+    T('steel tank, Fe(s)',110,166)+T('the cathode',110,182,{w:500,f:'ink2'})+T('sacrificial',287,218,{w:700})+T('anode',287,233,{w:700})+T('moist soil: the electrolyte',98,230,{s:12,w:500,f:'ink2'});
+  return `<svg viewBox="0 0 340 252" role="img" aria-label="A steel tank, Fe(s), is buried in moist soil under a gas pump. The moist soil, with its ions and water, is the electrolyte. A wire joins the tank to a block of magnesium, Mg(s), buried nearby: the sacrificial anode. Electrons flow through the wire from the magnesium to the tank. The magnesium is oxidized, Mg(s) → Mg²⁺(aq) + 2e⁻, and the tank is the cathode.">${s}</svg>`;}
+/* p. 66: a buried structure protected by a low-voltage current (impressed current cathodic protection), 340 units wide.
+   The notes draw the electrons in the ground; here they flow in the wires, and ions carry the current in the ground */
+function ec9Imp(){const T=ec9T,hatch=[...Array(27)].map((_,i)=>`M${14+i*12},70l-6,7`).join('');
+  const s=`<rect x="6" y="70" width="328" height="178" rx="8" fill="${ec9Soil}"/><path d="M6,70H334" stroke="var(--ink2)" stroke-width="1.6"/><path d="${hatch}" stroke="var(--ink2)" stroke-width="1"/>`+
+    `<path d="M104,25H60V124M236,25H262V96" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linejoin="round"/>`+
+    `<rect x="104" y="8" width="132" height="34" rx="6" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+T('DC power supply',170,30,{s:12,w:650,c:'s'})+T('+',94,17,{s:17,w:800,c:'s'})+T('−',246,17,{s:17,w:800,c:'s'})+
+    `<rect x="48" y="124" width="24" height="66" rx="2" fill="color-mix(in srgb,var(--s3) 60%,var(--fig))" stroke="var(--ink2)" stroke-width="1.3"/>`+T('impressed',60,208,{w:650})+T('anode (+)',60,223,{w:650})+
+    `<rect x="246" y="96" width="32" height="132" rx="3" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1.3"/><ellipse cx="262" cy="96" rx="16" ry="5" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.3"/>`+
+    T('protected',238,204,{a:'end',c:'r',w:650})+T('structure (−)',238,219,{a:'end',c:'r',w:650})+
+    sArrow(72,116,72,44,'var(--s1)',2)+T('e⁻',80,60,{f:'s1',w:700,a:'start',c:'l'})+sArrow(274,34,274,86,'var(--s1)',2)+T('e⁻',283,62,{f:'s1',w:700,a:'start',c:'l'})+
+    sArrow(84,146,234,146,'var(--s3)',2.2)+T('cations',160,138,{s:11.5,w:650,f:'s3'})+sArrow(234,176,84,176,'var(--s5)',2.2)+T('anions',160,168,{s:11.5,w:650,f:'s5'})+
+    T('moist ground',170,243,{w:500,f:'ink2'});
+  return `<svg viewBox="0 0 340 256" role="img" aria-label="A buried steel structure is protected by a low-voltage current. A DC power supply is above the ground. Its negative terminal is joined by a wire to the protected structure, the cathode, and its positive terminal to an impressed anode buried nearby. Electrons flow through the wire from the impressed anode to the positive terminal, and from the negative terminal into the structure. In the moist ground, cations move toward the structure and anions toward the impressed anode.">${s}</svg>`;}
+/* a scratched coating on iron: tin (zn false) or zinc (zn true) */
+function ec9Coat(zn){const T=ec9T,cc=zn?'color-mix(in srgb,var(--s1) 24%,var(--steel))':'color-mix(in srgb,var(--s4) 30%,var(--steel))';
+  let s=T(zn?'Zinc coat, scratched':'Tin coat, scratched',150,18,{s:13.5,w:700,c:'s'})+
+    `<path d="M58,96C76,60 120,52 150,52C180,52 224,60 242,96Z" fill="${ec9W}" fill-opacity=".92"/><path d="M58,96C76,60 120,52 150,52C180,52 224,60 242,96" fill="none" stroke="var(--gl)" stroke-width="1.5"/>`+
+    `<rect x="12" y="108" width="276" height="44" rx="3" fill="${ec9Fe}" stroke="var(--steel2)" stroke-width="1.4"/><rect x="130.5" y="96" width="39" height="12.5" fill="${ec9W}"/>`+
+    `<path d="M12,96H130V108H12ZM170,96H288V108H170Z" fill="${cc}" stroke="var(--steel2)" stroke-width="1.1"/>`+T(zn?'Zn(s)':'Sn(s)',36,89)+T('Fe(s)',42,136);
+  if(!zn)s+=sArrow(150,104,150,70,'var(--s5)',1.8)+T('Fe²⁺',158,74,{f:'s5',a:'start',c:'l'})+ec9Arc(152,118,190,140,222,112,'var(--s1)',2,1)+ec9H(T('e⁻',190,147,{f:'s1',w:700}))+
+    sArrow(232,30,212,90,'var(--ink2)',1.5)+T('O₂',238,34,{a:'start',c:'l'})+T('anode: the iron at the scratch',150,172,{s:11.5})+T('cathode: the tin, where O₂ is reduced',150,188,{s:11.5});
+  else s+=sArrow(122,100,108,72,'var(--s5)',1.8)+T('Zn²⁺',100,86,{f:'s5',a:'end',c:'r'})+ec9Arc(112,112,126,140,146,114,'var(--s1)',2,1)+ec9H(T('e⁻',116,148,{f:'s1',w:700}))+
+    sArrow(178,30,156,92,'var(--ink2)',1.5)+T('O₂',184,34,{a:'start',c:'l'})+T('anode: the zinc, which is oxidized',150,172,{s:11.5})+T('cathode: the iron at the scratch',150,188,{s:11.5});
+  const alt=zn?'Steel coated with zinc, with a scratch that exposes the iron under a drop of water. The zinc next to the scratch is oxidized to Zn²⁺(aq): it is the anode. Electrons flow from the zinc through the metal to the iron at the scratch, where oxygen is reduced: the iron is the cathode and is protected.'
+    :'Steel coated with tin, with a scratch that exposes the iron under a drop of water. The iron at the scratch is oxidized to Fe²⁺(aq): it is the anode. Electrons flow through the metal from the iron to the tin, where oxygen is reduced: the tin is the cathode.';
+  return `<svg viewBox="0 0 300 198" role="img" aria-label="${alt}">${s}</svg>`;}
+
+ECL[9]={t:EC_T[9],h:'Corrosion and its prevention',d:'Corrosion is the oxidation of a metal by substances in its environment. On rusting iron, oxygen and water are the oxidizing agents, and the iron is the anode of a small voltaic cell.',build(g){
+  ecCSS(9,'#ec-9 .ec9two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}@media(max-width:760px){#ec-9 .ec9two{grid-template-columns:1fr}}#ec-9 .ec9two figure.cf{margin:.3em 0}'+
+    '#ec-9 .ec9m th[scope=row]{text-align:left;font-weight:650;vertical-align:top}#ec-9 .ec9m td{vertical-align:top}#ec-9 .ec9m ul{margin:.1em 0;padding-left:1.1em}#ec-9 .ec9m li{margin:.18em 0}'+
+    '@media(max-width:700px){#ec-9 .ec9m thead{display:none}#ec-9 .ec9m,#ec-9 .ec9m tbody,#ec-9 .ec9m tr,#ec-9 .ec9m th,#ec-9 .ec9m td{display:block;width:auto}#ec-9 .ec9m tr{padding:.5em 0;border-top:1px solid var(--hair)}'+
+    '#ec-9 .ec9m th[scope=row]{font-size:1.02rem;padding:.2em 0;border:0}#ec-9 .ec9m td{padding:.25em 0;border:0}#ec-9 .ec9m td::before{content:attr(data-l);display:block;font-size:.76rem;font-weight:650;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase}}'+
+    /* on a phone: the reduction tables fit without the two strength arrows, and each row of the fill-in table becomes a block */
+    '@media(max-width:600px){#ec-9 .ec-tb td.arw,#ec-9 .ec-tb thead th:first-child:empty,#ec-9 .ec-tb thead th:last-child:empty{display:none}#ec-9 .ec-tb{font-size:.78rem}#ec-9 .ec-tb td{padding-left:.2em;padding-right:.2em}#ec-9 .ec-tb td.eqm{padding:0 .08em}#ec-9 .ec-tb td.e0{padding-left:.35em}#ec-9 .ec-tb button.ecpk{padding-left:.18em;padding-right:.18em}'+
+    '#ec-9 table.ec9eq,#ec-9 table.ec9eq tbody,#ec-9 table.ec9eq tr,#ec-9 table.ec9eq th,#ec-9 table.ec9eq td{display:block;width:auto;text-align:left}#ec-9 table.ec9eq tr:first-child{display:none}#ec-9 table.ec9eq tr{padding:.45em 0;border-top:1px solid var(--hair)}'+
+    '#ec-9 table.ec9eq th.rn{border:0;padding:.1em 0;font-weight:650}#ec-9 table.ec9eq td{border:0;padding:.25em 0}#ec-9 table.ec9eq td::before{content:attr(data-l);display:block;font-size:.8rem;color:var(--ink2);margin-bottom:.15em}#ec-9 table.ec9eq td select{width:100%;max-width:24rem}}'+
+    /* narrow phones: the heads of the reduction tables wrap, thus the tables fit at 360 px. From 701 px: fixed column widths give the examples of the prevention table room */
+    '@media(max-width:380px){#ec-9 .ec-tb th{white-space:normal}#ec-9 .ec-tb{font-size:.72rem}#ec-9 .ec-tb td{padding-left:.12em;padding-right:.12em}#ec-9 .ec-tb td.e0{padding-left:.3em}}'+
+    '@media(min-width:701px){#ec-9 .ec9m{table-layout:fixed;width:100%}#ec-9 .ec9m thead th:nth-child(1){width:17%}#ec-9 .ec9m thead th:nth-child(2){width:25%}#ec-9 .ec9m thead th:nth-child(3){width:18%}}');
+  const E=ec9Eq,P=t=>'<p>'+ec9N(t)+'</p>',I=(t,x)=>'<p>'+t+': '+E(x)+'</p>';
+  /* 1. the notes of p. 65 */
+  card(g,'Corrosion: the oxidation of metals','<p class="hint">Outcome 30–B1.4k: identify electron transfer, oxidizing agents and reducing agents in redox reactions of everyday life, for example corrosion.</p>'+
+    `<ul><li><span class="key">Corrosion</span> is the deterioration (oxidation) of a metal by electrochemical reactions. Examples: iron rusting, silver tarnishing and the green patina on copper.</li>
+    <li>Corrosion is a spontaneous redox reaction, but an unwanted one. It costs about 3 % of GDP each year in lost productivity.</li>
+    <li>In rusting, oxygen and water act as the oxidizing agents. They oxidize the metal.</li></ul>
+    <p>The reduction in moist air (a neutral solution):</p><div class="fx">${E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')} &nbsp; <span style="white-space:nowrap">${ecEs('r')} = +0.40&nbsp;V</span></div>
+    <p>Under acidic conditions, the reduction shifts to:</p><div class="fx">${E('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')} &nbsp; <span style="white-space:nowrap">${ecEs('r')} = +1.23&nbsp;V</span></div>
+    <p>Iron is the reducing agent: ${E('Fe(s) -> Fe^2+(aq) + 2e^-')}. Its half-reaction, ${E('Fe^2+(aq) + 2e^- <=> Fe(s)')}, is −0.45&nbsp;V. In moist air, two iron atoms give the four electrons that one oxygen molecule gains:</p>
+    <div class="fx">${E('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')}<br>${ecEs('net')} = +0.40&nbsp;V − (−0.45&nbsp;V) <span style="white-space:nowrap">= +0.85&nbsp;V</span></div>
+    <p class="note">The ${ec9C('Fe^2+(aq)')} and ${ec9C('OH^-(aq)')} ions form ${ec9C('Fe(OH)2(s)')}. Oxygen oxidizes it further to rust: hydrated iron(III) oxide, ${ec9C('Fe2O3·xH2O(s)')}.</p>`,'half');
+  /* 2. the drop of water on iron (p. 65) */
+  card(g,'Rusting: a small voltaic cell',CF(ec9Drop(),'A drop of water on iron (the head of a nail). The same cells form on slabs and sheets of iron.')+
+    `<ul><li>Under the middle of the drop there is less oxygen. The iron there is the <b>anode</b>: iron atoms lose electrons, and the metal is pitted. ${E('Fe(s) -> Fe^2+(aq) + 2e^-')}</li>
+    <li>The electrons move through the iron to the edge of the drop. The iron is the external circuit.</li>
+    <li>At the edge of the drop, oxygen from the air dissolves in the water. The iron there is the <b>cathode</b>, where oxygen and water gain the electrons. ${E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')}</li>
+    <li>The water is the electrolyte. The ${ec9C('Fe^2+(aq)')} ions move away from the anode and meet the ${ec9C('OH^-(aq)')} ions, thus rust forms near the edge of the drop, away from the pit.</li></ul>`,'half');
+  /* 3. which metals corrode (p. 65) */
+  const c3=card(g,'Which metals corrode?',`<ul><li>A metal is oxidized when its half-reaction is <b>below</b> the oxygen-water half-reaction (+0.40&nbsp;V) in the table of reduction half-reactions. Then the reaction with oxygen and water is spontaneous.</li>
+    <li>In an acidic solution, the oxygen half-reaction is +1.23&nbsp;V. Corrosion is more favourable.</li>
+    <li>Most metals form a layer when they corrode: a metal oxide (${ec9C('Al2O3(s)')}), a metal carbonate (${ec9C('CuCO3(s)')}, the green patina on copper) or a metal sulfide (${ec9C('Ag2S(s)')}, the tarnish on silver). The layer is impermeable to oxygen, water and acid, thus it protects the metal below.</li>
+    <li>Iron oxide (rust) is <b>porous</b>. Oxygen, water, acid and salt keep reaching the iron, thus the iron keeps rusting: the rust bubbles and flakes off.</li>
+    <li>Salt and acids speed up rusting. Their dissolved ions make the water a better conductor, thus ions and electrons move between the anode and the cathode more quickly.</li></ul>`);
+  const R3=ecRows(['Au^3+(aq)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','Ag^+(aq)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','Cu^2+(aq)','Pb^2+(aq)','Sn^2+(aq)','Ni^2+(aq)','Fe^2+(aq)','Zn^2+(aq)','Al^3+(aq)','Mg^2+(aq)']);
+  ecTable(c3,R3,{rows:[R3.indexOf(ec9OA),R3.indexOf(ec9ON)],cap:'The two oxygen half-reactions are shaded. Every metal below the +0.40 V row is oxidized by oxygen and water. Silver and gold are above it.'});
+  /* 4. worked examples */
+  card(g,'Worked examples: corrosion reactions',
+    ex('Example 1: iron in moist air. Write the two half-reactions and the net equation for the rusting of iron in a neutral solution. Calculate '+ecEs('net')+'.',
+      P('The entities present are Fe(s), O₂(g) and H₂O(l). The SOA is O₂(g) with H₂O(l) (+0.40 V). The SRA is Fe(s) (−0.45 V).')+I('Reduction (cathode)','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Oxidation (anode), × 2','2Fe(s) -> 2Fe^2+(aq) + 4e^-')+
+      I('Net','2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')+P(ecEs('net')+' = '+ecEs('r')+' cathode − '+ecEs('r')+' anode = +0.40 V − (−0.45 V) = <b>+0.85 V</b>. '+ecEs('net')+' is positive: iron corrodes spontaneously.'))+
+    ex('Example 2: iron in acid rain. Write the net equation for the corrosion of iron by oxygen in an acidic solution, and calculate '+ecEs('net')+'. Compare it with Example 1.',
+      P('The SOA is now O₂(g) with H⁺(aq) (+1.23 V). The SRA is still Fe(s) (−0.45 V).')+I('Reduction','O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')+I('Oxidation, × 2','2Fe(s) -> 2Fe^2+(aq) + 4e^-')+I('Net','2Fe(s) + O2(g) + 4H^+(aq) -> 2Fe^2+(aq) + 2H2O(l)')+
+      P(ecEs('net')+' = +1.23 V − (−0.45 V) = <b>+1.68 V</b>. This is larger than +0.85 V: corrosion is more favourable in acid, and the ions of the acid also make the water a better conductor.'))+
+    ex('Example 3: the green patina on copper. Is copper oxidized by oxygen and water? A copper roof turns green after many years. Explain.',
+      P('The half-reaction of copper, Cu²⁺(aq) + 2e⁻ ⇌ Cu(s), is +0.34 V: just below the oxygen-water half-reaction (+0.40 V).')+I('Reduction','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Oxidation, × 2','2Cu(s) -> 2Cu^2+(aq) + 4e^-')+
+      I('Net','2Cu(s) + O2(g) + 2H2O(l) -> 2Cu^2+(aq) + 4OH^-(aq)')+P(ecEs('net')+' = +0.40 V − (+0.34 V) = <b>+0.06 V</b>. The reaction is spontaneous, but '+ecEs('net')+' is small and copper corrodes slowly.')+
+      P('The copper ions react with carbon dioxide from the air and form a green layer of copper carbonate, '+ec9C('CuCO3(s)')+'. This layer is not porous, thus it protects the copper below.'))+
+    ex('Example 4: tarnished silver. Silver (+0.80 V) is above the oxygen-water half-reaction, yet a silver spoon turns black in air that has traces of sulfur compounds (from eggs, for example). Use the table to explain.',
+      P('Without sulfide: '+ecEs('net')+' = +0.40 V − (+0.80 V) = −0.40 V. This is not spontaneous: silver does not corrode in clean, moist air.')+
+      P('With sulfide ions present, silver is the reducing agent of the half-reaction '+E('Ag2S(s) + 2e^- <=> 2Ag(s) + S^2-(aq)')+', −0.69 V. Silver with sulfide ions is a much stronger reducing agent.')+
+      I('Reduction','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Oxidation, × 2','4Ag(s) + 2S^2-(aq) -> 2Ag2S(s) + 4e^-')+I('Net','4Ag(s) + 2S^2-(aq) + O2(g) + 2H2O(l) -> 2Ag2S(s) + 4OH^-(aq)')+
+      P(ecEs('net')+' = +0.40 V − (−0.69 V) = <b>+1.09 V</b>: spontaneous. The black tarnish is silver sulfide, '+ec9C('Ag2S(s)')+'.'))+
+    ex('Example 5: aluminium. Aluminium (−1.66 V) is a much stronger reducing agent than iron. Calculate '+ecEs('net')+' for its oxidation by oxygen and water. Why does an aluminium boat not corrode away?',
+      I('Reduction, × 3','3O2(g) + 6H2O(l) + 12e^- -> 12OH^-(aq)')+I('Oxidation, × 4','4Al(s) -> 4Al^3+(aq) + 12e^-')+I('Net','4Al(s) + 3O2(g) + 6H2O(l) -> 4Al^3+(aq) + 12OH^-(aq)')+
+      P(ecEs('net')+' = +0.40 V − (−1.66 V) = <b>+2.06 V</b>. The aluminium does react, at once.')+
+      P('It forms a thin, tough layer of aluminium oxide, '+ec9C('Al2O3(s)')+', that is impermeable to oxygen and water. The layer protects the metal below. Rust on iron is porous and flakes off, thus iron keeps corroding.')));
+  /* 5. try it: an iron nail in salt water */
+  const c5=card(g,'Try it: an iron nail in salt water',`<p>An iron nail is left in salt water, ${ec9C('NaCl(aq)')}, that is open to the air. The entities present are ${['Fe(s)','Na^+(aq)','Cl^-(aq)','O2(g)','H2O(l)'].map(ec9C).join(', ')}. They are underlined in the table.</p><p class="hint">Tap the strongest oxidizing agent (left side) and the strongest reducing agent (right side), then Check.</p>`);
+  ecTable(c5,ecRows(['Cl2(g)','O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','Fe^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','Na^+(aq)']),{hl:['Fe(s)','Na^+(aq)','Cl^-(aq)','O2(g)','H2O(l)'],pick:true,slot:0,
+    w:ec9N('SOA: O₂(g) with H₂O(l) (+0.40 V). The +1.23 V row needs H⁺(aq), and salt water is neutral. SRA: Fe(s) (−0.45 V); Cl⁻(aq) and H₂O(l) are much weaker reducing agents.')+
+      '<br>Reduction: '+E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+'<br>Oxidation, × 2: '+E('2Fe(s) -> 2Fe^2+(aq) + 4e^-')+'<br>Net: '+E('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')+
+      ec9N('<br>'+ecEs('net')+' = +0.40 V − (−0.45 V) = +0.85 V: spontaneous. The Na⁺(aq) and Cl⁻(aq) ions do not react, but they make the water a better conductor, thus the nail rusts faster than in pure water.')});
+  /* 6. try it: the steps of rusting */
+  const c6=card(g,'Try it: the steps of rusting','');
+  ordering(c6,['Under the middle of the drop, where there is less oxygen, iron atoms lose electrons: '+E('Fe(s) -> Fe^2+(aq) + 2e^-'),
+    'The electrons move through the iron to the edge of the drop.',
+    'At the edge of the drop, oxygen from the air and water gain the electrons: '+E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)'),
+    'The '+ec9C('Fe^2+(aq)')+' ions and the '+ec9C('OH^-(aq)')+' ions move through the water and meet.',
+    'They form '+ec9C('Fe(OH)2(s)')+', and oxygen oxidizes it further to rust, '+ec9C('Fe2O3·xH2O(s)')+'.',
+    'The rust is porous and flakes off. Oxygen and water reach fresh iron, and the corrosion continues.'],'Put the steps of the rusting of iron under a drop of water in order.',0);
+  /* 7. the table of prevention methods (p. 66) */
+  card(g,'Preventing corrosion',`<p>Corrosion is prevented in two ways: keep oxygen and water away from the metal, or supply the iron with electrons so that it is not oxidized (cathodic protection).</p>
+    <table class="ec9m"><thead><tr><th>Method</th><th>How it works</th><th>Commonly used for</th><th>Examples</th></tr></thead><tbody>
+    <tr><th scope="row">A protective barrier to oxygen and water</th><td data-l="How it works">It prevents water and oxygen from touching the metal surface.</td><td data-l="Commonly used for">Cars, bridges, tools, chains, food cans, nails, pails, sinks and cutlery</td>
+      <td data-l="Examples"><ul><li>Painting.</li><li>Oiling or greasing.</li><li>A plastic coating (the inside of a food can).</li><li>Dipping: the iron is dipped in another metal that forms an oxide that is not porous (tin, magnesium or zinc). Magnesium and zinc are oxidized before the iron. Tin protects the iron only while the coating is whole: once it is scratched, the iron and the tin form a cell, and the iron is oxidized faster.</li>
+      <li>Galvanizing or electroplating: a thinner layer of these metals is put on the iron, for example by an electrolytic process (lesson 10, Electrolytic cells). Galvanized steel has a zinc coat.</li><li>Alloying: stainless steel is iron with chromium and nickel. A thin layer of chromium oxide forms on its surface and prevents further oxidation.</li></ul></td></tr>
+    <tr><th scope="row">A sacrificial anode (cathodic protection)</th><td data-l="How it works">The iron is connected to a more easily oxidized metal (zinc or magnesium). That metal is oxidized before the iron. It is replaced when it is used up.</td><td data-l="Commonly used for">Ship hulls and propellers, buried pipelines and tanks, septic tanks, hot water tanks</td>
+      <td data-l="Examples"><ul><li>Zinc blocks bolted to the steel hull of a ship.</li><li>A magnesium block wired to a buried steel tank.</li><li>Metals that react vigorously with water, such as Li, Na, K, Ca and Ba (groups 1 and 2), cannot be used. Magnesium reacts only slowly with water, thus it can be used.</li></ul></td></tr>
+    <tr><th scope="row">A low-voltage current (cathodic protection)</th><td data-l="How it works">The iron object is connected to the negative terminal of a DC power supply. The current floods the metal with electrons and stops the oxidation of the iron.</td><td data-l="Commonly used for">Buried pipelines and tanks, bridges, car frames</td>
+      <td data-l="Examples"><ul><li>Impressed current cathodic protection (ICCP) of a buried pipeline.</li><li>A weak current from the car battery to the steel frame.</li></ul></td></tr></tbody></table>`);
+  /* 8. the sacrificial anode (p. 66) */
+  card(g,'Cathodic protection: a sacrificial anode',CF(ec9Sac(),'A magnesium block protects a buried steel tank. At the anode: '+ec9Eq('Mg(s) -> Mg^2+(aq) + 2e^-'))+
+    `<ul><li>The iron is connected to a metal that is more easily oxidized: a <b>stronger reducing agent</b>, lower in the table (zinc or magnesium).</li>
+    <li>That metal is oxidized before the iron. It is the <span class="key">sacrificial anode</span>, and the iron becomes the cathode: ${E('Mg(s) -> Mg^2+(aq) + 2e^-')}</li>
+    <li>The anode is used up over time. It is replaced when it is depleted.</li>
+    <li>Metals that react vigorously with water (Li, Na, K, Ca, Ba) cannot be used: water would oxidize them at once.</li></ul>`+
+    ex('Example 6: a magnesium block is wired to a buried steel tank. Write the half-reactions at the magnesium and at the tank, and explain why the iron is protected.',
+      P('Mg²⁺(aq) + 2e⁻ ⇌ Mg(s) is −2.37 V, far below Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) at −0.45 V: magnesium is the stronger reducing agent.')+I('Anode (the magnesium)','Mg(s) -> Mg^2+(aq) + 2e^-')+
+      P('The electrons flow through the wire to the tank.')+I('Cathode (the steel tank)','O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+I('Net','2Mg(s) + O2(g) + 2H2O(l) -> 2Mg^2+(aq) + 4OH^-(aq)')+
+      P(ecEs('net')+' = +0.40 V − (−2.37 V) = <b>+2.77 V</b>. The iron only conducts the electrons to the oxygen: it is not oxidized while magnesium is left.'))+
+    ex('Example 7: sodium is an even stronger reducing agent than magnesium. Why can sodium not be used as a sacrificial anode?',
+      P('Sodium reacts vigorously with water itself, even without oxygen. Water is the oxidizing agent, '+E('2H2O(l) + 2e^- -> H2(g) + 2OH^-(aq)')+' (−0.83 V), and Na(s) (−2.71 V) is the reducing agent.')+I('Net','2Na(s) + 2H2O(l) -> 2Na^+(aq) + H2(g) + 2OH^-(aq)')+
+      P(ecEs('net')+' = −0.83 V − (−2.71 V) = <b>+1.88 V</b>. The sodium would be used up at once, and the reaction is dangerous. The same is true of Li, K, Ca and Ba. Magnesium is protected by a layer of oxide and reacts only slowly with water.')),'half');
+  /* 9. the low-voltage current (p. 66) */
+  card(g,'Cathodic protection: a low-voltage current',CF(ec9Imp(),'Impressed current cathodic protection. Electrons flow through the wires. In the moist ground, ions carry the current.')+
+    `<ul><li>The iron object is connected to the <b>negative terminal</b> of a DC power supply. The power supply floods the metal with electrons.</li>
+    <li>With a supply of electrons, only <b>reduction</b> can occur on the surface of the iron. The iron is not oxidized.</li>
+    <li>The positive terminal is connected to an <span class="key">impressed anode</span> buried nearby. Oxidation occurs at this anode.</li>
+    <li>It is used for buried pipelines and tanks. Some cars send a weak current from the battery to the steel frame.</li></ul>`+
+    ex('Example 8: which half-reaction occurs on the surface of a protected steel pipeline in moist soil that contains oxygen? Why is the iron not oxidized?',
+      P('The pipeline is the cathode: the power supply pushes electrons into it. The strongest oxidizing agent at its surface gains the electrons:')+'<p>'+E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+' &nbsp; (+0.40&nbsp;V)</p>'+
+      P('An oxidation needs a place where electrons leave the metal. The electrons flow into the pipeline, thus '+E('Fe(s) -> Fe^2+(aq) + 2e^-')+' does not occur. If the ground water has metal ions, the strongest oxidizing agent among them is reduced first (diploma question 110). The oxidation occurs at the impressed anode instead.')),'half');
+  /* 10. scratched coatings: tin and zinc (p. 66, dipping) */
+  card(g,'Scratched coatings: tin and zinc','<div class="ec9two">'+CF(ec9Coat(false),'Tin is a weaker reducing agent than iron.')+CF(ec9Coat(true),'Zinc is a stronger reducing agent than iron.')+'</div>'+
+    `<p>A coating protects iron only while it is whole. When it is scratched, the coating metal and the iron touch the same water and form a cell. The stronger reducing agent is the anode.</p>
+    <ul><li><b>Tin</b> (${E('Sn^2+(aq) + 2e^- <=> Sn(s)')}, −0.14&nbsp;V) is a weaker reducing agent than iron (−0.45&nbsp;V). The iron at the scratch is the anode, and the tin is the cathode where oxygen is reduced. The iron corrodes even faster than it would with no tin, because the large tin surface collects the electrons for the oxygen.</li>
+    <li><b>Zinc</b> (${E('Zn^2+(aq) + 2e^- <=> Zn(s)')}, −0.76&nbsp;V) is a stronger reducing agent than iron. The zinc is the anode and is oxidized. The iron at the scratch is the cathode and is protected. This is why <span class="key">galvanized</span> (zinc-coated) steel lasts, even when it is scratched.</li></ul>`+
+    ex('Example 9: calculate '+ecEs('net')+' of the cell at each scratch in moist air.',
+      P('Tin coat: the SRA is Fe(s) (−0.45 V). '+ecEs('net')+' = +0.40 V − (−0.45 V) = <b>+0.85 V</b>, the same reaction as Example 1: '+E('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)'))+
+      P('Zinc coat: the SRA is Zn(s) (−0.76 V). '+ecEs('net')+' = +0.40 V − (−0.76 V) = <b>+1.16 V</b>: '+E('2Zn(s) + O2(g) + 2H2O(l) -> 2Zn^2+(aq) + 4OH^-(aq)'))+
+      P('Zinc gives the larger '+ecEs('net')+': it is the stronger reducing agent, thus the zinc is oxidized and the iron is not.')));
+  /* 11. try it: a scratched galvanized nail */
+  const c11=card(g,'Try it: a scratched galvanized nail',`<p>A galvanized (zinc-coated) iron nail is scratched and left in moist air. The entities present are ${['Zn(s)','Fe(s)','O2(g)','H2O(l)'].map(ec9C).join(', ')}. They are underlined in the table.</p><p class="hint">Tap the strongest oxidizing agent (left side) and the strongest reducing agent (right side), then Check.</p>`);
+  ecTable(c11,ecRows(['O2(g) + 4H^+(aq) + 4e^- <=> 2H2O(l)','O2(g) + 2H2O(l) + 4e^- <=> 4OH^-(aq)','Fe^2+(aq)','Zn^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)']),{hl:['Zn(s)','Fe(s)','O2(g)','H2O(l)'],pick:true,slot:1,
+    w:ec9N('SOA: O₂(g) with H₂O(l) (+0.40 V); the +1.23 V row needs H⁺(aq). SRA: Zn(s) (−0.76 V), a stronger reducing agent than Fe(s) (−0.45 V).')+
+      '<br>Oxidation (the zinc is the anode), × 2: '+E('2Zn(s) -> 2Zn^2+(aq) + 4e^-')+'<br>Reduction (on the iron, the cathode): '+E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+'<br>Net: '+E('2Zn(s) + O2(g) + 2H2O(l) -> 2Zn^2+(aq) + 4OH^-(aq)')+
+      ec9N('<br>'+ecEs('net')+' = +0.40 V − (−0.76 V) = +1.16 V. The iron is not oxidized while zinc is left.')});
+  /* 13. try it: name the method */
+  const c13=card(g,'Try it: name the method of prevention','');
+  matching(c13,[['A car body is painted.','A barrier to oxygen and water'],['A bicycle chain is oiled.','A barrier to oxygen and water'],['The inside of a food can has a plastic coating.','A barrier to oxygen and water'],
+    ['Iron is alloyed with chromium and nickel to make stainless steel.','A barrier to oxygen and water'],['A steel nail is coated with zinc (galvanized).','A barrier to oxygen and water','A sacrificial anode'],
+    ['A magnesium block is wired to a buried steel tank.','A sacrificial anode'],['Zinc blocks are bolted to the steel hull of a ship.','A sacrificial anode'],
+    ['A pipeline is wired to the negative terminal of a DC power supply.','A low-voltage current'],['A weak current from the battery flows to the steel frame of a car.','A low-voltage current']],
+    'Choose the method for each example. A zinc coat is a barrier, and it is also a sacrificial anode where it is scratched: both answers are accepted.',0);
+  /* 12. try it: which metals corrode, and which can protect iron */
+  const c12=card(g,'Try it: which metals can protect iron?',`<p>Use these values. Oxygen and water: ${E('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')}, +0.40&nbsp;V. Iron: ${E('Fe^2+(aq) + 2e^- <=> Fe(s)')}, −0.45&nbsp;V. Each metal is listed with the reduction potential of its ion.</p>`);
+  const mr=(n,k,v)=>n+' ('+ec9C(k)+', '+v+'&nbsp;V)';
+  eqTable(c12,{cols:['Metal','Is it oxidized by O₂ and H₂O?','Can it be a sacrificial anode for iron?'],opt:[['Yes','No'],['Yes','No: weaker reducing agent than iron','No: reacts vigorously with water']],
+    rows:[[mr('Magnesium','Mg^2+(aq)','−2.37'),[0,0]],[mr('Zinc','Zn^2+(aq)','−0.76'),[0,0]],[mr('Tin','Sn^2+(aq)','−0.14'),[0,1]],[mr('Lead','Pb^2+(aq)','−0.13'),[0,1]],
+      [mr('Copper','Cu^2+(aq)','+0.34'),[0,1]],[mr('Silver','Ag^+(aq)','+0.80'),[1,1]],[mr('Sodium','Na^+(aq)','−2.71'),[0,2]],[mr('Calcium','Ca^2+(aq)','−2.87'),[0,2]]],
+    after:ec9N('Every metal below the oxygen-water half-reaction (+0.40 V) is oxidized by oxygen and water: all of these except silver (+0.80 V). A sacrificial anode must be a stronger reducing agent than iron, below −0.45 V: magnesium, zinc, sodium and calcium. Sodium and calcium react vigorously with water and would be used up at once, thus only magnesium and zinc can be used. Tin, lead and copper are weaker reducing agents than iron: joined to them, the iron is the anode and corrodes faster.')},0);
+  /* on a phone each row becomes a block: the metal, then each question above its select (the column heads are copied to data-l) */
+  {const tb=c12.querySelector('table.eq-tb');if(tb){tb.classList.add('ec9eq');const hd=[...tb.rows[0].cells].map(x=>x.textContent);[...tb.rows].slice(1).forEach(r=>[...r.cells].forEach((td,j)=>{if(j)td.dataset.l=hd[j];}));}}
 },qz:[
-  {q:'A metal that can be used as a sacrificial anode to protect iron is',o:['zinc','lead','copper','silver'],a:0,w:'Zn(s) (−0.76 V) is a stronger reducing agent than Fe(s) (−0.45 V), thus the zinc is oxidized instead of the iron.'},
-  {q:'In the rusting of iron, the oxidizing agent is',o:['oxygen, with water','iron','hydrogen gas','the iron(II) ion'],a:0,w:'O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Oxygen gains electrons, thus it is the oxidizing agent.'}]};
-EC_REF.t.push(['Corrosion','The oxidation of a metal by substances in its environment, for example the rusting of iron.'],['Sacrificial anode','A more easily oxidized metal joined to iron. It is oxidized instead of the iron.']);
+  {q:'Calculate '+ecEs('net')+' for the corrosion of iron by oxygen and water in moist air (a neutral solution).',n:.85,u:'V',abs:.005,tol:0,ex:1,
+    w:'The oxidizing agent is O₂(g) with H₂O(l): O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq), E°r = +0.40 V. The reducing agent is Fe(s): Fe²⁺(aq) + 2e⁻ ⇌ Fe(s), E°r = −0.45 V. Oxygen is reduced at the cathode, and iron is oxidized at the anode. E°net = E°r cathode − E°r anode = +0.40 V − (−0.45 V) = +0.85 V.'},
+  {q:'Acid rain falls on an iron railing. Calculate '+ecEs('net')+' for the corrosion of iron by oxygen in an acidic solution.',n:1.68,u:'V',abs:.005,tol:0,
+    w:'In an acidic solution, the oxidizing agent is O₂(g) with H⁺(aq): O₂(g) + 4H⁺(aq) + 4e⁻ → 2H₂O(l), E°r = +1.23 V. The reducing agent is Fe(s), E°r = −0.45 V. E°net = +1.23 V − (−0.45 V) = +1.68 V.'},
+  {q:'Corrosion is best described as',o:['the oxidation of a metal by substances in its environment','the reduction of a metal by the oxygen and the water in the air','the formation of a metal from its ions in a solution','the reaction of a metal oxide with an acid to form a salt'],a:0,
+    w:'Corrosion is the deterioration (oxidation) of a metal by electrochemical means, for example iron rusting, silver tarnishing and copper patina. The metal loses electrons.'},
+  {q:'Use the table of reduction potentials. Which metal is <b>not</b> oxidized by oxygen and water in a neutral solution (+0.40 V)?',o:['silver','copper','nickel','zinc'],a:0,
+    w:'A metal is oxidized when its half-reaction is below the oxygen-water half-reaction (+0.40 V). Ag⁺(aq) + e⁻ ⇌ Ag(s) is +0.80 V, above it: silver is not oxidized. Copper (+0.34 V), nickel (−0.26 V) and zinc (−0.76 V) are below it. Copper corrodes only slowly: E°net = +0.06 V.'},
+  {q:'The half-reaction of aluminium is −1.66 V, far below that of iron (−0.45 V). Yet an aluminium boat does not corrode away. Why?',o:['A tough layer of Al₂O₃(s) forms and keeps out oxygen and water','Aluminium is above the oxygen half-reaction in the reduction table','Oxygen cannot accept electrons from a metal stronger than iron','The aluminium is reduced by the water instead of oxidized'],a:0,
+    w:'Aluminium does react: E°net = +0.40 V − (−1.66 V) = +2.06 V. The aluminium oxide layer that forms is not porous, thus it protects the metal below. Rust on iron is porous and flakes off.'},
+  {q:'A steel can is coated with tin. The coating is scratched, and the can gets wet. Why does the iron at the scratch corrode quickly?',o:['Iron is a stronger reducing agent than tin: the iron is the anode','Tin is a stronger reducing agent than iron: the tin becomes the anode','The tin oxidizes the iron directly, without oxygen and water','Tin ions are reduced on the iron, which loses its electrons'],a:0,
+    w:'Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V) is below Sn²⁺(aq) + 2e⁻ ⇌ Sn(s) (−0.14 V), thus Fe(s) is the stronger reducing agent. At the scratch, the iron is oxidized (the anode), and oxygen is reduced on the tin (the cathode): E°net = +0.40 V − (−0.45 V) = +0.85 V. A zinc coat would be oxidized instead of the iron.'},
+  {q:'Galvanized steel is coated with zinc. Calculate '+ecEs('net')+' for the oxidation of zinc by oxygen and water in moist air.',n:1.16,u:'V',abs:.005,tol:0,
+    w:'The oxidizing agent is O₂(g) with H₂O(l), E°r = +0.40 V. The reducing agent is Zn(s): Zn²⁺(aq) + 2e⁻ ⇌ Zn(s), E°r = −0.76 V. E°net = +0.40 V − (−0.76 V) = +1.16 V.'},
+  {q:'Balance the net equation for the rusting of iron in moist air, '+ec9Eq('Fe(s) + O2(g) + H2O(l) -> Fe^2+(aq) + OH^-(aq)')+', with the lowest whole-number coefficients. What is the coefficient of '+ec9C('Fe^2+(aq)')+'?',n:2,u:'',tol:0,
+    m:'Balance the electrons: multiply each half-reaction so that the electrons lost equal the electrons gained, then add them.',
+    w:'Reduction: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Oxidation: Fe(s) → Fe²⁺(aq) + 2e⁻. Multiply the oxidation so that the electrons lost equal the electrons gained. Add the half-reactions: 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq), thus the coefficient of Fe²⁺(aq) is 2.'},
+  {q:'Calculate the mass of oxygen gas that is needed to oxidize 5.00 g of iron to '+ec9C('Fe^2+(aq)')+' in moist air.',n:5/EC_M.Fe/2*(2*EC_M.O),u:'g',tol:.01,
+    m:'Write the balanced net equation, find n = m/M of the iron, use the mole ratio, then m = nM of the oxygen.',
+    w:'The net equation is 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq). n(Fe) = 5.00 g ÷ 55.85 g/mol = 0.08953 mol. n(O₂) = 0.08953 mol × 1/2 = 0.04476 mol. m(O₂) = 0.04476 mol × 32.00 g/mol = 1.43 g.'},
+  {q:'To protect an iron pipe, a sacrificial anode must be a metal that',o:['is a stronger reducing agent than iron and does not react vigorously with water','is a weaker reducing agent than iron and does not react with oxygen or water','is a stronger oxidizing agent than iron and reacts quickly with oxygen and water','is above iron in the table of half-reactions and is not oxidized by oxygen'],a:0,
+    w:'The anode metal must lose electrons more easily than iron: its half-reaction is below Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V). Zinc and magnesium work. Metals that react vigorously with water, such as sodium, would be used up at once.'},
+  {q:'A buried pipeline is protected by a low-voltage current from a DC power supply. The pipeline is connected to the',o:['negative terminal, thus electrons flow into it and only reduction occurs on it','positive terminal, thus electrons flow into it and only reduction occurs on it','negative terminal, thus electrons flow out of it and the iron is oxidized','positive terminal, thus electrons flow out of it and only oxidation occurs on it'],a:0,
+    w:'The negative terminal pushes electrons into the pipeline. With a supply of electrons, only reduction occurs on its surface (oxygen and water gain the electrons), and the iron is not oxidized. The positive terminal is joined to an impressed anode, where oxidation occurs.'},
+  {q:'A 2.50 kg magnesium sacrificial anode on a buried steel tank is used up. Calculate the amount of electrons, in moles, that it supplied to the tank.',n:2*2500/EC_M.Mg,u:'mol',tol:.01,
+    m:'Find n = m/M of the magnesium (in grams), then use the half-reaction for the mole ratio of electrons.',
+    w:'The anode reaction is Mg(s) → Mg²⁺(aq) + 2e⁻. n(Mg) = 2500 g ÷ 24.31 g/mol = 102.8 mol. Two moles of electrons come from each mole of magnesium. n(e⁻) = 2 × 102.8 mol = 206 mol.'},
+  {q:'Most metals form a corrosion layer that protects the metal below. Which layer forms on copper and gives old copper roofs their green colour?',o:[ec9C('CuCO3(s)'),ec9C('Fe2O3(s)'),ec9C('Ag2S(s)'),ec9C('Al2O3(s)')],a:0,
+    w:'The green patina of copper is copper carbonate, CuCO₃(s). The tarnish on silver is Ag₂S(s), the layer on aluminium is Al₂O₃(s), and rust is a hydrated Fe₂O₃(s). The copper carbonate layer protects the copper, but rust is porous.'}]};
+
+/* the diploma questions 106 to 111 (p. 67-68; key p. 85: 106 D, 107 A, 108 A, 109 C, 110 3142, 111 D). The options of 106 and 107 are reworded so that the key is not the longest option */
+EC_DIP[9]=[
+  {q:'If a block of refined copper were selected to serve as a sacrificial anode and if it were bolted onto the iron hull of a ship, one would expect the',
+    o:['iron to oxidize the Cl⁻(aq) ions in the seawater around the hull','copper to be oxidized before the iron, like a zinc anode','copper to corrode at a faster rate than the iron','copper to remain unchanged and the iron to continue to oxidize'],a:3,
+    w:'A sacrificial anode must be a stronger reducing agent than iron. Cu²⁺(aq) + 2e⁻ ⇌ Cu(s) is +0.34 V, above Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) at −0.45 V: copper is the weaker reducing agent. The iron is still oxidized (the anode), and oxygen is reduced on the copper (the cathode). The copper stays unchanged and the iron keeps corroding, even faster. Iron metal is a reducing agent, thus it cannot oxidize Cl⁻(aq).'},
+  {q:'Sacrificial metals may be used to protect pipelines, septic tanks, and ship propellers. A metal that could be used as a sacrificial anode to protect iron is',
+    o:[ec9C('Mg(s)'),ec9C('Sn(s)'),ec9C('Pb(s)'),ec9C('Ag(s)')],a:0,
+    w:'A sacrificial anode must be a stronger reducing agent than iron: its half-reaction is below Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V). Magnesium is −2.37 V. Tin (−0.14 V), lead (−0.13 V) and silver (+0.80 V) are weaker reducing agents than iron, thus the iron would still be oxidized.'},
+  {q:'Iron is often alloyed with zinc to minimize corrosion. The zinc in the alloy acts as the',o:['anode and is oxidized','anode and is reduced','cathode and is oxidized','cathode and is reduced'],a:0,
+    w:'Zn(s) (Zn²⁺/Zn, −0.76 V) is a stronger reducing agent than Fe(s) (−0.45 V). The zinc loses electrons, thus it is oxidized, and oxidation occurs at the anode. The iron is the cathode, where oxygen is reduced.'},
+  {q:'Salt spread on highways during the winter months increases the rate of rust formation on cars because the salt',o:['reacts with the rust to form iron salts','reacts with the iron salts to form iron','increases the conductivity of the electrolyte solution','decreases the conductivity of the electrolyte solution'],a:2,
+    w:'Salt dissolves into Na⁺(aq) and Cl⁻(aq) ions. The ions make the water a better conductor, thus ions move more easily between the anode and the cathode areas on the steel, and the corrosion is faster. The salt is not a reactant of the rusting reaction.'},
+  {q:'Use the information below. The ground water surrounding the buried metal structure may contain the following ions: <b>1</b> '+ec9C('Pb^2+(aq)')+', <b>2</b> '+ec9C('Fe^2+(aq)')+', <b>3</b> '+ec9C('Fe^3+(aq)')+', <b>4</b> '+ec9C('Cd^2+(aq)')+'. The order in which these ions are reduced on the surface of the metal structure is ___, ___, ___ and ___. (Record all four digits of your answer.)',
+    fig:ec9Info('<b>ICCP</b> (Impressed Current Cathodic Protection) is a corrosion prevention technique that is used to protect buried metal structures. A low-voltage current (electron flow) is applied to the buried metal structure such that only reduction reactions can occur at its surface.'),
+    n:3142,ans:'3142',tol:0,abs:0,m:'Only reduction occurs on the protected surface. The strongest oxidizing agent (the highest half-reaction in the table) is reduced first.',
+    w:'The structure gains electrons, thus the ions in the ground water are reduced on its surface. The strongest oxidizing agent is reduced first: the highest half-reaction in the table. Fe³⁺(aq) + e⁻ ⇌ Fe²⁺(aq) is +0.77 V (3). Pb²⁺(aq) is −0.13 V (1). Cd²⁺(aq) is −0.40 V (4). Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) is −0.45 V (2). Record 3142.'},
+  {q:'Use the information below. Which of the following methods could <b>not</b> be used as an alternative to the method of corrosion prevention described?',
+    fig:ec9Info('Some car manufacturers have designed an anticorrosion system that sends a weak electric current from the battery to the frame of the car. The current provides a source of electrons, which reduces corrosion of the steel frame.'),
+    o:['Galvanize the steel frame with zinc.','Coat the steel frame with inert plastic polymers.','Use a paint that prevents contact of the steel frame with the environment.','Bolt sacrificial anodes made of copper to the steel frame.'],a:3,
+    w:'The car system gives the steel electrons: it is cathodic protection. Galvanizing with zinc (a stronger reducing agent than iron), a plastic coating and paint all protect the steel. Copper (+0.34 V) is a weaker reducing agent than iron (−0.45 V): bolted to the frame, it would make the iron the anode, and the frame would corrode faster.'}];
+
+/* review bank: new items, not repeats of the lesson questions */
+EC_RQ[9]=[
+  {q:'Use the diagram of a drop of salt water on an iron surface. Identify the anode, the cathode, the electrolyte and the conductor that carries the electrons from the anode to the cathode, as numbered in the diagram. (Record all four digits of your answer.)',fig:ec9Drop({nums:true}),n:2314,ans:'2314',tol:0,abs:0,m:'Oxidation occurs at the anode and reduction at the cathode. Ions move through the electrolyte; electrons move through the metal.',
+    w:'The iron under the middle of the drop, where there is less oxygen, is oxidized: it is the anode (2). Oxygen from the air is reduced at the edge of the drop, where the rust forms: the cathode (3). The water with its dissolved ions is the electrolyte (1). The electrons move through the iron metal (4). Record 2314.'},
+  {q:'Acidic water with dissolved oxygen is in contact with a nickel-plated part. Calculate '+ecEs('net')+' for the corrosion of the nickel.',n:1.49,u:'V',abs:.005,tol:0,
+    w:'In an acidic solution, the oxidizing agent is O₂(g) with H⁺(aq): O₂(g) + 4H⁺(aq) + 4e⁻ → 2H₂O(l), E°r = +1.23 V. The reducing agent is Ni(s): Ni²⁺(aq) + 2e⁻ ⇌ Ni(s), E°r = −0.26 V. E°net = +1.23 V − (−0.26 V) = +1.49 V.'},
+  {q:'In an old house, a copper water pipe is joined directly to a steel (iron) pipe. Near the joint, the pipe that corrodes faster is the',o:['iron pipe, because iron is the stronger reducing agent','copper pipe, because copper is the stronger reducing agent','iron pipe, because iron is the stronger oxidizing agent','copper pipe, because copper ions are reduced at the joint'],a:0,
+    w:'Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V) is below Cu²⁺(aq) + 2e⁻ ⇌ Cu(s) (+0.34 V), thus Fe(s) is the stronger reducing agent. The iron is the anode and is oxidized. The copper is the cathode, where oxygen and water are reduced, and the joint makes the iron corrode faster than it would alone.'},
+  {q:'Use the information below. The metals that are stronger reducing agents than iron are',
+    fig:ec9Info('A student joins four metals, W, X, Y and Z, to iron nails and leaves each pair in salt water for one week.')+ec9Tab(['Nail joined to','After one week'],[['metal W','The nail is rusted. W is unchanged.'],['metal X','The nail is not rusted. X is pitted.'],['metal Y','The nail is badly rusted. Y is unchanged.'],['metal Z','The nail is not rusted. Z is pitted.']]),
+    o:['X and Z','W and Y','W and X','Y and Z'],a:0,
+    w:'A metal that is a stronger reducing agent than iron is oxidized instead of the iron: the metal is pitted, and the nail is protected. X and Z behave this way. W and Y are weaker reducing agents than iron: the iron is the anode, thus the nail rusts.'},
+  {q:'A galvanized steel pail has 22.5 g of zinc in its coating. In moist air, the zinc is oxidized to '+ec9C('Zn^2+(aq)')+' by oxygen and water. Calculate the mass of oxygen gas that is needed to oxidize all of the zinc.',n:22.5/EC_M.Zn/2*(2*EC_M.O),u:'g',tol:.01,
+    m:'Write the balanced net equation, find n = m/M of the zinc, use the mole ratio, then m = nM of the oxygen.',
+    w:'The net equation is 2Zn(s) + O₂(g) + 2H₂O(l) → 2Zn²⁺(aq) + 4OH⁻(aq). n(Zn) = 22.5 g ÷ 65.38 g/mol = 0.3441 mol. n(O₂) = 0.3441 mol × 1/2 = 0.1721 mol. m(O₂) = 0.1721 mol × 32.00 g/mol = 5.51 g.'},
+  {q:'In impressed current cathodic protection, oxidation occurs at the',o:['impressed anode, which is joined to the positive terminal','protected structure, which is joined to the negative terminal','impressed anode, which is joined to the negative terminal','protected structure, which is joined to the positive terminal'],a:0,
+    w:'The power supply pulls electrons out of the impressed anode, which is joined to the positive terminal: oxidation occurs there. The negative terminal pushes electrons into the protected structure, where only reduction occurs.'},
+  {q:'Use the table below. Which metal could be used as a sacrificial anode to protect an iron pipe that is buried in moist soil?',
+    fig:ecTableH(ecRows(['Cu^2+(aq)','Ni^2+(aq)','Fe^2+(aq)','Zn^2+(aq)','2H2O(l) + 2e^- <=> H2(g) + 2OH^-(aq)','K^+(aq)']),{arrows:false}),
+    o:[ec9C('Zn(s)'),ec9C('Ni(s)'),ec9C('Cu(s)'),ec9C('K(s)')],a:0,
+    w:'The anode must be a stronger reducing agent than Fe(s) (−0.45 V). Zn(s) (−0.76 V) and K(s) (−2.93 V) are below iron. Potassium is also below the water half-reaction (−0.83 V): it reacts vigorously with water and would be used up at once. Ni(s) and Cu(s) are weaker reducing agents than iron.'},
+  {q:'Calculate '+ecEs('net')+' for the corrosion of tin by oxygen and water in moist air (a neutral solution).',n:.54,u:'V',abs:.005,tol:0,ex:1,
+    w:'The cathode reaction is O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq), E°r = +0.40 V. The anode metal is tin: Sn²⁺(aq) + 2e⁻ ⇌ Sn(s), E°r = −0.14 V. E°net = +0.40 V − (−0.14 V) = +0.54 V.'},
+  {q:'Stainless steel resists corrosion because',o:['a thin chromium oxide layer keeps out oxygen and water','the nickel in the alloy is oxidized instead of the iron','the iron in the alloy can no longer lose electrons at all','the chromium is reduced and gives its electrons to the iron'],a:0,
+    w:'Stainless steel is iron alloyed with chromium and nickel. The chromium forms a thin, tough layer of chromium oxide on the surface. The layer is not porous, thus it prevents further oxidation.'},
+  {q:'Four metals are left in moist air: <b>1</b> copper, <b>2</b> zinc, <b>3</b> iron, <b>4</b> nickel. List them in order from the most easily oxidized to the least easily oxidized. (Record all four digits of your answer.)',n:2341,ans:'2341',tol:0,abs:0,m:'The strongest reducing agent (the lowest half-reaction in the table) is oxidized most easily.',
+    w:'The strongest reducing agent is oxidized most easily: its half-reaction is lowest in the table. Zn²⁺/Zn is −0.76 V (2). Fe²⁺/Fe is −0.45 V (3). Ni²⁺/Ni is −0.26 V (4). Cu²⁺/Cu is +0.34 V (1). Record 2341.'}];
+
+EC_CH[9]={q:'Over many years, the steel hull of a sunken ship loses 1.00 × 10³ kg of iron to corrosion. Assume that all of this iron becomes rust with the formula '+ec9C('Fe2O3(s)')+', and that oxygen is the only oxidizing agent. Calculate the mass of oxygen, in kilograms, that reacts with the iron.',
+  n:1e6/EC_M.Fe*3/4*(2*EC_M.O)/1000,u:'kg',tol:.01,m:'Balance the electrons: each Fe atom loses 3 electrons to become Fe³⁺, and each O₂ molecule gains 4 electrons.',
+  w:'In Fe₂O₃(s), iron has an oxidation number of +3: Fe → Fe³⁺ + 3e⁻. Each O₂ molecule gains 4 electrons: O₂ + 4e⁻ → 2O²⁻. The lowest common multiple is 12 electrons, thus 4 Fe atoms react with 3 O₂ molecules: 4Fe(s) + 3O₂(g) → 2Fe₂O₃(s). n(Fe) = 1.00 × 10⁶ g ÷ 55.85 g/mol = 1.791 × 10⁴ mol. n(O₂) = 1.791 × 10⁴ mol × 3/4 = 1.343 × 10⁴ mol. m(O₂) = 1.343 × 10⁴ mol × 32.00 g/mol = 4.30 × 10⁵ g = 430 kg.'};
+
+EC_WRQ.push({q:'A steel (iron) pipeline is buried in moist soil that contains dissolved oxygen.<br>(a) Use half-reactions and '+ecEs('net')+' to explain why the pipeline corrodes.<br>(b) An engineer can protect the pipeline with a magnesium sacrificial anode or with a low-voltage current from a DC power supply. For each method, explain how it protects the iron. Write the half-reaction that occurs at the magnesium.<br>(c) Explain why a block of copper could not be used as a sacrificial anode.',
+  marks:['Identifies O₂(g) with H₂O(l) as the strongest oxidizing agent and Fe(s) as the strongest reducing agent','Writes the reduction O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq) and the oxidation Fe(s) → Fe²⁺(aq) + 2e⁻','Calculates E°net = +0.40 V − (−0.45 V) = +0.85 V and states that the corrosion is spontaneous',
+    'Sacrificial anode: Mg(s) → Mg²⁺(aq) + 2e⁻; magnesium is a stronger reducing agent than iron, thus it is oxidized instead, and the iron becomes the cathode','Low-voltage current: the pipeline is joined to the negative terminal, which floods it with electrons, thus only reduction occurs on its surface','Copper (+0.34 V) is a weaker reducing agent than iron (−0.45 V), thus the iron would stay the anode and corrode even faster'],
+  model:ec9N('<p>(a) The strongest oxidizing agent is O₂(g) with H₂O(l) (+0.40 V), and the strongest reducing agent is Fe(s) (−0.45 V). Reduction (cathode): O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq). Oxidation (anode): 2Fe(s) → 2Fe²⁺(aq) + 4e⁻. Net: 2Fe(s) + O₂(g) + 2H₂O(l) → 2Fe²⁺(aq) + 4OH⁻(aq). E°net = +0.40 V − (−0.45 V) = +0.85 V. E°net is positive, thus the corrosion is spontaneous. The ions in the moist soil make it a good electrolyte.</p>'+
+    '<p>(b) Sacrificial anode: magnesium (−2.37 V) is a much stronger reducing agent than iron, thus it is oxidized instead of the iron: Mg(s) → Mg²⁺(aq) + 2e⁻. The electrons flow through a wire to the pipeline, which becomes the cathode, where oxygen and water are reduced. The magnesium is used up and must be replaced. Low-voltage current: the pipeline is connected to the negative terminal of the power supply, which floods it with electrons. Only reduction can occur on its surface, thus the iron is not oxidized. Oxidation occurs at an impressed anode that is joined to the positive terminal.</p>'+
+    '<p>(c) Copper (+0.34 V) is a weaker reducing agent than iron (−0.45 V). Joined to copper, the iron would still be the anode and would corrode even faster, with the copper as the cathode.</p>')});
+
+/* generators: one for each kind of numeric question of the lesson */
+const ec9Mt=[['iron','Fe^2+(aq)','Fe'],['zinc','Zn^2+(aq)','Zn'],['nickel','Ni^2+(aq)','Ni'],['tin','Sn^2+(aq)','Sn'],['lead','Pb^2+(aq)','Pb'],['magnesium','Mg^2+(aq)','Mg'],['aluminium','Al^3+(aq)','Al'],['cadmium','Cd^2+(aq)','Cd'],['cobalt','Co^2+(aq)','Co'],['copper','Cu^2+(aq)','Cu']];
+EC_GEN[9]=[
+  /* E°net of the corrosion of a metal by oxygen, in moist air or in an acidic solution */
+  ()=>{const M=ec9Mt[RN(0,ec9Mt.length-1)],ac=RN(0,1)===1,ox=ac?ec9OA:ec9ON,r=ecRow(M[1]),E=+(ox.E-r.E).toFixed(2),it={q:`Calculate ${ecEs('net')} for the corrosion of ${M[0]} by oxygen ${ac?'in an acidic solution':'and water in moist air (a neutral solution)'}.`,n:E,u:'V',abs:.005,tol:0,
+    w:`The oxidizing agent is ${ac?'O₂(g) with H⁺(aq)':'O₂(g) with H₂O(l)'}: ${ox.u}, E°r = ${ox.Es} V. The reducing agent is ${ecU(r.r)}: ${r.u}, E°r = ${r.Es} V. The net equation is ${ec9Rx(r,ac)}. E°net = ${ox.Es} V − (${r.Es} V) = ${ecVs(E)} V.`};
+    if(E<1)it.ans=E.toFixed(2);return it;},
+  /* a coefficient in the balanced net equation of a corrosion reaction */
+  ()=>{const M=ec9Mt[RN(0,ec9Mt.length-1)],ac=RN(0,1)===1,ox=ac?ec9OA:ec9ON,r=ecRow(M[1]),z=r.n,k=z===3?4:2,o=z===3?3:1,m=ecU(r.r),i=ecU(r.k),
+    sp=ac?[[m,k],['O₂(g)',o],['H⁺(aq)',4*o],[i,k],['H₂O(l)',2*o]]:[[m,k],['O₂(g)',o],['H₂O(l)',2*o],[i,k],['OH⁻(aq)',4*o]],t=sp[RN(0,sp.length-1)],
+    sk=ac?`${m} + O₂(g) + H⁺(aq) → ${i} + H₂O(l)`:`${m} + O₂(g) + H₂O(l) → ${i} + OH⁻(aq)`;
+    return {q:`Balance the net equation for the corrosion of ${M[0]} by oxygen ${ac?'in an acidic solution':'and water in moist air'}, ${sk}, with the lowest whole-number coefficients. What is the coefficient of ${t[0]}?`,n:t[1],u:'',tol:0,
+      m:'Balance the electrons: multiply each half-reaction so that the electrons lost equal the electrons gained, then add them.',
+      w:`Reduction: ${ox.u.replace('⇌','→')}. Oxidation: ${m} → ${i} + ${z}e⁻. Multiply the half-reactions so that the electrons lost equal the electrons gained. Add them: ${ec9Rx(r,ac)}, thus the coefficient of ${t[0]} is ${t[1]}.`};},
+  /* the mass of oxygen that oxidizes a mass of metal in moist air */
+  ()=>{const M=[ec9Mt[0],ec9Mt[1],ec9Mt[5],ec9Mt[6],ec9Mt[2]][RN(0,4)],r=ecRow(M[1]),z=r.n,m=RN(10,99.9,.1),Mm=EC_M[M[2]],nM=m/Mm,nO=nM*z/4,mO=nO*2*EC_M.O;
+    return {q:`Calculate the mass of oxygen gas that is needed to oxidize ${m.toFixed(1)} g of ${M[0]} to ${ecU(r.k)} in moist air.`,n:mO,u:'g',tol:.01,
+      m:'Write the balanced net equation, find n = m/M of the metal, use the mole ratio, then m = nM of the oxygen.',
+      w:`The net equation is ${ec9Rx(r,false)}. n(${M[2]}) = ${m.toFixed(1)} g ÷ ${Mm.toFixed(2)} g/mol = ${sig(nM,4)} mol. n(O₂) = ${sig(nM,4)} mol × ${z===3?'3/4':'1/2'} = ${sig(nO,4)} mol. m(O₂) = ${sig(nO,4)} mol × 32.00 g/mol = ${sig(mO)} g.`};},
+  /* a sacrificial anode: the electrons it supplies, or the mass of iron that it protects */
+  ()=>{const A=RN(0,1)?['magnesium','Mg']:['zinc','Zn'],kg=RN(1,9.99,.01),g=(kg*1000).toFixed(0),MA=EC_M[A[1]],nA=kg*1000/MA,ne=2*nA,mFe=nA*EC_M.Fe;
+    const head=`${A[1]}(s) → ${A[1]}²⁺(aq) + 2e⁻. n(${A[1]}) = ${g} g ÷ ${MA.toFixed(2)} g/mol = ${sig(nA,4)} mol.`;
+    return RN(0,1)?{q:`A ${kg.toFixed(2)} kg ${A[0]} sacrificial anode on a buried steel tank is used up. Calculate the amount of electrons, in moles, that it supplied to the tank.`,n:ne,u:'mol',tol:.01,
+        m:'Find n = m/M of the anode metal (in grams), then use its half-reaction for the mole ratio of electrons.',w:`The anode reaction is ${head} Two moles of electrons come from each mole of ${A[0]}. n(e⁻) = 2 × ${sig(nA,4)} mol = ${sig(ne)} mol.`}
+      :{q:`A ${kg.toFixed(2)} kg ${A[0]} sacrificial anode on the steel hull of a ship is used up. Without it, the same electrons would have come from iron, oxidized to Fe²⁺(aq). Calculate the mass of iron, in kilograms, that the anode protected.`,n:mFe/1000,u:'kg',tol:.01,
+        m:'Find the amount of electrons from the anode metal, then the amount of iron that would give the same electrons: Fe(s) → Fe²⁺(aq) + 2e⁻.',
+        w:`The anode reaction is ${head} n(e⁻) = 2 × ${sig(nA,4)} mol = ${sig(ne,4)} mol. Fe(s) → Fe²⁺(aq) + 2e⁻, thus n(Fe) = ${sig(ne,4)} mol ÷ 2 = ${sig(nA,4)} mol. m(Fe) = ${sig(nA,4)} mol × 55.85 g/mol = ${sig(mFe/1000)} kg.`};}];
+EC_METHOD[9]='E°net = E°r(cathode) − E°r(anode). In corrosion the cathode reaction is the reduction of oxygen: +0.40 V in moist air, +1.23 V in an acidic solution. The metal is oxidized at the anode.';
+EC_HT[9]={pre:'Use the table of reduction potentials. In moist air the oxidizing agent is O₂(g) with H₂O(l) (+0.40 V); in an acidic solution it is O₂(g) with H⁺(aq) (+1.23 V).',items:[
+  {q:'Decide whether a metal corrodes, and find E°net',s:['Find the half-reaction of the metal ion in the table (for iron: Fe²⁺(aq) + 2e⁻ ⇌ Fe(s), −0.45 V).','Choose the oxygen half-reaction: +0.40 V in a neutral solution, +1.23 V when H⁺(aq) is present.','The metal corrodes if its half-reaction is below the oxygen half-reaction.','E°net = E°r(oxygen, the cathode) − E°r(metal, the anode).','For the net equation, multiply the half-reactions so that 4 electrons are lost and gained (for a 3+ ion, 12 electrons).'],chk:'A metal that corrodes gives a positive E°net. Silver and gold are above +0.40 V: they do not rust in moist air.'},
+  {q:'Decide whether a metal can be a sacrificial anode for iron',s:['Find the metal in the table.','It must be a stronger reducing agent than iron: its half-reaction is below Fe²⁺(aq) + 2e⁻ ⇌ Fe(s) (−0.45 V).','It must not react vigorously with water: Li, Na, K, Ca and Ba cannot be used.','Zinc and magnesium meet both conditions.'],chk:'A metal above iron (tin, lead, copper, silver) makes the iron the anode: the iron corrodes faster.'},
+  {q:'Order the ions that are reduced on a protected (cathode) surface',s:['List the oxidizing agents that are present.','Find each one on the left side of the table.','The strongest oxidizing agent (the highest E°r) is reduced first, then the next one down the table.'],chk:'Fe³⁺(aq) is reduced to Fe²⁺(aq) at +0.77 V: use the Fe³⁺ row, not the Fe²⁺ row (−0.45 V).'},
+  {q:'Find a mass in a corrosion reaction',s:['Write the balanced net equation: balance the electrons first.','n = m / M of the substance that is given (in grams).','Use the mole ratio from the equation.','m = nM of the substance that is asked for.'],chk:'For O₂, M = 32.00 g/mol. One mole of O₂ gains 4 mol of electrons; one mole of a 2+ metal loses 2 mol.'}]};
+EC_REF.f.push(['Oxygen and water (moist air)',ec9Eq('O2(g) + 2H2O(l) + 4e^- -> 4OH^-(aq)')+', '+ecEs('r')+' = +0.40&nbsp;V'],['Oxygen in an acidic solution',ec9Eq('O2(g) + 4H^+(aq) + 4e^- -> 2H2O(l)')+', '+ecEs('r')+' = +1.23&nbsp;V'],
+  ['Rusting of iron in moist air',ec9Eq('2Fe(s) + O2(g) + 2H2O(l) -> 2Fe^2+(aq) + 4OH^-(aq)')+', '+ecEs('net')+' = +0.85&nbsp;V']);
+EC_REF.t.push(['Corrosion','The deterioration (oxidation) of a metal by electrochemical reactions with its environment, for example the rusting of iron, the tarnishing of silver and the green patina of copper.'],
+  ['Rust','Hydrated iron(III) oxide, Fe₂O₃·xH₂O(s). It is porous and flakes off, thus it does not protect the iron below.'],
+  ['Sacrificial anode','A metal that is a stronger reducing agent than iron (zinc or magnesium), joined to the iron. It is oxidized instead of the iron and is replaced when it is used up.'],
+  ['Cathodic protection','Protection of a metal by making it the cathode of a cell: a sacrificial anode or a low-voltage current supplies it with electrons, thus it is not oxidized.'],
+  ['Impressed anode','The anode of impressed current cathodic protection (ICCP). It is joined to the positive terminal of a DC power supply, and oxidation occurs there instead of on the protected metal.'],
+  ['Galvanizing','Coating iron or steel with a layer of zinc. The zinc keeps out oxygen and water, and where it is scratched the zinc is oxidized instead of the iron.']);
 }catch(e){console.error('[ec] slot 9 stopped with an error: '+(e&&e.stack||e));}}
 /* ----- ec slot 10 ----- */
 {try{
