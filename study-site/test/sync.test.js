@@ -127,6 +127,7 @@ const buildLegacy=dev=>ev(dev,()=>{const o={v:3,a:{},r:{},s:{},w:{},h:{},g:{},c:
   o.w['mt_ff-2_2']={v:[3,2,1,0,3],t:now-DAY};o.w['note_pr-1_lit']={v:'A note. '.repeat(400),t:now-DAY};o.w['ice_0']={v:{a:1},t:now-DAY};
   o.g.days={v:Array.from({length:160},(_,i)=>dayOf(now-(160-i)*DAY)),t:now-DAY};o.g.n_ok={n:4000,t:now-DAY};o.c['rb2:bio']={t:Date.parse('2026-11-02T16:01:43Z')};
   return o;});
+const hourAch=dev=>ev(dev,()=>{Store.xs('g','owl',{n:Math.max(1,gN('owl'))});Store.xs('g','bird',{n:Math.max(1,gN('bird'))});});
 const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Promise(r=>setTimeout(r,300));let k=0;
   for(const q of [...document.querySelectorAll('#'+sk+'-'+L+' .quiz .q')].filter(q=>q.querySelector('.ops')&&!q.dataset.done)){if(k>=n)break;q.querySelector('button.op').click();k++;await new Promise(r=>setTimeout(r,120));}return k;},[sk,L,n]);
 
@@ -136,9 +137,10 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   let A=await device('A');const legacy=await buildLegacy(A);const legSize=size(legacy);server.docs.set('data/users/u1/progress',clone(legacy));
   await close(A);A=await device('A');
   const tm=Date.now();ok('the device connects to the Claude account and moves the old document',await until(A,()=>Store.mode()==='account'&&!Store.pending(),null,20000),{legacyKB:Math.round(legSize/1024),seconds:(Date.now()-tm)/1000});
-  const fa=flat(await state(A)),fl=flat(legacy),RB=Date.parse('2026-11-02T16:01:43Z');let miss=0,diff=0,cut=0;
-  for(const k in fl){if(!(k in fa))miss++;else if(fa[k]!==fl[k]){const [m,id]=k.split('|');if(/^[ash]$/.test(m)&&/^(ns|sn|en)_\d+_r\d+$/.test(id)&&fa[k]===JSON.stringify({t:RB,x:1}))cut++;else diff++;}}
-  ok('every entry of the old document is on the device (unchanged, or cleared by its own rb2:bio cut-off)',miss===0&&diff===0,{entries:Object.keys(fl).length,missing:miss,changed:diff,clearedByRb2:cut});
+  /* RETIRE: the old document comes from a page of format 3, thus its entries of the RETIRE ids become tombstones of the RETIRE time (MIGRATIONS[4]) */
+  const fa=flat(await state(A)),fl=flat(legacy),RB=Date.parse('2026-11-02T16:01:43Z'),RTI=await ev(A,()=>typeof RETIRE==='object'&&RETIRE?Object.assign({},RETIRE):{});let miss=0,diff=0,cut=0,rcut=0;
+  for(const k in fl){if(!(k in fa))miss++;else if(fa[k]!==fl[k]){const [m,id]=k.split('|');if(/^[ash]$/.test(m)&&/^(ns|sn|en)_\d+_r\d+$/.test(id)&&fa[k]===JSON.stringify({t:RB,x:1}))cut++;else if(/^[ahsr]$/.test(m)&&RTI[id]&&fa[k]===JSON.stringify({t:Date.parse(RTI[id]),x:1}))rcut++;else diff++;}}
+  ok('every entry of the old document is on the device (unchanged, or cleared by its own rb2:bio cut-off or by RETIRE)',miss===0&&diff===0,{entries:Object.keys(fl).length,missing:miss,changed:diff,clearedByRb2:cut,clearedByRetire:rcut});
   const shards=[...server.docs.keys()].filter(p=>p.startsWith('data/users/u1/')&&!p.endsWith('/progress')),fs=flat(unshard('data/users/u1/'));let smiss=0;for(const k in fl)if(fs[k]!==fa[k])smiss++;
   ok('every entry is in the new documents of the account',smiss===0,{docs:shards.length,missing:smiss});
   const big=Math.max(...shards.map(p=>size(server.docs.get(p))));ok('each document stays far below 256 KiB',big<LIM*0.6,{largestKB:+(big/1024).toFixed(1)});
@@ -149,7 +151,9 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   /* 2. cost of one answer while signed in */
   const cost=async(dev,sk,L)=>{const w0=dev.writeB||0,r0=dev.readB||0,c0=dev.writes||0,q0=dev.calls||0;await answer(dev,sk,L,1);await until(dev,()=>!Store.pending());await sleep(300);
     return {writes:(dev.writes||0)-c0,bytes:(dev.writeB||0)-w0,calls:(dev.calls||0)-q0,listenerBytes:(dev.readB||0)-r0};};
-  const c1=await cost(A,'th',1),c2=await cost(A,'th',1);
+  /* the hour-of-day achievements (Night owl before 5 am, Early bird before 8 am) reach their tier at the first correct answer in those hours, and the achievement record
+     is then written with that answer: earn them before the measured answers (the first one may be large), so the run does not depend on the clock and on a random option */
+  await hourAch(A);const c1=await cost(A,'th',1),c2=await cost(A,'th',1);
   ok('one answer uploads less than 1 KB, without a read first (the first answer of a day also writes the study-day list)',c2.bytes<1024&&c2.calls===c2.writes,{firstOfDay:c1,next:c2});
 
   /* an entry whose value JSON changes (NaN becomes null) is uploaded once, not again and again */
@@ -240,7 +244,7 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
   const fg=flat(await state(G)),ffl=flat(fbLegacy);let fm=0;for(const k in ffl)if(!(k in fg))fm++;
   const fsh=flat(unshard('users/fbU1/progress/'));let fsm=0;for(const k in fg)if(fsh[k]!==fg[k])fsm++;
   ok('Firestore: every old entry is kept and stored in the new documents',fm===0&&fsm===0,{missing:fm,notInAccount:fsm,docs:[...server.docs.keys()].filter(p=>p.startsWith('users/fbU1/')).length});
-  await cost(G,'th',2);const g2=await cost(G,'th',2);ok('Firestore: one answer is a small merge write',g2.bytes<1024,g2);
+  await hourAch(G);await cost(G,'th',2);const g2=await cost(G,'th',2);ok('Firestore: one answer is a small merge write',g2.bytes<1024,g2);
   ok('Firestore: the old document is not written',JSON.stringify(server.docs.get('users/fbU1/progress/main'))===JSON.stringify(fbLegacy));
   /* another account signs in on this browser while fbU1 has answers that did not upload: they are kept for fbU1, not given to fbU2, and upload when fbU1 is back */
   G.offline=true;await answer(G,'mom',3,2);const gi=await ev(G,()=>Store.xk('a').filter(k=>k.startsWith('mom_3_')).sort((x,y)=>Store.get(y).t-Store.get(x).t).slice(0,2));
