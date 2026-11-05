@@ -558,6 +558,8 @@ div.miss{border-top:1px solid var(--hair);padding:.7em 0}
   main{padding-block:16px 70px}
   .ring{width:120px;height:120px}.ring svg{width:120px;height:120px}
 }
+/* a narrow phone (380 px and less): a three-column table (t3) fits without scrolling: its cells as narrow as their longest word, in slightly smaller text */
+@media(max-width:380px){.card>table.t3 td,.card>table.t3 th,.tw.d>table.t3 td,.tw.d>table.t3 th{min-width:0;padding:.45em .3em;font-size:.92em}}
 
 /* ---------- graphics ---------- */
 .ic{flex:none;display:inline-block;vertical-align:-.2em}
@@ -1392,7 +1394,7 @@ function fitTable(t){const c=t.closest('.card');if(!c||t.parentElement.classList
   if(!d)for(let e=t.parentElement;e&&e!==c;e=e.parentElement)if(getComputedStyle(e).overflowX!=='visible')return;
   const w=el('div',{class:'tw'+(d?' d':'')});t.before(w);w.append(t);tblCue(w);}
 function fitTables(root){(root.tagName==='TABLE'?[root]:[...root.querySelectorAll('table')]).forEach(fitTable);}
-function tblCue(t){const u=()=>{const o=t.scrollWidth>t.clientWidth+1;t.classList.toggle('more',o&&t.scrollLeft+t.clientWidth<t.scrollWidth-1);if(o)t.tabIndex=0;else t.removeAttribute('tabindex');};
+function tblCue(t){if(t._cue)return;t._cue=1;const u=()=>{const o=t.scrollWidth>t.clientWidth+1;t.classList.toggle('more',o&&t.scrollLeft+t.clientWidth<t.scrollWidth-1);if(o)t.tabIndex=0;else t.removeAttribute('tabindex');};
   t.addEventListener('scroll',u,{passive:true});new ResizeObserver(u).observe(t);}
 function ex(title,html){return `<details class="ex"><summary><span>${title}</span></summary><div>${html}</div></details>`;}
 /* print the closed worked examples open, then close them again */
@@ -4543,7 +4545,13 @@ const ecBase=()=>{if(document.getElementById('ec-css'))return;document.head.appe
   '.ec-tb button.ecpk[aria-pressed="true"]{background:color-mix(in srgb,var(--s1) 16%,transparent);border:2px solid var(--s1)}'+
   '.ec-tb button.ecpk.ok{background:var(--okb);border:2px solid var(--ok)}.ec-tb button.ecpk.bad{background:var(--badb);border:2px dashed var(--bad)}'+
   '.ec-tbx .cap{text-align:center;margin:.35em 0 0}'+
-  '@media(max-width:600px){.ec-tb{font-size:.84rem}.ec-tb td{padding:.3em .28em}.ec-tb td.e0{padding-left:.45em}.ec-tb td.arw{width:1.3em;min-width:1.3em}}'));};
+  '@media(max-width:600px){.ec-tb{font-size:.84rem}.ec-tb td{padding:.3em .28em}.ec-tb td.e0{padding-left:.45em}.ec-tb td.arw{width:1.3em;min-width:1.3em}'+
+  /* a phone: a table that does not fit wraps each side of a half-reaction between its entities (an entity never breaks), and its heads; a table that fits does not change */
+  '.ec-tb th{white-space:normal}.ec-tb td.oa,.ec-tb td.ra{white-space:normal}.ec-tb .ecs,.ec-tb .ec-tag{white-space:nowrap}}'+
+  /* 420 px and narrower: the columns are closer */
+  '@media(max-width:420px){.ec-tb td{padding:.3em .2em}.ec-tb td.eqm{padding:0 .1em}.ec-tb td.e0{padding-left:.3em}.ec-tb td.arw{width:1.1em;min-width:1.1em}}'+
+  /* a narrow phone (380 px and narrower): slightly smaller text and arrows */
+  '@media(max-width:380px){.ec-tb{font-size:.8rem}.ec-tb td{padding:.3em .12em}.ec-tb td.eqm{padding:0 .05em}.ec-tb td.e0{padding-left:.22em}.ec-tb td.arw{width:1em;min-width:1em}}'));};
 /* ---------- a reduction table (HTML) ----------
    ecTable(host, rows, o). rows: EC_E0 rows (EC_E0, ecRows([...])), or half-reactions as text for a table built from evidence ('Pd^2+(aq) + 2e^- <=> Pd(s)', or [text, E°]).
    The first row is the top: the strongest oxidizing agent. Oxidizing agents are on the left, reducing agents on the right, E° on the far right.
@@ -4559,11 +4567,12 @@ function ecTableHtml(rows,o){
   const R=rows.map(r=>r&&r.L?r:Array.isArray(r)?ecRowOf(r[0],r[1]):ecRowOf(r,null)),n=R.length,showE=o.E!=null?!!o.E:R.every(r=>r.E!=null),pres=new Set((o.hl||[]).map(ecK)),arw=o.arrows!==false;
   const uid='ectb'+(ecTable.n=(ecTable.n||0)+1),shade=new Set(o.rows||[]);
   let ans=null;if(o.pick){if(o.pick===true){const p=ecPredict(o.hl||[],{rows:R});if(p)ans={soa:R.indexOf(p.rr),sra:R.indexOf(p.or)};}else ans=o.pick;}
-  const sp=arr=>arr.map(([c,k],j)=>`<span class="ecs${j===0?' ecm'+(pres.has(k)?' ecp':''):''}">${(c===1?'':c)+C(k)}</span>`).join(' + ');
+  /* a no-break space before each + : when a side wraps (a phone), the + stays at the end of the line */
+  const sp=arr=>arr.map(([c,k],j)=>`<span class="ecs${j===0?' ecm'+(pres.has(k)?' ecp':''):''}">${(c===1?'':c)+C(k)}</span>`).join('\u00a0+ ');
   const tag=t=>`<span class="ec-tag">${t}</span>`,btn=(s,i,t,lab)=>ans?`<button type="button" class="ecpk" data-s="${s}" data-i="${i}" aria-pressed="false" aria-label="${lab}">${t}</button>`:t;
   const lbl=n>=6?['stronger oxidizing agents','stronger reducing agents']:n>=4?['stronger OA','stronger RA']:['',''];
   let h=`<table class="ec-tb" id="${uid}">`+(o.head===false?'':`<thead><tr>${arw?'<th></th>':''}<th class="oa">Oxidizing agents</th><th></th><th class="ra">Reducing agents</th>${showE?'<th class="e0"><i>E</i>° (V)</th>':''}${arw?'<th></th>':''}</tr></thead>`)+'<tbody>';
-  R.forEach((r,i)=>{const L=sp(r.L)+' + <span class="ecs ece">'+r.el+'</span>',Rt=sp(r.R);
+  R.forEach((r,i)=>{const L=sp(r.L)+'\u00a0+ <span class="ecs ece">'+r.el+'</span>',Rt=sp(r.R);
     h+=`<tr${shade.has(i)?' class="hl"':''}>`+(i===0&&arw?`<td class="arw up" rowspan="${n}" aria-hidden="true"><div><b></b><i></i>${lbl[0]?`<span>${lbl[0]}</span><i></i>`:''}</div></td>`:'')+
       `<td class="oa">${btn('o',i,L,'Strongest oxidizing agent: '+ecU(r.k))}${o.mark&&o.mark.soa===i?tag('SOA'):''}</td><td class="eqm">⇌</td><td class="ra">${o.mark&&o.mark.sra===i?tag('SRA'):''}${btn('r',i,Rt,'Strongest reducing agent: '+ecU(r.r))}</td>`+
       (showE?`<td class="e0">${r.Es}</td>`:'')+(i===0&&arw?`<td class="arw dn" rowspan="${n}" aria-hidden="true"><div>${lbl[1]?`<i></i><span>${lbl[1]}</span>`:''}<i></i><b></b></div></td>`:'')+'</tr>';});
@@ -4572,6 +4581,8 @@ function ecTableHtml(rows,o){
 function ecTable(host,rows,o={}){ecBase();
   const lid=(host.closest('.lesson')||{}).id||'x',{R,n,ans,html}=ecTableHtml(rows,o),box=el('div',{class:'ec-tbx'});box.innerHTML=html;
   host.append(box);tblCue($('.tw',box));
+  /* a pick button that gets the focus (Tab) is shown whole, also when the table scrolls sideways in its box */
+  if(ans)$('.tw',box).addEventListener('focusin',e=>{if(e.target.matches('button.ecpk'))e.target.scrollIntoView({block:'nearest',inline:'nearest'});});
   /* a label that is longer than its arrow is hidden */
   const fit=()=>$$('td.arw span',box).forEach(s=>{s.style.display='';const d=s.parentElement;if(d.clientHeight&&s.offsetHeight>d.clientHeight-30)s.style.display='none';});requestAnimationFrame(fit);new ResizeObserver(fit).observe(box);
   if(!ans)return box;
@@ -4586,6 +4597,9 @@ function ecTable(host,rows,o={}){ecBase();
   /* newer synced answers (another device, a remote clear) replace the ones on screen */
   let seen=JSON.stringify(s);const view=()=>{if(!box.isConnected){LIVE.delete(view);return;}const v=Store.w(key),j=valid(v)?JSON.stringify({o:v.o,r:v.r}):JSON.stringify({o:-1,r:-1});if(j===seen)return;seen=j;s=JSON.parse(j);paint(false);};LIVE.add(view);
   paint(false);if(s.o>=0||s.r>=0)lv.textContent='Your last choice is restored.';return box;}
+/* a reduction table that comes as HTML (ecTableH: a question figure, a worked example) gets the scroll cue of its box (tblCue) when it is put in the page */
+{const cue=n=>{if(n.nodeType!==1)return;if(n.matches('.ec-tbx>.tw'))tblCue(n);else n.querySelectorAll('.ec-tbx>.tw').forEach(tblCue);};
+  new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(cue))).observe($('#main'),{childList:true,subtree:true});}
 /* the same table as an HTML string, without a try-it: for the fig of a question ("Use the following information") or a worked example */
 const ecTableH=(rows,o={})=>{ecBase();return '<div class="ec-tbx">'+ecTableHtml(rows,Object.assign({},o,{pick:null})).html+'</div>';};
 /* ---------- an electrochemical cell (SVG) ----------
