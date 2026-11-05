@@ -226,6 +226,8 @@ const answer=(dev,sk,L,n)=>ev(dev,async([sk,L,n])=>{goLesson(sk,L);await new Pro
 
   /* 8. the version gate: a newer page wrote schema 5 */
   const meta=server.docs.get('data/users/u1/meta');meta.v=5;server.changed('data/users/u1/meta',null);await sleep(300);const wv=A.writes;await answer(A,'ff',1,1);await sleep(2500);
+  /* the toast can wait behind other toasts (2.7 s each, e.g. a burst of achievement tiers): wait for it */
+  await until(A,()=>window.__toasts.some(t=>/out of date/.test(t)),null,30000);
   const gs=await ev(A,()=>({st:Store.status(),t:window.__toasts.filter(t=>/out of date/.test(t)).length}));
   ok('version gate: no upload after a newer page wrote, and the page asks for a reload',A.writes===wv&&gs.st.remote==='outdated'&&gs.t===1,gs);
   ok('no page errors (A)',A.errors.length===0,A.errors.slice(0,3));

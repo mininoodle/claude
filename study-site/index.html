@@ -69,43 +69,9 @@ body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
   font:1rem/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
   --a1:#736f72;--a2:#c3baba;--a3:#9a8f97;
-  --at:color-mix(in srgb,var(--a1) var(--atm),var(--atc));
-  transition:--a1 .9s,--a2 .9s,--a3 .9s}
-body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="ns"]{--a1:#6a6468;--a2:#b2b2b2;--a3:#9a8f97}
-body[data-s="sn"]{--a1:#676366;--a2:#c3baba;--a3:#b2b2b2}
-[data-mode="dark"] body{--a1:#736f72;--a2:#736f72;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="eq"]{--a1:#7a7078;--a2:#9a8f97;--a3:#736f72}
-[data-mode="dark"] body[data-s="ns"]{--a1:#6a6468;--a2:#9a8f97;--a3:#b2b2b2}
-[data-mode="dark"] body[data-s="sn"]{--a1:#676366;--a2:#736f72;--a3:#c3baba}
-body[data-s="en"]{--a1:#6d686c;--a2:#9a8f97;--a3:#c3baba}
-[data-mode="dark"] body[data-s="en"]{--a1:#6d686c;--a2:#b2b2b2;--a3:#736f72}
+  --at:color-mix(in srgb,var(--a1) var(--atm),var(--atc))}
 body[data-s="ec"]{--a1:#6f6a70;--a2:#b2b2b2;--a3:#c3baba}
 [data-mode="dark"] body[data-s="ec"]{--a1:#706b71;--a2:#b2b2b2;--a3:#9a8f97}
-body[data-s="mb"]{--a1:#6b666a;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="mb"]{--a1:#736f72;--a2:#b2b2b2;--a3:#9a8f97}
-body[data-s="ff"]{--a1:#716b70;--a2:#b2b2b2;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="ff"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="lim"]{--a1:#6d676b;--a2:#c3baba;--a3:#b2b2b2}
-[data-mode="dark"] body[data-s="lim"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="test"]{--a1:#6a6468;--a2:#b2b2b2;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="test"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="ri1"]{--a1:#6b6569;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="ri1"]{--a1:#736f72;--a2:#9a8f97;--a3:#b2b2b2}
-body[data-s="pr"]{--a1:#6f6a6d;--a2:#c3baba;--a3:#9a8f97}
-[data-mode="dark"] body[data-s="pr"]{--a1:#736f72;--a2:#9a8f97;--a3:#c3baba}
-body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
-[data-mode="dark"] body[data-s="math"],[data-mode="dark"] body[data-s="home"]{--a1:#736f72;--a2:#9a8f97;--a3:#736f72}
-
-/* one gradient layer, moved with transform only. It drifts out and back once, then rests, so the glass
-   above it is not blurred again on every frame */
-.bg{position:fixed;inset:-16%;z-index:-1;pointer-events:none;will-change:transform;
-  background:
-    radial-gradient(38% 42% at 18% 22%,color-mix(in srgb,var(--a2) var(--b1),transparent),transparent 72%),
-    radial-gradient(34% 40% at 84% 30%,color-mix(in srgb,var(--a3) var(--b2),transparent),transparent 72%),
-    radial-gradient(46% 44% at 52% 88%,color-mix(in srgb,var(--a1) var(--b3),transparent),transparent 72%);
-  animation:drift 46s ease-in-out 2 alternate}
-@keyframes drift{to{transform:translate3d(3%,-4%,0) rotate(5deg) scale(1.07)}}
 
 .glass{
   background:linear-gradient(var(--glass),var(--glass)) padding-box,
@@ -115,11 +81,7 @@ body[data-s="math"],body[data-s="home"]{--a1:#736f72;--a2:#b2b2b2;--a3:#c3baba}
   box-shadow:inset 0 1px 1px var(--hi),inset 0 -1px 1px rgba(50,42,48,.03),0 14px 38px var(--shadow),0 2px 6px rgba(80,70,77,.06);
 }
 
-/* header */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;padding:12px 12px 0;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
-.top>*{pointer-events:auto;transition:box-shadow .4s var(--ease),background .4s}
-.top.scrolled>.glass{box-shadow:inset 0 1px 1px var(--hi),0 18px 44px rgba(80,70,77,.22),0 2px 8px rgba(80,70,77,.1)}
-.bar{border-radius:999px;padding:5px;max-width:100%;display:flex;align-items:center;gap:4px}
+/* the old header (.top, .bar) and its gradient layer (.bg) are hidden by the sidebar skin: their rules are gone */
 /* when the bar does not fit, the tab strip shrinks and scrolls and the round buttons stay. em follows the browser font size */
 @media(max-width:75em){.bar>#tabs{min-width:0;flex:1 1 auto}.seg.main{max-width:100%;overflow-x:auto;scrollbar-width:none}.seg.main::-webkit-scrollbar{display:none}.seg.main button:focus-visible{outline-offset:-3px}}
 .modebtn{appearance:none;border:1px solid var(--hair);background:var(--glass2);color:var(--ink);width:36px;height:36px;border-radius:50%;padding:0;display:grid;place-items:center;cursor:pointer;flex:none;box-shadow:inset 0 1px 0 var(--hi);transition:transform .25s var(--spring)}
@@ -302,9 +264,6 @@ h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.05;letter-spacing:-.025em;fo
 .lede{font-size:1.12rem;color:var(--ink2);max-width:62ch;margin:0}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
 .card{grid-column:span 12;border-radius:28px;padding:22px;min-width:0;position:relative;isolation:isolate}
-.card::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;transition:opacity .5s;
-  background:radial-gradient(520px circle at var(--mx,50%) var(--my,0%),var(--sheen),transparent 62%)}
-.card:hover::before{opacity:1}
 @media(min-width:880px){.card.half{grid-column:span 6}.card.w7{grid-column:span 7}.card.w5{grid-column:span 5}}
 h3{font-size:1.18rem;letter-spacing:-.01em;margin:0 0 .6em;font-weight:650}
 h4{font-size:1rem;margin:.9em 0 .3em}
@@ -428,6 +387,16 @@ select{padding-right:1.6em;max-width:100%}
 
 .lesson.enter .lhead{animation:rise .5s var(--ease) backwards}
 .lesson.enter .card,.lesson.enter .pager{animation:rise .62s var(--ease) backwards;animation-delay:calc(50ms + var(--i,0)*55ms)}
+/* a lesson card off screen skips its style, layout and paint (content-visibility), but only once it has been drawn at this width (class cvr, set by
+   the card watcher in the graphics kit). contain-intrinsic-size:auto keeps its real height, thus the page height, the jumps to a card and the
+   scroll position stay exact. A card with a canvas always draws (its canvas must be sized for print). Print shows every card (@media print below).
+   Only the lessons: the Today and Test pages (#home-0, #test-0) are drawn again often, and the text of a skipped card has no innerText */
+@supports (contain-intrinsic-size:auto 1px){
+  .lesson>.grid>.card{contain-intrinsic-size:auto 700px}
+  .lesson:not(#home-0):not(#test-0)>.grid>.card.cvr:not(:has(canvas)){content-visibility:auto}
+  @media(max-width:879px){.lesson>.grid>.card{contain-intrinsic-size:auto 900px}}
+  @media(max-width:599px){.lesson>.grid>.card{contain-intrinsic-size:auto 1100px}}
+}
 
 /* hotspot diagrams */
 .hs{display:grid;gap:16px}.hs>*{min-width:0}
@@ -710,6 +679,127 @@ p.legend>span{white-space:normal;min-width:0}
   .sum .wire{stroke:var(--c);stroke-opacity:.3}.sum .syn.on .wire{stroke-opacity:1}
   .sum .knob{fill:var(--c);fill-opacity:.3}.sum .syn:hover .knob{fill-opacity:.55}.sum .syn.on .knob{fill-opacity:1}
 }
+</style>
+<style id="sidebar-skin">
+:root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
+  --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
+  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
+  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
+  --cap:1000px;--pad:40px}
+:root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
+  --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
+body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
+[data-mode="dark"] body,[data-mode="dark"] body[data-s]{--a1:#5a9cf0;--a2:#5a5a58;--a3:#3a3a3a}
+.bg,#top{display:none!important}
+html{scroll-padding-top:62px}
+#shell{display:flex;align-items:flex-start;min-height:100vh}
+#rail{flex:none;width:var(--railw);position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);border-right:1px solid var(--hair);padding:14px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.rail-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;font-size:14px}
+.rail-logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;display:grid;place-items:center}
+.rail-h,#rail .ulabel{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:14px 8px 4px;margin:0}
+#rail .seg{display:flex;flex-direction:column;gap:1px;border-radius:0;background:none;border:0;padding:0;box-shadow:none;max-width:none;overflow:visible;isolation:isolate}
+#rail .seg button{justify-content:flex-start;font-size:13.5px;font-weight:500;padding:6px 8px;border-radius:6px;white-space:normal;text-align:left;color:var(--ink);gap:.5em}
+#rail .seg button[aria-selected="true"]{font-weight:600}
+#rail .seg .thumb{border-radius:6px;background:var(--hov);border:0;box-shadow:none;top:0;bottom:auto}
+#rail .seg.main .sm{display:none}#rail .seg.main .lg{display:inline}
+#rail .units{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:2px;padding:0}
+#rail .units .uclear{margin:10px 8px 0;align-self:flex-start}
+#rail .units .usec{flex-direction:column;flex-basis:auto;align-items:stretch;gap:2px}
+#rail .chips{display:flex;flex-direction:column;gap:1px;padding:0 0 0 12px;background:none;border:0;max-width:none;overflow:visible;border-radius:0;flex-wrap:nowrap;justify-content:flex-start}
+#rail .chips button{font-size:13px;font-weight:500;padding:5px 8px;border-radius:6px;text-align:left;white-space:normal;color:var(--ink2);display:flex;align-items:center;transform:none}
+#rail .chips button .ic{flex:none}
+#rail .chips button[aria-selected="true"]{background:var(--hov);color:var(--ink);box-shadow:none;font-weight:600}
+#rail .chips button .pr{margin-left:auto;flex:none}
+#rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
+.rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
+.modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
+#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
+/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
+.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
+.crumb b{color:var(--ink);font-weight:500}
+.crumb-sep{margin:0 2px;color:var(--a3);flex:none}
+/* each part of the breadcrumb opens a menu of the places at its level */
+.crumb-path{display:flex;align-items:center;min-width:0;flex:1 1 auto}
+.crumb-right{flex:none;white-space:nowrap}
+.crumb-b{appearance:none;border:0;background:none;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:3px;min-width:0;flex:0 1 auto;padding:3px 6px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s}
+.crumb-b:first-child{margin-left:-6px}
+.crumb-b>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.crumb-b .ic{flex:none;opacity:.45;transition:opacity .15s}
+.crumb-b:hover,.crumb-b[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
+.crumb-b:hover .ic,.crumb-b[aria-expanded="true"] .ic{opacity:1}
+.crumb-b.cur{color:var(--ink);flex-shrink:6}
+.crumb-b[data-lv="s"]:not(.cur){flex-shrink:0}
+/* a phone: the lesson header just below shows the level, thus the breadcrumb gets the whole width; the current page (also the heading below) is shortened first */
+@media(max-width:600px){.crumb-right{display:none}}
+.crumb-menu{position:absolute;z-index:6;min-width:13rem;max-width:min(22rem,calc(100% - 16px));max-height:min(60vh,27rem);overflow-y:auto;padding:5px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);display:grid;gap:1px}
+.cm-h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:8px 8px 3px}
+.cm-i{appearance:none;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:.6em;width:100%;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer}
+.cm-i>span{flex:1;min-width:0}
+.cm-i .ic{flex:none}
+.cm-i:hover,.cm-i:focus-visible{background:var(--hov)}
+.cm-i.on{font-weight:600}
+.lesson{max-width:var(--cap);margin-inline:auto}
+.glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.card{border-radius:10px;padding:18px 20px}
+.lhead{padding:24px 0 16px}
+.lhead h1{font-size:2.2rem;letter-spacing:-.02em}
+.fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
+.btn{box-shadow:none;border-radius:6px}
+.btn.ghost{box-shadow:none;border-radius:6px}
+.note{background:var(--notebg);border-color:#e8d79a}
+[data-mode="dark"] .note{border-color:#5a4d1e}
+.seg.in{background:var(--glass2);border-color:var(--hair);border-radius:8px}
+.seg.in .thumb{border-radius:6px;background:var(--glass);box-shadow:0 1px 2px rgba(0,0,0,.1);border:1px solid var(--hair)}
+.tile{border-radius:8px;box-shadow:none}
+@media(max-width:900px){
+  #shell{display:block}
+  #rail{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px 12px 12px;gap:6px}
+  #rail .seg,#rail .chips,#rail .units,#rail .units .usec{flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
+  #rail .chips{padding:0}
+  .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
+  #rail .units .uclear{margin:0 0 0 auto}
+  .rail-tools{margin-top:0;padding:4px 0 0}
+  :root{--pad:16px}
+  #main{padding-bottom:60px}
+  .crumb{height:40px;position:relative}
+  .rail-brand,.rail-h{display:none}
+  #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
+  #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
+  #rail .seg.main button,#rail .chips button{flex:none;white-space:nowrap}
+  #rail .seg.main button{flex-direction:row}
+  #rail .ulabel{flex-basis:100%}
+}
+/* rows of cards, from 880 px (where cards first sit side by side): wrapping rows instead of a fixed grid. A full row fills the column exactly,
+   and a row that is not full sits in the middle, thus a lone half card is centred, not pushed to the left. A card that is n columns wide is
+   n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way.
+   From 880 px to 1599 px the widths are those of the 12-column grid (half 6, w7 7, w5 5), and the cards of a row keep one height, as before */
+@media(min-width:880px){
+  :root{--cols:12;--gap:16px}
+  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:var(--gap)}
+  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
+  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
+  #main .grid .card.half{--n:6}#main .grid .card.w7{--n:7}#main .grid .card.w5{--n:5}
+  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
+}
+/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
+   The column is capped and centred, thus the card order stays as written and the margins stay even */
+@media(min-width:1600px){
+  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
+  #main .grid,#main .grid>div:not(.card){align-items:flex-start}
+  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
+  .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
+}
+@media(min-width:2200px){html{font-size:17px}
+  #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
+@media(min-width:2400px){
+  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
+  .lhead h1{font-size:2.8rem}
+}
+@media(min-width:3000px){html{font-size:18px}}
+@media(min-width:3200px){
+  :root{--railw:320px;--cap:2900px;--gap:22px}
+}
+@media print{#rail,.crumb{display:none}}
 </style>
 <div class="bg" aria-hidden="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -1757,7 +1847,6 @@ function showUnit(k,first){
   curS=k;document.body.dataset.s=k;_col=null;const nav=$('#chips');nav.innerHTML='';
   chipBtns=SUBJ[k].lessons.map((le,i)=>{const b=el('button',{type:'button',role:'tab',id:'tab-'+k+'-'+i,'aria-controls':k+'-'+i},icon(le.ic||LIC[le.t]||k,14)+le.t+(le.qz?'<i class="pr"></i>':''));b.onclick=()=>showLesson(i);nav.append(b);return b;});
   sectBar(k);showLesson(curL[k],{first});chipProgress();
-  setTimeout(()=>{_col=null;redrawAll();},960);
 }
 /* section bar: a grouped unit gets a row of its own for its sections, under the unit bar. (Clearing a section's answers is on its Review page.) */
 function sectBar(k){const host=$('#units'),ug=ugOf(k);let row=$('.usec',host);
@@ -1847,7 +1936,7 @@ function boot(){
     if(REF[k]){const rt=REF[k].rt||(REF[k].f&&REF[k].f.length?'Formulas and terms':'Key terms');S.lessons.push({t:rt,ic:'book',h:S.name+': '+rt.toLowerCase(),d:'A reference sheet for this section. Use the search box to find a term.',build(g){refUI(g,REF[k]);}});}
     S.lessons.push({t:'Review',rv:1,ic:'target',h:S.name+' review',d:'See your results, practise the questions that are due, take a mixed test or do a timed exam.',build(g,le){reviewUI(g,k,le);}});});
   const mb=el('button',{type:'button',class:'modebtn',id:'mode'});$('.bar').append(mb);
-  const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();setTimeout(()=>{_col=null;redrawAll();},960);};
+  const setMode=(m,save)=>{document.documentElement.dataset.mode=m;mb.innerHTML=icon(m==='dark'?'sun':'moon',17);mb.setAttribute('aria-label',m==='dark'?'Change to light mode':'Change to dark mode');mb.title=m==='dark'?'Light mode':'Dark mode';if(save)try{localStorage.setItem('unit-study-site.mode',m);}catch(e){}_col=null;redrawAll();};
   let m0=null;try{m0=localStorage.getItem('unit-study-site.mode');}catch(e){}setMode(m0==='dark'||m0==='light'?m0:sysMode());
   /* the viewer's theme changes: an explicit change in an artifact viewer is followed at once; a system change only when the student made no choice */
   new MutationObserver(()=>setMode(sysMode())).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
@@ -1869,7 +1958,6 @@ function boot(){
   showTab(t0,true);
   new IntersectionObserver(es=>$('#top').classList.toggle('scrolled',!es[0].isIntersecting)).observe($('#sen'));
   new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',$('#top').offsetHeight+'px')).observe($('#top'));
-  let pm=0,pe=null;document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;pe=e;if(pm)return;pm=requestAnimationFrame(()=>{pm=0;const c=pe.target.closest&&pe.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(pe.clientX-r.left)+'px');c.style.setProperty('--my',(pe.clientY-r.top)+'px');});},{passive:true});
   Store.on(()=>{Object.keys(QUIZ).forEach(k=>{try{QUIZ[k]();}catch(e){console.error('[quiz] '+k+' could not be redrawn',e);}});chipProgress();refreshLive();homeDot();unitMarks();});
   migrateBadges();Store.on(()=>{if(!gv('achMig'))migrateBadges();});
   /* a page left open past midnight: redraw what depends on the date (Today, mastery cards, due counts, the Today dot) */
@@ -1903,30 +1991,71 @@ const cmix=(c1,c2,t)=>{const a=cparse(c1),b=cparse(c2);return `rgb(${[0,1,2].map
 const ctint=(c,t)=>cmix(c,'#ffffff',t),cshade=(c,t)=>cmix(c,'#000000',t);
 
 /* ---------- canvas: capped pixel ratio, coalesced resize, no drawing while off screen ---------- */
-const CANV=[];let CUR=null;
+const CANV=[];let CUR=null,PRINT=0;
 const IO=new IntersectionObserver(es=>es.forEach(e=>{const o=e.target._o;o.on=e.isIntersecting;if(o.on){if(o.stale)o.draw();kick();}}),{rootMargin:'150px'});
 function canvas(host,h,draw){
   const c=el('canvas',{class:'cv'});c.style.height=h+'px';host.append(c);
   const cd=host.closest&&host.closest('.card'),h3=cd&&cd.querySelector('h3');c.setAttribute('role','img');c.setAttribute('aria-label','Interactive diagram'+(h3?': '+h3.textContent:'')+'. The values are in the text below the diagram.');
   const ctx=c.getContext('2d');let rs=0;
   const o={c,ctx,w:0,h:0,d:1,on:true,stale:false,once:false,hov:null,hp:null,
-    draw(){if(!o.w)return;if(!o.on&&o.once){o.stale=true;return;}o.once=true;o.stale=false;ctx.setTransform(o.d,0,0,o.d,0,0);ctx.clearRect(0,0,o.w,o.h);o.hov=null;CUR=o;try{draw(ctx,o.w,o.h);}finally{CUR=null;}if(o.hov){if(o.hov.series.length)hoverBind(o);if(o.hp)cross(o);}},
+    draw(){if(!o.w||!c.width)return;if(!o.on&&o.once&&!PRINT){o.stale=true;return;}o.once=true;o.stale=false;ctx.setTransform(o.d,0,0,o.d,0,0);ctx.clearRect(0,0,o.w,o.h);o.hov=null;CUR=o;try{draw(ctx,o.w,o.h);}finally{CUR=null;}if(o.hov){if(o.hov.series.length)hoverBind(o);if(o.hp)cross(o);}},
     vis:()=>o.on&&c.offsetParent!==null};
   c._o=o;IO.observe(c);
-  /* layout size (border box), not getBoundingClientRect: that one includes the entrance animation's scale */
-  new ResizeObserver(es=>{const b=es[es.length-1].borderBoxSize;o.bb=b&&b[0];if(rs)return;rs=requestAnimationFrame(()=>{rs=0;const r=o.bb?{width:o.bb.inlineSize,height:o.bb.blockSize}:{width:c.offsetWidth,height:c.offsetHeight};if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();});}).observe(c);
+  /* layout size (border box), not getBoundingClientRect: that one includes the entrance animation's scale.
+     A hidden canvas (its lesson is not on screen) gives back its pixel buffer. When it is shown again it gets the buffer back in that same frame,
+     before paint, and is drawn at once if it is near the screen; the others are drawn when they come near, as before */
+  const fit=()=>{const r=o.bb?{width:o.bb.inlineSize,height:o.bb.blockSize}:{width:c.offsetWidth,height:c.offsetHeight};if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);o.d=d;o.w=r.width;o.h=r.height;if(c.width!==W||c.height!==H){c.width=W;c.height=H;}o.draw();};
+  new ResizeObserver(es=>{const b=es[es.length-1].borderBoxSize;o.bb=b&&b[0];
+    if(!(o.bb?o.bb.inlineSize:c.offsetWidth)){if(c.width){c.width=0;c.height=0;}return;}
+    if(!c.width){cancelAnimationFrame(rs);rs=0;const r=c.getBoundingClientRect();o.on=r.bottom>-150&&r.top<innerHeight+150;fit();return;}
+    if(rs)return;rs=requestAnimationFrame(()=>{rs=0;fit();});}).observe(c);
   CANV.push(o);return o;
 }
 const redrawAll=()=>CANV.forEach(o=>o.draw());
+/* print: every canvas on the page is drawn, also one that is off screen (stale, or blank after its lesson was hidden), and in the light colours of print */
+addEventListener('beforeprint',()=>{PRINT=1;CANV.forEach(o=>{if(o.stale&&o.c.offsetParent!==null)o.draw();});});addEventListener('afterprint',()=>{PRINT=0;});
 /* the pixel ratio can change with no resize (zoom on a wide window, a move to another screen): resize the backing stores */
 (function dprWatch(){const q=matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`),on=()=>{q.removeEventListener('change',on);const d=Math.min(2,window.devicePixelRatio||1);
-  CANV.forEach(o=>{if(!o.w||o.d===d)return;o.d=d;o.c.width=Math.round(o.w*d);o.c.height=Math.round(o.h*d);o.draw();});dprWatch();};q.addEventListener('change',on);})();
+  CANV.forEach(o=>{if(!o.w||o.d===d||!o.c.width)return;o.d=d;o.c.width=Math.round(o.w*d);o.c.height=Math.round(o.h*d);o.draw();});dprWatch();};q.addEventListener('change',on);})();
 /* one shared frame loop for the simulations that run continuously */
 const LOOPS=[];let _raf=0,_last=0;
 function loop(cv,fn){LOOPS.push({cv,fn});kick();}
 function kick(){if(_raf||document.hidden||!LOOPS.some(l=>l.cv.vis()))return;_last=performance.now();_raf=requestAnimationFrame(frame);}
 function frame(now){_raf=0;const dt=Math.min(.05,Math.max(0,(now-_last)/1000));for(const l of LOOPS)if(l.cv.vis())l.fn(dt);kick();_last=now;/* after kick(): it stamps performance.now(), later than this frame's timestamp */}
 document.addEventListener('visibilitychange',kick);
+/* the card watcher: a lesson card (.lesson>.grid>.card, not on the Today and Test pages) gets the class cvr, which lets it skip rendering while off screen (CSS above), once it has
+   been drawn at the current width; its real height is then remembered. An off-screen card whose width has changed (a resize, a rotation) loses cvr,
+   thus it is drawn once more at the new width and its height is right again. Reads first, then writes, thus no forced style recalc.
+   cvr is added when the page is idle, after the lesson has been shown, thus the first view of a lesson costs nothing more.
+   cvr is taken off in the next frame, not in the observer: a size change made inside the observer ends its loop with undelivered notifications
+   (an error event on the window) */
+{const SEL='.lesson:not(#home-0):not(#test-0)>.grid>.card',todo=new Set();let job=0;
+  const flush=()=>{job=0;todo.forEach(c=>{if(c.isConnected&&c._cvw)c.classList.add('cvr');});todo.clear();};
+  const later=c=>{todo.add(c);if(!job)job=window.requestIdleCallback?requestIdleCallback(flush,{timeout:2000}):setTimeout(flush,400);};
+  const ro=new ResizeObserver(es=>{const ch=es.map(e=>{const c=e.target,b=e.borderBoxSize&&e.borderBoxSize[0],f=c.firstElementChild;
+      return [c,Math.round(b?b.inlineSize:c.offsetWidth),!!(f&&f.checkVisibility&&!f.checkVisibility({contentVisibilityAuto:true}))];});
+    for(const [c,w,skip] of ch){if(!w)continue;
+      if(!skip){c._cvw=w;if(!c.classList.contains('cvr'))later(c);}
+      else if(c._cvw!==w){c._cvw=0;requestAnimationFrame(()=>{c.classList.remove('cvr');c._cvw=w;later(c);});}}});
+  /* added cards are watched; removed ones (a page drawn again, a section cleared) are let go */
+  const each=(n,fn,gone)=>{if(n.nodeType!==1)return;if(gone?n.classList.contains('card'):n.matches(SEL))fn(n);
+    else if(n.matches(gone?'.lesson,.grid':'.lesson,.lesson>.grid'))n.querySelectorAll('.card').forEach(c=>{if(gone||c.matches(SEL))fn(c);});};
+  new MutationObserver(ms=>ms.forEach(m=>{m.removedNodes.forEach(n=>each(n,c=>ro.unobserve(c),1));m.addedNodes.forEach(n=>each(n,c=>ro.observe(c)));})).observe($('#main'),{childList:true,subtree:true});}
+/* drawings that loop (the hormone flows of en-2 and en-6, the organs of ns-7, the nerve impulse): their CSS animations repaint on the main thread
+   on every frame. They play only while their drawing is on screen, for about 5 s, then rest (paused). They play again when the drawing comes back
+   into view, when the student selects something in its card, and when the drawing starts a new animation (another gland, another slider value).
+   A hidden page (another tab, another app) does not use up the 5 s: the drawings in view play again when the student comes back */
+{const LOOP=new Set(['en2-move','en6-move','hb','gut','glu','epi','fire']),RUN=5000,SV=new Set();
+  const loops=s=>s.getAnimations({subtree:true}).filter(a=>LOOP.has(a.animationName));
+  const rest=s=>{clearTimeout(s._lt);s._lt=0;loops(s).forEach(a=>{if(a.playState==='running')a.pause();});};
+  const run=s=>{loops(s).forEach(a=>{if(a.playState==='paused'||a.playState==='finished')a.play();});clearTimeout(s._lt);s._lt=setTimeout(()=>rest(s),RUN);};
+  /* a drawing that left the page (its lesson was drawn again) is let go */
+  const gone=s=>{if(s.isConnected)return false;io.unobserve(s);SV.delete(s);clearTimeout(s._lt);s._lo=0;return true;};
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const s=e.target;if(gone(s))return;s._in=e.isIntersecting;if(s._in)run(s);else rest(s);}));
+  document.addEventListener('animationstart',e=>{if(!LOOP.has(e.animationName))return;const s=e.target.closest('svg')||e.target;
+    if(!s._lo){s._lo=1;SV.add(s);io.observe(s);}else if(s._in)run(s);else rest(s);},true);
+  document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card');if(c)c.querySelectorAll('svg').forEach(s=>{if(s._lo&&s._in)run(s);});},true);
+  document.addEventListener('visibilitychange',()=>SV.forEach(s=>{if(!gone(s)&&s._in){if(document.hidden)rest(s);else run(s);}}));}
 function dragOn(o,hit,move){
   let h=null;const pos=e=>{const r=o.c.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
   o.c.style.cursor='grab';
@@ -17799,128 +17928,6 @@ dispatchEvent(new Event('sync-change'));
 
 
 <!-- ===== Sidebar layout: a navigation rail on the left, a breadcrumb bar, and a centred lesson column. It moves the existing bars into the rail at load ===== -->
-<style id="sidebar-skin">
-:root{--bg:#fff;--ink:#37352f;--ink2:#6b6a66;--glass:#fff;--glass2:#f7f7f5;--well:#f7f7f5;--hair:#e4e4e1;--spec:transparent;--spec2:transparent;--shadow:transparent;--grid:#e9e9e7;
-  --hi:transparent;--hov:#ededeb;--sheen:transparent;--knob:#fff;--notebg:#fbf3db;--thumb:#ededeb;--thumbbg:#ededeb;--thumbrim:transparent;
-  --fig:#fafaf9;--fig2:#f1f1ef;--mute:#6b6a66;--gridc:#e4e4e1;--axis:#b5b5b1;--ol:rgba(55,53,47,.35);--tipbg:rgba(255,255,255,.96);--rail:#f7f7f5;--railw:252px;--atm:100%;
-  /* the lesson column: --cap is its widest size, --pad the gutter of the main area. The column centres in the main area, and the breadcrumb text lines up with it */
-  --cap:1000px;--pad:40px}
-:root[data-mode="dark"]{--bg:#191919;--ink:#e6e6e3;--ink2:#a3a39f;--glass:#1f1f1f;--glass2:#262626;--well:#262626;--hair:#2f2f2f;--shadow:transparent;--grid:#2f2f2f;--hi:transparent;--hov:#2c2c2c;--sheen:transparent;--knob:#3a3a3a;--notebg:#2a2718;
-  --thumb:#2e2e2e;--thumbbg:#2e2e2e;--thumbrim:transparent;--fig:#202020;--fig2:#262626;--mute:#a3a39f;--gridc:#2f2f2f;--axis:#5a5a58;--ol:rgba(230,230,227,.3);--tipbg:rgba(32,32,32,.96);--rail:#202020;--atm:100%}
-body,body[data-s]{--a1:#37352f;--a2:#a3a39f;--a3:#c9c9c5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue","Segoe UI",system-ui,sans-serif}
-[data-mode="dark"] body,[data-mode="dark"] body[data-s]{--a1:#5a9cf0;--a2:#5a5a58;--a3:#3a3a3a}
-.bg,#top{display:none!important}
-html{scroll-padding-top:62px}
-#shell{display:flex;align-items:flex-start;min-height:100vh}
-#rail{flex:none;width:var(--railw);position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);border-right:1px solid var(--hair);padding:14px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
-.rail-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;font-size:14px}
-.rail-logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;display:grid;place-items:center}
-.rail-h,#rail .ulabel{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:14px 8px 4px;margin:0}
-#rail .seg{display:flex;flex-direction:column;gap:1px;border-radius:0;background:none;border:0;padding:0;box-shadow:none;max-width:none;overflow:visible;isolation:isolate}
-#rail .seg button{justify-content:flex-start;font-size:13.5px;font-weight:500;padding:6px 8px;border-radius:6px;white-space:normal;text-align:left;color:var(--ink);gap:.5em}
-#rail .seg button[aria-selected="true"]{font-weight:600}
-#rail .seg .thumb{border-radius:6px;background:var(--hov);border:0;box-shadow:none;top:0;bottom:auto}
-#rail .seg.main .sm{display:none}#rail .seg.main .lg{display:inline}
-#rail .units{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:2px;padding:0}
-#rail .units .uclear{margin:10px 8px 0;align-self:flex-start}
-#rail .units .usec{flex-direction:column;flex-basis:auto;align-items:stretch;gap:2px}
-#rail .chips{display:flex;flex-direction:column;gap:1px;padding:0 0 0 12px;background:none;border:0;max-width:none;overflow:visible;border-radius:0;flex-wrap:nowrap;justify-content:flex-start}
-#rail .chips button{font-size:13px;font-weight:500;padding:5px 8px;border-radius:6px;text-align:left;white-space:normal;color:var(--ink2);display:flex;align-items:center;transform:none}
-#rail .chips button .ic{flex:none}
-#rail .chips button[aria-selected="true"]{background:var(--hov);color:var(--ink);box-shadow:none;font-weight:600}
-#rail .chips button .pr{margin-left:auto;flex:none}
-#rail .chips button[aria-selected="true"] .pr.m{color:var(--ink)}
-.rail-tools{margin-top:auto;display:flex;gap:6px;padding:16px 8px 0}
-.modebtn{width:32px;height:32px;background:var(--glass);border-color:var(--hair);box-shadow:none}
-#main{flex:1 1 auto;min-width:0;max-width:none;margin:0;padding:0 var(--pad) 80px}
-/* the bar spans the whole main area; its padding (100% = the main area's inner width) puts the text on the edges of the centred column */
-.crumb{display:flex;justify-content:space-between;align-items:center;gap:16px;height:46px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink2);margin:0 calc(-1*var(--pad)) 8px;padding:0 calc(var(--pad) + max(0px,(100% - var(--cap))/2));position:sticky;top:0;background:var(--bg);z-index:5}
-.crumb b{color:var(--ink);font-weight:500}
-.crumb-sep{margin:0 2px;color:var(--a3);flex:none}
-/* each part of the breadcrumb opens a menu of the places at its level */
-.crumb-path{display:flex;align-items:center;min-width:0;flex:1 1 auto}
-.crumb-right{flex:none;white-space:nowrap}
-.crumb-b{appearance:none;border:0;background:none;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:3px;min-width:0;flex:0 1 auto;padding:3px 6px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s}
-.crumb-b:first-child{margin-left:-6px}
-.crumb-b>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.crumb-b .ic{flex:none;opacity:.45;transition:opacity .15s}
-.crumb-b:hover,.crumb-b[aria-expanded="true"]{background:var(--hov);color:var(--ink)}
-.crumb-b:hover .ic,.crumb-b[aria-expanded="true"] .ic{opacity:1}
-.crumb-b.cur{color:var(--ink);flex-shrink:6}
-.crumb-b[data-lv="s"]:not(.cur){flex-shrink:0}
-/* a phone: the lesson header just below shows the level, thus the breadcrumb gets the whole width; the current page (also the heading below) is shortened first */
-@media(max-width:600px){.crumb-right{display:none}}
-.crumb-menu{position:absolute;z-index:6;min-width:13rem;max-width:min(22rem,calc(100% - 16px));max-height:min(60vh,27rem);overflow-y:auto;padding:5px;border-radius:10px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 14px 34px rgba(0,0,0,.16);display:grid;gap:1px}
-.cm-h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);padding:8px 8px 3px}
-.cm-i{appearance:none;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:.6em;width:100%;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer}
-.cm-i>span{flex:1;min-width:0}
-.cm-i .ic{flex:none}
-.cm-i:hover,.cm-i:focus-visible{background:var(--hov)}
-.cm-i.on{font-weight:600}
-.lesson{max-width:var(--cap);margin-inline:auto}
-.glass{background:var(--glass);border:1px solid var(--hair);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-.card{border-radius:10px;padding:18px 20px}
-.card::before{display:none}
-.lhead{padding:24px 0 16px}
-.lhead h1{font-size:2.2rem;letter-spacing:-.02em}
-.fx,.stat,.note,.op,.lvl,.chip,.seg.in{box-shadow:none;border-radius:8px}
-.btn{box-shadow:none;border-radius:6px}
-.btn.ghost{box-shadow:none;border-radius:6px}
-.note{background:var(--notebg);border-color:#e8d79a}
-[data-mode="dark"] .note{border-color:#5a4d1e}
-.seg.in{background:var(--glass2);border-color:var(--hair);border-radius:8px}
-.seg.in .thumb{border-radius:6px;background:var(--glass);box-shadow:0 1px 2px rgba(0,0,0,.1);border:1px solid var(--hair)}
-.tile{border-radius:8px;box-shadow:none}
-@media(max-width:900px){
-  #shell{display:block}
-  #rail{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px 12px 12px;gap:6px}
-  #rail .seg,#rail .chips,#rail .units,#rail .units .usec{flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
-  #rail .chips{padding:0}
-  .rail-h,#rail .ulabel{flex-basis:100%;padding:8px 4px 2px}
-  #rail .units .uclear{margin:0 0 0 auto}
-  .rail-tools{margin-top:0;padding:4px 0 0}
-  :root{--pad:16px}
-  #main{padding-bottom:60px}
-  .crumb{height:40px;position:relative}
-  .rail-brand,.rail-h{display:none}
-  #rail .seg.main,#rail .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px}
-  #rail .seg.main::-webkit-scrollbar,#rail .chips::-webkit-scrollbar{display:none}
-  #rail .seg.main button,#rail .chips button{flex:none;white-space:nowrap}
-  #rail .seg.main button{flex-direction:row}
-  #rail .ulabel{flex-basis:100%}
-}
-/* rows of cards, from 880 px (where cards first sit side by side): wrapping rows instead of a fixed grid. A full row fills the column exactly,
-   and a row that is not full sits in the middle, thus a lone half card is centred, not pushed to the left. A card that is n columns wide is
-   n/cols of the row, less its share of the gaps. The review page nests a second grid, which wraps the same way.
-   From 880 px to 1599 px the widths are those of the 12-column grid (half 6, w7 7, w5 5), and the cards of a row keep one height, as before */
-@media(min-width:880px){
-  :root{--cols:12;--gap:16px}
-  #main .grid,#main .grid>div:not(.card){display:flex!important;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:var(--gap)}
-  #main .grid>div:not(.card){flex:1 1 100%;min-width:0}
-  #main .grid .card{--n:12;flex:0 0 calc(var(--n)*(100% + var(--gap))/var(--cols) - var(--gap) - .1px);max-width:100%;min-width:0}
-  #main .grid .card.half{--n:6}#main .grid .card.w7{--n:7}#main .grid .card.w5{--n:5}
-  #main .grid .card.quiz,#main .grid .card.boss-c{--n:var(--cols)}
-}
-/* wide screens: more cards side by side instead of wider cards, and slightly larger type. 2 across from 1600 px, 3 from 2400 px.
-   The column is capped and centred, thus the card order stays as written and the margins stay even */
-@media(min-width:1600px){
-  :root{--cap:1800px;--pad:clamp(40px,2.5vw,96px);--cols:24;--gap:18px}
-  #main .grid,#main .grid>div:not(.card){align-items:flex-start}
-  #main .grid .card.half{--n:12}#main .grid .card.w7{--n:14}#main .grid .card.w5{--n:10}
-  .lhead h1{font-size:2.5rem}.lede{max-width:70ch}
-}
-@media(min-width:2200px){html{font-size:17px}
-  #rail .seg button{font-size:.9rem}#rail .chips button{font-size:.86rem}.rail-h,#rail .ulabel{font-size:.72rem}.rail-brand{font-size:.95rem}.crumb{font-size:.86rem;height:3rem}.modebtn{width:2.1rem;height:2.1rem}}
-@media(min-width:2400px){
-  :root{--railw:290px;--cap:2700px;--cols:36;--gap:20px}
-  .lhead h1{font-size:2.8rem}
-}
-@media(min-width:3000px){html{font-size:18px}}
-@media(min-width:3200px){
-  :root{--railw:320px;--cap:2900px;--gap:22px}
-}
-@media print{#rail,.crumb{display:none}}
-</style>
 <script>
 (function(){
   const $id=i=>document.getElementById(i);
