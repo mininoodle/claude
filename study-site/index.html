@@ -4193,7 +4193,7 @@ EC_REF.f.push(['Standard cell potential',ecEs('net')+' = '+ecEs('r')+' cathode �
 /* lesson 8: Batteries and fuel cells. Notes pp. 56-64: cells and batteries; primary cells (zinc-carbon, alkaline, mercury and silver oxide button cells);
    secondary cells (lithium, nickel-cadmium, lead-acid); fuel cells (hydrogen-oxygen, aluminum-air); the diploma questions 92 to 105 are in EC_DIP[8].
    Lesson-local helpers: ec8Grid (sentences with blanks to fill from lists, saved under mt_<lesson id>_g<slot>), the drawings ec8Dry, ec8Alk, ec8Btn,
-   ec8Fuel, ec8Air and ec8Lead, and the small text helpers ec8T, ec8Ld, ec8Q. Question figures use inline styles: they are also shown outside the lesson */
+   ec8Fuel, ec8Pem, ec8NiCd, ec8Air and ec8Lead, and the small text helpers ec8T, ec8Ld, ec8Q. Question figures use inline styles: they are also shown outside the lesson */
 /* C() with no line break between a charge and its state (SO₄²⁻|(aq)): a word joiner after the charge */
 const C8=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060(');
 const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
@@ -4293,6 +4293,40 @@ function ec8Air(o={}){const ink='var(--ink2)';
   if(o.lab)s+=ec8T('Anode (−)',70,174,{a:'end',c:'r',s:11.5,w:600,f:'ink2'});
   return ec8Svg(440,290,'An aluminum-air cell. A plate of Al(s)'+(o.lab?', the anode (−),':'')+' is on the left and a porous cathode'+(o.lab?' (+)':'')+' on the right, joined by a wire with a load; electrons flow from the aluminum to the cathode. A NaOH(aq) electrolyte flows up between them, and OH⁻(aq) ions move from the cathode toward the aluminum. Moist air with O₂(g) flows up on the right, and O₂(g) enters the porous cathode.',s);}
 
+/* the hydrogen-oxygen fuel cell with a polymer membrane (notes p. 60): H⁺ moves through the membrane, water forms at the cathode */
+function ec8Pem(){const sm={s:11.5,w:600,c:'s'},ax=(y,x1,x2,c)=>sArrow(x1,y,x2,y,c,1.9);
+  let s=`<rect x="24" y="64" width="116" height="170" fill="color-mix(in srgb,var(--s5) 18%,var(--fig))" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<rect x="300" y="64" width="116" height="170" fill="color-mix(in srgb,var(--s1) 16%,var(--fig))" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    `<rect x="160" y="56" width="120" height="186" fill="color-mix(in srgb,var(--s4) 26%,var(--fig))" stroke="var(--ink2)" stroke-width="1.2"/>`+
+    [140,280].map(x=>`<rect x="${x}" y="56" width="20" height="186" fill="color-mix(in srgb,var(--s6) 34%,var(--fig2))" stroke="var(--ink2)" stroke-width="1.2"/>`+ec8Dots(x+4,62,x+17,236,7,'var(--ink2)',1)).join('')+
+    `<path d="M150,56V36H208M232,36H290V56" fill="none" stroke="var(--ink2)" stroke-width="2"/>`+
+    `<circle cx="220" cy="36" r="11" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/><path d="M213.5,41l3,-8 3.5,6 3.5,-6 3,8" fill="none" stroke="var(--s4)" stroke-width="1.5" stroke-linejoin="round"/>`+
+    ec8T('load',220,17,{s:11.5,w:500,f:'ink2'})+sArrow(160,36,200,36,'var(--s1)',2.4)+sArrow(240,36,282,36,'var(--s1)',2.4)+
+    ec8T('e⁻',180,27,{s:12.5,w:700,f:'s1'})+ec8T('e⁻',262,27,{s:12.5,w:700,f:'s1'})+
+    sArrow(84,8,84,60,'var(--ink)',2.4)+ec8T('H₂(g) in',78,30,{a:'end',c:'r'})+sArrow(356,8,356,60,'var(--ink)',2.4)+ec8T('O₂(g) in',362,30,{a:'start',c:'l'})+
+    sArrow(84,238,84,272,'var(--ink)',2.4)+ec8T('excess H₂(g)',90,262,{a:'start',c:'l'})+sArrow(356,238,356,272,'var(--ink)',2.4)+ec8T('H₂O out',350,262,{a:'end',c:'r'})+
+    [100,138].map(y=>ec8T('H₂',66,y+4,{s:12,w:650,f:'s5'})+ax(y,80,136,'var(--s5)')).join('')+
+    [100,138,176].map(y=>ax(y,168,272,'var(--s2)')+ec8T('H⁺',220,y-7,{s:12,w:700,f:'s2'})).join('')+
+    [100,138].map(y=>ec8T('O₂',374,y+4,{s:12,w:650,f:'s1'})+ax(y,360,304,'var(--s1)')).join('')+
+    ec8T('H₂O',374,180,{s:12,w:650,f:'s3'})+ax(176,304,358,'var(--s3)')+
+    ec8T('Anode (−)',134,206,Object.assign({},sm,{a:'end',c:'s r'}))+ec8T('porous carbon',134,223,Object.assign({},sm,{a:'end',c:'s r',w:500}))+
+    ec8T('Electrolyte',220,206,sm)+ec8T('membrane',220,223,Object.assign({},sm,{w:500}))+
+    ec8T('Cathode (+)',306,206,Object.assign({},sm,{a:'start',c:'s l'}))+ec8T('porous carbon',306,223,Object.assign({},sm,{a:'start',c:'s l',w:500}));
+  return ec8Svg(440,276,'A hydrogen-oxygen fuel cell with a polymer membrane. Hydrogen gas enters at the top left and flows past the porous carbon anode (−); excess hydrogen leaves at the bottom left. At the anode, H₂ gives H⁺ ions and electrons. The H⁺ ions move through the electrolyte membrane to the porous carbon cathode (+). The electrons flow from the anode through the load to the cathode. Oxygen gas enters at the top right. At the cathode, O₂, H⁺ ions and electrons form water, which leaves at the bottom right.',s);}
+
+/* a nickel-cadmium cell cut across (notes p. 58): a cadmium sheet and a nickel oxide sheet rolled together with separators, and the layers enlarged */
+function ec8NiCd(){const cx=104,cy=122,b=16/(2*Math.PI),SEP='#ece5cc',CD='#7f8a9c',NI='#3d3a40',sp=(ph,c)=>{let d='';for(let t=0;t<=(84-14)/b;t+=.12){const r=14+b*t,u=t+ph;d+=(d?'L':'M')+f1(cx+r*Math.cos(u))+','+f1(cy+r*Math.sin(u));}return `<path d="${d}" fill="none" stroke="${c}" stroke-width="3.6" stroke-linecap="round"/>`;};
+  /* fixed colours (a pale separator, a grey cadmium sheet, a dark nickel oxide sheet): the sheets keep their contrast in both themes */
+  const lay=[['Separator',SEP,'#2b292c'],['Cd(s): anode (−)',CD,'#1f1d20'],['Separator',SEP,'#2b292c'],['NiO(OH)(s): cathode (+)',NI,'#f4f1f3']];
+  let s=`<circle cx="${cx}" cy="${cy}" r="96" fill="var(--steel)" stroke="var(--ink2)" stroke-width="1.4"/><circle cx="${cx}" cy="${cy}" r="89" fill="${SEP}" stroke="var(--ink2)" stroke-width="1"/>`+
+    sp(0,CD)+sp(Math.PI,NI)+`<circle cx="${cx}" cy="${cy}" r="9" fill="var(--steel2)" stroke="var(--ink2)" stroke-width="1"/>`+
+    `<circle cx="${cx}" cy="${cy-56}" r="15" fill="none" stroke="var(--s2)" stroke-width="2" stroke-dasharray="4 3"/>`+
+    `<path d="M${cx+13},${cy-63}L240,48M${cx+13},${cy-49}L240,184" fill="none" stroke="var(--s2)" stroke-width="1.4" stroke-dasharray="4 3"/>`+
+    lay.map(([t,c,f],i)=>`<rect x="240" y="${48+34*i}" width="190" height="34" fill="${c}" stroke="var(--ink2)" stroke-width="1"/>`+
+      svgText(ecU(t),335,70+34*i,{s:12,w:650,c:'s'}).replace(/fill="[^"]*"/,`fill="${f}"`)).join('')+
+    ec8T('The layers, enlarged',335,36,{s:11.5,w:600,f:'ink2'})+ec8T('Steel case',104,240,{s:11.5,w:600,f:'ink2'});
+  return ec8Svg(440,250,'A nickel-cadmium cell cut across, seen from the top. Inside a steel case, a sheet of cadmium and a sheet of nickel oxide are rolled together in a spiral, with a separator between them. An enlarged view shows the layers in order: separator, Cd(s), the anode (−), separator, and NiO(OH)(s), the cathode (+).',s);}
+
 /* one cell of a lead-acid battery while it discharges (ecCell with a dark brown PbO2 plate) */
 const ec8Lead=(o={})=>ecCell(Object.assign({sep:'none',L:{el:'Pb(s)',sol:'H2SO4(aq)'},R:{el:'PbO2(s)'},meter:'load',cat:'H⁺',an:'SO₄²⁻',
   extra:`<rect x="323" y="112" width="14" height="138" rx="2" fill="#6b4a32" stroke="var(--ink2)" stroke-width="1.1"/>`,
@@ -4307,7 +4341,7 @@ function ec8Grid(host,o,slot){
   let sel=valid(Store.w(key))?Store.w(key).map(a=>a.slice()):blank(),seen=JSON.stringify(sel),open=false;
   const save=()=>{Store.wSet(key,sel.map(a=>a.slice()));seen=JSON.stringify(sel);};
   const sl=(i,j)=>{const t=plain(R[i].l).replace(/\{(\d)\}/g,(m,k)=>+k===j?'(blank)':'…');return `<select data-i="${i}" data-j="${j}" aria-label="${t.replace(/"/g,'&quot;')}"><option value="-1">Select…</option>${F[i][j][0].map((x,k)=>`<option value="${k}">${x}</option>`).join('')}</select>`;};
-  box.innerHTML=(o.intro?`<p class="hint">${o.intro}</p>`:'')+`<ol class="mtl ec8g">${R.map((r,i)=>`<li><span class="ordn">${i+1}</span><span class="ec8gl">${/\{\d\}/.test(r.l)?r.l.replace(/\{(\d)\}/g,(m,j)=>sl(i,+j)):r.l+' '+r.f.map((x,j)=>sl(i,j)).join(' ')}</span></li>`).join('')}</ol>`+
+  box.innerHTML=(o.intro?`<p class="hint">${o.intro}</p>`:'')+`<ol class="mtl ec8g">${R.map((r,i)=>`<li><span class="ordn">${i+1}</span><span class="ec8gl">${/\{\d\}/.test(r.l)?r.l.replace(/\{(\d)\}([.,)]?)/g,(m,j,q)=>q?`<span class="nw">${sl(i,+j)}${q}</span>`:sl(i,+j)):r.l+' '+r.f.map((x,j)=>sl(i,j)).join(' ')}</span></li>`).join('')}</ol>`+
     `<div class="row"><button type="button" class="btn sm" data-a="check">Check</button><button type="button" class="btn sm ghost" data-a="show">Show the answers</button><button type="button" class="btn sm ghost" data-a="clear">Clear</button><span class="hint" aria-live="polite"></span></div><div data-w></div>`;
   const ss=$$('select',box),lis=$$('ol.ec8g>li',box),lv=$('[aria-live]',box),wv=$('[data-w]',box),ok=(i,j)=>sel[i][j]===F[i][j][1],all=()=>F.every((f,i)=>f.every((x,j)=>ok(i,j)));
   const paint=res=>{ss.forEach(s=>{const i=+s.dataset.i,j=+s.dataset.j;s.value=String(sel[i][j]);s.classList.toggle('ok',!!res&&ok(i,j));s.classList.toggle('bad',!!res&&!ok(i,j));if(res&&!ok(i,j))s.setAttribute('aria-invalid','true');else s.removeAttribute('aria-invalid');});
@@ -4354,7 +4388,7 @@ const F105=ec8P('Most lead storage batteries in automobiles are made up of six v
 
 ecCSS(8,'#ec-8 .ec8eq{margin:.35em 0;line-height:1.55}#ec-8 .ec8eq b{font-weight:650}#ec-8 .nw{white-space:nowrap}'+
   '#ec-8 .ec8g li{grid-template-columns:auto minmax(0,1fr)}#ec-8 .ec8g .ec8gl{line-height:2.15;min-width:0}#ec-8 .ec8g select{margin:.1em .15em;max-width:100%}'+
-  '#ec-8 .ec8g select.ok{border-color:var(--ok);background:var(--okb)}#ec-8 .ec8g select.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
+  '#ec-8 .ec8g .nw select{max-width:calc(100% - .5em)}#ec-8 .ec8g select.ok{border-color:var(--ok);background:var(--okb)}#ec-8 .ec8g select.bad{border-color:var(--bad);background:var(--badb);border-style:dashed;border-width:2px}'+
   '#ec-8 .ec8fig figure.cf{max-width:520px;margin-left:auto;margin-right:auto}#ec-8 .ec8m td{text-align:right;font-variant-numeric:tabular-nums}#ec-8 .ec8m td:first-child{text-align:left}');
 
 ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or more cells joined together. Primary cells cannot be recharged, secondary cells can, and a fuel cell runs on a constant supply of fuel.',build(g){
@@ -4373,7 +4407,7 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
     <li>Electrons flow through the external circuit from the anode to the cathode. Inside the cell, ions carry the charge through the electrolyte or a porous separator: anions toward the anode, cations toward the cathode.</li>
     <li>Discharging is spontaneous: the cell is voltaic. Recharging is non-spontaneous: the cell is electrolytic and needs a power supply.</li></ul>
     <div class="fx">${ecEs('net')} = ${ecEs('r')} cathode − ${ecEs('r')} anode<br>battery voltage = (number of cells in series) × ${ecEs('net')}</div>
-    <p class="hint">The voltage of a cell depends on its substances, not on its size. An AA cell and a D cell both give 1.5 V. The D cell holds more reactants, thus it lasts longer.</p>`,'w5');
+    <p class="hint">The voltage of a cell depends on its substances, not on its size. An AA cell and a D cell both give 1.5&nbsp;V. The D cell holds more reactants, thus it lasts longer.</p>`,'w5');
 
   /* ---------- primary cells ---------- */
   card(g,'Primary cells: the zinc-carbon dry cell',`<p>The <b>zinc-carbon cell</b> is also called the Leclanché cell, the common dry cell, or the regular carbon (“heavy duty”) battery. It cannot be recharged.</p>
@@ -4384,34 +4418,36 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
       <p>Zinc: from 0 in ${C8('Zn(s)')} to +2 in ${C8('Zn^2+(aq)')}. Zinc is oxidized (it is the reducing agent).</p><p>With the simplified anode, the electrons (2e⁻) cancel and the net reaction is<br>${C8(E8.zcN)}</p>`),'half');
   card(g,'Primary cells: the alkaline dry cell',`<p>The <b>alkaline cell</b> has the same reactants, zinc and ${C8('MnO2')}, but it works under <b>basic</b> conditions: its electrolyte is ${C8('KOH(aq)')} in a paste.</p>
     <div class="ec8fig">${CF(ec8Alk(),'An alkaline cell, cut in half.')}</div>
+    <p class="hint">The drawing in the notes shows a graphite rod in the centre as the cathode, and the zinc next to the case. Most alkaline cells are built as drawn here, with the zinc in the centre. In both, zinc is the anode (−) and ${C8('MnO2')} is reduced at the cathode (+).</p>
     ${e8Eq('Cathode (+), GER C:','akC')}${e8Eq('Anode (−), LEO A:','akA')}
     <ul><li>It delivers a much greater current than a zinc-carbon cell, and its voltage stays constant.</li><li>It is more expensive, but it lasts longer.</li></ul>`+
     ex('Fill in the oxidation numbers of zinc (notes p. 57), and find the net reaction',`<p>${C8('Zn(s)')}: an element, thus 0. ${C8('ZnO(s)')}: O is −2, thus Zn is <b>+2</b>. The oxidation number of zinc increases from 0 to +2: zinc is oxidized at the anode.</p>
       <p>Manganese: +4 in ${C8('MnO2')} and +3 in ${C8('Mn2O3')} (2Mn + 3(−2) = 0). It is reduced at the cathode.</p>
       <p>Add the half-reactions. The 2e⁻, the 2OH⁻ and the H₂O cancel: ${C8(E8.akN)}. The electrolyte is not used up, thus the voltage stays almost constant.</p>
       <p class="hint">The notes print the anode with two H₂O on the right. It balances with one: ${C8(E8.akA)}.</p>`),'half');
-  card(g,'Button cells: mercury and silver oxide',`<p>The <b>mercury cell</b> (the mercury(II) oxide alkaline cell) is a miniature power source used in watches, calculators, hearing aids and cameras. ${ecEs('net')} = 1.35 V.</p>
+  card(g,'Button cells: mercury and silver oxide',`<p>The <b>mercury cell</b> (the mercury(II) oxide alkaline cell) is a miniature power source used in watches, calculators, hearing aids and cameras. ${ecEs('net')} = 1.35&nbsp;V.</p>
     <div class="ec8fig">${CF(ec8Btn({ox:'HgO(s)'}),'A mercury cell, cut in half.')}</div>
     ${e8Eq('Anode (−), oxidation:','akA')}${e8Eq('Cathode (+), reduction:','hgC')}
     <p>The <b>silver oxide cell</b> is built the same way, with ${C8('Ag2O(s)')} in place of ${C8('HgO(s)')} (diploma questions 100 to 102).</p>`+
     ex('The net reaction of the mercury cell',`<p>Each half-reaction has 2e⁻, thus add them as they are. The 2OH⁻ and the H₂O cancel:<br>${C8(E8.hgN)}</p><p>Zinc goes from 0 to +2 (oxidized) and mercury from +2 to 0 (reduced). The KOH(aq) is not used up.</p>`),'w5');
 
   /* ---------- secondary cells ---------- */
-  card(g,'Secondary cells: lithium and nickel-cadmium',`<p><span class="key">Secondary cells</span> can be recharged: electricity from a power supply reverses the redox reaction that produced the electricity.</p>
-    <h4>Lithium cells</h4><ul><li>Used in portable devices. The anode is lithium and the cathode is ${C8('TiS2(s)')}.</li><li>Lithium is very light: 6.94 g of Li gives 1 mol of electrons. It is also a very strong reducing agent, thus the cell has a high voltage, about 3 V.</li>
-    <li>The electrolyte is a polymer: ions can move through it, but electrons cannot.</li></ul>${e8Eq('Anode (−):','liA')}${e8Eq('Cathode (+):','liC')}
-    <h4>The nickel-cadmium (Ni-Cad) cell</h4><p>${ecEs('net')} = 1.25 V. From the outside it looks like a dry cell. Inside, thin sheets of the two electrodes and of a separator are rolled together.</p>
-    ${e8Eq('Cathode (+):','ncC')}${e8Eq('Anode (−):','ncA')}<p class="hint">The notes print the cathode as ${C8('NiO(OH)(s) + 2H2O(l) + 2e^- -> Ni(OH)2(s) + 2H2O(l)')}, which does not balance. The form above balances. The nickel electrode is also written as ${C8('NiO2(s)')}: ${C8(E8.ncC2)}.</p>`+
+  card(g,'Secondary cells: lithium',`<p><span class="key">Secondary cells</span> can be recharged: electricity from a power supply reverses the redox reaction that produced the electricity.</p>
+    <h4>Lithium cells</h4><ul><li>Used in portable devices. The anode is lithium and the cathode is ${C8('TiS2(s)')}.</li><li>Lithium is very light: 6.94 g of Li gives 1 mol of electrons. It is also a very strong reducing agent, thus the cell has a high voltage, about 3&nbsp;V.</li>
+    <li>The electrolyte is a polymer: ions can move through it, but electrons cannot.</li></ul>${e8Eq('Anode (−):','liA')}${e8Eq('Cathode (+):','liC')}`+
     ex('Why lithium: the mass of metal that gives 1 mol of electrons',`<p>Each atom gives as many electrons as its ion charge: ${C8('Li -> Li^+ + e^-')}, ${C8('Zn -> Zn^2+ + 2e^-')}, ${C8('Al -> Al^3+ + 3e^-')}. Thus the mass for 1 mol of e⁻ is <i>M</i> ÷ (electrons per atom).</p>
       <table class="ec8m"><tr><th>Metal</th><th>M (g/mol)</th><th>e⁻ per atom</th><th>mass for 1 mol e⁻</th></tr><tr><td>Li</td><td>6.94</td><td>1</td><td>6.94 g</td></tr><tr><td>Al</td><td>26.98</td><td>3</td><td>8.99 g</td></tr>
-      <tr><td>Zn</td><td>65.38</td><td>2</td><td>32.69 g</td></tr><tr><td>Cd</td><td>112.41</td><td>2</td><td>56.21 g</td></tr><tr><td>Pb</td><td>207.20</td><td>2</td><td>103.60 g</td></tr></table><p>Lithium gives the most electrons for each gram, and ${C8('Li^+')} is at the bottom of the table (${e8Li.Es} V): the lightest anode with the highest voltage.</p>`)+
-    ex('The net reaction of the nickel-cadmium cell',`<p>Both half-reactions have 2e⁻. Add them and cancel the 2OH⁻:<br>${C8(E8.ncN)}</p><p>Recharging runs this reaction in reverse: ${C8('Cd(OH)2(s)')} is reduced back to ${C8('Cd(s)')}.</p>`),'w7');
+      <tr><td>Zn</td><td>65.38</td><td>2</td><td>32.69 g</td></tr><tr><td>Cd</td><td>112.41</td><td>2</td><td>56.21 g</td></tr><tr><td>Pb</td><td>207.20</td><td>2</td><td>103.60 g</td></tr></table><p>Lithium gives the most electrons for each gram, and ${C8('Li^+')} is at the bottom of the table (${e8Li.Es} V): the lightest anode with the highest voltage.</p>`),'w7');
+  card(g,'Secondary cells: the nickel-cadmium (Ni-Cad) cell',`<div class="figrow even"><div class="ec8fig">${CF(ec8NiCd(),'A nickel-cadmium cell, cut across.')}</div><div>
+    <p>${ecEs('net')} = 1.25&nbsp;V. From the outside it looks like a dry cell (a Leclanché cell). Inside, thin sheets of the two electrodes, with a separator between them, are rolled together: separator, cadmium, separator, nickel oxide.</p>
+    ${e8Eq('Cathode (+):','ncC')}${e8Eq('Anode (−):','ncA')}<p class="hint">The notes print the cathode as ${C8('NiO(OH)(s) + 2H2O(l) + 2e^- -> Ni(OH)2(s) + 2H2O(l)')}, which does not balance. The form above balances. The nickel electrode is also written as ${C8('NiO2(s)')}, as in the drawing of the notes: ${C8(E8.ncC2)}.</p></div></div>`+
+    ex('The net reaction of the nickel-cadmium cell',`<p>Both half-reactions have 2e⁻. Add them and cancel the 2OH⁻:<br>${C8(E8.ncN)}</p><p>Recharging runs this reaction in reverse: ${C8('Cd(OH)2(s)')} is reduced back to ${C8('Cd(s)')}.</p>`));
 
   /* ---------- the lead-acid battery ---------- */
   card(g,'The lead-acid storage battery',`<div class="figrow even"><div class="ec8fig">${CF(ec8Lead(),'One cell of a lead-acid battery while it discharges.')}</div><div>
     <p>A car battery is a <b>lead storage battery</b>: a group of cells connected together. Each cell has two lead grids. One grid is packed with lead, the other with lead(IV) oxide. The grids are in strong sulfuric acid, ${C8('H2SO4(aq)')}. The cell is <b>rechargeable</b>: its reactions can be reversed.</p>
     ${e8Eq('Anode (−), discharging:','laA','Pb: 0 → +2')}${e8Eq('Cathode (+), discharging:','laC','Pb: +4 → +2')}
-    <p>One cell gives about 2 V. Six cells in series give a 12 V battery.</p></div></div>
+    <p>One cell gives about 2&nbsp;V. A car battery has six cells side by side in one case, with cell spacers between them. Cell connectors join the cells in series, thus the battery gives 12&nbsp;V.</p></div></div>
     <ul><li>Recharging runs the reaction in reverse. This is an electrolysis (see Electrolytic cells). It is non-spontaneous: a direct current must be supplied to drive it.</li>
     <li>In theory the battery lasts forever. In reality some lead(II) sulfate flakes off the plates and is lost to the reaction.</li>
     <li>When it is cold, the electrolyte thickens and the ions do not move as well. The battery seems dead, but it is only too cold. Warmed to room temperature, it works again.</li></ul>`+
@@ -4436,13 +4472,13 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
     after:`In ${C8('Pb(s)')} the oxidation number is 0. In ${C8('PbSO4(s)')} it is +2, because sulfate is 2−. In ${C8('PbO2(s)')} it is +4, because each O is −2. At the anode, Pb goes from 0 to +2: two electrons are lost (oxidation). At the cathode, Pb goes from +4 to +2: two electrons are gained (reduction). Both grids end as ${C8('PbSO4(s)')}.`},1);
   pr.append(el('h4',{},'Discharging and recharging'));
   ec8Grid(pr,{rows:[
-    {l:'During discharge, lead atoms at the anode are {0} and the grid becomes coated with {1}.',f:[[['oxidized','reduced'],0],[[ecU('PbSO4(s)'),ecU('PbO2(s)'),ecU('H2SO4(aq)')],0]]},
+    {l:'During discharge, lead atoms at the anode are {0} and the grid becomes coated with {1}.',f:[[['oxidized','reduced'],0],[[ecU('PbO2(s)'),ecU('H2SO4(aq)'),ecU('PbSO4(s)')],2]]},
     {l:'At the cathode, '+ecU('PbO2(s)')+' is {0} to {1}.',f:[[['oxidized','reduced'],1],[[ecU('Pb(s)'),ecU('PbSO4(s)'),ecU('Pb^2+(aq)')],1]]},
     {l:'As the battery discharges, the concentration of the sulfuric acid {0}, thus the density of the electrolyte {1}.',f:[[['increases','decreases','stays the same'],1],[['increases','decreases','stays the same'],1]]},
-    {l:'To check the strength of the battery, measure {0}.',f:[[['the density of the electrolyte (hydrometer)','the mass of the battery','the volume of the electrolyte'],0]]},
-    {l:'Recharging runs the reaction in reverse. It is {0}, thus {1} must be supplied.',f:[[['spontaneous','non-spontaneous'],1],[['a direct current','heat','more lead'],0]]},
+    {l:'To check the strength of the battery, measure {0}.',f:[[['the mass of the battery','the volume of the electrolyte','the density of the electrolyte'],2]]},
+    {l:'Recharging runs the reaction in reverse. It is {0}, thus {1} must be supplied.',f:[[['spontaneous','non-spontaneous'],1],[['more lead','heat','a direct current'],2]]},
     {l:'In reality the battery wears out, because some {0} flakes off the grids.',f:[[['lead(II) sulfate','sulfuric acid','water'],0]]},
-    {l:'On a very cold day the battery seems dead: the electrolyte {0} and its ions move {1}.',f:[[['thickens','boils','evaporates'],0],[['slowly','quickly'],0]]}],
+    {l:'On a very cold day the battery seems dead: the electrolyte {0} and its ions move {1}.',f:[[['thickens','boils','evaporates'],0],[['quickly','slowly'],1]]}],
     after:`Discharging: ${C8(E8.laN)}. Sulfuric acid is used up and water forms, thus the acid becomes more dilute and less dense: a hydrometer shows the state of charge. Recharging is the reverse reaction, which needs a direct current because it is non-spontaneous. Lead(II) sulfate that flakes off can no longer react. Cold makes the electrolyte thick, thus the ions move slowly and the current is small.`},2);
 
   /* ---------- fuel cells ---------- */
@@ -4456,7 +4492,9 @@ ECL[8]={t:EC_T[8],h:'Batteries, dry cells and fuel cells',d:'A battery is two or
     <h4>The hydrogen-oxygen fuel cell</h4><div class="figrow even"><div class="ec8fig">${CF(ec8Fuel(),'A hydrogen-oxygen fuel cell with a hot KOH(aq) electrolyte.')}</div><div>
     <p>Three compartments are separated by two porous carbon electrodes that contain catalysts. Hydrogen, the fuel, is added at the anode. Oxygen, the oxidizing agent, is added at the cathode. The centre holds hot ${C8('KOH(aq)')}. Electrons from the oxidation at the anode (carbon with nickel) pass through the external circuit to the reduction at the cathode (carbon with nickel oxide). Water is the product.</p>
     ${e8Eq('Anode (−), oxidation:','fcA')}${e8Eq('Cathode (+), reduction:','fcC')}${e8Eq('Net:','fcN')}</div></div>
-    <p>Another design uses a polymer membrane as the electrolyte. ${C8('H^+(aq)')} ions move through it from the anode to the cathode: ${C8(E8.pmA)} at the anode and ${C8(E8.pmC)} at the cathode. The water forms at the cathode, and excess hydrogen leaves the anode side. The net reaction is the same.</p>`+
+    <h4>A fuel cell with a polymer membrane</h4><div class="figrow even"><div class="ec8fig">${CF(ec8Pem(),'A hydrogen-oxygen fuel cell with a polymer membrane as its electrolyte.')}</div><div>
+    <p>Another design uses a polymer membrane as the electrolyte. ${C8('H^+(aq)')} ions move through it from the anode to the cathode. The water forms at the cathode, and the excess hydrogen leaves the anode side.</p>
+    ${e8Eq('Anode (−), oxidation:','pmA')}${e8Eq('Cathode (+), reduction:','pmC')}${e8Eq('Net:','fcN','the same net reaction')}</div></div>`+
     ex('The net equation and the cell potential of the hydrogen-oxygen fuel cell',ecTableH(ecRows([e8OH.s,e8W.s]),{mark:{soa:0,sra:1},rows:[0,1]})+
       `<p>Both half-reactions have 4e⁻. Add them: ${C8('2H2(g) + 4OH^-(aq) + O2(g) + 2H2O(l) -> 4H2O(l) + 4OH^-(aq)')}.</p><p>Cancel 4OH⁻ on each side, and 2H₂O (4H₂O − 2H₂O leaves 2H₂O on the right): <b>${C8(E8.fcN)}</b></p>
       <p>${ecEs('net')} = ${e8OH.Es} V − (${e8W.Es} V) = <b>${e8FC.Es} V</b>. With the membrane (acid) design: ${e8OA.Es} V − ${e8H.Es} V = ${ecVs(e8OA.E-e8H.E)} V, the same value.</p>`));
@@ -4593,7 +4631,7 @@ EC_GEN[8]=[
   /* the mass of anode metal used for an amount of electrons */
   ()=>{const [nm,s,eq,z]=G8M[RN(0,G8M.length-1)],ne=RN(.1,.999,.001),M=EC_M[s],m=ne/z*M;
     return {q:`The anode of a cell is ${nm}: ${ecU(eq)}. The cell delivers ${ne.toFixed(3)} mol of electrons. Calculate the mass of ${nm} that is used up.`,n:m,u:'g',tol:.01,
-      w:`Each ${nm} atom gives ${z} electron${z>1?'s':''}. n(${s}) = ${ne.toFixed(3)} mol ÷ ${z} = ${sig(ne/z)} mol. M(${s}) = ${M.toFixed(2)} g/mol. m = nM = ${sig(ne/z)} mol × ${M.toFixed(2)} g/mol = ${sig(m)} g.`};},
+      w:`Each ${nm} atom gives ${['','one','two','three'][z]} electron${z>1?'s':''}. n(${s}) = ${ne.toFixed(3)} mol ÷ ${z} = ${sig(ne/z)} mol. M(${s}) = ${M.toFixed(2)} g/mol. m = nM = ${sig(ne/z)} mol × ${M.toFixed(2)} g/mol = ${sig(m)} g.`};},
   /* the number of cells in series for a target voltage */
   ()=>{const [nm,c,a]=g8Pick(),p=ecPair(c,a),V=RN(5,60),k=Math.ceil(V/p.E-1e-9);
     return {q:`Each cell of a battery is a standard ${nm}, with E°net = ${p.Es} V. How many cells must be connected in series to give at least ${V} V?`,n:k,u:'',tol:0,
