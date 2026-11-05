@@ -4550,6 +4550,8 @@ const ecBase=()=>{if(document.getElementById('ec-css'))return;document.head.appe
   '.ec-tb th{white-space:normal}.ec-tb td.oa,.ec-tb td.ra{white-space:normal}.ec-tb .ecs,.ec-tb .ec-tag{white-space:nowrap}}'+
   /* 420 px and narrower: the columns are closer */
   '@media(max-width:420px){.ec-tb td{padding:.3em .2em}.ec-tb td.eqm{padding:0 .1em}.ec-tb td.e0{padding-left:.3em}.ec-tb td.arw{width:1.1em;min-width:1.1em}}'+
+  /* a cell (ecCell) in a question figure on a phone: 14px labels and 12.5px small ones, not the 15.5px of the other figures (.qfig svg text), thus they keep apart */
+  '@media(max-width:520px){.qfig svg.ecc text{font-size:14px}.qfig svg.ecc text.ecsm{font-size:12.5px}}'+
   /* a narrow phone (380 px and narrower): slightly smaller text and arrows */
   '@media(max-width:380px){.ec-tb{font-size:.8rem}.ec-tb td{padding:.3em .12em}.ec-tb td.eqm{padding:0 .05em}.ec-tb td.e0{padding-left:.22em}.ec-tb td.arw{width:1em;min-width:1em}}'));};
 /* ---------- a reduction table (HTML) ----------
@@ -4624,9 +4626,11 @@ const ecBadge=(n,x,y)=>badge(n,x,y,'var(--s2)');
 function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'bridge'),an=o.anode==='R'?'R':'L',ca=an==='L'?'R':'L',W=440,flow=o.flow!==false,names=o.names!==false;
   const L=Object.assign({},o.L),R=Object.assign({},o.R),S={L,R},nums=Object.assign({},o.nums);if(nums.anode!=null)nums['el'+an]=nums.anode;if(nums.cathode!=null)nums['el'+ca]=nums.cathode;
   const wy=46,yt=154,yb=274,yl=178,et=112,eb=250,lng=h=>h&&h.sol!=null&&(Array.isArray(h.sol)?h.sol.map(ecU).join(', '):ecU(h.sol)).length>24,two=names&&(lng(o.L)||(sep!=='none'&&lng(o.R))),
-    H=(names||o.lab!==false)?(names&&o.lab!==false?(two?336:322):two?314:300):284;
+    H=(names||o.lab!==false)?(names&&o.lab!==false?(two?338:322):two?316:300):284;
   const G=sep==='bridge'?{v:[[36,168],[272,404]],x:{L:78,R:362},sx:{L:102,R:338},ax:{L:102,R:338}}:sep==='cup'?{v:[[46,394]],x:{L:112,R:312},sx:{L:150,R:312},ax:{L:150,R:312},cup:[270,354]}:{v:[[62,378]],x:{L:110,R:330},sx:{L:220,R:220},ax:{L:110,R:330}};
-  const T=(t,x,y,q={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},q)),key=t=>Array.isArray(t)?t.map(ecK):[ecK(t)],ar=(a,b,c,d,col=o.col||'var(--s1)')=>sArrow(a,b,c,d,col,2.2);
+  /* a label. In a question figure on a phone (.qfig, ecBase) a label is 14px, and a small one (ecsm: 11.5 or less) 12.5px, not the 15.5px of other figures, thus the
+     labels of a cell keep apart; fx: the label keeps its own size (the words in the power supply and the voltmeter, the signs), thus it stays in its box */
+  const T=(t,x,y,q={})=>{const o=Object.assign({s:12,w:600,f:'ink'},q),h=svgText(ecU(t),x,y,Object.assign({},o,{c:((o.c||'')+(!o.fx&&o.s<=11.5?' ecsm':'')).trim()}));return o.fx?h.replace('<text ',`<text style="font-size:${o.s}px" `):h;},key=t=>Array.isArray(t)?t.map(ecK):[ecK(t)],ar=(a,b,c,d,col=o.col||'var(--s1)')=>sArrow(a,b,c,d,col,2.2);
   const solTxt=h=>h.sol==null?'':Array.isArray(h.sol)?h.sol.map(ecU).join(', '):ecU(h.sol);
   const solCol=h=>{if(h.c)return h.c;const ks=key(h.sol||'').concat(String(h.sol||'').split(/[\s,/]+/).map(ecK)),m=EC_SOLC.find(([k])=>ks.includes(k)||ks.some(x=>x.startsWith(k.replace(/\(aq\)$/,''))));return m?`color-mix(in srgb,${m[1]} ${m[2]}%,var(--liq))`:'var(--liq)';};
   const elCol=h=>{const m=String(h.el||'').match(/^[A-Z][a-z]?/);return (m&&EC_ELC[m[0]])||'var(--steel)';};
@@ -4653,15 +4657,15 @@ function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'br
   if(sep==='bridge'){const xl=138,xr=302,by=116,lb=226,d=`M${xl},${lb}V${by+16}Q${xl},${by} ${xl+16},${by}H${xr-16}Q${xr},${by} ${xr},${by+16}V${lb}`;
     mid+=`<path d="${d}" fill="none" stroke="var(--gl)" stroke-width="17" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="color-mix(in srgb,var(--liq) 70%,var(--fig))" stroke-width="12" stroke-linejoin="round"/>`+
       [xl,xr].map(x=>`<rect x="${x-6}" y="${lb-12}" width="12" height="13" rx="2" fill="var(--fig2)" stroke="var(--mute)" stroke-width="1" stroke-dasharray="1.6 1.6"/>`).join('');
-    if(names&&nums.bridge==null){mid+=T('salt bridge',220,o.bridge?136:142,{s:11,w:500,f:'ink2',c:'s'});if(o.bridge)mid+=T(o.bridge,220,150,{s:11.5,c:'s'});}}
+    if(names&&nums.bridge==null){mid+=T('salt bridge',220,o.bridge?136:142,{s:11,w:500,f:'ink2',c:'s'});if(o.bridge)mid+=T(o.bridge,220,152,{s:11.5,c:'s'});}}
   else if(sep==='cup'&&names&&nums.bridge==null)mid+=T('porous cup',G.cup[1]+8,147,{a:'start',s:11,w:500,f:'ink2',c:'l s'});
   /* the external circuit: the wire, and the voltmeter, the load or the power supply */
   const xL=G.x.L,xR=G.x.R,etL=L.gas?et-16:et,etR=R.gas?et-16:et;
   top+=`<path d="M${xL},${etL}V${wy}H${mx0}M${mx1},${wy}H${xR}V${etR}" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linejoin="round"/>`;
-  if(mtype==='V'){top+=`<rect x="${mx0}" y="${wy-16}" width="${mw}" height="32" rx="7" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+(o.E?T(o.E,220,wy+4.5,{s:12,w:700,c:'s'}):`<path d="M206,${wy+6}a14 14 0 0 1 28,0" fill="none" stroke="var(--mute)" stroke-width="1.3"/><path d="M220,${wy+7}l6,-11" stroke="var(--s2)" stroke-width="1.6" stroke-linecap="round"/>`+T('V',220,wy-3,{s:10,w:700,f:'ink2',c:'s'}));}
+  if(mtype==='V'){top+=`<rect x="${mx0}" y="${wy-16}" width="${mw}" height="32" rx="7" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+(o.E?T(o.E,220,wy+4.5,{s:12,w:700,c:'s',fx:1}):`<path d="M206,${wy+6}a14 14 0 0 1 28,0" fill="none" stroke="var(--mute)" stroke-width="1.3"/><path d="M220,${wy+7}l6,-11" stroke="var(--s2)" stroke-width="1.6" stroke-linecap="round"/>`+T('V',220,wy-3,{s:10,w:700,f:'ink2',c:'s'}));}
   else if(mtype==='load')top+=`<circle cx="220" cy="${wy}" r="12" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/><path d="M213,${wy+5}l3,-8 4,6 4,-6 3,8" fill="none" stroke="var(--s4)" stroke-width="1.5" stroke-linejoin="round"/>`;
-  else if(mtype==='power'){top+=`<rect x="${mx0}" y="${wy-19}" width="${mw}" height="38" rx="7" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+T('power',220,wy-3.5,{s:11,w:600,f:'ink2',c:'s'})+T('supply',220,wy+10.5,{s:11,w:600,f:'ink2',c:'s'});
-    if(o.sign!==false){const pl=an==='L'?'+':'−',mn=an==='L'?'−':'+';top+=T(pl,mx0+9,wy+5,{s:15,w:800,c:'s'})+T(mn,mx1-9,wy+5,{s:15,w:800,c:'s'});}}
+  else if(mtype==='power'){top+=`<rect x="${mx0}" y="${wy-19}" width="${mw}" height="38" rx="7" fill="var(--fig2)" stroke="var(--ink2)" stroke-width="1.6"/>`+T('power',220,wy-3.5,{s:11,w:600,f:'ink2',c:'s',fx:1})+T('supply',220,wy+10.5,{s:11,w:600,f:'ink2',c:'s',fx:1});
+    if(o.sign!==false){const pl=an==='L'?'+':'−',mn=an==='L'?'−':'+';top+=T(pl,mx0+9,wy+5,{s:15,w:800,c:'s',fx:1})+T(mn,mx1-9,wy+5,{s:15,w:800,c:'s',fx:1});}}
   /* electron flow: from the anode to the cathode through the wire */
   if(flow){const dir=an==='L'?1:-1,seg=[[xL+16,mx0-13],[mx1+13,xR-16]];seg.forEach(([a,b],i)=>{if(b-a<26)return;const p=dir>0?[a,b]:[b,a];top+=ar(p[0],wy-11,p[1],wy-11);
       if(nums.eflow!=null){if(i===0)top+=ecBadge(nums.eflow,(a+b)/2,wy-27);}else top+=T('e⁻',(a+b)/2,wy-19,{s:12.5,w:700,f:'s1'});});}
@@ -4677,8 +4681,8 @@ function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'br
   if(names)['L','R'].forEach(s=>{const h=S[s],x=G.x[s],d=s==='L'?-1:1,g=h.gas?20:12;if(h.el)top+=T(h.el,x+d*g,h.gas?146:130,{a:d<0?'end':'start',c:d<0?'r':'l'});});
   const split=t=>{if(t.length<=24)return [t];const c=t.indexOf(', ');if(c>0&&c<t.length-2)return [t.slice(0,c+1),t.slice(c+2)];const sp=[...t.matchAll(/ /g)].map(m=>m.index);if(!sp.length)return [t];const k=sp.reduce((a,b)=>Math.abs(b-t.length/2)<Math.abs(a-t.length/2)?b:a);return [t.slice(0,k),t.slice(k+1)];},
     sols=!names?[]:sep==='none'?[[220,solTxt(L)]]:['L','R'].map(s=>[G.sx[s],solTxt(S[s])]);
-  sols.forEach(([x,t])=>{if(!t)return;const ls=split(t);ls.forEach((l,j)=>{top+=T(l,x,292+14*j,{s:12,w:500,c:two?'s':''});});});
-  if(o.lab!==false){const sg=s=>o.sign===false?'':(s===an)===!ely?' (−)':' (+)',y=names?(two?325:311):292;['L','R'].forEach(s=>{top+=T((s===an?'Anode':'Cathode')+sg(s),G.ax[s],y,{s:12.5,w:700,c:'s'});});}
+  sols.forEach(([x,t])=>{if(!t)return;const ls=split(t);ls.forEach((l,j)=>{top+=T(l,x,292+16*j,{s:12,w:500,c:two?'s':''});});});
+  if(o.lab!==false){const sg=s=>o.sign===false?'':(s===an)===!ely?' (−)':' (+)',y=names?(two?327:311):292;['L','R'].forEach(s=>{top+=T((s===an?'Anode':'Cathode')+sg(s),G.ax[s],y,{s:12.5,w:700,c:'s'});});}
   else if(o.sign!==false&&!ely){/* signs only: at the top of each electrode */}
   /* numbered parts */
   const P={elL:[xL+(L.gas?30:20),136],elR:[xR-(R.gas?30:20),136],wire:[xR,82],meter:[220,wy-31],
@@ -4691,7 +4695,7 @@ function ecCell(o={}){const ely=/^e/.test(o.type||''),sep=o.sep||(ely?'none':'br
     alt.push(mtype==='power'?'A power supply is connected to the electrodes by a wire.':mtype==='V'?'A voltmeter'+(o.E?' that reads '+o.E:'')+' is connected to the electrodes by a wire.':mtype==='load'?'A light bulb is connected to the electrodes by a wire.':'A wire joins the electrodes.');
     if(flow)alt.push('Electrons flow through the wire from the anode to the cathode. Cations move toward the cathode and anions toward the anode.');
     const nk=Object.keys(nums).filter(k=>P[k]);if(nk.length)alt.push('Numbered parts: '+nk.map(k=>nums[k]).sort((a,b)=>a-b).join(', ')+'.');}
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${(o.alt||alt.join(' ')).replace(/"/g,'&quot;')}">${back}${mid}${top}${o.extra||''}</svg>`;}
+  return `<svg viewBox="0 0 ${W} ${H}" class="ecc" role="img" aria-label="${(o.alt||alt.join(' ')).replace(/"/g,'&quot;')}">${back}${mid}${top}${o.extra||''}</svg>`;}
 /* the icon of the section and of its lessons (24 px line icons, drawn like the others in ICON), and the lesson titles in LIC */
 Object.assign(ICON,{
   ec:'<path d="M5 9.5v9a2.5 2.5 0 0 0 2.5 2.5h9a2.5 2.5 0 0 0 2.5-2.5v-9"/><path d="M3.5 9.5h17"/><path d="M13.2 2.5 9.6 9.5h4.3l-2.6 7.5"/>',
@@ -7588,7 +7592,7 @@ const C8=t=>C(t).replace(/<\/sup>\(/g,'</sup>\u2060(');
 const ec8T=(t,x,y,o={})=>svgText(ecU(t),x,y,Object.assign({s:12,w:600,f:'ink'},o)),
   /* a leader line from a label to a part, with a dot on the part */
   ec8Ld=(x1,y1,x2,y2)=>`<path d="M${x1},${y1}L${x2},${y2}" fill="none" stroke="var(--ink2)" stroke-width="1.2"/><circle cx="${x2}" cy="${y2}" r="2.3" fill="var(--ink2)"/>`,
-  ec8Svg=(w,h,alt,body)=>`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${alt.replace(/"/g,'&quot;')}">${body}</svg>`,
+  ec8Svg=(w,h,alt,body)=>`<svg viewBox="0 0 ${w} ${h}" class="ecc" role="img" aria-label="${alt.replace(/"/g,'&quot;')}">${body}</svg>`,
   /* a label of a drawing: words (one or more lines, 21 units apart: the labels grow on a phone) or, with N, a numbered badge.
      yc: the middle of the label, where its leader starts. side 'r': the text ends at x (left of the part); 'l': it starts at x */
   ec8Lab=(N,n,t,x,yc,side)=>{const a=Array.isArray(t)?t:[t],y0=yc+4-(a.length-1)*10.5;return N?ecBadge(n,side==='r'?x-10:x+10,yc):a.map((s,i)=>ec8T(s,x,y0+21*i,{a:side==='r'?'end':'start',c:side==='r'?'r':'l'})).join('');},
@@ -8407,7 +8411,7 @@ const ec10Gas=(l,r)=>(l?svgText(ecU(l),124,170,{a:'start',s:12,w:650,f:'ink',c:'
 const ec10Tb=(rows,soa,sra,hl,cap)=>{const R=ecRows(rows),i=R.indexOf(ecRow(soa)),j=R.indexOf(ecRow(sra));return ecTableH(R,{hl,mark:{soa:i,sra:j},rows:[i,j],cap});};
 /* diploma question 113: the electroplating cell with its numbered parts */
 const ec10Plate=()=>{const T=(t,x,y,o)=>svgText(t,x,y,Object.assign({s:12.5,w:600,f:'ink'},o)),B=ecBadge,A=(a,b,c,d)=>sArrow(a,b,c,d,'var(--ink2)',1.8);
-  return `<svg viewBox="0 0 460 300" role="img" aria-label="An electroplating cell. A power source is joined by one wire to a carbon rod, C(s), labelled 1, and by a second wire to a car bumper, labelled 4. The rod and the bumper are in a solution of Cr²⁺(aq), labelled 5, and NO₃⁻(aq), labelled 6. Arrow 2, on the wire to the carbon rod, points from the power source toward the rod. Arrow 3, on the wire to the bumper, points from the power source down toward the bumper. In the solution, arrow 7 points toward the carbon rod and arrow 8 points toward the bumper.">`+
+  return `<svg viewBox="0 0 460 300" class="ecc" role="img" aria-label="An electroplating cell. A power source is joined by one wire to a carbon rod, C(s), labelled 1, and by a second wire to a car bumper, labelled 4. The rod and the bumper are in a solution of Cr²⁺(aq), labelled 5, and NO₃⁻(aq), labelled 6. Arrow 2, on the wire to the carbon rod, points from the power source toward the rod. Arrow 3, on the wire to the bumper, points from the power source down toward the bumper. In the solution, arrow 7 points toward the carbon rod and arrow 8 points toward the bumper.">`+
     T('Electroplating cell',220,19,{s:13.5,w:700,c:'s'})+
     `<rect x="41.5" y="148" width="343" height="130.5" rx="8" fill="var(--liq)" fill-opacity=".62"/><path d="M41.5,148H384.5" stroke="var(--gl)" stroke-width="1.4"/>`+
     `<path d="M190,68V84Q190,90 184,90H112Q100,90 100,102" fill="none" stroke="var(--ink2)" stroke-width="2"/><path d="M262,68V201" fill="none" stroke="var(--ink2)" stroke-width="2"/>`+
@@ -9298,7 +9302,7 @@ const F83=ih('Voltaic cell')+ecCell({L:{el:'X(s)',sol:'X^2+(aq)'},R:{el:'Pt(s)',
   ip('In this apparatus, the anions in the solution move from the hydrogen half-cell solution into the salt bridge and migrate toward the '+Cn('X(s)')+' electrodes.');
 /* 85 */
 const F85=ih('An electrochemical cell')+tall(ecCell({L:{el:'Cu(s)',sol:'Cu^2+(aq)'},R:{el:'Zn(s)',sol:'Zn^2+(aq)'},anode:'R',names:false,lab:false,flow:false,sign:false,
-  extra:T('Cu(s)',64,128,{a:'end'})+T('Zn(s)',376,128,{a:'start'})+T('salt bridge',220,78,{w:500,f:'ink2'})+T('1.0 mol/L NaNO3(aq)',220,94,{w:500})+
+  extra:T('Cu(s)',64,128,{a:'end'})+T('Zn(s)',376,128,{a:'start'})+T('salt bridge',220,78,{w:500,f:'ink2'})+T('1.0 mol/L NaNO3(aq)',220,96,{w:500})+
     T('1.0 mol/L',102,296)+T('Cu^2+(aq) and SO4^2-(aq)',102,312)+T('1.0 mol/L',338,296)+T('Zn^2+(aq) and SO4^2-(aq)',338,312)+
     T('porous',220,238,{w:500,f:'ink2'})+T('cotton',220,254,{w:500,f:'ink2'})+T('plugs',220,270,{w:500,f:'ink2'})+lead(194,236,148,224)+lead(246,236,292,224),
   alt:'Left: a copper electrode, Cu(s), in 1.0 mol/L Cu²⁺(aq) and SO₄²⁻(aq). Right: a zinc electrode, Zn(s), in 1.0 mol/L Zn²⁺(aq) and SO₄²⁻(aq). A salt bridge of 1.0 mol/L NaNO₃(aq) with porous cotton plugs joins the solutions, and a meter is connected to the two electrodes.'}),320);
