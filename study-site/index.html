@@ -1461,8 +1461,9 @@ const qfSweep=()=>qfSet.forEach(b=>{if(!b.isConnected){qfSet.delete(b);if(qfIO)q
 const qfigAll=root=>{qfSweep();[...qfSet].forEach(b=>{if(!root||root.contains(b))qfDraw(b);});};
 /* the waiting figures above a place y of the page are drawn at once: a reload goes back to the place the student left (savePlace), which was measured with them drawn,
    and a jump to a card (goTo) lands where it would land with every figure drawn. A card that skips its rendering off screen (cvr: the card watcher) keeps its old
-   height until it is drawn again, thus it loses cvr here: its new height counts at once, and the watcher gives cvr back when the page is idle */
-const qfAbove=y=>{qfSweep();[...qfSet].filter(b=>b.getBoundingClientRect().top+scrollY<y).forEach(b=>{qfDraw(b);const c=b.closest('.card.cvr');if(c)c.classList.remove('cvr');});};
+   height until it is drawn again, thus it loses cvr here: its new height counts at once, and the watcher gives cvr back when the page is idle.
+   The boxes of a lesson that is not shown (no height) wait */
+const qfAbove=y=>{qfSweep();[...qfSet].filter(b=>{const r=b.getBoundingClientRect();return r.height>0&&r.top+scrollY<y;}).forEach(b=>{qfDraw(b);const c=b.closest('.card.cvr');if(c)c.classList.remove('cvr');});};
 const qfEst=h=>{let px=0;String(h).replace(/viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/g,(m,w,v)=>{px+=Math.min(1.3,v/w)*460;return m;});
   return Math.round(px+30*(String(h).match(/<tr[\s>]/g)||[]).length+26*(String(h).match(/<p[\s>]|<br/g)||[]).length)||120;};
 function qfLater(box,html){box._qf=html;box.innerHTML=`<div class="qf-ph" style="height:${qfEst(html)}px"></div>`;
