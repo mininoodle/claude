@@ -5773,7 +5773,9 @@ ECL[3]={t:EC_T[3],h:'Predicting redox reactions',
   build(g){
   ecCSS(3,'#ec-3 .ec3sp{position:relative;display:inline-block;width:2.6em;height:.62em;margin:0 .2em;vertical-align:.02em}#ec-3 .ec3sp svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}'+
     '#ec-3 .ec3sp small{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.6em;line-height:1;font-weight:650;color:var(--ink2);white-space:nowrap}'+
-    '#ec-3 .cf.ec3-tubes svg{max-width:340px}#ec-3 .ec3eq{line-height:2;margin:.4em 0}#ec-3 .ec3pq>p:first-child{margin-top:.2em}');
+    '#ec-3 .cf.ec3-tubes svg{max-width:340px}#ec-3 .ec3eq{line-height:2;margin:.4em 0}#ec-3 .ec3pq>p:first-child{margin-top:.2em}'+
+    /* a narrow phone: the entity and its select fit side by side (MnO₄⁻(aq) does not break before (aq)) */
+    '@media(max-width:380px){#ec-3 .eq-tb td,#ec-3 .eq-tb th{padding-left:.2em;padding-right:.2em}}');
   /* 1. the six steps of the notes */
   card(g,'How to predict a redox reaction',`<p class="hint">Outcomes: 30–B1.5k, 30–B1.7k</p>
     <p>You may be given a mixture of substances (ions and molecules) and asked which of them will react in a redox reaction. Use the table of reduction half-reactions of the data booklet. It is in the card “Table of reduction half-reactions” below, and on the Formulas and terms page of this section.</p>
