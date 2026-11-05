@@ -976,7 +976,7 @@ function pageShown(L,o={}){const first=o.first||document.readyState==='loading',
   if(!first)window.scrollTo({top:same||TOP?0:L._y||0});TOP=0;L._read=scrollY;
   /* the page's address: a new history entry for a page the student opens, the same entry at load, for a page shown again,
      for the arrow keys (one press, one lesson) and for a page opened by Back or Forward (see setAddr) */
-  const h=pageHash(L);offAC(L);if(h&&location.hash!==h)setAddr(h,!(first||same||NAVREP||HASHNAV));}
+  const h=pageHash(L);offAC(L);if(h&&location.hash!==h)setAddr(h,!(first||same||NAVREP||HASHNAV));findWarm();}
 /* write the address: history.pushState (a new entry) or replaceState (the same entry). location.hash and location.replace cost much more in a big document
    (about 0.3 s at load on a slow phone, and up to 0.1 s for each page change late in a long visit), thus they are only the fallback where the History API
    is missing or refuses. The address is this document's own address with the new fragment: a bare '#/...' would be read against the base address, which in
@@ -1030,6 +1030,9 @@ function findIndex(){findStart();while(FINDQ.length)findUnit(...FINDQ.shift());r
 const findIdle=d=>{findStart();const t0=performance.now();do{if(FINDQ.length)findUnit(...FINDQ.shift());}while(FINDQ.length&&(d?d.timeRemaining()>4:performance.now()-t0<12));
   if(FINDQ.length)(window.requestIdleCallback?requestIdleCallback(findIdle,{timeout:3000}):setTimeout(findIdle,50));};
 addEventListener('load',()=>{try{if(window.requestIdleCallback)requestIdleCallback(findIdle,{timeout:3000});else setTimeout(findIdle,500);}catch(e){}});
+/* the card headings of a page just shown are read while the browser is idle too (findCards keeps them for each lesson), thus the first key of a search after
+   many lessons were opened does not read them all */
+let FWARM=0;const findWarm=()=>{if(FWARM)return;FWARM=1;const go=()=>{FWARM=0;try{findCards();}catch(e){}};try{if(window.requestIdleCallback)requestIdleCallback(go,{timeout:4000});else setTimeout(go,300);}catch(e){FWARM=0;}};
 /* the card headings of the lessons that are built (they exist only once a lesson has been opened). A lesson keeps its list until its number of cards
    changes, thus a key typed in the search does not read every heading of every open lesson again (the Review page, whose cards change, is read each time) */
 function findCards(){const out=[];document.querySelectorAll('#main>article.lesson').forEach(A=>{const m=/^(.+)-(\d+)$/.exec(A.id),U=m&&SUBJ[m[1]];if(!U)return;const k=m[1],i=+m[2],le=U.lessons[i];if(!le)return;
