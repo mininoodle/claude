@@ -12767,7 +12767,7 @@ const MB_REF={rt:'Terms and codon table',ft:'Rules and key values',ex:'codon',f:
   ['Possible polypeptides','20<sup><i>n</i></sup> chains of <i>n</i> amino acids (20² = 400 dipeptides)'],
   ['Start and stop codons','start: AUG (methionine) &nbsp; stop: UAA, UAG, UGA'],
   ['Amino acids in a polypeptide','one for each codon from AUG up to the stop codon. The stop codon adds none.'],
-  ['PCR','<i>n</i> cycles give 2<sup><i>n</i></sup> copies of one molecule. Each cycle: about 95 °C (the strands separate), 55 °C (the primers attach), 72 °C (the DNA is copied).'],
+  ['PCR','<i>n</i> cycles give 2<sup><i>n</i></sup> copies of one molecule. Each cycle: about 95 °C (the strands separate), 55 °C (the primers attach), 72 °C (Taq polymerase copies the DNA).'],
   ['EcoRI','cuts GAATTC between the G and the A on each strand. Each end gets the sticky end AATT.'],
   ['Gel electrophoresis','DNA is negative and moves toward the positive pole. Short fragments move furthest from the wells.']],
 t:[
@@ -12802,6 +12802,7 @@ t:[
   ['RNA primer','A short piece of RNA where DNA polymerase starts a new strand.'],
   ['DNA polymerase III','The enzyme that adds free nucleotides to the 3′ end of a new strand. It works only 5′ to 3′.'],
   ['DNA polymerase I','The enzyme that removes the RNA primers and replaces them with DNA.'],
+  ['Taq polymerase','A heat-stable DNA polymerase from the hot-spring bacterium <i>Thermus aquaticus</i>, used in PCR.'],
   ['DNA ligase','The enzyme that joins two pieces of DNA by joining their sugar-phosphate backbones, for example the Okazaki fragments.'],
   ['Leading strand','The new strand that is made continuously, toward the replication fork.'],
   ['Lagging strand','The new strand that is made in short pieces, away from the replication fork.'],
@@ -12851,6 +12852,7 @@ t:[
   ['Frameshift','A shift of the reading frame by an insertion or a deletion: every codon after it changes.'],
   ['Silent mutation','A substitution that gives the same amino acid.'],
   ['Missense mutation','A substitution that gives a different amino acid.'],
+  ['Sickle-cell anemia example','The presentation shows a DNA codon changing from GAG to GTG alongside normal and sickled red blood cells.'],
   ['Nonsense mutation','A substitution that makes a stop codon, thus the polypeptide is short.'],
   ['Beneficial mutation','A mutation that gives a selective advantage. It tends to become more common over time.'],
   ['Harmful mutation','A mutation that reduces fitness. It tends to be selected against.'],
@@ -13092,7 +13094,7 @@ MBL.push({t:'Mutations',h:'Mutations',d:'A mutation is a permanent change in the
     <li>Mutations occur at random. Mutagens such as UV light, X-rays and some chemicals make them more frequent.</li></ul>`,'half');
   card(g,'Effects',`<ol><li><span class="key">Beneficial</span>: gives a selective advantage. It tends to become more common over time and leads to evolutionary change.</li><li><span class="key">Harmful</span>: reduces fitness. It tends to be selected against.</li><li><span class="key">Neutral</span>: no benefit and no cost. It is not acted on by natural selection.</li></ol><p>Random mutations are the source of new alleles and thus of genetic variation.</p>`,'half');
   card(g,'Types of gene mutation',`<table><tr><th>Type</th><th>Change</th><th>Effect</th></tr><tr><td>Insertion</td><td>An extra nucleotide is added</td><td>Frameshift: every codon after it changes</td></tr><tr><td>Deletion</td><td>A nucleotide is removed</td><td>Frameshift: every codon after it changes</td></tr><tr><td>Substitution</td><td>One nucleotide replaces another</td><td>Point mutation: one codon changes</td></tr></table>
-    <p>A substitution can be <span class="key">silent</span> (the same amino acid), <span class="key">missense</span> (a different amino acid) or <span class="key">nonsense</span> (a stop codon, which gives a short polypeptide). An insertion or deletion of three nucleotides adds or removes one amino acid without a frameshift.</p>`);
+    <p>A substitution can be <span class="key">silent</span> (the same amino acid), <span class="key">missense</span> (a different amino acid) or <span class="key">nonsense</span> (a stop codon, which gives a short polypeptide). An insertion or deletion of three nucleotides adds or removes one amino acid without a frameshift.</p><p><span class="key">Sickle-cell anemia</span> is an example shown in the presentation: the DNA codon changes from GAG to GTG, alongside the change from normal to sickled red blood cells. Use it as an example of a substitution associated with an abnormal phenotype.</p><p></p>`);
   /* try-its added after the lesson cards (the sorters save nothing) */
   const s5=card(g,'Classify each mutation','<p class="hint">Each tile is a change in one mRNA codon, or a change in the gene. Select each tile to change its label, then check.</p>','half');
   sorter(s5,[['CUU (Leu) → CUC (Leu)',0],['GAA (Glu) → GUA (Val)',1],['UAC (Tyr) → UAG (stop)',2],['One base is inserted after the start codon',3],['AAA (Lys) → AGA (Arg)',1],['UGG (Trp) → UGA (stop)',2],['GGU (Gly) → GGA (Gly)',0],['One base is deleted from the second codon',3]],['Silent','Missense','Nonsense','Frameshift'],{done:'Silent: the same amino acid. Missense: a different amino acid. Nonsense: a stop codon. Frameshift: a base is added or removed.'});
@@ -13135,9 +13137,9 @@ MBL.push({t:'Genetic engineering',h:'Biotechnology: recombinant DNA, CRISPR, PCR
   inp.addEventListener('input',draw);draw();
   card(g,'Gene knockouts (D1.3.8)',`<p>A <span class="key">gene knockout</span> tests the function of a gene by making it inactive.</p><ol><li>Choose the target gene.</li><li>Make a DNA construct (or a CRISPR guide) that disrupts the gene.</li><li>Put it into embryonic stem cells or an embryo, where it replaces or breaks the gene.</li><li>Breed organisms without a working copy and compare them with normal organisms.</li></ol><p>The changes in physiology show what the protein normally does. Mice, yeast and other organisms are used.</p>`,'half');
   card(g,'CRISPR-Cas9 (D1.3.9)',`<ul><li><span class="key">CRISPR</span> is a series of short repeats in the DNA of prokaryotes. Between the repeats are pieces of viral DNA from past infections.</li><li>The enzyme <span class="key">Cas9</span> uses an RNA copy of these sequences as a guide and cuts DNA that matches it. Prokaryotes use this to cut out viral DNA.</li><li>Scientists can <span class="key">program</span> Cas9 with a guide RNA of their choice to cut almost any sequence, and then remove, change or add a gene.</li></ul>`,'half');
-  card(g,'PCR and gel electrophoresis (D1.1.4, D1.1.5)',`<ul><li>The <span class="key">polymerase chain reaction</span> (PCR) copies DNA, from as little as a single molecule. Each cycle heats the DNA to separate the strands (about 95 °C), cools it so that primers attach (about 55 °C), and then a heat-stable DNA polymerase copies each strand (about 72 °C). Each cycle doubles the DNA: <i>n</i> cycles give 2<sup><i>n</i></sup> copies.</li>
+  card(g,'PCR and gel electrophoresis (D1.1.4, D1.1.5)',`<ul><li>The <span class="key">polymerase chain reaction</span> (PCR) copies DNA, from as little as a single molecule. Each cycle heats the DNA to separate the strands (about 95 °C), cools it so that primers attach (about 55 °C), and then a heat-stable DNA polymerase copies each strand (about 72 °C). The enzyme is <span class="key">Taq polymerase</span>, from the hot-spring bacterium <i>Thermus aquaticus</i>; it remains functional at the high temperatures used in PCR. Each cycle doubles the DNA: <i>n</i> cycles give 2<sup><i>n</i></sup> copies.</li>
     <li><span class="key">Gel electrophoresis</span> separates DNA fragments by length. An <span class="key">electric current</span> is applied to a gel. The phosphate groups make DNA <span class="key">negatively charged</span>, thus it moves toward the <span class="key">positive</span> pole. <span class="key">Shorter fragments</span> move faster through the gel, thus they move further from the negative pole. The gel is dyed to show the bands.</li>
-    <li>Uses: DNA profiling in forensics, paternity tests, diagnosis of genetic disease, and checking the result of genetic engineering.</li></ul>`);
+    <li>Uses include viral testing, forensic examinations, paternity testing, diagnosis of genetic disease, and checking the result of genetic engineering.</li></ul>`);
   /* try-its added after the lesson cards (new keys: ord_mb-7, mt_mb-7_nr0) */
   const o7=card(g,'Put the steps in order: a human protein made by bacteria','','half');
   ordering(o7,['Cut out the human gene and open a plasmid with the same restriction enzyme','Join the gene into the plasmid with DNA ligase','A bacterium takes up the recombinant plasmid (transformation)','The bacterium reproduces asexually and makes many clones','The bacteria make the human protein','The protein is isolated and purified'],'Use the arrows to move each step.');
